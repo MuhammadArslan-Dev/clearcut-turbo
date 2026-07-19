@@ -1,0 +1,283 @@
+/* Shared design tokens for the Clear Cutoff design system.
+   Consuming apps must define `--font-latin` / `--font-hindi` locally (they're
+   bound to each app's own next/font instances) — everything else here is a
+   complete, self-contained token set. */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ================= Hindi typography adjustment ================= */
+  --hi-size-ratio: 0.96;
+  --hi-line-height-ratio: 1.1;
+  --hi-weight-adjust: -100;
+  --letter-space: -0.02em;
+
+  /* ================= Font Weights ================= */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* ================= Fluid Typography ================= */
+  --fluid-dxl: clamp(40px, 6vw, 72px);
+  --fluid-dl: clamp(38px, 5vw, 64px);
+  --fluid-dm: clamp(36px, 4.5vw, 56px);
+  --fluid-ds: clamp(34px, 4vw, 48px);
+
+  --fluid-h2xxl: clamp(32px, 3.5vw, 38px);
+  --fluid-h2xl: clamp(32px, 3.5vw, 40px);
+  --fluid-hxl: clamp(24px, 3vw, 32px);
+  --fluid-hl: clamp(20px, 2.5vw, 24px);
+  --fluid-hm: clamp(18px, 2vw, 20px);
+  --fluid-hs: clamp(16px, 1.5vw, 18px);
+
+  --fluid-bl: clamp(16px, 1.5vw, 16px);
+  --fluid-bm: clamp(14px, 1vw, 15px);
+  --fluid-bs: clamp(12px, 0.9vw, 13px);
+  --fluid-bxs: clamp(10px, 0.8vw, 11px);
+
+  /* ================= Line Heights ================= */
+  --flh-dxl: clamp(48px, 5vw, 78px);
+  --flh-dl: clamp(46px, 4.5vw, 70px);
+  --flh-dm: clamp(42px, 5vw, 64px);
+  --flh-ds: clamp(40px, 3.5vw, 56px);
+
+  --flh-h2xl: clamp(38px, 3vw, 46px);
+  --flh-hxl: clamp(32px, 2.5vw, 38px);
+  --flh-hl: clamp(26px, 2vw, 32px);
+  --flh-hm: clamp(24px, 1.8vw, 26px);
+  --flh-hs: clamp(22px, 1.5vw, 24px);
+
+  --flh-bl: clamp(24px, 1.3vw, 24px);
+  --flh-bm: clamp(20px, 1.2vw, 20px);
+  --flh-bs: clamp(18px, 1vw, 18px);
+  --flh-bxs: clamp(14px, 1vw, 14px);
+
+  /* ================= shadcn/ui semantic tokens =================
+     Raw values live here (and in .dark below) because they change per
+     theme; @theme inline maps them onto the Tailwind-facing --color-*
+     names so bg-primary/text-foreground/etc. follow the active mode. */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  /* Brand blue drives shadcn's --primary directly, so bg-primary/text-primary
+     and the --color-brand app token always agree. */
+  --primary: #0083ff;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: #0083ff;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ================= Theme ================= */
+
+@theme {
+  --breakpoint-tablet: 800px;
+
+  --color-brand: #0083ff;
+  --color-brand-dark: #0053a2;
+  --color-textWhite: #ffffff;
+  --color-primary-soft: #dbeafe;
+  --color-primary-subtle: #e8f2fb;
+
+  --color-background-gray-subtle: #f1f5fa;
+
+  --color-success: #00a251;
+  --color-success-highlight: #008743;
+  --color-success-faded: #00a251;
+  --color-success-soft: #e7f6e5;
+
+  --color-text-gray-normal: #192839;
+  --color-text-gray-subtle: #40566d;
+  --color-text-gray-muted: #768ea7;
+  --color-text-gray-disabled: #cccccc;
+
+  --color-text-green-normal: #1c9e41;
+  --color-text-green-subtle: #defcce;
+  --color-text-green-muted: #768ea7;
+  --color-text-green-disabled: #cccccc;
+
+  --color-border-green-normal: #1c9e41;
+  --color-border-green-subtle: #cbd5e2;
+  --color-border-green-muted: #768ea7;
+  --color-border-green-disabled: #cccccc;
+
+  --color-surface-gray-normal: #192839;
+  --color-surface-gray-muted: #768ea7;
+  --color-surface-gray-subtle: #40566d;
+  --color-border-gray-subtle: #cbd5e2;
+  --color-border-normal-lowcontrast: #cbd5e2;
+
+  --spacing-y-section: 3rem;
+  --spacing-x-section: 3rem;
+  --spacing-ym-section: 1rem;
+  --spacing-xm-section: 1.5rem;
+  --spacing-yd-section: 2rem;
+  --spacing-xd-section: 2rem;
+
+  /* ================= Z-index scale =================
+     Named, not invented: every value here is the exact number already in
+     use at that call site before this token existed (Phase 5 audit) — this
+     documents the existing stacking system rather than redesigning it.
+     --z-sticky-header (blog's own header) and --z-header-elevated (landing's
+     own header) are kept as two distinct tokens rather than merged into one
+     "sticky header" value, because the two apps genuinely use different
+     numbers (60 vs 100) today; merging them would silently change one app's
+     real stacking behavior, which this phase is not authorized to do.
+     --z-mobile-menu is landing's dropdown menu overlay — a different UI role
+     that happens to share blog header's number (60) by coincidence, not by
+     shared meaning, so it gets its own name rather than reusing
+     --z-sticky-header. */
+  --z-sticky-header: 60;
+  --z-header-elevated: 100;
+  --z-mobile-menu: 60;
+  --z-floating-cta: 899;
+  --z-modal-backdrop: 999;
+  --z-modal: 1000;
+
+  /* ================= Shared shadows =================
+     The one shadow value that recurred identically across both apps
+     (floating bottom CTA bar) — everything else was a one-off. */
+  --shadow-floating-bar: 0 -2px 10px rgba(0, 0, 0, 0.1);
+
+  /* Consuming app must define --font-latin (and --font-hindi) locally. */
+  --font-sans: var(--font-latin);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ================= Typography utility classes =================
+   The single shared source for `.display-*`, `.heading-*`, and `.body-*`
+   across every app AND the shared components (auth modal, @clearcut/ui Text).
+   Intentionally WEIGHTLESS: they set font-size + line-height only (plus
+   letter-spacing on display), so font weight is controlled per element via
+   Tailwind `font-*` utilities — this is landing's typography model, now used
+   product-wide. font-size keeps `!important` to match the original behavior.
+   These are unlayered so they win over Tailwind's `@layer utilities` for size
+   while leaving `font-*` weight utilities free to apply. */
+.display-xlarge { font-size: var(--fluid-dxl) !important; line-height: var(--flh-dxl); letter-spacing: var(--letter-space); }
+.display-large  { font-size: var(--fluid-dl)  !important; line-height: var(--flh-dl);  letter-spacing: var(--letter-space); }
+.display-medium { font-size: var(--fluid-dm)  !important; line-height: var(--flh-dm);  letter-spacing: var(--letter-space); }
+.display-small  { font-size: var(--fluid-ds)  !important; line-height: var(--flh-ds);  letter-spacing: var(--letter-space); }
+
+.heading-2xxlarge { font-size: var(--fluid-h2xxl) !important; line-height: var(--flh-h2xl); }
+.heading-2xlarge  { font-size: var(--fluid-h2xl)  !important; line-height: var(--flh-h2xl); }
+.heading-xlarge   { font-size: var(--fluid-hxl)   !important; line-height: var(--flh-hxl); }
+.heading-large    { font-size: var(--fluid-hl)    !important; line-height: var(--flh-hl); }
+.heading-medium   { font-size: var(--fluid-hm)    !important; line-height: var(--flh-hm); }
+.heading-small    { font-size: var(--fluid-hs)    !important; line-height: var(--flh-hs); }
+
+.body-large  { font-size: var(--fluid-bl)  !important; line-height: var(--flh-bl); }
+.body-medium { font-size: var(--fluid-bm)  !important; line-height: var(--flh-bm); }
+.body-small  { font-size: var(--fluid-bs)  !important; line-height: var(--flh-bs); }
+.body-xsmall { font-size: var(--fluid-bxs) !important; line-height: var(--flh-bxs); }
+

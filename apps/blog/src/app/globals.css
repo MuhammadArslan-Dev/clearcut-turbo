@@ -1,0 +1,357 @@
+@import "tailwindcss";
+/* Tailwind v4 only scans this app's own tree by default — explicitly
+   include shared component packages so their utility classes (e.g. the
+   Button's compound-variant colors, or the auth modal's layout classes)
+   actually get generated. Matches apps/landing's setup. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/auth/src/**/*.{ts,tsx}";
+@source "../../../../packages/utils/src/**/*.{ts,tsx}";
+/* Imported first so this app's own token overrides below (same variable
+   names, different values in places) win the cascade and existing blog
+   styling is unaffected — this only fills in variables blog didn't already
+   define (e.g. --color-text-gray-normal, shadcn's --primary) that the
+   shared @clearcut/ui / @clearcut/auth components rely on. */
+@import "@clearcut/design-tokens/tokens.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --letter-spacing: -0.02em;
+
+  /* Font weights, fluid font sizes, and line heights come from
+     @clearcut/design-tokens/tokens.css (imported above) — the single source
+     of every typography VALUE. They are intentionally NOT redeclared here;
+     the local copies were byte-identical duplicates and were removed so blog
+     can never silently drift from the shared type scale again. The typography
+     utility CLASSES below still live per-app (blog bakes font-weight into
+     them, landing does not) but read their sizes/line-heights from these
+     shared tokens. */
+
+  /* Values that are byte-identical to a @clearcut/design-tokens color now
+     point at that token via var() instead of repeating the literal hex, so
+     they can never silently drift from the shared palette. Values with no
+     token equivalent (including --primary-dark, which is #006bd1 here but
+     #0053a2 in the package's --color-brand-dark — a real, unresolved
+     conflict, not a missing token) are left as their original literals. */
+  --surface-text-gray-normal: var(--color-text-gray-normal);
+  --surface-text-oncloud-onintense: #8bc7ff;
+  --neutral-blueGrayLight: var(--color-text-gray-subtle);
+  --yellow-200: var(--color-text-gray-normal);
+  --neutral-500: #8c8b89;
+  --surface-border-gray-normal: #90a5bb;
+  --surface-text-primary-normal: var(--color-brand);
+  --primary-dark: #006bd1;
+  --surface-text-gray-muted: var(--color-text-gray-muted);
+  --interactive-text-positive-normal: var(--color-success-highlight);
+  --surface-success: var(--color-success-soft);
+  --interactive-text-onPrimary-normal: var(--color-textWhite);
+  --feedback-background-notice-intense: #e9690c;
+  --feedback-background-positive-intense: var(--color-success);
+  --feedback-background-negative-intense: #d92d20;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* --color-brand intentionally NOT redeclared here — @clearcut/design-tokens
+     already defines it (#0083ff, same value), and Tailwind merges @theme
+     blocks across files, so repeating it here was pure duplication.
+     --color-brand-dark IS still declared here because it conflicts with the
+     package's value (#006bd1 here vs #0053a2 in the package) — see the note
+     on --primary-dark above; this app intentionally keeps its own value
+     until that conflict is resolved. */
+  --color-brand-dark: #006bd1;
+  --color-softskyblue: #f3f7fd;
+  --color-oncloud-onintense: var(--surface-text-oncloud-onintense);
+
+
+  /* Define a color with a scale of shades */
+  --color-custom-teal-50: #f0fdfa;
+  --color-custom-teal-100: #ccfbf1;
+  --color-custom-teal-200: #99f6e4;
+  /* ... and so on for all your shades */
+  --color-custom-teal-500: #14b8a6;
+  --color-custom-teal-900: #134e4a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+  }
+}
+
+/* Hide scrollbars for all elements */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* Hide scrollbars for Chrome, Safari, and Edge */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-noto-sans), sans-serif;
+  scroll-behavior: smooth;
+  letter-spacing: var(--letter-spacing);
+}
+
+/* The `.display-*`, `.heading-*`, and `.body-*` classes themselves now live
+   in @clearcut/design-tokens/tokens.css (imported at the top) — the single
+   product-wide source — and are WEIGHTLESS there (landing's model), so font
+   weight is controlled by Tailwind `font-*` utilities per element.
+
+   Blog previously baked font-weight straight into those classes (headings/
+   display = semibold, body = medium). To preserve that look everywhere it was
+   relied on — including the many usages that pass a class through component
+   props (`headingSize="display-medium"`), clsx, or template strings, which a
+   call-site migration can't safely reach — blog keeps its DEFAULT weights
+   here in @layer base. Because base ranks below Tailwind's utilities layer,
+   any `font-*` utility on an element still overrides these defaults, so the
+   per-element control of landing's model works too. Values come from the
+   shared --fw-* tokens. */
+@layer base {
+  .display-xlarge,
+  .display-large,
+  .display-medium,
+  .display-small,
+  .heading-2xxlarge,
+  .heading-2xlarge,
+  .heading-xlarge,
+  .heading-large,
+  .heading-medium,
+  .heading-small {
+    font-weight: var(--fw-semibold);
+  }
+  .body-large,
+  .body-medium,
+  .body-small,
+  .body-xsmall {
+    font-weight: var(--fw-medium);
+  }
+}
+
+.text-body {
+  color: #737780 !important;
+}
+.surface-text-gray-normal {
+  color: var(--surface-text-gray-normal) !important;
+}
+.neutral-blueGrayLight {
+  color: var(--neutral-blueGrayLight) !important;
+}
+.back-neutral-blueGrayLight {
+  background: var(--neutral-blueGrayLight) !important;
+}
+.subtle-background {
+  background: var(--color-background-gray-subtle) !important;
+}
+.surface-success-background {
+  background: var(--surface-success) !important;
+}
+.yellow-200 {
+  color: var(--yellow-200) !important;
+}
+.neutral-500 {
+  color: #8c8b89 !important;
+}
+.surface-text-primary-normal {
+  color: var(--surface-text-primary-normal) !important;
+}
+.surface-text-gray-muted {
+  color: var(--surface-text-gray-muted) !important;
+}
+.interactive-text-positive-normal {
+  color: var(--interactive-text-positive-normal) !important;
+}
+.interactive-text-onPrimary-normal {
+  color: var(--interactive-text-onPrimary-normal) !important;
+}
+.feedback-background-notice-intense {
+  color: #e9690c !important;
+}
+.interactive-text-notice-normal {
+  color: #c65c10 !important;
+}
+.surface-border-gray-normal {
+  color: var(--surface-border-gray-normal) !important;
+}
+.feedback-background-positive-intense {
+  color: var(--feedback-background-positive-intense) !important;
+}
+.feedback-background-negative-intense {
+  color: #d92d20 !important;
+}
+.back-feedback-background-positive-intense {
+  background: var(--feedback-background-positive-intense) !important;
+}
+/* YouTubePlayerWithProgress.css */
+.youtube-container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 10px;
+  background-color: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4caf50;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+
+.scroll-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* Pause animation on hover */
+.scroll-wrapper:hover .scroll-track {
+  animation-play-state: paused;
+}
+
+.scroll-track {
+  display: inline-block;
+}
+
+.scroll-item {
+  display: inline-block;
+  margin: 0 18px !important;
+}
+
+@media (max-width: 768px) {
+  .scroll-item {
+    margin: 0 12px !important;
+  }
+}
+
+/* Scroll Left */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Scroll Right */
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+
+
+
+.custom {
+  font-family: var(--font-noto-sans), sans-serif;
+  line-height: 1.7;
+  color: #374151; /* Tailwind gray-700 */
+}
+
+/* Headings */
+.custom h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+.custom h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+.custom h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+.custom h4,
+.custom h5,
+.custom h6 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+/* Paragraph */
+.custom p {
+  margin: 0.75rem 0;
+}
+
+/* Lists */
+.custom ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+.custom ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+.custom li {
+  margin: 0.25rem 0;
+}
+
+/* Blockquote */
+.custom blockquote {
+  border-left: 4px solid #9ca3af; /* gray-400 */
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563; /* gray-600 */
+  margin: 1rem 0;
+}
+
+/* Code */
+.custom code {
+  background: #f3f4f6; /* gray-100 */
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+.custom pre {
+  background: #1f2937; /* gray-900 */
+  color: #f9fafb; /* gray-50 */
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+/* Links */
+.custom a {
+  color: #2563eb; /* blue-600 */
+  text-decoration: underline;
+}
+.custom a:hover {
+  color: #1d4ed8; /* blue-700 */
+}
+
+/* Horizontal rule */
+.custom hr {
+  border: none;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+  margin: 1.5rem 0;
+}

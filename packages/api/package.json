@@ -1,0 +1,19 @@
+{
+  "name": "@clearcut/api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./client": "./src/client.ts",
+    "./fetch-client": "./src/fetch-client.ts",
+    "./errors": "./src/errors.ts"
+  },
+  "dependencies": {
+    "axios": "^1.12.2"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@clearcut/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./routing": "./routing.ts",
+    "./navigation": "./navigation.ts"
+  },
+  "dependencies": {
+    "next-intl": "^4.13.1"
+  },
+  "peerDependencies": {
+    "next": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

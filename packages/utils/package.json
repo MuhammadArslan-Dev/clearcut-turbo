@@ -1,0 +1,28 @@
+{
+  "name": "@clearcut/utils",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "exports": {
+    "./build-metadata": "./src/build-metadata.ts",
+    "./highlight-text": "./src/highlight-text.tsx",
+    "./text-format": "./src/text-format.ts",
+    "./text-limit": "./src/text-limit.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1"
+  },
+  "peerDependencies": {
+    "next": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "next": "^16.1.6",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

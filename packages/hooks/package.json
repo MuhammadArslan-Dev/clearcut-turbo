@@ -1,0 +1,24 @@
+{
+  "name": "@clearcut/hooks",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./use-is-mobile": "./src/use-is-mobile.ts",
+    "./use-lock-body-scroll": "./src/use-lock-body-scroll.ts",
+    "./use-back-handler": "./src/use-back-handler.ts",
+    "./use-scroll-shadow": "./src/use-scroll-shadow.ts"
+  },
+  "dependencies": {
+    "framer-motion": "^12.35.0"
+  },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "common": {
+    "continueFree": "फ्री तैयारी जारी रखें",
+    "continueFreeShort": "फ्री में जारी रखें",
+    "startFree": "फ्री में शुरू करें"
+  },
+  "nav": {
+    "pricing": "प्राइसिंग",
+    "features": "फीचर्स",
+    "faqs": "सामान्य प्रश्न"
+  },
+  "footer": {
+    "phone": "फ़ोन",
+    "whatsapp": "व्हाट्सऐप",
+    "privacy": "नीति",
+    "terms": "नियम और शर्तें",
+    "refund": "रिफंड",
+    "contact": "संपर्क",
+    "rights": "सभी अधिकार सुरक्षित!"
+  }
+}
