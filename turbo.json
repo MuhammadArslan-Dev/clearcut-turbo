@@ -3,11 +3,45 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "API_URL",
+        "BACKEND_URL",
+        "CMS_URL",
+        "ENVIRONMENT",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_AMPLITUDE_API_KEY",
+        "NEXT_PUBLIC_FACEBOOK_PIXEL_ID",
+        "NEXT_PUBLIC_FRONTEND_URL",
+        "NEXT_PUBLIC_PAYLOAD_URL",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_SITE_URL",
+        "NIXPACKS_NODE_VERSION",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT"
+      ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "API_URL",
+        "BACKEND_URL",
+        "CMS_URL",
+        "ENVIRONMENT",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_AMPLITUDE_API_KEY",
+        "NEXT_PUBLIC_FACEBOOK_PIXEL_ID",
+        "NEXT_PUBLIC_FRONTEND_URL",
+        "NEXT_PUBLIC_PAYLOAD_URL",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_SITE_URL",
+        "NIXPACKS_NODE_VERSION",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
