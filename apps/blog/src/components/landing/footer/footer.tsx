@@ -4,12 +4,12 @@ import Box from "@mui/joy/Box";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 
 import { useTranslations } from "next-intl";
-import PhoneIcon from "@/components/ui/icons/phone-icon";
-import EMailIcon from "@/components/ui/icons/email-icon";
+import PhoneIcon from "@clearcut/ui/icons/phone-icon";
+import EMailIcon from "@clearcut/ui/icons/email-icon";
 import WhatsappIcon from "@/components/ui/icons/whatsapp-icon";
-import { InstagramIcon } from "@/components/ui/icons/instagram-icon";
-import { FacebookIcon } from "@/components/ui/icons/facebook-icon";
-import { LinkedInIcon } from "@/components/ui/icons/linked-in-icon";
+import { InstagramIcon } from "@clearcut/ui/icons/instagram-icon";
+import { FacebookIcon } from "@clearcut/ui/icons/facebook-icon";
+import { LinkedInIcon } from "@clearcut/ui/icons/linked-in-icon";
 import { LinksList } from "@clearcut/ui/links-list";
 
 export default function Footer() {

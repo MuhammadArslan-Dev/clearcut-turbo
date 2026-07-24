@@ -1,14 +1,10 @@
-import { AppLocale } from '@/types/components/language';
 import {defineRouting} from 'next-intl/routing';
 
 export const routing = defineRouting({
-  locales: ['en', 'hi'] as AppLocale[],
+  locales: ['en', 'hi'],
   defaultLocale: 'en',
   localePrefix: 'as-needed',
   pathnames: {
-    '/': '/',
-    '/pathnames': {
-      ur: '/pfadnamen'
-    }
+    '/': '/'
   }
 });

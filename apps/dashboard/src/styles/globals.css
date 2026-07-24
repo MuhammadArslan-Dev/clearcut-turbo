@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* Tailwind v4 only scans this app's own tree by default — explicitly
+   include @clearcut/ui so its component classes actually get generated,
+   for when Dashboard starts consuming shared UI primitives. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* Imported first so this app's own token overrides below (same variable
+   names, different values in places) win the cascade — this only fills in
+   variables Dashboard doesn't already define. Matches apps/blog's and
+   apps/landing's setup. */
+@import "@clearcut/design-tokens/tokens.css";
+
+/* 2. Design tokens + typography layers */
+@import "./tokens.css";
+@import "./typography.css";
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme {
+  /* ✅ breakpoints */
+  --breakpoint-xs: 500px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-2md: 900px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-1lg: 1150px;
+  --breakpoint-2lg: 1180px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-1xl: 1400px;
+  --breakpoint-2xl: 1536px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--color-brand);
+  --color-brand-dark: var(--color-brand-dark);
+
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+
+  /* background  */
+
+  /* color  */
+  --color-brand: var(--color-brand);
+  --color-surface-gray-normal: var(--color-surface-gray-normal);
+  --color-surface-gray-muted: var(--color-surface-gray-muted);
+  --color-surface-gray-subtle: var(--color-surface-gray-subtle);
+  --color-primary-subtle: var(--color-primary-subtle);
+  --color-surface-border-gray-subtle: var(--surface-border-gray-subtle);
+  --color-surface-border-normal-lowcontrast: var(
+    --surface-border-normal-lowcontrast
+  );
+}
+
+.dark {
+    --background: #ffffff;
+    --foreground: #171717;
+    /* --background: #0a0a0a;
+    --foreground: #ededed; */
+}
+
+/* Hide scrollbars for all elements */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* Hide scrollbars for Chrome, Safari, and Edge */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* globals.css */
+
+@supports (height: 100dvh) {
+  .h-screen-safe {
+    height: 100dvh;
+  }
+}
+@supports not (height: 100dvh) {
+  .h-screen-safe {
+    height: 100vh;
+  }
+}
+
+body {
+  background: var(--background-gray-subtle);
+  color: var(--foreground);
+  font-family: var(--font-noto-sans);
+  scroll-behavior: smooth;
+}
+@keyframes cardStackIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.exam-card {
+  opacity: 0;
+  animation: cardStackIn 0.22s ease-out forwards;
+}
+
+.swiper-pagination {
+  bottom: 0 !important;
+}
+
+.swiper-pagination-bullet {
+  background: #5db0ff !important;
+  opacity: 1;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #ffffff !important;
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.swiper-wrapper {
+  display: flex !important;
+  align-items: center;
+}
+/* .markdown-content {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+} */
+
+
+.markdown-content {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.markdown-content p {
+  margin-bottom: -50px;
+}
+
+
+.markdown-content strong {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin-left: 20px;
+  margin-bottom: 12px;
+} 

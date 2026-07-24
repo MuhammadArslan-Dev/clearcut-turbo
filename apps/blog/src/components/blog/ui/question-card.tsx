@@ -5,7 +5,7 @@ import StarBadge from '@/components/ui/badge/star-badge';
 import { Button } from '@mui/joy';
 import { formatToSlug, unFormatSlug } from '@/utils/slugify';
 import { limitWords } from '@clearcut/utils/text-limit'
-import CalendarIcon from '@/components/ui/icons/calendar-icon';
+import CalendarIcon from '@clearcut/ui/icons/calendar-icon';
 import { useParams } from 'next/navigation';
 
 interface Props {

@@ -1,0 +1,97 @@
+/* Display */
+.display-xlarge {
+  font-size: var(--fluid-dxl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-dxl);
+  letter-spacing: var(--letter-space);
+}
+
+.display-large {
+  font-size: var(--fluid-dl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-dl);
+  letter-spacing: var(--letter-space);
+}
+
+.display-medium {
+  font-size: var(--fluid-dm) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-dm);
+  letter-spacing: var(--letter-space);
+}
+
+.display-small {
+  font-size: var(--fluid-ds) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-ds);
+  letter-spacing: var(--letter-space);
+}
+
+/* Headline */
+.heading-2xxlarge {
+  font-size: var(--fluid-h2xxl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-h2xl);
+  letter-spacing: var(--letter-space);
+}
+.heading-2xlarge {
+  font-size: var(--fluid-h2xl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-h2xl);
+  letter-spacing: var(--letter-space);
+}
+
+.heading-xlarge {
+  font-size: var(--fluid-hxl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-hxl);
+  letter-spacing: var(--letter-space);
+}
+
+.heading-large {
+  letter-spacing: var(--letter-space);
+  font-size: var(--fluid-hl) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-hl);
+}
+
+.heading-medium {
+  letter-spacing: var(--letter-space);
+
+  font-size: var(--fluid-hm) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-hm);
+}
+
+.heading-small {
+  letter-spacing: var(--letter-space);
+
+  font-size: var(--fluid-hs) !important;
+  font-weight: var(--fw-semibold);
+  line-height: var(--flh-hs);
+}
+
+/* Body */
+.body-large {
+  font-size: var(--fluid-bl) !important;
+  font-weight: var(--fw-medium);
+  line-height: var(--flh-bl);
+}
+
+.body-medium {
+  font-size: var(--fluid-bm) !important;
+  font-weight: var(--fw-medium);
+  line-height: var(--flh-bm);
+}
+
+.body-small {
+  font-size: var(--fluid-bs) !important;
+  font-weight: var(--fw-medium);
+  line-height: var(--flh-bs);
+}
+
+.body-xsmall {
+  font-size: var(--fluid-bxs) !important;
+  font-weight: var(--fw-medium);
+  line-height: var(--flh-bxs);
+}

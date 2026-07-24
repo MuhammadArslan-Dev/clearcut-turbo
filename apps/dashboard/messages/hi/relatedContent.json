@@ -1,0 +1,57 @@
+{
+  "studyTabs": {
+    "tabs": {
+      "notes": "नोट्स",
+      "bonusVideos": "बोनस वीडियो",
+      "trends": "ट्रेंड्स",
+      "concepts": "कॉनसेप्ट्स"
+    },
+    "notes": {
+      "detailedTitle": "डिटेल्ड नोट्स",
+      "detailedSubtitle": "टॉपिक को समझने के लिए कम्प्लीट एक्सप्लनेशन",
+      "quickTitle": "क्विक रिविज़न नोट्स (कमिंग सून)",
+      "quickSubtitle": "लास्ट-मिनट रिविज़न के लिए 1-पेज समरी",
+      "meta": {
+        "pages": "पेजेस",
+        "updatedFor": "अपडेटेड फॉर",
+        "language": "लैंग्वेज"
+      },
+      "buttons": {
+        "download": "पीडीएफ डाउनलोड करें",
+        "notify": "उपलब्ध होने पर नोटिफ़ाई करें"
+      },
+      "footerHint": "फर्स्ट-टाइम लर्निंग और क्लैरिटी के लिए बेस्ट"
+    },
+    "bonusVideos": {
+      "title": "सेम टॉपिक, डिफरेंट टीचर्स",
+      "subtitle": "अगर मेन वीडियो क्लियर न हो तो ही देखें",
+      "startVideo": "वीडियो स्टार्ट करें"
+    },
+    "trends": {
+      "title": "पिछली परीक्षाओं के ट्रेंड्स",
+      "subtitle": "रिसेंट CTET एग्ज़ाम्स पर आधारित",
+      "labels": {
+        "topicImportance": "टॉपिक इम्पोर्टेंस",
+        "marksAsked": "पूछे गए मार्क्स",
+        "lastAppeared": "लास्ट अपीयरेंस",
+        "questionsPerExam": "प्रश्न (प्रति एग्ज़ाम)"
+      },
+      "values": {
+        "marksRange": "{{min}}-{{max}} मार्क्स",
+        "questionsCount": "{{count}} प्रति एग्ज़ाम",
+        "basedOnYears": "({{years}} ईयर के आधार पर)"
+      },
+      "buttons": {
+        "viewQuestions": "CTET क्वेश्चन्स देखें ({{count}})"
+      }
+    },
+    "concepts": {
+      "title": "वीडियो में एग्ज़ैक्ट कॉनसेप्ट पर जाएँ",
+      "subtitle": "फास्टर लर्निंग और रिविज़न के लिए किसी भी कॉनसेप्ट पर क्लिक करें",
+      "status": {
+        "inProgress": "इन प्रोग्रेस"
+      },
+      "hint": "किसी भी कॉनसेप्ट पर क्लिक करें"
+    }
+  }
+}

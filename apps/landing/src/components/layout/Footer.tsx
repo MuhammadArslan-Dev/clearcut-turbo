@@ -1,10 +1,10 @@
 "use client";
-import { FacebookIcon } from "../icons/facebook-icon";
-import { LinkedInIcon } from "../icons/linked-in-icon";
+import { FacebookIcon } from "@clearcut/ui/icons/facebook-icon";
+import { LinkedInIcon } from "@clearcut/ui/icons/linked-in-icon";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
-import PhoneIcon from "../icons/phone-icon";
+import PhoneIcon from "@clearcut/ui/icons/phone-icon";
 import WhatsappIcon from "../icons/whatsapp-icon";
-import { InstagramIcon } from "../icons/instagram-icon";
+import { InstagramIcon } from "@clearcut/ui/icons/instagram-icon";
 import { LinksList } from "@clearcut/ui/links-list";
 import { Link as I18nLink } from "@clearcut/i18n/navigation";
 import { useTranslations } from "next-intl";

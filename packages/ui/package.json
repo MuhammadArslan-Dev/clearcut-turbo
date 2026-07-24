@@ -16,7 +16,18 @@
     "./page-not-found": "./src/page-not-found.tsx",
     "./separator": "./src/separator.tsx",
     "./text": "./src/text.tsx",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./icons/HomeIcon": "./src/icons/HomeIcon.tsx",
+    "./icons/calendar-icon": "./src/icons/calendar-icon.tsx",
+    "./icons/circle-clock-icon": "./src/icons/circle-clock-icon.tsx",
+    "./icons/email-icon": "./src/icons/email-icon.tsx",
+    "./icons/facebook-icon": "./src/icons/facebook-icon.tsx",
+    "./icons/instagram-icon": "./src/icons/instagram-icon.tsx",
+    "./icons/linked-in-icon": "./src/icons/linked-in-icon.tsx",
+    "./icons/phone-icon": "./src/icons/phone-icon.tsx",
+    "./icons/telegram-icon": "./src/icons/telegram-icon.tsx",
+    "./icons/warning-circle-icon": "./src/icons/warning-circle-icon.tsx",
+    "./icons/youtube-icon": "./src/icons/youtube-icon.tsx"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

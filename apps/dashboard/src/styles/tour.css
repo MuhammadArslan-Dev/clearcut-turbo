@@ -1,0 +1,38 @@
+.driver-popover.driverjs-theme {
+  background-color: #0083ff;
+  color: #fff;
+}
+.driver-popover.driverjs-theme .driver-popover-progress-text {
+  color: #fff !important;
+}
+.driver-popover.driverjs-theme .driver-popover-prev-btn {
+  background-color: #fff !important;
+  color: #0083ff !important;
+}
+.driver-popover.driverjs-theme .driver-popover-next-btn {
+  background-color: #fff !important;
+  color: #0083ff !important;
+}
+
+.driver-popover.driverjs-theme .driver-popover-close-btn {
+  color: #fff !important;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #0083ff;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #0083ff;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #0083ff;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #0083ff;
+}
+.driver-popover.driverjs-theme .driver-popover-footer .driver-popover-btn-disabled {
+  display: none !important;
+}

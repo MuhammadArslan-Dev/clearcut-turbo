@@ -1,0 +1,241 @@
+{
+  "Sidebar": {
+    "exams": "एग्ज़ाम्स",
+    "exam": "एग्ज़ाम्स",
+    "learn": "लर्न",
+    "profile": "प्रोफ़ाइल",
+    "dashboard": "डैशबोर्ड",
+    "myCourses": "मेरे कोर्स",
+    "payments": "पेमेंट्स",
+    "settings": "सेटिंग्स",
+    "referral": "रेफरल"
+  },
+  "DashboardPage": {
+    "metaTitle": "डैशबोर्ड | क्लियर कटऑफ",
+    "metaDescription": "डैशबोर्ड"
+  },
+  "Exam": {
+    "metaTitle": "एग्ज़ाम सेटिंग्स | क्लियरक टऑफ",
+    "metaDescription": "सेटिंग्स"
+  },
+  "Learn": {
+    "metaTitle": "लर्न | क्लियरक टऑफ",
+    "metaDescription": "सेटिंग्स"
+  },
+  "Profile": {
+    "metaTitle": "सेटिंग्स | क्लियरक टऑफ",
+    "metaDescription": "सेटिंग्स"
+  },
+  "SettingsPage": {
+    "metaTitle": "सेटिंग्स | क्लियर कटऑफ",
+    "metaDescription": "सेटिंग्स"
+  },
+  "PaymentsPage": {
+    "metaTitle": "पेमेंट्स | क्लियर कटऑफ",
+    "metaDescription": "पेमेंट्स"
+  },
+  "MyCoursesPage": {
+    "metaTitle": "मेरे कोर्स | क्लियर कटऑफ",
+    "metaDescription": "मेरे कोर्स"
+  },
+  "Header": {
+    "logo": "LMS.io",
+    "features": "फीचर्स",
+    "pricing": "प्राइसिंग",
+    "contact": "संपर्क",
+    "login": "लॉगिन",
+    "signup": "साइन अप"
+  },
+  "todayGoals": {
+    "title": "आज के गोल्स",
+    "estimatedTime": "गोल्स पूरे करने का समय: {min}-{max} मिनट",
+    "watchVideos": "{count, plural, one {# वीडियो} other {# वीडियो}} देखें",
+    "studyNotes": "{count, plural, one {# नोट} other {# नोट्स}} डाउनलोड कर अध्ययन करें",
+    "attemptTests": "{count, plural, one {# मिनी-टेस्ट} other {# मिनी-टेस्ट}} दें",
+    "progress": "{completed} / {total}",
+    "start": "आज के गोल्स शुरू करें",
+    "continue": "कंटिन्यू",
+    "basedOnPattern": "लेटेस्ट एग्ज़ाम पैटर्न पर बेस्ड"
+  },
+  "quickRvision": {
+    "title": "क्विक रिवीजन",
+    "subtitle": "समय कम है? नोट्स और PYQs से मुख्य टॉपिक्स रिवाइज करें",
+    "viewNotes": "चैप्टर और टॉपिक्स के अनुसार नोट्स देखें",
+    "viewPreviousPapers": "पिछले वर्षों के पेपर्स देखें",
+    "viewPYQs": "एग्ज़ाम एक्सपर्ट्स द्वारा तैयार और जाँचा गया",
+    "notes": "{note} नोट्स",
+    "papers": "{paper} पेपर्स",
+    "openNotesandPapers": "नोट्स और पेपर्स खोलें"
+  },
+  "nextMilestone": {
+    "title": "अगला माइलस्टोन",
+    "chaptersAway": "{subject} पूरा करने से {count, plural, one {# चैप्टर} other {# चैप्टर्स}} दूर",
+    "count": "{count, plural, one {# चैप्टर} other {# चैप्टर्स}}",
+    "cta": "अगला माइलस्टोन पूरा करें"
+  },
+  "learningStreak": {
+    "title": "लर्निंग स्ट्रीक",
+    "minutesToKeepStreak": "आज {minutes, plural, one {# मिनट} other {# मिनट}} पढ़ें ताकि {streak, plural, one {#-डे} other {#-डेज़}} निरंतरता बनी रहे",
+    "day": "{streak, plural, one {#-डे} other {#-डेज़}} स्ट्रीक",
+    "minute": "{minutes, plural, =0 {# मिनट} one {# मिनट} other {# मिनट}}",
+    "longestStreak": "सबसे लंबी स्ट्रीक: {days, plural, one {# दिन} other {# दिन}}"
+  },
+  "common": {
+    "continue": "कंटिन्यू करें",
+    "index": "सूची",
+    "save": "सेव करें",
+    "video": "वीडियो",
+    "notes": "नोट्स",
+    "minitest": "टॉपिक टेस्ट",
+    "edit": "एडिट करें",
+    "today": "आज",
+    "upgrade": "अपग्रेड करें",
+    "section": "सेक्शन",
+    "sections": "सेक्शन्स",
+    "chapter": "चैप्टर",
+    "chapters": "चैप्टर्स",
+    "course": "कोर्स",
+    "courses": "कोर्सेज़",
+    "testSeries": "टेस्ट सीरीज़",
+    "mark": "मार्क",
+    "marks": "मार्क्स",
+    "question": "प्रश्न",
+    "questions": "प्रश्न",
+    "to_review": "रिव्यू के लिए",
+    "not_answered": "अनआंसरड",
+    "answered": "आंसरड",
+    "not_visited": "अभी तक नहीं देखा"
+  },
+  "timeRemainingTillExam": {
+    "title": "एग्ज़ाम तक बचा हुआ समय",
+    "countdown": {
+      "days": "{count, plural, one {दिन} other {दिन}}",
+      "hours": "{count, plural, one {घंटा} other {घंटे}}",
+      "minutes": "{count, plural, one {मिनट} other {मिनट}}",
+      "seconds": "{count, plural, one {सेकंड} other {सेकंड}}"
+    },
+    "upgradeHint": "एग्ज़ाम से पहले सिलेबस खत्म करने के लिए अभी अपग्रेड करें"
+  },
+  "examCard": {
+    "date": "तारीख:",
+    "mode": "मोड:",
+    "duration": "अवधि:",
+    "cutoff": "कटऑफ:",
+    "ctaTrial": "{days}-दिन का फ्री ट्रायल स्टार्ट करें"
+  },
+  "examMode": {
+    "online": "ऑनलाइन",
+    "offline": "ऑफ़लाइन"
+  },
+  "languages": {
+    "english": "अंग्रेज़ी",
+    "hindi": "हिंदी"
+  },
+  "actions": {
+    "add": "जोड़ें",
+    "save": "सेव करें",
+    "delete": "Delete",
+    "edit": "एडिट करें",
+    "cancel": "कैंसिल करें",
+    "continue": "जारी रखें",
+    "confirm_language": "भाषा कन्फर्म करें",
+    "previous_topic": "पिछला टॉपिक",
+    "next_topic": "अगला टॉपिक",
+    "logout": "लॉगआउट",
+    "back": "वापस",
+    "next": "अगला",
+    "end_test": "टेस्ट एंड करें",
+    "save_and_next": "सेव एंड नेक्स्ट",
+    "clear_response": "उत्तर हटाएँ",
+    "mark_for_review_and_next": "रिव्यू के लिए मार्क करें और नेक्स्ट"
+  },
+  "profile": {
+    "title": "मेरी प्रोफ़ाइल",
+    "greeting": "नमस्ते, {name}",
+    "personalDetails": {
+      "name": "नाम",
+      "gender": "लिंग",
+      "dob": "जन्म तिथि",
+      "email": "ईमेल",
+      "phone": "फ़ोन",
+      "notAdded": "जोड़ा नहीं गया",
+      "edit": "एडिट करें",
+      "add": "जोड़ें"
+    }
+  },
+  "profileMenu": {
+    "personalDetails": {
+      "title": "पर्सनल डिटेल्स",
+      "subtitle": "नाम, आयु, लिंग और अन्य"
+    },
+    "payments": {
+      "title": "भुगतान",
+      "subtitle": "आपके द्वारा खरीदे गए कोर्स"
+    },
+    "changeLanguage": {
+      "title": "भाषा बदलें",
+      "subtitle": "अंग्रेज़ी, हिंदी, मराठी"
+    },
+    "helpSupport": {
+      "title": "हेल्प और सपोर्ट",
+      "subtitle": "कॉल करें या चैट करें"
+    },
+    "tncAndSocial": {
+      "title": "नियम और सोशल मीडिया",
+      "subtitle": "शर्तें, सोशल मीडिया और अन्य जानकारी"
+    },
+    "subscriptions": {
+      "title": "सदस्यताएं",
+      "subtitle": "अपनी सक्रिय योजनाएं प्रबंधित करें"
+    }
+  },
+  "course": {
+    "courseStatus": {
+      "trial": "FREE ट्रायल के 3 दिन बचे हैं",
+      "trialEnd": "ट्रायल खत्म हो गया",
+      "active": "एक्टिव",
+      "completed": "पूरा हो चुका",
+      "dropped": "कोर्स छोड़ दिया",
+      "expired": "कोर्स एक्सपायर हो गया",
+      "cleared": "क्लियर हो गया",
+      "unknown": "जानकारी उपलब्ध नहीं"
+    }
+  },
+  "myCourses": {
+    "title": "मेरे कोर्स",
+    "freeTrialBadge": "फ्री ट्रायल",
+    "chaptersCompleted": "कम्प्लीट किए गए चैप्टर्स",
+    "topicsCompleted": "कम्प्लीट किए गए टॉपिक्स",
+    "testsAttempted": "दिए गए टेस्ट",
+    "chaptersLabel": "चैप्टर्स",
+    "testSeriesLabel": "टेस्ट सीरीज़",
+    "continueLearning": "फ्री लर्निंग कंटिन्यू करें",
+    "continueLearningActive": "लर्निंग कंटिन्यू करें",
+    "unlockFullAccess": "फुल एक्सेस अनलॉक करें",
+    "buyFullCourse": "पूरा कोर्स खरीदें",
+    "priceNote": "₹{price}/माह • सब्सक्रिप्शन प्लान",
+    "trialLimit": "फ्री ट्रायल सिर्फ {days, plural, one {# दिन} other {# दिन}} के लिए"
+  },
+  "resumeBar": {
+    "currentExam": "वर्तमान एग्ज़ाम: {exam}",
+    "changeExam": "एग्ज़ाम बदलें",
+    "lessonPath": "{subject} > चैप्टर {chapter} • टॉपिक {topic}",
+    "timeToComplete": "गोल पूरा करने में {minutes, plural, one {# मिनट} other {# मिनट}}",
+    "minutes": "{minutes, plural, one {# मिनट} other {# मिनट}}",
+    "resume": "फिर से शुरू करें"
+  },
+  "footer": {
+    "terms": "नियम",
+    "privacy": "प्राइवेसी",
+    "refund": "रिफंड",
+    "contact": "संपर्क",
+    "copyright": "© {year} {brand}. ऑल राइट्स रिज़र्व्ड।"
+  },
+  "LanguageCard": {
+    "select_language": "भाषा चुनें"
+  },
+  "ReferralPage": {
+    "metaTitle": "रेफरल प्रोग्राम | ClearCutoff",
+    "metaDescription": "दोस्तों को आमंत्रित करें और पुरस्कार कमाएं"
+  }
+}

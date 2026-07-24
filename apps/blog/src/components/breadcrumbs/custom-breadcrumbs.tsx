@@ -6,7 +6,7 @@ import React from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
-import HomeIcon from "@/components/ui/icons/HomeIcon";
+import HomeIcon from "@clearcut/ui/icons/HomeIcon";
 
 // ✅ Props type
 interface BreadcrumbItem {

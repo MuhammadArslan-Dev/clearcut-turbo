@@ -85,6 +85,11 @@ export interface ButtonProps
   rounded?: string;
   padding?: string;
   borderWidth?: string;
+  /** Inline background-color override — same escape-hatch rationale as
+   * `rounded`/`borderWidth` (a runtime value Tailwind can't express as a
+   * static utility class). Ported from the original hand-rolled Button's
+   * `bgColor` prop for Dashboard-migration parity. */
+  bgColor?: string;
   startDecorator?: React.ReactNode;
   endDecorator?: React.ReactNode;
   leftIcon?: React.ReactNode;
@@ -122,6 +127,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     rounded,
     padding,
     borderWidth,
+    bgColor,
     startDecorator,
     endDecorator,
     leftIcon,
@@ -141,6 +147,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     ...(rounded && { borderRadius: rounded }),
     ...(padding && { padding }),
     ...(borderWidth && { borderWidth }),
+    ...(bgColor && { backgroundColor: bgColor }),
     ...sxStyles,
     ...style,
   };

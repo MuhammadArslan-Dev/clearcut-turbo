@@ -1,0 +1,206 @@
+{
+  "editCourseModal": {
+    "title": "{exam} Settings",
+
+    "contentLanguage": {
+      "title": "Content Language",
+      "subtitle": "Language of videos, notes and test series"
+    },
+    "warning": "You can change subjects only {count} times. {remaining} left.",
+    "saveChanges": "Save Changes",
+    "saveContinue": "Save and Continue Learning",
+    "helperText": "You can change settings anytime. Progress is saved."
+  },
+
+  "unlockFullAccessModal": {
+    "title": "Unlock Full Access",
+    "subtitle": "Everything you need to clear {exam}",
+
+    "features": {
+      "latestPattern": "Everything on latest exam pattern",
+      "latestPatternHighlight": "latest exam pattern",
+      "fullCourse": "Full Course = Topic Videos + Notes",
+      "fullCourseHighlight": "Full Course",
+      "topperTests": "Topper Test Series used by toppers",
+      "topperTestsHighlight": "Topper Test Series"
+    },
+
+    "price": {
+      "amount": "₹{price}",
+      "taxInfo": "(incl. GST)"
+    },
+
+    "best_value_covers_next_exam": "Best value • Covers next exam",
+    "best_for_upcoming_exam": "Best for upcoming exam",
+    "most_popular": "Most Popular",
+    "best_for_new_students": "Best for new students",
+    "one_time_no_renewal": "One-time payment • No auto-renewal",
+    "last_minute_revision": "For students needing last minute revision",
+    "months": "{count, plural, one {# month} other {# months}}",
+    "everything_included_one_price": "Everything included in one price",
+    "offline_coaching_cost": "Offline {exam} coaching costs ₹{min}–{max}",
+
+    "validity": "Valid till exam day",
+    "trustedBy": "Trusted by {count, plural, =0 {# teaching aspirant} one {#+ teaching aspirant} other {#+ teaching aspirants}}",
+
+    "cta": "Unlock Full Access for {exam}",
+
+    "continueFree": "Continue free learning",
+
+    "paymentInfo": "Secure payment",
+    "paymentMethods": "UPI / Card / Net banking"
+  },
+
+  "buySingleCourseModal": {
+    "paperSelection": {
+      "title": "Select Paper",
+      "highlight_text": "Paper",
+      "selectAnyOneOption": "Select any one option",
+
+      "selectPaperTitle": "Select paper for {exam}",
+      "selectPaperSubtitle": "You can change or add anytime",
+      "continue": "Continue to Subjects"
+    },
+
+    "subjectSelection": {
+      "title": "Select Subjects",
+      "highlight_text": "Subjects",
+
+      "startLearning": "Start Learning"
+    }
+  },
+
+  "changePaper": {
+    "title": "Current Paper",
+    "subtitle": "You can switch papers anytime from \"Course\". Your progress will be saved.",
+    "paperLabel": "Paper",
+    "change_paper": "Change Paper",
+    "current_paper": "Current Paper",
+    "continueButton": "Continue with this paper"
+  },
+
+  "miniTest": {
+    "title": "Mini Test",
+    "subtitle": "Mini-tests will help you get confidence on the topic you just learned!",
+    "status": {
+      "inProgress": "In Progress"
+    },
+
+    "buttons": {
+      "start_minitest": "Start Mini Test",
+      "start_topic_test": "Start Topic Test",
+      "previous": "Previous",
+      "result": "Check Result",
+      "next": "Next Question"
+    }
+  },
+
+  "examSubmission": {
+    "title": "Are you sure you want to submit?",
+    "description": "You can submit now or review questions. Answers are auto-saved.",
+    "answeredProgress": "You have answered {answered} of {total} questions.",
+    "unanswered": "You have {count} unanswered questions.",
+    "markedForReview": "You have {count} questions marked for review.",
+    "submitButton": "Submit my answers",
+    "reattemptInfo": "Re-attempt will not affect your previous score.",
+    "continueButton": "Continue Test"
+  },
+
+  "performanceReport": {
+    "title": "Performance Report",
+    "tabs": {
+      "summary": "Summary",
+      "summarySubtitle": "Score and graphs",
+      "analysis": "Analysis",
+      "analysisSubtitle": "Question level detail"
+    },
+    "stats": {
+      "score": "Score",
+      "timing": "Timing",
+      "incorrect": "Incorrect",
+      "correct": "Correct",
+      "minutes": "{time} min"
+    },
+    "distribution": {
+      "title": "Answer Distribution",
+      "subtitle": "Breakdown of your correct, incorrect & skipped answers",
+      "correct": "Correct: {percentage}%",
+      "incorrect": "Incorrect: {percentage}%",
+      "skipped": "Skipped: {percentage}%"
+    },
+    "legend": {
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "skipped": "Skipped"
+    },
+    "buttons": {
+      "continueSeries": "Continue Test Series",
+      "goBack": "Go back"
+    },
+    "info": {
+      "coverage": "This test covers high-frequency {exam} PYQs"
+    }
+  },
+
+  "miniTestResult": {
+    "title": "Mini Test",
+    "messages": {
+      "perfect": "Excellent! You're exam ready 🔥",
+      "almostPerfect": "Very good! Almost perfect",
+      "goodProgress": "Good progress! Improve with revision",
+      "needsPractice": "Don't worry. Practice will make it perfect"
+    },
+    "scoreLabel": "Score",
+    "buttons": {
+      "continueLearning": "Continue Learning",
+      "improveScore": "Improve Score"
+    }
+  },
+
+  "courseFirstTime": {
+    "title": "Start your {exam} preparation here",
+    "subtitle": "This page shows your complete {exam} syllabus, chapter by chapter",
+    "features": {
+      "video": "Video - Watch concept explanation",
+      "videoB": "Video",
+      "notes": "Notes - Download exam-ready notes",
+      "notesB": "Notes",
+
+      "miniTests": "Topic-Tests - Check understanding with 5 questions",
+      "miniTestsB": "Topic-Tests"
+    },
+    "info": "A topic is marked complete after you: watch the video, read notes, and attempt the mini-test.",
+
+    "buttons": {
+      "startLearning": "Start Learning"
+    },
+    "footerNote": "You can start with any chapter - we recommend Chapter 1"
+  },
+
+  "languageSelector": {
+    "title": "Select Language",
+
+    "language": {
+      "en": "English",
+      "hi": "हिंदी"
+    },
+
+    "confirm": "Confirm Language"
+  },
+
+  "support": {
+    "title": "Issues? Contact us",
+
+    "callUs": {
+      "title": "Call us",
+      "subtitle": "Fastest support"
+    },
+
+    "chatUs": {
+      "title": "Chat with us",
+      "subtitle": "Unable to call? Chat now!"
+    },
+
+    "close": "Close"
+  }
+}

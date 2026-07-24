@@ -4,9 +4,9 @@ import CardWrap from "@/components/cards/card-wrap";
 import Button from "@mui/joy/Button";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import CalendarIcon from "../icons/calendar-icon";
+import CalendarIcon from "@clearcut/ui/icons/calendar-icon";
 import ClockIcon from "../icons/clock-icon";
-import WarningCirleIcon from "../icons/warning-circle-icon";
+import WarningCirleIcon from "@clearcut/ui/icons/warning-circle-icon";
 import ChartSuccessBarIcon from "../icons/chart-success-bar-icon";
 import CheckIcon from "../icons/check-icon";
 
