@@ -5,7 +5,12 @@ import clsx from "clsx";
 
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
 import ButtonShimmerOverlay from "../button-shimmer-overlay";
-import Button from "./Button";
+// Primitive now comes from the shared package. This wrapper keeps ALL of its
+// business logic (phase-machine shimmer timing, arrow-animation orchestration,
+// hover scale, default text) — only the underlying primitive moved. This
+// mirrors Landing's ContinueFreeButton, which already renders the shared Button
+// through motion() with the same pattern.
+import Button from "@clearcut/ui/button";
 import { ChevronIcon } from "../icons";
 
 const MotionButton = motion(Button);
@@ -148,7 +153,7 @@ export default function MainButton({
     <div className={clsx("overflow-hidden", fullWidth && "w-full", className)}>
       <MotionButton
         size={size}
-        paddingY={paddingY}
+        sx={{ paddingY }}
         rounded={rounded}
         variant={variant}
         color={color}

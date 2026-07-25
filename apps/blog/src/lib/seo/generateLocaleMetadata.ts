@@ -13,11 +13,16 @@ export function generateLocaleMetadata({
   title,
   description,
 }: LocaleSEOOptions): Metadata {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const cleanPath = path ? `/${path}` : "";
+  // Trim a trailing slash off the base and normalise `path` to a single
+  // leading slash. Previously this built `${base}/${cleanPath}` where
+  // cleanPath already began with "/", emitting a double slash
+  // ("https://site//ctet") — Lighthouse scored `canonical` 0 on every page
+  // because that URL isn't the page's own address.
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+  const cleanPath = path ? `/${path.replace(/^\/+/, "")}` : "";
 
-  const enUrl = `${base}/${cleanPath}`;
-  const hiUrl = `${base}/hi/${cleanPath}`;
+  const enUrl = `${base}${cleanPath}` || "/";
+  const hiUrl = `${base}/hi${cleanPath}`;
 
   const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
 

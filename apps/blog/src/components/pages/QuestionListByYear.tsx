@@ -25,16 +25,27 @@ export default function QuestionListByYear({
   examName,
   level_id,
   examYear,
+  initialQuestions,
 }: {
   examName: string;
   level_id: string;
   examYear: string;
+  /** Server-fetched questions, so the list is present in the SSR HTML.
+   * Previously this component fetched them only after hydration: a 575 KB
+   * uncompressed response that pushed mobile LCP to 9.6s and caused 0.191 CLS
+   * as the list pushed the header/footer around on arrival. */
+  initialQuestions?: unknown;
 }) {
   // Queries
   const { data, isLoading, isError } = useQuery({
     queryKey: ["questions", examYear],
     queryFn: () => getQuestion(examYear),
     enabled: !!examYear,
+    // With initialData present React Query treats the cache as fresh, so no
+    // duplicate client fetch on first paint. `?? undefined` matters: the server
+    // fetch resolves to null when the backend fails, and a null initialData
+    // would be treated as valid data and suppress the client-side retry.
+    initialData: (initialQuestions ?? undefined) as never,
   });
 
   
@@ -99,8 +110,8 @@ export default function QuestionListByYear({
         <div className="p-4 bg-white space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-2 ">
             <div className="heading-small col-span-1">Year-wise questions</div>
-            <div className="flex items-center gap-2 text-[#00a251] col-span-1 md:justify-self-end">
-              <CourseCheckBadge size={16} fill="#00a251" />
+            <div className="flex items-center gap-2 text-[#00753a] col-span-1 md:justify-self-end">
+              <CourseCheckBadge size={16} fill="#00753a" />
               <p>by Clear Cutoff</p>
             </div>
           </div>

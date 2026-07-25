@@ -1,10 +1,10 @@
 import React from "react";
-import CardWrap from "../cards/card-wrap";
+import { Card } from "@clearcut/ui/card";
 import Image from "next/image";
 
 export default function ExamCard() {
   return (
-    <CardWrap borderwidth={1} padding={"12px"}>
+    <Card borderwidth={1} padding={"12px"}>
       <div className="">
         <div className="flex gap-6 items-center h-full">
           <div className="w-[88px] h-[88px] rounded bg-gray-200 flex items-center justify-center">
@@ -16,6 +16,6 @@ export default function ExamCard() {
           </div>
         </div>
       </div>
-    </CardWrap>
+    </Card>
   );
 }

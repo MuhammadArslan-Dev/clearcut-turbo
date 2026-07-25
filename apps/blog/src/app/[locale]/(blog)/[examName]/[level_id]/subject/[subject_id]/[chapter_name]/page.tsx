@@ -146,8 +146,8 @@ export default async function page({
             <div className="heading-small !font-semibold col-span-3">
               Chapter-wise questions
             </div>
-            <div className="flex items-center gap-2 text-[#00a251] col-span-2 justify-self-end">
-              <CourseCheckBadge size={16} fill="#00a251" />
+            <div className="flex items-center gap-2 text-[#00753a] col-span-2 justify-self-end">
+              <CourseCheckBadge size={16} fill="#00753a" />
               <p className="body-medium !font-normal">by Clear Cutoff</p>
             </div>
           </div>

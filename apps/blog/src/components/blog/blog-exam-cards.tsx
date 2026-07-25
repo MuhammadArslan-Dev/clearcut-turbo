@@ -1,10 +1,10 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
 import { useRouter } from "next/navigation";
 import { useSelectedDataStore } from "@/store/blog/useSelectedDataStore";
-import CardWrap from "../cards/card-wrap";
+import { Card } from "@clearcut/ui/card";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
 import Image from "next/image";
 import CourseCheckBadge from "../ui/badge/course-check-badge";
@@ -50,14 +50,14 @@ const ExamCourseCard = ({
       value: metadata?.duration,
     },
     {
-      id: 3,
+      id: 4,
       icon: <ChartSuccessBarIcon />,
       name: "Cutoff",
       value: metadata?.cutoff,
     },
   ];
   return (
-    <CardWrap
+    <Card
       bgcolor={bgcolor}
       onClick={onClick}
       minWidth={"250px"}
@@ -84,9 +84,9 @@ const ExamCourseCard = ({
             </div>
             {/* <div className=''> */}
             <div className="flex flex-col items-center">
-              <h5 className="heading-small !font-semibold text-surface-gray-normal whitespace-nowrap">
+              <p className="heading-small !font-semibold text-surface-gray-normal whitespace-nowrap">
                 {item.short_name}
-              </h5>
+              </p>
               <p className="body-medium surface-text-gray-muted whitespace-nowrap">
                 {item.exam_type}
               </p>
@@ -97,7 +97,10 @@ const ExamCourseCard = ({
           <div className="w-[200px] h-full">
             <div className="col-span-8 h-full flex flex-col justify-center gap-2">
               {points.map((point) => (
-                <div className="body-small !font-normal flex gap-1 items-center mb-0.5">
+                <div
+                  key={point.id}
+                  className="body-small !font-normal flex gap-1 items-center mb-0.5"
+                >
                   <div className="flex items-center gap-2">
                     {point.icon}
                     <p className="body-medium !font-normal surface-text-gray-muted">
@@ -111,7 +114,7 @@ const ExamCourseCard = ({
           </div>
         </div>
       </div>
-    </CardWrap>
+    </Card>
   );
 };
 
@@ -129,16 +132,6 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
     // Navigate with clean lowercase URL
     router.push(`/${formattedId}`);
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const backendUrl = process.env.BACKEND_URL;
-      const fullFetchUrl = `${backendUrl}/blog/exam?status=active`;
-      const resCourses = await fetch(fullFetchUrl, { cache: "no-store" });
-      const data = await resCourses.json();
-    };
-    fetchData();
-  }, []);
 
   const centralExams = data?.filter(
     (item) =>

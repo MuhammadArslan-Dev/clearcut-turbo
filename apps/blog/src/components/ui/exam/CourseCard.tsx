@@ -1,6 +1,6 @@
 "use client";
 
-import CardWrap from "@/components/cards/card-wrap";
+import { Card } from "@clearcut/ui/card";
 import Button from "@mui/joy/Button";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
@@ -44,7 +44,7 @@ export default function CourseCard({
 
   return (
     <>
-      <CardWrap
+      <Card
         bgcolor={bgColor}
         minWidth={"250px"}
         padding={0}
@@ -70,9 +70,9 @@ export default function CourseCard({
               </div>
               {/* <div className=''> */}
               <div className="flex flex-col items-center">
-                <h5 className="heading-small !font-semibold text-surface-gray-normal whitespace-nowrap">
+                <p className="heading-small !font-semibold text-surface-gray-normal whitespace-nowrap">
                   {courseName}
-                </h5>
+                </p>
                 <p className="body-small text-surface-gray-muted whitespace-nowrap">
                   {examType}
                 </p>
@@ -146,7 +146,7 @@ export default function CourseCard({
             </Button>
           </div>
         </div>
-      </CardWrap>
+      </Card>
       {/* <ContactUsModal isOpen={openModal} closeModal={() => setOpenModal(false)} /> */}
     </>
   );

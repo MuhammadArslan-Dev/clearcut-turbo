@@ -15,9 +15,15 @@ interface Props {
 export default function SubjectsList({ index = 1, title = "", subtitle = "150 questions & detailed answers", onClick, loading, pathname }: Props) {
 
 
+    // prefetch is deliberately off. This list links to year/subject detail
+    // pages, which now server-render their full question set — so each RSC
+    // prefetch is ~184 KB. With prefetch={true} the year index eagerly pulled
+    // five of them: measured 918 KB of prefetch traffic on a single page view,
+    // for pages the visitor may never open. Those pages still render
+    // server-side in ~200 ms on click.
     return (
         // <div className={[loading ? 'opacity-50 cursor-not-allowed' : ''].join(' ')}>
-            <Link prefetch={true} href={`${pathname}`} onClick={onClick}>
+            <Link prefetch={false} href={`${pathname}`} onClick={onClick}>
                 <div className='flex items-center justify-between py-4 px-3 border-b border-gray-300'>
                     <div className='flex items-center gap-4'>
                         <NumberedShape number={index} />

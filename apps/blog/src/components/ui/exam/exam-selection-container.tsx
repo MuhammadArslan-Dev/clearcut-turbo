@@ -13,7 +13,7 @@ export default function ExamSelectionContainer({ title="", handleBack = () => {}
     return (
         <div className='mb-4 grid grid-cols-7 gap-4 bg-[#e7f6e5] p-4'>
             <div className='col-span-4 text-sm text-gray-700 flex items-center gap-1'>
-                <CourseCheckBadge size={24} fill="#00a251" />
+                <CourseCheckBadge size={24} fill="#00753a" />
                 <span>
                     <span >
                         {title}

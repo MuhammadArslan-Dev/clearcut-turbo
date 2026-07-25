@@ -24,7 +24,10 @@ interface CustomBreadcrumbsProps {
 const CustomBreadcrumbs: React.FC<CustomBreadcrumbsProps> = ({
   padding = "10px",
   items,
-  highlightClass = "bg-[#F1F5FA] py-0.5 px-3 capitalize rounded-lg text-[#0083ff] body-medium !font-semibold ",
+  // #0083ff measured only 3.37:1 against this #F1F5FA chip background (14px
+  // semibold is not WCAG "large text", so it needs 4.5:1). #0060bd is the same
+  // hue at 5.63:1 on #F1F5FA.
+  highlightClass = "bg-[#F1F5FA] py-0.5 px-3 capitalize rounded-lg text-[#0060bd] body-medium !font-semibold ",
   isShow = false,
 }) => {
   if (!items || items.length === 1) return null;
@@ -47,7 +50,15 @@ const CustomBreadcrumbs: React.FC<CustomBreadcrumbsProps> = ({
             }
 
             return (
-              <Link key={index} color="primary" href={item.url || "#"}>
+              // The "Home" crumb renders an icon only, which left the <a> with
+              // no text — axe/Lighthouse `link-name` scored 0. aria-label gives
+              // every crumb a discernible name without changing the visuals.
+              <Link
+                key={index}
+                color="primary"
+                href={item.url || "#"}
+                aria-label={item.name}
+              >
                 {item.name === "Home" ? (
                   <HomeIcon size={16} color="#40566D" />
                 ) : (

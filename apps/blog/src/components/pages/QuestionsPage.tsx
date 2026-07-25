@@ -51,8 +51,8 @@ export default function QuestionsPage() {
         <div className="p-4 bg-white space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-2 ">
             <div className="heading-small col-span-1">Year-wise questions</div>
-            <div className="flex items-center gap-2 text-[#00a251] col-span-1 md:justify-self-end">
-              <CourseCheckBadge size={16} fill="#00a251" />
+            <div className="flex items-center gap-2 text-[#00753a] col-span-1 md:justify-self-end">
+              <CourseCheckBadge size={16} fill="#00753a" />
               <p>by Clear Cutoff</p>
             </div>
           </div>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import CardWrap from "@/components/ui/cards/card-wrap";
 import LevelSelectionCard from "./LevelSelectionCard";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import Button from "@mui/joy/Button";

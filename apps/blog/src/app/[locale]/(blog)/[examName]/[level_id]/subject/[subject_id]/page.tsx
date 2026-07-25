@@ -132,8 +132,8 @@ export default async function page({
           <div className="space-y-2">
             <div className="flex justify-between items-center gap-2 px-3">
               <div className="heading-small">Subject-wise questions</div>
-              <div className="flex items-center gap-2 text-[#00a251]">
-                <CourseCheckBadge size={20} fill="#00a251" />
+              <div className="flex items-center gap-2 text-[#00753a]">
+                <CourseCheckBadge size={20} fill="#00753a" />
                 <p>by Clear Cutoff</p>
               </div>
             </div>

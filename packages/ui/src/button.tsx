@@ -7,8 +7,11 @@ import { cn } from "./utils";
 
 // Color × variant matrix ported 1:1 (same hex values) from the original
 // hand-rolled Button, so every existing call site renders identically.
+// The leading `group` marker is inert on its own — it only activates the
+// opt-in `group-hover:*` icon-animation classes below; default rendering
+// (iconAnimation="none") is unchanged.
 const buttonVariants = cva(
-  "relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-lg font-semibold whitespace-nowrap cursor-pointer select-none outline-none transition-[opacity,filter] duration-150 active:brightness-90 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "group relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-lg font-semibold whitespace-nowrap cursor-pointer select-none outline-none transition-[opacity,filter] duration-150 active:brightness-90 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -38,7 +41,10 @@ const buttonVariants = cva(
       },
     },
     compoundVariants: [
-      { variant: "solid", color: "primary", className: "bg-[var(--color-brand)] text-white" },
+      // --color-brand-accessible, not --color-brand: white text on #0083ff is
+      // 3.69:1, below WCAG AA. This was the only remaining `color-contrast`
+      // failure on the blog exam/level/year pages ("Start for FREE").
+      { variant: "solid", color: "primary", className: "bg-[var(--color-brand-accessible)] text-white" },
       { variant: "solid", color: "danger", className: "bg-[#D92D20] text-white" },
       { variant: "solid", color: "success", className: "bg-[var(--color-success)] text-white" },
       { variant: "solid", color: "gray", className: "bg-[#6B7280] text-white" },
@@ -94,7 +100,42 @@ export interface ButtonProps
   endDecorator?: React.ReactNode;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  /** Hover-triggered icon motion applied to leftIcon/rightIcon. CSS/Tailwind
+   * only — no animation library. Defaults to "none" so existing call sites
+   * render identically. "slide" moves each icon outward from the label
+   * (left icon left, right icon right). */
+  iconAnimation?: "none" | "slide" | "bounce" | "pulse" | "spin";
+  /** Opt-in, off-by-default shimmer sweep — a continuous light gradient that
+   * animates across the button (pure CSS keyframe, no framer-motion). Visually
+   * matches the app-local `ButtonShimmerOverlay` sweep (120° white gradient,
+   * 3s linear, -150%→150%). When false (default) nothing is rendered, so there
+   * is zero cost and zero visual change for the 17 existing consumers. */
+  shimmer?: boolean;
   sx?: React.CSSProperties & { paddingX?: string | number; paddingY?: string | number };
+}
+
+// Hover-only icon motion. Every branch is inert until the button is hovered,
+// so default rendering is untouched. "slide" is directional (icons move away
+// from the centre label); the rest are symmetric.
+function iconAnimationClass(
+  side: "left" | "right",
+  anim: NonNullable<ButtonProps["iconAnimation"]>,
+): string {
+  switch (anim) {
+    case "slide":
+      return side === "right"
+        ? "transition-transform duration-200 group-hover:translate-x-1"
+        : "transition-transform duration-200 group-hover:-translate-x-1";
+    case "bounce":
+      return "group-hover:animate-bounce";
+    case "pulse":
+      return "group-hover:animate-pulse";
+    case "spin":
+      return "group-hover:animate-spin";
+    case "none":
+    default:
+      return "";
+  }
 }
 
 function parseSx(sx?: ButtonProps["sx"]): React.CSSProperties {
@@ -112,6 +153,27 @@ const Spinner = () => (
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
   </svg>
+);
+
+// Pure-CSS shimmer. Rendered only when `shimmer` is true. The gradient +
+// timing are copied byte-for-byte from the apps' `ButtonShimmerOverlay` so the
+// sweep is visually identical, but driven by a CSS @keyframe instead of
+// framer-motion (no runtime animation lib). The <style> carries a stable,
+// uniquely-named keyframe; duplicate identical blocks across multiple shimmer
+// buttons are harmless. `pointer-events-none` keeps it click-transparent.
+const ShimmerSweep = () => (
+  <>
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0"
+      style={{
+        background:
+          "linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%)",
+        animation: "cc-btn-shimmer 3s linear infinite",
+      }}
+    />
+    <style>{"@keyframes cc-btn-shimmer{0%{transform:translateX(-150%)}100%{transform:translateX(150%)}}"}</style>
+  </>
 );
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -132,6 +194,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     endDecorator,
     leftIcon,
     rightIcon,
+    iconAnimation = "none",
+    shimmer = false,
     sx,
     className,
     style,
@@ -157,16 +221,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       ref={ref}
       type={asChild ? undefined : type}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       data-slot="button"
       className={cn(buttonVariants({ variant, color, size, fullWidth, className }))}
       style={inlineStyle}
       {...rest}
     >
       {loading ? <Spinner /> : startDecorator}
-      {leftIcon && <span>{leftIcon}</span>}
+      {leftIcon && <span className={cn(iconAnimationClass("left", iconAnimation))}>{leftIcon}</span>}
       <span className="flex items-center gap-1">{children}</span>
-      {rightIcon && <span>{rightIcon}</span>}
+      {rightIcon && <span className={cn(iconAnimationClass("right", iconAnimation))}>{rightIcon}</span>}
       {!loading && endDecorator}
+      {shimmer && <ShimmerSweep />}
     </Comp>
   );
 });

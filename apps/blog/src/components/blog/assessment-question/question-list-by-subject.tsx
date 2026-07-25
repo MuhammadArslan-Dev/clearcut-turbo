@@ -101,7 +101,7 @@ export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
         return (
           <div key={index} className="bg-white p-4 rounded space-y-5">
             <div className="space-y-1">
-              <div className="body-large font-normal text-[#768EA7] ">
+              <div className="body-large font-normal text-[var(--color-text-gray-muted)] ">
                 Chapter {index + 1}
               </div>
               <div className="heading-small">{item.chapterName}</div>

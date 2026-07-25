@@ -1,7 +1,7 @@
 import { useIsMobile } from '@clearcut/hooks/use-is-mobile'
 import React from 'react'
 import { CustomBottomSheet, CustomModal } from '../modals-bottom-sheet'
-import CardWrap from '../cards/card-wrap'
+import { Card } from "@clearcut/ui/card";
 import { Button } from '@mui/joy'
 import { highlightTextUtil } from '@clearcut/utils/highlight-text'
 import { useLanguageStore } from '@/store/useLanguageStore'
@@ -56,7 +56,7 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
                         </div>
                         <div className="flex gap-4">
                             {languages.map((item, index) => (
-                                <CardWrap
+                                <Card
                                     key={index}
                                     onClick={() => {
                                         setAppLanguage(item.code)
@@ -73,7 +73,7 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
                                             {item.translate}
                                         </p>
                                     </div>
-                                </CardWrap>
+                                </Card>
                             ))}
 
                         </div>
@@ -87,7 +87,7 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
                             </div>
                             <div className="flex gap-4">
                                 {languages.map((item, index) => (
-                                    <CardWrap
+                                    <Card
                                         onClick={() => {
                                             setCourseLanguage(item.code)
                                         }}
@@ -103,7 +103,7 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
                                                 {item.translate}
                                             </p>
                                         </div>
-                                    </CardWrap>
+                                    </Card>
                                 ))}
                             </div>
                         </div>

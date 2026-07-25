@@ -1,5 +1,5 @@
 "use client";
-import CardWrap from "@/components/cards/card-wrap";
+import { Card } from "@clearcut/ui/card";
 import QOption from "@/components/questions/q-option";
 import React from "react";
 import { limitWords } from "@clearcut/utils/text-limit";
@@ -75,8 +75,8 @@ export default function AssessmentQuestionBlock({
       <div className="flex flex-col gap-4 p-3  bg-white">
         <div className="flex items-center justify-between">
           <span className="heading-medium !font-semibold">Question</span>
-          <div className="flex items-center gap-1 text-[#00a251]">
-            <StarBadge size={20} color="#00a251" />
+          <div className="flex items-center gap-1 text-[#00753a]">
+            <StarBadge size={20} color="#00753a" />
             Easy
           </div>
         </div>
@@ -104,13 +104,13 @@ export default function AssessmentQuestionBlock({
               img: selectedQuestion?.translations[0]?.option_4_image,
             },
           ].map((opt, idx) => (
-            <CardWrap bgcolor="white" key={idx + 1} cursor="pointer">
+            <Card bgcolor="white" key={idx + 1} cursor="pointer">
               <QOption
                 index={idx + 1}
                 optiontext={opt.text || undefined}
                 imgurl={opt.img || undefined}
               />
-            </CardWrap>
+            </Card>
           ))}
         </div>
       </div>

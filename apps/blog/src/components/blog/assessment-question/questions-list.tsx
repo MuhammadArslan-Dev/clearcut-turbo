@@ -1,7 +1,6 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import CardWrap from "@/components/cards/card-wrap";
 import { limitWords } from "@clearcut/utils/text-limit";
 import MainContainer from "@/components/main-container";
 import StarBadge from "@/components/ui/badge/star-badge";
@@ -11,7 +10,10 @@ import { useParams, usePathname } from "next/navigation";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";
 import YearListModal from "@/components/feature/year-list-modal";
 import { useLanguageStore } from "@/store/useLanguageStore";
-import { isArray } from "util";
+// NOTE: this file used to `import { isArray } from "util"` — Node's built-in
+// util module, in a "use client" component. It was never referenced (the code
+// uses Array.isArray), but it still pulled a Node polyfill into the browser
+// bundle. Removed.
 import QuestionCard from "../ui/question-card";
 import { getQuestionsByLanguage } from "@/utils/getQuestionsByLanguage";
 import { capitalizeFirst } from "@clearcut/utils/text-format";
@@ -77,17 +79,17 @@ export interface QuestionChapter {
 export default function QuestionsList({ data }: { data: Question[] }) {
   const [loadingId, setLoadingId] = React.useState<number | null>(null);
   const [visibleCount, setVisibleCount] = React.useState<number>(10);
-  const [allData, setAllData] = React.useState<Question[]>([]);
 
   const { courseLanguage } = useLanguageStore();
 
-  useEffect(() => {
-    if (!data || data.length === 0) return;
-
-    const filteredQuestions = data;
-
-    setAllData(filteredQuestions);
-  }, [data, courseLanguage]);
+  // Derive straight from the prop. This used to be `useState([])` populated by a
+  // `useEffect` that assigned `data` unchanged — so the list rendered empty
+  // during SSR and only filled in after hydration. That kept the questions out
+  // of the initial HTML entirely (invisible to crawlers) and made the whole
+  // list a post-hydration layout shift: measured 0.191 CLS and a 9.6s mobile
+  // LCP on the year page. The effect performed no transformation, so deriving
+  // is equivalent.
+  const allData: Question[] = Array.isArray(data) ? data : [];
 
   const shown = Array.isArray(allData)
     ? allData.slice(0, Math.min(visibleCount, allData.length))

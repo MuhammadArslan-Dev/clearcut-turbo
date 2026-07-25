@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import CustomizableHeader from '@/components/customizable-header'
-import CardWrap from '@/components/cards/card-wrap'
+import { Card } from "@clearcut/ui/card";
 import MainContainer from '@/components/main-container'
 import { useRouter, usePathname } from 'next/navigation'
 import CourseCheckBadge from '@/components/ui/badge/course-check-badge'
@@ -95,7 +95,7 @@ export default function ExamLevelsSection({ data, examName }: { data?: NavItem[]
                         {roots.sort((a, b) => a.name.localeCompare(b.name)).map((item) => {
                             const description = JSON.parse(item?.description as string)
                             return (
-                                <CardWrap
+                                <Card
                                     key={item.id}
                                     cursor="pointer"
                                     borderwidth={2}
@@ -123,7 +123,7 @@ export default function ExamLevelsSection({ data, examName }: { data?: NavItem[]
                                             </div>
                                         </div>
                                     </div>
-                                </CardWrap>
+                                </Card>
                             )
                         })}
 

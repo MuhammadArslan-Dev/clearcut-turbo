@@ -1,7 +1,10 @@
 'use client'
 import React from 'react'
 import ButtonShimmerOverlay from '../button-shimmer-overlay';
-import Button from '@mui/joy/Button';
+// Primitive now comes from the shared package. The framer-motion shimmer
+// overlay (ButtonShimmerOverlay) and all props/behaviour are preserved — only
+// the underlying MUI Joy primitive was replaced with the shared Button.
+import Button from '@clearcut/ui/button';
 
 interface ShimmerButtonProps {
     text: string,
@@ -36,14 +39,15 @@ const ShimmerButton: React.FC<ShimmerButtonProps> = ({
     return (
         <Button
             fullWidth
-            sx={{ borderRadius: borderRadius, paddingY,backgroundColor: bgColor,overflow: 'hidden' }}
+            rounded={borderRadius}
+            bgColor={bgColor}
+            sx={{ paddingY }}
             size={size}
             disabled={disabled}
             onClick={() => {
                 onClick();
             }}
             loading={loading}
-            
         >
             {shimmer && (
                 <ButtonShimmerOverlay />

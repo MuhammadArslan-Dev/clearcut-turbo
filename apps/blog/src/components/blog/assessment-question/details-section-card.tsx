@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { getQuestionsByLanguage } from '@/utils/getQuestionsByLanguage';
 interface DetailsSectionCardProps {
@@ -13,15 +13,13 @@ interface DetailsSectionCardProps {
 
 export default function DetailsSectionCard({ yearId, Labels, totalQuestions, sourceLabel, sources, solveTime }: DetailsSectionCardProps) {
     const { courseLanguage } = useLanguageStore();
-    const [totalQuestionsCount, setTotalQuestionsCount] = React.useState<number>(0);
 
-    useEffect(() => {
-        if (!totalQuestions || totalQuestions.length === 0) return;
-
-        const filteredQuestions = getQuestionsByLanguage(totalQuestions, courseLanguage);
-
-        setTotalQuestionsCount(filteredQuestions.length);
-    }, [totalQuestions, courseLanguage]);
+    // Derived, not `useState(0)` + `useEffect(setCount)`: that pattern rendered
+    // "0" (so the chip was hidden entirely) during SSR and only filled in after
+    // hydration, making the count a post-hydration DOM change on every load.
+    const totalQuestionsCount = Array.isArray(totalQuestions) && totalQuestions.length > 0
+        ? getQuestionsByLanguage(totalQuestions, courseLanguage).length
+        : 0;
 
     return (
         <div>
@@ -30,7 +28,7 @@ export default function DetailsSectionCard({ yearId, Labels, totalQuestions, sou
                 {solveTime && (
                     <div>
                         <span className='body-medium !font-normal surface-text-gray-muted'>Time to Solve:</span>{' '}
-                        <span className='body-medium !font-semibold text-brand px-2 bg-[#006bd1]/10 rounded-md'>{solveTime}</span>
+                        <span className='body-medium !font-semibold text-[var(--color-brand-accessible)] px-2 bg-[#006bd1]/10 rounded-md'>{solveTime}</span>
                     </div>
                 )}
             </div>
@@ -67,7 +65,7 @@ export default function DetailsSectionCard({ yearId, Labels, totalQuestions, sou
                     {totalQuestionsCount > 0 && (
                         <div>
                             <span className='body-medium !font-normal surface-text-gray-muted'>Questions:</span>{' '}
-                            <span className='body-medium !font-semibold text-brand px-2 bg-[#006bd1]/10 rounded-md'>{totalQuestionsCount}</span>
+                            <span className='body-medium !font-semibold text-[var(--color-brand-accessible)] px-2 bg-[#006bd1]/10 rounded-md'>{totalQuestionsCount}</span>
                         </div>
                     )}
 

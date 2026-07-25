@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import Button from "@mui/joy/Button";
+// Primitive now comes from the shared package. Auth routing (goToLogin),
+// i18n, and all props are preserved — only the MUI Joy primitive was replaced.
+import Button from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/lib/auth";
 
@@ -34,9 +36,7 @@ export default function RegisterButton({
       fullWidth={isFull}
       disabled={disabled}
       loading={loading}
-      sx={{ 
-        borderRadius:'50px'
-       }}
+      rounded="50px"
       onClick={() => goToLogin()}
     >
       {buttonText}

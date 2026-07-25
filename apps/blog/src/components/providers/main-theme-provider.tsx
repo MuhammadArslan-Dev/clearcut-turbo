@@ -5,6 +5,7 @@ import joytheme from "@/themes/joytheme";
 import { ReactQueryProvider } from "@clearcut/react-query/provider";
 import { useHydrateStore } from "@clearcut/state/use-hydrate-store";
 import { useLanguageStore } from "@/store/useLanguageStore";
+import EmotionProvider from "@/components/providers/emotion-provider";
 type CssVarsProviderProps = {
   children: React.ReactNode;
 };
@@ -17,7 +18,12 @@ export default function MainThemeProvider({ children }: CssVarsProviderProps) {
 
   return (
     <ReactQueryProvider>
-      <CssVarsProvider theme={joytheme}>{children}</CssVarsProvider>
+      {/* EmotionProvider must wrap CssVarsProvider: Joy's global styles are
+          emitted by Emotion's <Global>, and the cache has to be in context
+          before those styles are serialized. See emotion-provider.tsx. */}
+      <EmotionProvider>
+        <CssVarsProvider theme={joytheme}>{children}</CssVarsProvider>
+      </EmotionProvider>
     </ReactQueryProvider>
   );
 }

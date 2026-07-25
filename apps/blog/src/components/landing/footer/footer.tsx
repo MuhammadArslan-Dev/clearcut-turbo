@@ -68,16 +68,19 @@ export default function Footer() {
       icon: <InstagramIcon />,
       href: "https://www.instagram.com/clearcutoff_teaching",
       label: null,
+      ariaLabel: "Instagram",
     },
     {
       icon: <FacebookIcon />,
       href: "https://www.facebook.com/people/Clear-Cutoff-Teaching/61573525911878",
       label: null,
+      ariaLabel: "Facebook",
     },
     {
       icon: <LinkedInIcon />,
       href: "https://www.linkedin.com/company/clear-cutoff",
       label: null,
+      ariaLabel: "LinkedIn",
     },
     // {
     //     icon: <YouTubeIcon size={24} />,
@@ -139,6 +142,8 @@ export default function Footer() {
                     icon={link.icon}
                     href={link.href}
                     label={link.label}
+                    ariaLabel={link.ariaLabel}
+                    variant="combined"
                   />
                 ))}
               </div>

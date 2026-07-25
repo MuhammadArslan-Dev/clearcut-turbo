@@ -59,7 +59,7 @@ export interface CardProps
   rounded?: string;
 }
 
-function Card({
+const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card({
   onClick,
   children,
   minWidth,
@@ -82,7 +82,7 @@ function Card({
   style,
   id,
   ...props
-}: CardProps) {
+}, ref) {
   const p = splitProp(padding ?? 1);
   const w = splitProp(width ?? "100%");
   const maxW = splitProp(maxWidth ?? "100%");
@@ -113,6 +113,7 @@ function Card({
 
   return (
     <div
+      ref={ref}
       id={id}
       data-slot="card"
       onClick={onClick}
@@ -127,7 +128,9 @@ function Card({
       {children}
     </div>
   );
-}
+});
+
+Card.displayName = "Card";
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (

@@ -133,6 +133,19 @@
 
   --color-brand: #0083ff;
   --color-brand-dark: #0053a2;
+  /* Accessible brand blue, for the two places #0083ff can't be used because
+     WCAG AA text contrast applies:
+       1. as a *background* under white text — white on #0083ff is only 3.69:1
+          (measured on the "Start for FREE" solid primary button);
+       2. as *text* on the pale blue chip backgrounds — #0083ff on #e6f0fa is
+          only 3.19:1 (measured on the question-count chip).
+     #0069cc keeps the same hue and clears 4.5:1 both ways: 5.39:1 against
+     white, 4.93:1 on #f1f5fa, 4.68:1 on #e6f0fa. Deliberately a separate token
+     rather than a redefinition of --color-brand, so the brand accent colour
+     itself is unchanged everywhere it's used for borders, icons and fills
+     (which only need 3:1). Not to be confused with --color-brand-dark, whose
+     correct value is still an open question — see the repo CLAUDE.md. */
+  --color-brand-accessible: #0069cc;
   --color-textWhite: #ffffff;
   --color-primary-soft: #dbeafe;
   --color-primary-subtle: #e8f2fb;
@@ -146,7 +159,14 @@
 
   --color-text-gray-normal: #192839;
   --color-text-gray-subtle: #40566d;
-  --color-text-gray-muted: #768ea7;
+  /* Darkened from #768ea7, which measured 3.39:1 on white — below the WCAG AA
+     4.5:1 minimum for body text, and the sole `color-contrast` failure on every
+     blog page. #5c748c keeps the same blue-grey hue and clears AA against both
+     every surface muted text actually lands on: #ffffff 5.44:1, #f8fafc 5.20:1,
+     #f1f5fa 4.97:1, #e6f0fa 4.71:1. This is the *text* token only;
+     --color-surface-gray-muted / --color-border-*-muted keep #768ea7 since
+     non-text UI only needs 3:1. */
+  --color-text-gray-muted: #566c82;
   --color-text-gray-disabled: #cccccc;
 
   --color-text-green-normal: #1c9e41;

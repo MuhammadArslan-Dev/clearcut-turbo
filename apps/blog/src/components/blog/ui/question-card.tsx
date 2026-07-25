@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import CardWrap from '@/components/cards/card-wrap'
+import { Card } from "@clearcut/ui/card";
 import StarBadge from '@/components/ui/badge/star-badge';
 import { Button } from '@mui/joy';
 import { formatToSlug, unFormatSlug } from '@/utils/slugify';
@@ -25,22 +25,22 @@ interface Props {
 export default function QuestionCard({ q_no, index, setLoadingId, path, onClick, questionText, active = false, chapter_name, topic_name, source }: Props) {
     return (
         <Link key={index} href={`${path}`} onClick={onClick}>
-            <CardWrap cursor="pointer" padding={"12px 16px"}>
+            <Card cursor="pointer" padding={"12px 16px"}>
                 <div className={`flex flex-col gap-4 ${active ? "opacity-80" : ""}`}>
                     <div className='grid grid-cols-2 items-center gap-2'>
                         <div className='flex items-center gap-4 col-span-1'>
-                            <div className="body-medium font-semibold text-[#768EA7] ">
+                            <div className="body-medium font-semibold text-[var(--color-text-gray-muted)] ">
                                 Question {q_no}
                             </div>
-                            <div className='flex items-center gap-1 text-[#00a251]'>
-                                <StarBadge size={20} color="#00a251" />
+                            <div className='flex items-center gap-1 text-[#00753a]'>
+                                <StarBadge size={20} color="#00753a" />
                                 Easy
                             </div>
                         </div>
 
                         <div className='col-span-1 justify-self-end'>
                             <div className='flex items-center gap-2'>
-                                <p className="body-medium text-[#768EA7] flex items-center gap-1">
+                                <p className="body-medium text-[var(--color-text-gray-muted)] flex items-center gap-1">
                                     <CalendarIcon size={16} color="#768EA7" />
                                     Source :
                                 </p>
@@ -61,7 +61,7 @@ export default function QuestionCard({ q_no, index, setLoadingId, path, onClick,
                         <div>
                             {chapter_name && (
                                 <div className='flex gap-2'>
-                                    <div className="body-medium text-[#768EA7] flex items-center gap-1">
+                                    <div className="body-medium text-[var(--color-text-gray-muted)] flex items-center gap-1">
                                         Chapter :
                                     </div>
                                     <div className="body-medium text-black">
@@ -71,7 +71,7 @@ export default function QuestionCard({ q_no, index, setLoadingId, path, onClick,
                             )}
                             {topic_name && (
                                 <div className='flex gap-2'>
-                                    <div className="body-medium text-[#768EA7] flex items-center gap-1">
+                                    <div className="body-medium text-[var(--color-text-gray-muted)] flex items-center gap-1">
                                         Topic :
                                     </div>
                                     <div className="body-medium text-black">
@@ -90,7 +90,7 @@ export default function QuestionCard({ q_no, index, setLoadingId, path, onClick,
                         </Button>
                     </div>
                 </div>
-            </CardWrap>
+            </Card>
         </Link>
     )
 }

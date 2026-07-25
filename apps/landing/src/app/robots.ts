@@ -14,8 +14,22 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       {
-        // Block AI training crawlers that don't respect content usage terms
-        userAgent: [],
+        // Block AI training crawlers that don't respect content usage terms.
+        // NOTE: userAgent was previously an empty array, which emitted a bare
+        // `Disallow: /` group with no User-Agent — parsers/Googlebot could read
+        // that as disallowing the entire site (de-indexing everything). It is
+        // now scoped to named AI crawlers so the site stays fully indexable.
+        userAgent: [
+          "GPTBot",
+          "OAI-SearchBot",
+          "ChatGPT-User",
+          "CCBot",
+          "Google-Extended",
+          "anthropic-ai",
+          "ClaudeBot",
+          "PerplexityBot",
+          "Bytespider",
+        ],
         disallow: "/",
       },
     ],

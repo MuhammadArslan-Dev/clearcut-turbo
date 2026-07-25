@@ -68,6 +68,14 @@ export default async function page({
 
   const examYear = year_id.replace(/-/g, "_").toUpperCase();
 
+  // Fetch the question list on the server so it ships inside the initial HTML.
+  // `apiFetch` resolves to null on failure, so a backend hiccup degrades to the
+  // client fetch rather than 500-ing the page.
+  const initialQuestions = await apiFetch(
+    `/blog/get-questions?year=${examYear}`,
+    { revalidate: 3600 },
+  );
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const homeUrl = siteUrl;
 
@@ -119,6 +127,7 @@ export default async function page({
           examName={examName}
           level_id={level_id}
           examYear={examYear}
+          initialQuestions={initialQuestions}
           // year_id={examYear}
         />
       </MainContainer>
