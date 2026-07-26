@@ -11,15 +11,23 @@
    apps/landing's setup. */
 @import "@clearcut/design-tokens/tokens.css";
 
-/* 2. Design tokens + typography layers */
+/* 2. Design tokens.
+   `./typography.css` used to be imported here. It was a full second copy of the
+   display, heading and body typography scale, and because it loaded AFTER the shared
+   tokens and was UNLAYERED, it won — so dashboard rendered the same class names
+   differently from blog and landing, and it beat every Tailwind `font-*` utility
+   (measured: `heading-large font-bold` computed 600, not 700). Deleted; the one
+   thing it added over the shared scale that dashboard actually rendered — the
+   default weights — now lives in @clearcut/design-tokens inside @layer base,
+   where utilities can override it. Heading letter-spacing is restored as an
+   explicit app-level base style further down. */
 @import "./tokens.css";
-@import "./typography.css";
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme {
+@theme static {
   /* ✅ breakpoints */
   --breakpoint-xs: 500px;
   --breakpoint-sm: 640px;
@@ -34,22 +42,37 @@
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand: var(--color-brand);
-  --color-brand-dark: var(--color-brand-dark);
 
+  /* Font contract (see packages/design-tokens/tokens.css). --font-latin binds the
+     shared --font-sans name to this app's next/font instance; --font-hindi is the
+     Devanagari face for the `hi` locale, applied by the `:lang(hi)` rule below.
+     These replace `--font-sans: var(--font-geist-sans)` /
+     `--font-mono: var(--font-geist-mono)` — both dead, since --font-geist-sans and
+     --font-geist-mono are defined nowhere in this repo. --font-mono is not
+     redeclared: `font-mono` has zero consumers in the codebase. */
+  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-
-  /* background  */
-
-  /* color  */
-  --color-brand: var(--color-brand);
-  --color-surface-gray-normal: var(--color-surface-gray-normal);
-  --color-surface-gray-muted: var(--color-surface-gray-muted);
-  --color-surface-gray-subtle: var(--color-surface-gray-subtle);
-  --color-primary-subtle: var(--color-primary-subtle);
+  /* ── Removed: self-referential declarations ────────────────────────────────
+     This block used to contain
+         --color-brand:               var(--color-brand);
+         --color-brand-dark:          var(--color-brand-dark);
+         --color-surface-gray-normal: var(--color-surface-gray-normal);
+         --color-surface-gray-muted:  var(--color-surface-gray-muted);
+         --color-surface-gray-subtle: var(--color-surface-gray-subtle);
+         --color-primary-subtle:      var(--color-primary-subtle);
+     Each declared a custom property in terms of ITSELF. Per CSS spec that is a
+     cyclic dependency, so the property becomes "invalid at computed-value time"
+     and resolves to nothing. Because these declarations landed on :root *after*
+     the canonical @clearcut/design-tokens ones, they overrode them and left
+     var(--color-brand) EMPTY throughout Dashboard — measured directly:
+     getComputedStyle(:root).getPropertyValue('--color-brand') === ''.
+     Dashboard only appeared to work because src/styles/tokens.css re-declared
+     the same names with literal hexes further up the cascade.
+     They are not needed at all: tokens.css is imported into this file, and its
+     own @theme block already registers every --color-* name with Tailwind, so
+     the utilities (bg-brand, text-surface-gray-normal, …) are generated from
+     the canonical source. Deleting these restores the canonical values. */
   --color-surface-border-gray-subtle: var(--surface-border-gray-subtle);
   --color-surface-border-normal-lowcontrast: var(
     --surface-border-normal-lowcontrast
@@ -90,8 +113,39 @@
 body {
   background: var(--background-gray-subtle);
   color: var(--foreground);
-  font-family: var(--font-noto-sans);
+  /* Through the shared contract instead of reaching past it to the raw next/font
+     variable. Same rendered family as before (measured: "Noto Sans" both sides). */
+  font-family: var(--font-latin);
   scroll-behavior: smooth;
+}
+
+/* Devanagari face for the `hi` locale. Dashboard serves /hi via next-intl but
+   shipped no Devanagari font before this. Family only — line-height and weight
+   are deliberately untouched, as adjusting them would be a typographic redesign
+   rather than a font-contract repair. */
+:lang(hi) {
+  font-family: var(--font-hindi);
+}
+
+/* ⚠ App-level heading tracking, preserved from the deleted typography.css so
+   dashboard's rendering does not change. This is NOT part of the shared scale:
+   all three apps currently differ on heading letter-spacing —
+     blog       inherits a flat -0.32px from its global `body { letter-spacing }`
+     dashboard  -0.02em on the class, so it scales with font-size (measured
+                -0.76 / -0.8 / -0.64 / -0.48 / -0.4 / -0.36px)
+     landing    `normal`
+   Unifying them changes rendering in at least two apps, so it needs a design
+   decision and is documented as remaining debt rather than decided here. Kept in
+   @layer base so `tracking-*` utilities can still override it. */
+@layer base {
+  .heading-2xxlarge,
+  .heading-2xlarge,
+  .heading-xlarge,
+  .heading-large,
+  .heading-medium,
+  .heading-small {
+    letter-spacing: var(--letter-space);
+  }
 }
 @keyframes cardStackIn {
   0% {

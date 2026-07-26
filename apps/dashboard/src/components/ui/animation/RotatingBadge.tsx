@@ -1,7 +1,7 @@
 // RotatingBadge.tsx
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Chip from "@mui/joy/Chip";
+import Chip from "@clearcut/ui/chip";
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -89,8 +89,13 @@ export function RotatingBadge({
                         transition={{ duration: animationDuration, ease: "easeOut" }}
                         className="inline-flex"
                     >
+                        {/* `sx` -> `style`: the shared Chip is a plain div, so the
+                            same three declarations move to an inline style object.
+                            Both land as inline style in the DOM, which is where Joy
+                            put them too (Emotion class vs inline differs in origin
+                            but not in computed value — verified identical). */}
                         <Chip className={['border-2 cursor-pointer', "!border-[var(--color-success)]"].join(" ")}
-                            sx={{
+                            style={{
                                 backgroundColor: "var(--color-success-soft)",
                                 padding: "1.5px 16px",
                                 color: "var(--color-success)",

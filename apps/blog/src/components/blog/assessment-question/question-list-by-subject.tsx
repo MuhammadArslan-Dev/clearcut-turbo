@@ -3,7 +3,7 @@ import React from "react";
 import { limitWords } from "@clearcut/utils/text-limit";
 import { formatToSlug } from "@/utils/slugify";
 import QuestionCard from "../ui/question-card";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { capitalizeFirst } from "@clearcut/utils/text-format";

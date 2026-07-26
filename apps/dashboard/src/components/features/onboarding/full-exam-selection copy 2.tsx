@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import LevelSelectionCard from "./LevelSelectionCard";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { motion } from "framer-motion";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import {
   ChevronDoubleRightIcon,
   ChevronRightIcon,

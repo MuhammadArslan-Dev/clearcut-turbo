@@ -1,5 +1,8 @@
 import React, { memo, useEffect, useMemo, useState } from "react";
-import { Button, Input, Skeleton, Select, Option } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
+import { Input } from "@clearcut/ui/input";
+import { Select, SelectOption } from "@clearcut/ui/select";
+import Skeleton from "@clearcut/ui/skeleton";
 import { PencilLineIcon, Check, X, AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
@@ -150,7 +153,11 @@ function ProfileCard({
     clearErrors?.(key);
   };
 
-  const handleGenderChange = (_: React.SyntheticEvent | null, value: string | null) => {
+  // Joy's Select passed (event, value); the shared Select passes the value only.
+  // The null guard is kept because the shared Select's contract still allows an
+  // empty string for "no selection", and clearing must not write `null` into the
+  // draft. Behaviour is otherwise unchanged.
+  const handleGenderChange = (value: string | null) => {
     if (value === null) return;
     setDraft((prev) => (prev ? { ...prev, gender: value } : prev));
     setLocalErrors((prev) => { const n = { ...prev }; delete n.gender; return n; });
@@ -222,26 +229,38 @@ function ProfileCard({
                 {isEditing ? (
                   <>
                     {key === "gender" ? (
+                      // `size="md"` is dropped because md is the only size the
+                      // repository used and the shared Select bakes those exact
+                      // measured metrics in (36px / 3px 12px / radius 6px) rather
+                      // than exposing an unused size axis. `color` becomes the
+                      // boolean `error`, which maps to the same measured danger
+                      // border rgb(217,45,32) and text rgb(145,32,24).
                       <Select
-                        size="md"
                         value={draft.gender || ""}
                         placeholder={placeholder}
-                        color={error ? "danger" : "neutral"}
-                        onChange={handleGenderChange}
+                        error={Boolean(error)}
+                        onValueChange={handleGenderChange}
                       >
                         {GENDER_OPTIONS.map((opt) => (
-                          <Option key={opt} value={opt}>
+                          <SelectOption key={opt} value={opt}>
                             {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                          </Option>
+                          </SelectOption>
                         ))}
                       </Select>
                     ) : (
+                      // `size="md"` is dropped: the shared Input has a single
+                      // geometry, and on a native <input> `size` is a *character
+                      // count* attribute, so forwarding "md" would be both a type
+                      // error and wrong semantics. Joy's `error` prop becomes
+                      // `aria-invalid`, which the shared Input already styles
+                      // (aria-invalid:border-destructive + ring) — so the error
+                      // state is now announced to assistive tech as well as shown,
+                      // rather than being colour-only.
                       <Input
                         readOnly={key === "phone"}
-                        size="md"
                         value={value}
                         placeholder={placeholder}
-                        error={Boolean(error)}
+                        aria-invalid={Boolean(error) || undefined}
                         onChange={(e) => handleChange(key, e.target.value)}
                       />
                     )}

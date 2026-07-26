@@ -3,7 +3,7 @@ import { Card } from "@clearcut/ui/card";
 import LevelSelectionCard from "./LevelSelectionCard";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { motion, AnimatePresence, scale } from "framer-motion";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import {
   ChevronDoubleRightIcon,
   ChevronRightIcon,

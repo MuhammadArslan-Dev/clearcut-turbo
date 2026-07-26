@@ -20,7 +20,7 @@ import MathRender from '@/components/features/mathjax/Math';
 import { ChevronIcon, LanguageIcon, NumberCountIcon, StarBadge } from '@/components/ui/icons';
 import Image from 'next/image';
 import { useContentDataStore } from '@/components/features/downloadable-content/store/useContentDataStore';
-import { Button } from '@mui/joy';
+import { Button } from "@clearcut/ui/button";
 import TextMarkDown from '@/components/ui/widgets/TextMarkDown';
 
 interface QuestionOption {

@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect } from "react";
 import StepIndicatorCard from "../indicator/StepIndicatorCard";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import { ChevronDoubleRightIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Card } from "@clearcut/ui/card";
 import CheckIcon from "@/components/ui/icons/check-icon";
@@ -14,7 +14,7 @@ import MainContainer from "@/components/ui/main-container";
 import { StepProps } from "@/types/onboarding/onboarding";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { Level } from "@/lib/api/onboarding";
-import Skeleton from "@mui/joy/Skeleton";
+import Skeleton from "@clearcut/ui/skeleton";
 import FullExamSelectionCtet from "../full-exam-selection-ctet";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";

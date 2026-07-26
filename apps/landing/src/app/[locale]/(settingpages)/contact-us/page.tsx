@@ -66,7 +66,7 @@ export default async function ContactUsPage({ params }: { params: Promise<{ loca
             {"Contact Us"}
           </p>
           <div
-            className=" body-medium custom"
+            className=" body-medium font-normal custom"
             dangerouslySetInnerHTML={{ __html: data }}
           />
         </SectionBlock>

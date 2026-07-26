@@ -8,7 +8,7 @@ import Image from "next/image";
 import HeaderWrapper from "../ui/header-wrapper";
 import { useScrollToSection } from "@/hooks/useScrollToSection";
 import { useState } from "react";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/auth";

@@ -1,5 +1,5 @@
 import React from "react";
-import Chip from '@mui/joy/Chip';
+import Chip from "@clearcut/ui/chip";
 import { StepIndicatorProps } from "@/types/onboarding/onboarding";
 
 
@@ -12,9 +12,12 @@ export default function StepsIndicator({
 
             {/* Top counter */}
             <div>
+                {/* `color="success"` was dropped: the two `!` classes below already
+                    set background and text colour, so Joy's success palette never
+                    reached the pixels — measured bg #dbeafe / text #0083ff both
+                    before and after, i.e. the prop was inert. */}
                 <Chip
                     size="md"
-                    color="success"
                     className="!bg-[var(--color-primary-soft)] !text-[var(--color-brand)] body-small !font-semibold"
                 >
                     {currentStep + 1}/{data.length}

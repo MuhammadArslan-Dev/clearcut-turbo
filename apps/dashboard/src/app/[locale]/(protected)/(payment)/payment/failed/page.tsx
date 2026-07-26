@@ -13,7 +13,7 @@ import { AnimatePresence } from "framer-motion";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { TrophyIcon } from "lucide-react";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useModalStore } from "@/store/modal/useModalStore";

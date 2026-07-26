@@ -11,7 +11,7 @@ import { useExamModalStore } from "../../store/useExamModalStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import ModalHeader from "@/components/features/test-series/components/ModalHeader";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { ArrowIcon, ChevronIcon, LogoutDoorIcon } from "@/components/ui/icons";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 

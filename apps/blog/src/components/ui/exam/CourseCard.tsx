@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@clearcut/ui/card";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import CalendarIcon from "@clearcut/ui/icons/calendar-icon";

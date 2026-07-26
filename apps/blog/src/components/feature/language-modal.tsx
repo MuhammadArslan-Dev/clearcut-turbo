@@ -2,7 +2,7 @@ import { useIsMobile } from '@clearcut/hooks/use-is-mobile'
 import React from 'react'
 import { CustomBottomSheet, CustomModal } from '../modals-bottom-sheet'
 import { Card } from "@clearcut/ui/card";
-import { Button } from '@mui/joy'
+import { Button } from "@clearcut/ui/button";
 import { highlightTextUtil } from '@clearcut/utils/highlight-text'
 import { useLanguageStore } from '@/store/useLanguageStore'
 import { useTransition } from "react";

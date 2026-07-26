@@ -4,7 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 import { routing } from "@clearcut/i18n/routing";
 
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans } from "next/font/google";
+import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import "../../styles/globals.css";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -20,6 +20,18 @@ const notoSans = Noto_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"], // you can pick which weights you need
   display: "swap",
+});
+
+// Devanagari face for the `hi` locale, applied via the `:lang(hi)` rule in
+// styles/globals.css. Dashboard serves /hi but shipped no Devanagari font before
+// this. `preload: false` mirrors apps/landing so English pages don't pay for a
+// face they never paint; it still loads on demand under font-display: swap.
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-devanagari",
+  subsets: ["devanagari"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -85,11 +97,17 @@ export default async function LocaleLayout({
   //     ? `${notoNastaliqUrdu.variable}`
   //     : `${notoSans.variable}`;
 
-  const fontClass = notoSans.variable;
+  // Both faces expose their CSS variable; the `:lang(hi)` rule decides which one
+  // paints. These MUST sit on <html>, not <body> (matching apps/landing):
+  // --font-latin is declared at :root by @theme and references --font-noto-sans,
+  // so if the next/font class is on <body> that reference is out of scope at :root
+  // and --font-latin resolves to nothing. Measured in blog: with the class on
+  // <body>, --font-latin read EMPTY and pages fell back to Times New Roman.
+  const fontClass = `${notoSans.variable} ${notoSansDevanagari.variable}`;
   // Enable static rendering
   setRequestLocale(locale);
   return (
-    <html lang={locale}>
+    <html lang={locale} className={fontClass}>
       <head>
         {/* MathJax config must be a synchronous inline script so it runs before the CDN loads.
             next/script "beforeInteractive" only works in the root layout, so we use a raw <script> here. */}
@@ -118,7 +136,7 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body suppressHydrationWarning className={`${fontClass} antialiased `}>
+      <body suppressHydrationWarning className="antialiased">
         <Suspense fallback={null}>
           <FacebookPixel />
           <AuthProvider>

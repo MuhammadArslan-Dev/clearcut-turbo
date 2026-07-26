@@ -8,7 +8,7 @@ import MainContainer from "@/components/ui/main-container";
 import Text from "@clearcut/ui/text";
 import MathJax from "../../mathjax/Math";
 import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import QOption from "@/components/ui/cards/QuestionMaterial/Qoption/QOption";
 
 import { useGetExam } from "../hooks/useGetExam";

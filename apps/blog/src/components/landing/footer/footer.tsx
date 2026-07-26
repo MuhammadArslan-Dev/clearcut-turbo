@@ -1,5 +1,4 @@
 "use client";
-import Box from "@mui/joy/Box";
 
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 
@@ -95,14 +94,25 @@ export default function Footer() {
         {/* <FloatingButton /> */}
         {/* Floating button */}
         <div className="bg-brand-dark">
-          <Box
-            sx={{
-              maxHeight: "123px",
-              minHeight: "88px",
-              backgroundColor: "primaryDark",
-            }}
-            className="w-full gap-2 py-1 flex flex-col justify-center items-center"
-          >
+          {/* was <Box sx={{ maxHeight: "123px", minHeight: "88px",
+                            backgroundColor: "primaryDark" }} className="…">
+
+              maxHeight/minHeight are plain px and move to Tailwind arbitrary
+              values unchanged.
+
+              `backgroundColor: "primaryDark"` is deliberately NOT carried over.
+              It was a no-op: MUI resolves that string against the theme palette,
+              and this app's joytheme.ts declares `primaryDark` only as a
+              TypeScript type — it never assigns a value. So MUI passed the bare
+              string through as CSS (`background-color: primaryDark`), which is
+              not a valid colour and the browser dropped it. Verified in-browser
+              before this change: computed backgroundColor was
+              `rgba(0, 0, 0, 0)` (transparent). The blue band you see comes from
+              the parent `div.bg-brand-dark` (`rgb(0, 107, 209)`).
+              Translating it to a real colour would ADD a background that does
+              not render today, i.e. a visual regression — so it is dropped and
+              recorded instead. */}
+          <div className="w-full gap-2 py-1 flex flex-col justify-center items-center max-h-[123px] min-h-[88px]">
             {/* Left Side: Copyright Grid */}
             <div className="flex gap-[24px] md:gap-[3.5rem] mx-auto">
               {contactLinks.map((link, index) => (
@@ -148,7 +158,7 @@ export default function Footer() {
                 ))}
               </div>
             </div>
-          </Box>
+          </div>
         </div>
       </footer>
     </>

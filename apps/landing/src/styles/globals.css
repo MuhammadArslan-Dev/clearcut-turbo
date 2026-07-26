@@ -6,12 +6,18 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @source "../../../../packages/auth/src/**/*.{ts,tsx}";
 @source "../../../../packages/utils/src/**/*.{ts,tsx}";
-@import "./typography.css";
+/* ./typography.css was an EMPTY file left behind after landing's type scale
+   moved into @clearcut/design-tokens. Removed (file + import) because an empty,
+   still-imported stylesheet is a live footgun: it loads AFTER the shared tokens,
+   so any rule added to it would silently shadow the shared display, heading and
+   body typography scale for landing only — exactly how apps/dashboard ended up
+   with a divergent, weighted copy of the same classes. No rules were deleted,
+   so there is no visual change. */
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@clearcut/design-tokens/tokens.css";
 
-@theme {
+@theme static {
   /* Font families — bound to the next/font loaded faces (hashed family names
      exposed via the CSS variables), with the literal names as a fallback. */
   --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;

@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import React, { useEffect, useMemo, useCallback } from "react";
 import TestCard from "../cards/TestCard";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
 import { useTestListDataStore } from "../../store/useTestListDataStore";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";

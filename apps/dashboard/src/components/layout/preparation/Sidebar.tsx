@@ -46,7 +46,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import Text from "@clearcut/ui/text";
 import { setResumeState } from "@/lib/dashboard/userInteractions";
-import { Divider } from "@mui/joy";
 import CDivider from "@/components/ui/CDivider";
 import { trackEvent } from "@/lib/analytics/browser";
 import PieChartIcon from "@/components/ui/icons/pie-chart-icon";
@@ -55,7 +54,6 @@ import { limitChars } from "@clearcut/utils/text-limit";
 import { toLower } from "@clearcut/utils/text-format";
 import clsx from "clsx";
 import CounterCard from "@/components/ui/cards/CounterCard";
-import Button from "@/components/ui/button/Button";
 import {
   PaywallSource,
   usePaywallsStore,

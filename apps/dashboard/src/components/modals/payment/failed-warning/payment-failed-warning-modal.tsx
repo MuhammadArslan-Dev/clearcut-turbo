@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/icons";
 import { AnimatePresence } from "framer-motion";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";

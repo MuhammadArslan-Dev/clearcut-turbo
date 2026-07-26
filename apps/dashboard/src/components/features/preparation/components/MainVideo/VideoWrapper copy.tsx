@@ -6,7 +6,7 @@ import VideoCard from "./VideoCard";
 // import VideoProgress from "./VideoProgress";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { updateLearningProgress } from "@/lib/dashboard/userInteractions";
-import { Skeleton } from "@mui/joy";
+import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
 import { ContentItem, VideoContent } from "../../types/topic-content-type";
 import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
@@ -81,8 +81,7 @@ export default function VideoWrapper() {
         <div className="max-w-3xl w-full space-y-3">
           <Skeleton
             variant="rectangular"
-            className="w-full aspect-video"
-            sx={{ borderRadius: 12 }}
+            className="w-full aspect-video" borderRadius={12}
           />
           <div className="space-y-2 px-1">
             <Skeleton variant="text" width="60%" />

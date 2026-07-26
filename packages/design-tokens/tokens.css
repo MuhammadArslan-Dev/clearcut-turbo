@@ -62,9 +62,12 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Brand blue drives shadcn's --primary directly, so bg-primary/text-primary
-     and the --color-brand app token always agree. */
-  --primary: #0083ff;
+  /* Brand blue drives shadcn's --primary, so bg-primary/text-primary and the
+     --color-brand app token always agree. This is now a var() reference rather
+     than a second copy of #0083ff — previously the literal appeared here, in
+     .dark, AND in @theme's --color-brand, so the three could silently diverge.
+     --color-brand is emitted onto :root by @theme, so it resolves here. */
+  --primary: var(--color-brand);
   --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -99,7 +102,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #0083ff;
+  /* Brand is mode-invariant — same reference as :root, not a duplicated literal. */
+  --primary: var(--color-brand);
   --primary-foreground: #ffffff;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -128,11 +132,35 @@
 
 /* ================= Theme ================= */
 
-@theme {
+/* `static`, not a bare @theme: Tailwind v4 only emits theme variables it sees
+   referenced by a generated utility class. Several tokens here are consumed as
+   raw var() from TSX instead — e.g. packages/auth/src/icons/cross-icon.tsx does
+   fill="var(--color-textWhite)", and apps/landing option-selection-card.tsx does
+   "var(--color-border-green-subtle)". Tailwind cannot see those, so the variables
+   were being tree-shaken out and resolved to nothing at runtime (measured:
+   getPropertyValue('--color-textWhite') === '' while a 108-reference token like
+   --color-surface-gray-normal resolved fine). `static` emits every token
+   unconditionally, which is what a design system distributed to raw var()
+   consumers needs. Cost is a few hundred bytes of gzipped CSS. */
+@theme static {
   --breakpoint-tablet: 800px;
 
   --color-brand: #0083ff;
   --color-brand-dark: #0053a2;
+  /* ⚠ UNRESOLVED PRODUCT DECISION — do not "tidy" this away.
+     Two different dark-brand blues are in production use:
+       #0053a2  --color-brand-dark  (canonical; landing + dashboard resolve to this)
+       #006bd1  this token          (apps/blog overrides --color-brand-dark to it,
+                                     and 62 call sites hardcode it directly)
+     Because blog shadows --color-brand-dark, the SAME token name renders two
+     different colours depending on which app you are in — the single worst
+     single-source-of-truth violation found by the audit (37 consumers).
+     This token exists so those 62 literals can be de-duplicated NOW without
+     silently repainting landing/dashboard. It is deliberately NOT merged into
+     --color-brand-dark: doing so would change one app's appearance, which needs
+     a design call. See the root CLAUDE.md, which already flags this conflict.
+     Once the canonical value is chosen, delete this token and blog's override. */
+  --color-brand-dark-legacy: #006bd1;
   /* Accessible brand blue, for the two places #0083ff can't be used because
      WCAG AA text contrast applies:
        1. as a *background* under white text — white on #0083ff is only 3.69:1
@@ -146,16 +174,27 @@
      (which only need 3:1). Not to be confused with --color-brand-dark, whose
      correct value is still an open question — see the repo CLAUDE.md. */
   --color-brand-accessible: #0069cc;
-  --color-textWhite: #ffffff;
+  /* NOTE: --color-textWhite is an alias of --primary-foreground and now lives in
+     the @theme inline block below (var() is not resolved inside @theme). Its
+     camelCase name and the raw-colour word "White" both violate the repo's
+     kebab-case / intent-based naming convention — flagged as debt to rename in a
+     dedicated pass, since renaming means touching every consumer. */
   --color-primary-soft: #dbeafe;
   --color-primary-subtle: #e8f2fb;
+  /* Darker brand steps used for text/borders on light surfaces. Values taken
+     verbatim from apps/dashboard/src/themes/theme.ts (Joy primary 700/800) and
+     packages/ui/src/button.tsx, which both already hardcoded them. */
+  --color-primary-strong: #005cb8;
+  --color-primary-stronger: #004c99;
 
   --color-background-gray-subtle: #f1f5fa;
 
   --color-success: #00a251;
   --color-success-highlight: #008743;
-  --color-success-faded: #00a251;
+  /* Alias of --color-success — same literal (#00a251). */
   --color-success-soft: #e7f6e5;
+  /* Accessible success text: 5.82:1 on white, vs 3.34:1 for --color-success. */
+  --color-success-strong: #00753a;
 
   --color-text-gray-normal: #192839;
   --color-text-gray-subtle: #40566d;
@@ -169,21 +208,129 @@
   --color-text-gray-muted: #566c82;
   --color-text-gray-disabled: #cccccc;
 
+  /* ── De-duplicated below ────────────────────────────────────────────────
+     These names previously each carried their own copy of a literal that was
+     already defined above, so the same colour existed under 2–3 names and a
+     change to one silently diverged from the others. Each duplicate is now a
+     var() alias of the single owning token. Values are byte-identical to
+     before — this is a definition-layer change only, with no visual effect.
+     (The "green" names holding blue-grey values are pre-existing semantic
+     drift, almost certainly copy-paste from the gray ramp; aliasing makes that
+     visible rather than fixing it, which would change appearance.) */
   --color-text-green-normal: #1c9e41;
   --color-text-green-subtle: #defcce;
-  --color-text-green-muted: #768ea7;
-  --color-text-green-disabled: #cccccc;
 
-  --color-border-green-normal: #1c9e41;
-  --color-border-green-subtle: #cbd5e2;
-  --color-border-green-muted: #768ea7;
-  --color-border-green-disabled: #cccccc;
 
-  --color-surface-gray-normal: #192839;
   --color-surface-gray-muted: #768ea7;
-  --color-surface-gray-subtle: #40566d;
   --color-border-gray-subtle: #cbd5e2;
-  --color-border-normal-lowcontrast: #cbd5e2;
+
+  /* ================= Semantic status palette =================
+     Added by the token audit to close a real gap: the spec-mandated danger /
+     warning / info semantics had no canonical token, so apps/dashboard invented
+     a private set (src/styles/tokens.css) and packages/ui hardcoded hexes. Every
+     value below is the exact literal already in use at its call sites — none
+     were re-picked, so nothing changes visually.
+       danger  ← dashboard --icon-negative-*  + packages/ui Button danger
+       warning ← dashboard --icon-notice-*    (…-strong is Button's own shade)
+       info    ← dashboard --icon-information-* */
+  --color-danger: #d92d20;
+  --color-danger-strong: #912018;
+  --color-danger-subtle: #f04438;
+  --color-danger-muted: #f96c62;
+
+  --color-warning: #c65c10;
+  --color-warning-strong: #9a5b13;
+  --color-warning-subtle: #e9690c;
+  --color-warning-muted: #ff9040;
+
+  --color-info: #0f78ad;
+  --color-info-subtle: #1291d0;
+  --color-info-muted: #57c1f6;
+
+  /* Neutral / gray ramp consumed by the shared primitives. Same rationale:
+     these are the literals packages/ui already used, lifted to tokens. */
+  --color-neutral: #9fa6ad;
+  --color-neutral-strong: #32383e;
+  --color-gray: #6b7280;
+  --color-gray-strong: #374151;
+  --color-gray-stronger: #111827;
+  --color-gray-border: #9ca3af;
+  /* Blue-grey used across auth + dashboard (rgb(108,132,157)). */
+  --color-gray-blue: #6c849d;
+
+  /* ================= Skeleton (loading placeholder) =================
+     Added for the shared Skeleton primitive. These are NOT new colours: they
+     are the exact values MUI Joy's Skeleton already resolved to, lifted out of
+     the Joy theme so packages/ui does not have to depend on Joy variables
+     (apps/landing has no Joy provider at all).
+       --color-skeleton       = Joy palette.background.level3 = neutral-300
+       --color-skeleton-pulse = Joy palette.background.level1 = neutral-100
+     Verified by reading the emitted CSS from a live Joy Skeleton:
+       --joy-palette-background-level3: var(--joy-palette-neutral-300, #CDD7E1)
+       --joy-palette-background-level1: var(--joy-palette-neutral-100, #F0F4F8)
+     Joy's dark scheme uses neutral-600/#555E68 and neutral-800/#171A1C, but
+     Dashboard's .dark block does not actually switch schemes today, so only the
+     light values are modelled here — see the report's Future Improvements. */
+  --color-skeleton: #cdd7e1;
+  --color-skeleton-pulse: #f0f4f8;
+
+  /* ================= Form-control chrome =================
+     Exact values a live @mui/joy Select renders at size="md" variant="outlined",
+     read with getComputedStyle. Lifted here for the same reason as the
+     --color-skeleton pair above: the shared primitive must not depend on Joy's
+     own CSS variables (apps/landing has no Joy provider at all), and hardcoding
+     them inside packages/ui would put 21 raw colour literals into the design
+     system and break the colour-governance baseline. Nothing changes visually —
+     these ARE the values already on screen today.
+       --color-control-border    Joy neutral-300, the outlined border
+       --color-control-surface   Joy background.surface, the control fill
+       --color-control-selected  Joy neutral-200, the active/selected option row
+     --color-control-border shares its literal with --color-skeleton by
+     coincidence, not by meaning, so it gets its own name rather than reusing it.
+     Text colours are NOT duplicated here: the control reuses
+     --color-neutral-strong (#32383e) and --color-danger / --color-danger-strong,
+     which already hold those exact values. */
+  --color-control-border: #cdd7e1;
+  --color-control-surface: #fbfcfe;
+  --color-control-selected: #dde7ee;
+
+  /* 12%-alpha fills behind the shared Button's `soft` variant. Distinct from
+     --color-*-soft above, which are opaque pale tints used as page surfaces. */
+  --color-primary-bg-soft: rgba(0, 131, 255, 0.12);
+  --color-danger-bg-soft: rgba(217, 45, 32, 0.12);
+  --color-success-bg-soft: rgba(0, 162, 81, 0.12);
+  --color-gray-bg-soft: rgba(107, 114, 128, 0.12);
+  --color-neutral-bg-soft: rgba(159, 166, 173, 0.12);
+  --color-warning-bg-soft: rgba(154, 91, 19, 0.12);
+
+  /* ================= Form-control palette (legacy Bootstrap-derived) =========
+     packages/ui/src/main-input.tsx carried its own local `colors` map with
+     Bootstrap values that DIVERGE from the canonical palette above
+     (#28a745 vs --color-success #00a251, #dc3545 vs --color-danger #d92d20).
+     They are tokenised here at their existing values so the definition lives in
+     one place, but deliberately NOT remapped onto the canonical semantics —
+     that would change how every input renders. Reconciling the two palettes is
+     a design decision, tracked as debt. */
+  --color-input-primary: #007bff;
+  --color-input-primary-soft: rgba(0, 123, 255, 0.1);
+  --color-input-error: #dc3545;
+  --color-input-error-soft: rgba(220, 53, 69, 0.1);
+  --color-input-success: #28a745;
+  --color-input-success-soft: rgba(40, 167, 69, 0.1);
+  --color-input-border: #ced4da;
+  --color-input-text: #212529;
+  --color-input-placeholder: #6c757d;
+
+  /* Shimmer sweep used by the shared Button's `shimmer` variant and the apps'
+     ButtonShimmerOverlay. A white light-gradient effect rather than a palette
+     colour, so it lives here as one gradient token instead of three rgba()
+     literals repeated per call site. */
+  --gradient-shimmer-sweep: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
 
   --spacing-y-section: 3rem;
   --spacing-x-section: 3rem;
@@ -216,12 +363,30 @@
      The one shadow value that recurred identically across both apps
      (floating bottom CTA bar) — everything else was a one-off. */
   --shadow-floating-bar: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  /* Joy's outlined form-control shadow and its popup shadow, both measured off a
+     live Select. Same rationale as the --color-control-* block above. */
+  --shadow-control: 0 1px 2px 0 rgba(21, 21, 21, 0.08);
+  --shadow-control-popup: 0 2px 8px -2px rgba(21, 21, 21, 0.08),
+    0 6px 12px -2px rgba(21, 21, 21, 0.08);
 
-  /* Consuming app must define --font-latin (and --font-hindi) locally. */
+  /* ================= Font contract =================
+     Every app MUST define --font-latin, and --font-hindi if it serves the `hi`
+     locale. They are per-app because each value is bound to that app's own
+     next/font instance (the family name is build-hashed), but the CONTRACT is
+     shared: --font-sans is the single name that Tailwind (`font-sans`, and the
+     `html { @apply font-sans }` rule below), the shared UI primitives, and each
+     app's Joy theme all resolve typography through.
+
+     Do not point --font-sans at anything else in an app. Before this contract was
+     enforced, blog and dashboard both overrode it with `var(--font-geist-sans)` —
+     a variable that is defined NOWHERE in this repo — so --font-sans measured
+     EMPTY in blog and resolved to a hardcoded `system-ui/Inter` stack in
+     dashboard, neither of which is the app font. Both apps only looked correct
+     because they bypassed the contract with their own `body { font-family }`. */
   --font-sans: var(--font-latin);
 }
 
-@theme inline {
+@theme static inline {
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -254,6 +419,25 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  /* ── De-duplicated colour aliases ──────────────────────────────────────────
+     Each of these names previously held its own copy of a literal already
+     defined in the @theme block above, so one colour existed under 2-3 names.
+     They now alias the single owning token. They live in @theme *inline* and not
+     in @theme because Tailwind v4 requires static values in @theme — a var()
+     there resolves to nothing (measured: --color-textWhite came back EMPTY).
+     "inline" is the documented form for tokens whose value is a reference. */
+  --color-textWhite: var(--primary-foreground);
+  --color-success-faded: var(--color-success);
+  --color-text-green-muted: var(--color-surface-gray-muted);
+  --color-text-green-disabled: var(--color-text-gray-disabled);
+  --color-border-green-normal: var(--color-text-green-normal);
+  --color-border-green-subtle: var(--color-border-gray-subtle);
+  --color-border-green-muted: var(--color-surface-gray-muted);
+  --color-border-green-disabled: var(--color-text-gray-disabled);
+  --color-surface-gray-normal: var(--color-text-gray-normal);
+  --color-surface-gray-subtle: var(--color-text-gray-subtle);
+  --color-border-normal-lowcontrast: var(--color-border-gray-subtle);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -301,3 +485,71 @@
 .body-small  { font-size: var(--fluid-bs)  !important; line-height: var(--flh-bs); }
 .body-xsmall { font-size: var(--fluid-bxs) !important; line-height: var(--flh-bxs); }
 
+/* ================= Default weights for the typography classes =================
+   THE single source of the default font weight for the classes above. Previously
+   each app owned this, three different ways, and the same class name therefore
+   rendered at a different weight per app (measured before this change):
+
+     app         naked .heading-*   naked .body-*   plain `font-bold` utility
+     blog        600                500             respected  -> 700
+     dashboard   600                500             SILENTLY DROPPED -> 600
+     landing     400 (no default)   400             respected  -> 700
+
+   Dashboard's copy lived in apps/dashboard/src/styles/typography.css and baked
+   font-weight straight into the UNLAYERED `.body-*` / `.heading-*` rules. Because
+   unlayered CSS outranks anything in Tailwind's `utilities` layer, that rule beat
+   every `font-*` utility — which is why `@clearcut/ui` Text has to spend
+   `!important` on its weights just to be heard. That file is now deleted.
+
+   Declaring the defaults HERE, inside `@layer base`, is what makes the model work
+   everywhere: `base` ranks BELOW `utilities`, so these are true defaults that any
+   `font-*` utility overrides normally, with no `!important` needed. Values are the
+   --fw-* tokens and are byte-identical to what blog and dashboard already
+   rendered, so neither app changes. */
+@layer base {
+  .display-xlarge,
+  .display-large,
+  .display-medium,
+  .display-small,
+  .heading-2xxlarge,
+  .heading-2xlarge,
+  .heading-xlarge,
+  .heading-large,
+  .heading-medium,
+  .heading-small {
+    font-weight: var(--fw-semibold);
+  }
+  .body-large,
+  .body-medium,
+  .body-small,
+  .body-xsmall {
+    font-weight: var(--fw-medium);
+  }
+}
+
+
+/* ================= Skeleton pulse keyframes =================
+   MUI Joy's Skeleton animation, transcribed byte-for-byte from
+   @mui/joy/Skeleton/Skeleton.js so the shared Skeleton is not an
+   approximation. It is deliberately NOT Tailwind's `animate-pulse`, which
+   differs on three axes:
+
+     Joy      0% {opacity:1}  50% {opacity:.8; background:<pulse-bg>}  100% {opacity:1}
+              2s ease-in-out 0.5s infinite
+     Tailwind 0%,100% {opacity:1}  50% {opacity:.5}
+              2s cubic-bezier(.4,0,.6,1) infinite   (no delay, no bg swap)
+
+   Lives here rather than inside the component so it is defined exactly once per
+   document instead of once per Skeleton instance. */
+@keyframes cc-skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+    background: var(--color-skeleton-pulse);
+  }
+  100% {
+    opacity: 1;
+  }
+}

@@ -1,6 +1,6 @@
 import React from 'react'
 import CourseCheckBadge from '../badge/course-check-badge'
-import { Button } from '@mui/joy'
+import { Button } from "@clearcut/ui/button";
 import { PencilSquareIcon } from '@heroicons/react/16/solid'
 
 interface ExamSelectionContainerProps {

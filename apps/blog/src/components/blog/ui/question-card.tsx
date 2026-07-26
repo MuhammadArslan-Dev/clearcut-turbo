@@ -2,7 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Card } from "@clearcut/ui/card";
 import StarBadge from '@/components/ui/badge/star-badge';
-import { Button } from '@mui/joy';
+import { Button } from "@clearcut/ui/button";
 import { formatToSlug, unFormatSlug } from '@/utils/slugify';
 import { limitWords } from '@clearcut/utils/text-limit'
 import CalendarIcon from '@clearcut/ui/icons/calendar-icon';

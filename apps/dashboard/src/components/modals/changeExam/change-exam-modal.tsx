@@ -6,7 +6,7 @@ import { useModalStore } from "@/store/modal/useModalStore";
 import { CrossIcon } from "@/components/ui/icons";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { changeCourse, ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useCourseStore } from "@/store/course/useCourseStore";
 
 export default function ChangeExamModal() {

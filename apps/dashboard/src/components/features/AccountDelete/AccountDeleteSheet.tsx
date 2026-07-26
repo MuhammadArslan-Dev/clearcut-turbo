@@ -7,7 +7,7 @@ import Text from "@clearcut/ui/text";
 import { CrossIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import { useModalStore } from "@/store/modal/useModalStore";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 import { deleteAccount } from "@/lib/api/auth";
 

@@ -10,7 +10,7 @@ import DetailsSectionCard from "./details-section-card";
 import QuestionCard from "../ui/question-card";
 import { formatToSlug } from "@/utils/slugify";
 import removeMd from "remove-markdown";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { Question, Translation } from "./question-list-by-subject";
 import { useLanguageStore } from "@/store/useLanguageStore";
 

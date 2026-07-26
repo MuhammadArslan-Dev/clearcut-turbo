@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { TrophyIcon } from "../../icons";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";

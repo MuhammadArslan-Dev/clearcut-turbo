@@ -298,7 +298,7 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
                                 showError={false}
                               />
                               {phone.length > 0 && (
-                                <span className="absolute left-1/4 -translate-x-1/2 top-0 -translate-y-1/2 text-xs text-[#6c849d] bg-white rounded-full border border-[#6c849d] px-2.5 py-0.5 pointer-events-none select-none whitespace-nowrap">
+                                <span className="absolute left-1/4 -translate-x-1/2 top-0 -translate-y-1/2 text-xs text-[var(--color-gray-blue)] bg-white rounded-full border border-[var(--color-gray-blue)] px-2.5 py-0.5 pointer-events-none select-none whitespace-nowrap">
                                   10-digit number
                                 </span>
                               )}
@@ -347,7 +347,7 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
                       <></>
                     ) : (
                       <div className="flex flex-col w-full items-center gap-1">
-                        <div className="max-w-[150px] px-3 py-0.5 text-[#006bd1] body-medium !font-semibold border border-[var(--color-brand)] bg-[var(--color-brand)]/9 rounded-full">
+                        <div className="max-w-[150px] px-3 py-0.5 text-[var(--color-brand-dark-legacy)] body-medium !font-semibold border border-[var(--color-brand)] bg-[var(--color-brand)]/9 rounded-full">
                           3-day FREE Trial
                         </div>
 

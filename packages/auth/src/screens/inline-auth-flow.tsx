@@ -198,7 +198,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
                 </div>
                 <div className="flex gap-2">
                   <div className="w-full flex items-center gap-2">
-                    <div className="h-[48px] w-[85px] px-4 flex gap-1 items-center justify-center bg-[#6c849d]/12">
+                    <div className="h-[48px] w-[85px] px-4 flex gap-1 items-center justify-center bg-[var(--color-gray-blue)]/12">
                       <WhatsappIcon color="var(--color-text-gray-subtle)" size={24} />
                       <p className="body-large">+91</p>
                     </div>

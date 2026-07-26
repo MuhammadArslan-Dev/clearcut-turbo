@@ -8,7 +8,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { formatToSlug, unFormatSlug } from '@/utils/slugify'
 import CourseCheckBadge from '@/components/ui/badge/course-check-badge'
 import { highlightTextUtil } from '@clearcut/utils/highlight-text'
-import { Button } from '@mui/joy'
+import { Button } from "@clearcut/ui/button";
 import { PencilSquareIcon } from '@heroicons/react/16/solid'
 import ExamSelectionContainer from '@/components/ui/exam/exam-selection-container'
 import Link from 'next/link'

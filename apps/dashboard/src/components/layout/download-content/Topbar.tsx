@@ -2,7 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import {  ChevronIcon } from "@/components/ui/icons";
 import { useRouter } from "@/i18n/navigation";
 import Text from "@clearcut/ui/text";

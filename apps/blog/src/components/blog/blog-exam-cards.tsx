@@ -14,7 +14,7 @@ import CircleClockIcon from "@clearcut/ui/icons/circle-clock-icon";
 import WarningCirleIcon from "@clearcut/ui/icons/warning-circle-icon";
 import ChartSuccessBarIcon from "../ui/icons/chart-success-bar-icon";
 import CourseCard from "../ui/exam/CourseCard";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import CheckIcon from "../ui/icons/check-icon";
 

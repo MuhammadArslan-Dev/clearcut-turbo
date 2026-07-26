@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import clsx from "clsx";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useQuery } from "@tanstack/react-query";

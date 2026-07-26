@@ -5,7 +5,7 @@ import {
   CircleTickIcon,
   VideoCamIcon,
 } from "@/components/ui/icons";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import Text from "@clearcut/ui/text";

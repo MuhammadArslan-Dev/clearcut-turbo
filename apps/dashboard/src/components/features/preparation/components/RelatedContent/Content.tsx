@@ -10,7 +10,7 @@ import {
   SheildIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { TopicTrend } from "../../types/types";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
@@ -25,7 +25,7 @@ import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toLower } from "@clearcut/utils/text-format";
-import { Skeleton } from "@mui/joy";
+import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
 import PagesIcon from "@/components/ui/icons/page-icon";
 import BellIcon from "@/components/ui/icons/Bell-icon";

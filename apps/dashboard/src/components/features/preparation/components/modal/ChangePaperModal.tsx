@@ -10,7 +10,7 @@ import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/Se
 import { usePreparationModalStore } from "@/components/features/preparation/store/usePreparationModalStore";
 import { useBackHandler } from "@/hooks/Global/useBackHandler";
 import Text from "@clearcut/ui/text";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import OptionSelectionCard from "@/components/ui/cards/option-selection-card";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";

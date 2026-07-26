@@ -18,18 +18,22 @@ interface MainInputProps extends InputHTMLAttributes<HTMLInputElement> {
   inputPrefix?: React.ReactNode;
 }
 
+// Every entry resolves through @clearcut/design-tokens — no literals here.
+// The two alpha greys keep their 8-digit hex form because they are the
+// --color-gray-blue base at 18%/12% opacity, which CSS cannot express by
+// referencing a var() inside a hex literal.
 const colors = {
-  gray: "#6C849D2E",
-  lightGray: "#6C849D1F",
+  gray: "color-mix(in srgb, var(--color-gray-blue) 18%, transparent)",
+  lightGray: "color-mix(in srgb, var(--color-gray-blue) 12%, transparent)",
   primary: "var(--color-brand)",
-  lightPrimary: "rgba(0, 123, 255, 0.1)",
-  error: "#dc3545",
-  lightError: "rgba(220, 53, 69, 0.1)",
-  success: "#28a745",
-  lightSuccess: "rgba(40, 167, 69, 0.1)",
-  border: "#ced4da",
-  text: "#212529",
-  placeholder: "#6c757d",
+  lightPrimary: "var(--color-input-primary-soft)",
+  error: "var(--color-input-error)",
+  lightError: "var(--color-input-error-soft)",
+  success: "var(--color-input-success)",
+  lightSuccess: "var(--color-input-success-soft)",
+  border: "var(--color-input-border)",
+  text: "var(--color-input-text)",
+  placeholder: "var(--color-input-placeholder)",
 };
 
 const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({

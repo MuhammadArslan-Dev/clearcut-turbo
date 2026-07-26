@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/icons";
 import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 import ModalHeader from "../ModalHeader";
 import { Attempt, getAttemptsHistory } from "@/lib/tests/getExam";

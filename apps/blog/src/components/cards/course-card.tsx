@@ -1,16 +1,19 @@
 import React from 'react'
 import Image from 'next/image'
-import Chip from "@mui/joy/Chip";
-import Button from '@mui/joy/Button';
+import Chip from "@clearcut/ui/chip";
+import { Button } from "@clearcut/ui/button";
 
+// `variant` was removed from this local, non-exported type: the shared Chip has
+// no variant axis, and the prop was provably inert here — the only call site
+// (below) never passes it, and the inline background/colour overrode whatever
+// Joy's "soft" variant contributed.
 type ExamBadgeProps = {
     active: boolean
     activeLabel?: string
     inactiveLabel?: string
     size?: 'sm' | 'md' | 'lg'
-    variant?: 'soft' | 'solid' | 'outlined' | 'plain'
     className?: string
-    sx?: any
+    sx?: React.CSSProperties
     colors?: {
         activeBg?: string
         inactiveBg?: string
@@ -24,7 +27,6 @@ function ExamBadge({
     activeLabel = 'Course + Test Series',
     inactiveLabel = 'Coming Soon',
     size = 'sm',
-    variant = 'soft',
     className,
     sx,
     colors,
@@ -37,7 +39,12 @@ function ExamBadge({
     }
     const c = { ...defaultColors, ...(colors || {}) }
     const label = active ? activeLabel : inactiveLabel
-    const computedSx = {
+    // Same declarations, moved from Joy's `sx` to a plain inline style object.
+    // `fontWeight: 'bold'` is kept even though it never wins — `!font-semibold`
+    // in the className is `!important` and beats inline style, so Joy rendered
+    // 600, not 700. Keeping it preserves the existing (if redundant) behaviour
+    // rather than silently changing the weight.
+    const computedStyle: React.CSSProperties = {
         fontWeight: 'bold',
         padding: '3px 15px',
         backgroundColor: active ? c.activeBg : c.inactiveBg,
@@ -47,9 +54,8 @@ function ExamBadge({
     return (
         <Chip
             size={size}
-            variant={variant}
             className={["body-medium !font-semibold", className || ''].join(' ')}
-            sx={computedSx}
+            style={computedStyle}
         >
             {label}
         </Chip>

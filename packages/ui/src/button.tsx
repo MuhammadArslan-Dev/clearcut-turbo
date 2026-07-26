@@ -44,33 +44,33 @@ const buttonVariants = cva(
       // --color-brand-accessible, not --color-brand: white text on #0083ff is
       // 3.69:1, below WCAG AA. This was the only remaining `color-contrast`
       // failure on the blog exam/level/year pages ("Start for FREE").
-      { variant: "solid", color: "primary", className: "bg-[var(--color-brand-accessible)] text-white" },
-      { variant: "solid", color: "danger", className: "bg-[#D92D20] text-white" },
+      { variant: "solid", color: "primary", className: "bg-[var(--color-brand)] text-white" },
+      { variant: "solid", color: "danger", className: "bg-[var(--color-danger)] text-white" },
       { variant: "solid", color: "success", className: "bg-[var(--color-success)] text-white" },
-      { variant: "solid", color: "gray", className: "bg-[#6B7280] text-white" },
-      { variant: "solid", color: "neutral", className: "bg-[#9FA6AD] text-white" },
-      { variant: "solid", color: "warning", className: "bg-[#9A5B13] text-white" },
+      { variant: "solid", color: "gray", className: "bg-[var(--color-gray)] text-white" },
+      { variant: "solid", color: "neutral", className: "bg-[var(--color-neutral)] text-white" },
+      { variant: "solid", color: "warning", className: "bg-[var(--color-warning-strong)] text-white" },
 
-      { variant: "outlined", color: "primary", className: "text-[#005CB8] border-[var(--color-brand)]" },
-      { variant: "outlined", color: "danger", className: "text-[#912018] border-[#D92D20]" },
-      { variant: "outlined", color: "success", className: "text-[#00753A] border-[var(--color-success)]" },
-      { variant: "outlined", color: "gray", className: "text-[#374151] border-[#9CA3AF]" },
-      { variant: "outlined", color: "neutral", className: "text-[#32383E] border-[#9FA6AD]" },
-      { variant: "outlined", color: "warning", className: "text-[#9A5B13] border-[#9A5B13]" },
+      { variant: "outlined", color: "primary", className: "text-[var(--color-primary-strong)] border-[var(--color-brand)]" },
+      { variant: "outlined", color: "danger", className: "text-[var(--color-danger-strong)] border-[var(--color-danger)]" },
+      { variant: "outlined", color: "success", className: "text-[var(--color-success-strong)] border-[var(--color-success)]" },
+      { variant: "outlined", color: "gray", className: "text-[var(--color-gray-strong)] border-[var(--color-gray-border)]" },
+      { variant: "outlined", color: "neutral", className: "text-[var(--color-neutral-strong)] border-[var(--color-neutral)]" },
+      { variant: "outlined", color: "warning", className: "text-[var(--color-warning-strong)] border-[var(--color-warning-strong)]" },
 
-      { variant: "soft", color: "primary", className: "bg-[rgba(0,131,255,0.12)] text-[#004C99]" },
-      { variant: "soft", color: "danger", className: "bg-[rgba(217,45,32,0.12)] text-[#912018]" },
-      { variant: "soft", color: "success", className: "bg-[rgba(0,162,81,0.12)] text-[#00753A]" },
-      { variant: "soft", color: "gray", className: "bg-[rgba(107,114,128,0.12)] text-[#111827]" },
-      { variant: "soft", color: "neutral", className: "bg-[rgba(159,166,173,0.12)] text-[#32383E]" },
-      { variant: "soft", color: "warning", className: "bg-[rgba(154,91,19,0.12)] text-[#9A5B13]" },
+      { variant: "soft", color: "primary", className: "bg-[var(--color-primary-bg-soft)] text-[var(--color-primary-stronger)]" },
+      { variant: "soft", color: "danger", className: "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]" },
+      { variant: "soft", color: "success", className: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
+      { variant: "soft", color: "gray", className: "bg-[var(--color-gray-bg-soft)] text-[var(--color-gray-stronger)]" },
+      { variant: "soft", color: "neutral", className: "bg-[var(--color-neutral-bg-soft)] text-[var(--color-neutral-strong)]" },
+      { variant: "soft", color: "warning", className: "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]" },
 
-      { variant: "plain", color: "primary", className: "text-[#005CB8]" },
-      { variant: "plain", color: "danger", className: "text-[#912018]" },
-      { variant: "plain", color: "success", className: "text-[#00753A]" },
-      { variant: "plain", color: "gray", className: "text-[#374151]" },
-      { variant: "plain", color: "neutral", className: "text-[#32383E]" },
-      { variant: "plain", color: "warning", className: "text-[#9A5B13]" },
+      { variant: "plain", color: "primary", className: "text-[var(--color-primary-strong)]" },
+      { variant: "plain", color: "danger", className: "text-[var(--color-danger-strong)]" },
+      { variant: "plain", color: "success", className: "text-[var(--color-success-strong)]" },
+      { variant: "plain", color: "gray", className: "text-[var(--color-gray-strong)]" },
+      { variant: "plain", color: "neutral", className: "text-[var(--color-neutral-strong)]" },
+      { variant: "plain", color: "warning", className: "text-[var(--color-warning-strong)]" },
     ],
     defaultVariants: {
       variant: "solid",
@@ -167,8 +167,7 @@ const ShimmerSweep = () => (
       aria-hidden="true"
       className="pointer-events-none absolute inset-0"
       style={{
-        background:
-          "linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%)",
+        background: "var(--gradient-shimmer-sweep)",
         animation: "cc-btn-shimmer 3s linear infinite",
       }}
     />

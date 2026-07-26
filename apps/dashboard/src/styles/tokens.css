@@ -14,56 +14,56 @@
   --background-soft: #f9fafb;
   --background-dark: #111827;
   --background-gray: #edf0f3;
-  --background-gray-subtle: #f1f5fa;
+  --background-gray-subtle: var(--color-background-gray-subtle);
 
   /* Icons */
-  --icon-gray-muted: #768ea7;
-  --icon-gray-normal: #192839;
-  --icon-gray-subtle: #40566d;
+  --icon-gray-muted: var(--color-surface-gray-muted);
+  --icon-gray-normal: var(--color-text-gray-normal);
+  --icon-gray-subtle: var(--color-text-gray-subtle);
   --icon-gray-disabled: #6d849d42;
 
   /* Interactive / Icon / Primary */
-  --icon-primary-normal: #006bd1;
-  --icon-primary-subtle: #0083ff;
+  --icon-primary-normal: var(--color-brand-dark-legacy);
+  --icon-primary-subtle: var(--color-brand);
   --icon-primary-muted: #2e9aff;
   --icon-primary-disabled: rgba(0, 107, 209, 0.18);
 
   /* / Icon / Positive */
-  --icon-positive-normal: #008743;
-  --icon-positive-subtle: #00a251;
+  --icon-positive-normal: var(--color-success-highlight);
+  --icon-positive-subtle: var(--color-success);
   --icon-positive-muted: #48d08c;
   --icon-positive-disabled: rgba(0, 162, 81, 0.32);
 
   /* / Icon / Negative */
-  --icon-negative-normal: #d92d20;
-  --icon-negative-subtle: #f04438;
-  --icon-negative-muted: #f96c62;
+  --icon-negative-normal: var(--color-danger);
+  --icon-negative-subtle: var(--color-danger-subtle);
+  --icon-negative-muted: var(--color-danger-muted);
   --icon-negative-disabled: rgba(217, 45, 32, 0.32);
 
   /* / Icon / Notice */
-  --icon-notice-normal: #c65c10;
-  --icon-notice-subtle: #e9690c;
-  --icon-notice-muted: #ff9040;
+  --icon-notice-normal: var(--color-warning);
+  --icon-notice-subtle: var(--color-warning-subtle);
+  --icon-notice-muted: var(--color-warning-muted);
   --icon-notice-disabled: rgba(233, 105, 12, 0.32);
 
   /* / Icon / Information */
-  --icon-information-normal: #0f78ad;
-  --icon-information-subtle: #1291d0;
-  --icon-information-muted: #57c1f6;
+  --icon-information-normal: var(--color-info);
+  --icon-information-subtle: var(--color-info-subtle);
+  --icon-information-muted: var(--color-info-muted);
   --icon-information-disabled: rgba(18, 145, 208, 0.32);
 
   /* TEXT COLOR  */
   /* Surface / Text / Gray */
-  --text-gray-normal: #192839;
-  --text-gray-subtle: #40566d;
-  --text-gray-muted: #768ea7;
+  --text-gray-normal: var(--color-text-gray-normal);
+  --text-gray-subtle: var(--color-text-gray-subtle);
+  --text-gray-muted: var(--color-surface-gray-muted);
   --text-gray-disabled: rgba(108, 132, 157, 0.32);
 
   /* / Text / Primary */
-  --text-primary-normal: #0083ff;
+  --text-primary-normal: var(--color-brand);
 
   /* / Text / Static */
-  --text-staticWhite-normal: #ffffff;
+  --text-staticWhite-normal: var(--primary-foreground);
   --text-staticWhite-subtle: rgba(255, 255, 255, 0.88);
   --text-staticWhite-muted: rgba(255, 255, 255, 0.48);
   --text-staticWhite-disabled: rgba(255, 255, 255, 0.32);
@@ -75,49 +75,49 @@
 
   /* Border */
   /* Surface / Border / Gray */
-  --border-gray-subtle: #cbd5e2;
+  --border-gray-subtle: var(--color-border-gray-subtle);
   --border-gray-normal: #90a5bb;
   --border-gray-muted: rgba(108, 132, 157, 0.18);
 
   /* / Border / Primary */
-  --border-primary-normal: #0083ff;
+  --border-primary-normal: var(--color-brand);
   --border-primary-muted: rgba(0, 107, 209, 0.18);
 
-  /* Colors */
-  --color-brand: #0083ff;
-  --color-brand-dark: #0053a2;
-  --color-primary: #0083ff;
-  --color-primary-soft: #dbeafe;
-  --color-primary-subtle: #e8f2fb;
+  /* Colors
+     ── Removed by the design-token audit ──────────────────────────────────────
+     This block used to re-declare 11 tokens that @clearcut/design-tokens already
+     defines with IDENTICAL values (--color-brand, --color-brand-dark,
+     --color-primary, --color-primary-soft/subtle, --color-success and its three
+     variants, --color-surface-gray-normal/muted/subtle). Because globals.css
+     imports the canonical sheet FIRST and this file second, these local copies
+     silently WON — so editing the shared token changed landing and blog but not
+     Dashboard. They are deleted, not re-pointed: canonical now applies directly,
+     and since the values were identical there is no visual change.
 
-  --color-bg: #020617;
-  --color-bg-soft: #0b1220;
-  --color-surface: #020617;
-  --color-border: #1e293b;
-
-  --color-text: #e5e7eb;
-  --color-text-muted: #9ca3af;
-  --color-danger: #ef4444;
-  --color-warning: #f97316;
-
-  /* success token  */
-  --color-success: #00a251;
-  --color-success-highlight: #008743;
-  --color-success-faded: #00a251;
-  --color-success-soft: #e7f6e5;
-
-  --color-surface-gray-normal: #192839;
-  --color-surface-gray-muted: #768ea7;
-  --color-surface-gray-subtle: #40566d;
-  --surface-border-gray-subtle: #cbd5e2;
-  --surface-border-normal-lowcontrast: #cbd5e2;
+     Also removed: --color-bg / --color-bg-soft / --color-surface / --color-border
+     / --color-text / --color-text-muted / --color-danger / --color-warning.
+     Those were a dark-surface set whose ONLY consumer was src/config/theme.ts,
+     which nothing imports (verified: 0 importers, 0 Tailwind utility usages).
+     Three of them additionally shadowed canonical names with DIFFERENT values
+     (--color-border #1e293b vs canonical var(--border); --color-danger #ef4444 vs
+     #d92d20; --color-warning #f97316 vs #c65c10), so keeping them would have left
+     one token name meaning two colours depending on the app. */
+  --surface-border-gray-subtle: var(--color-border-gray-subtle);
+  --surface-border-normal-lowcontrast: var(--color-border-gray-subtle);
 
   /* icons tokens  */
   --icon-neutral-intense: #243547;
 
-  /* Typography */
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
-    sans-serif;
+  /* Typography.
+     --font-sans is NOT redeclared here. It used to hold a hardcoded
+     `system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif`
+     stack, which won over the shared contract and meant Tailwind's `font-sans`
+     utility (and anything in packages/ui using it) painted a completely different
+     typeface from the app font — measured at runtime:
+       --font-sans -> system-ui, …, "Inter", "Segoe UI", sans-serif
+       body        -> "Noto Sans"
+     --font-sans now resolves through @clearcut/design-tokens to --font-latin,
+     which globals.css binds to this app's next/font instance. */
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

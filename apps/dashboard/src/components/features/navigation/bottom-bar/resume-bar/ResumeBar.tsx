@@ -1,5 +1,5 @@
 import React, { memo, useState } from "react";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 
 import Image from "next/image";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
@@ -25,9 +25,13 @@ type ResumeBarProps = {
   onResume?: () => void;
 };
 
+// `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
+// padding). The shared Button's sx understands paddingX/paddingY but not Joy's
+// `px`, which would have been emitted as an unknown inline-style key and silently
+// dropped — losing 16px of horizontal padding. Converted to the explicit value.
 const pillButtonSx = {
   borderRadius: "999px",
-  px: 2,
+  paddingX: "16px",
 };
 
 function ResumeBar({

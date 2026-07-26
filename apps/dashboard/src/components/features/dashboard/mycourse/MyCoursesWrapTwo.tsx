@@ -27,7 +27,7 @@ import PaymentFailedWarningModal from "@/components/modals/payment/failed-warnin
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { ChevronRight } from "lucide-react";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import MainPaywall from "../../PayWalls/MainPaywall";
 import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
 import { useCourseProgressSummary } from "@/hooks/course/useCourseProgressSummary";

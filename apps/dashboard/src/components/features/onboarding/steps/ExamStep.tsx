@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import StepIndicatorCard from "../indicator/StepIndicatorCard";
-import Skeleton from "@mui/joy/Skeleton";
+import Skeleton from "@clearcut/ui/skeleton";
 import { Card } from "@clearcut/ui/card";
 import CheckIcon from "@/components/ui/icons/check-icon";
 import { useExams } from "@/hooks/onboarding/useExams";
@@ -145,8 +145,7 @@ export default function ExamStep({
                   key={i}
                   variant="rectangular"
                   width={80}
-                  height={32}
-                  sx={{ borderRadius: "999px" }}
+                  height={32} borderRadius={"999px"}
                 />
               ))
             ) : error ? (

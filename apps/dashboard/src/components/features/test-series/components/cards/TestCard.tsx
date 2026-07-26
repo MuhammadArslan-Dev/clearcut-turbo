@@ -13,7 +13,7 @@ import {
 import SandTimerIcon from "@/components/ui/icons/sand-timer-icon";
 import Text from "@clearcut/ui/text";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import CounterCard from "@/components/ui/cards/CounterCard";
 
 /* -------------------------------------------------------------------------- */

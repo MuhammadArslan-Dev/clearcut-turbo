@@ -6,7 +6,7 @@ import Content from "./Content";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { MediaPlayerIcon, NoteIcon, PathIcon } from "@/components/ui/icons";
 import { AnimatePresence, motion } from "framer-motion";
-import { Skeleton } from "@mui/joy";
+import Skeleton from "@clearcut/ui/skeleton";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
@@ -140,8 +140,7 @@ export default function RelatedContentWrapper() {
               key={i}
               variant="rectangular"
               width={120}
-              height={36}
-              sx={{ borderRadius: 999 }}
+              height={36} borderRadius={999}
             />
           ))}
         </div>
@@ -151,8 +150,7 @@ export default function RelatedContentWrapper() {
           <Skeleton variant="text" width="70%" />
           <Skeleton
             variant="rectangular"
-            height={140}
-            sx={{ borderRadius: 12 }}
+            height={140} borderRadius={12}
           />
         </div>
       </div>

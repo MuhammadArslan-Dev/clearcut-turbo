@@ -23,7 +23,7 @@ import {
   StarBadge,
 } from "@/components/ui/icons";
 
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { usePreviousQuestions } from "../../hooks/usePreviousQuestions";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import {

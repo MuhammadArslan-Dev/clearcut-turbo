@@ -1,5 +1,5 @@
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import Button from '@mui/joy/Button'
+import { Button } from "@clearcut/ui/button";
 import React from 'react'
 import StepsIndicator from './StepsIndicator'
 import { highlightTextUtil } from '@/utils/text/highlightTextUtil'

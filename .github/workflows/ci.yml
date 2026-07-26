@@ -28,6 +28,14 @@ jobs:
       - name: Lint
         run: pnpm turbo run lint
 
+      # Design-system guard: fails if a PR adds a hardcoded colour instead of a
+      # token from @clearcut/design-tokens. Gated against a per-package baseline
+      # (scripts/hardcoded-colors-baseline.json) so the ~920 pre-existing literals
+      # don't block merges — the count can only go down. Runs before typecheck
+      # because it is fast and gives the clearest failure message.
+      - name: Design tokens — no new hardcoded colours
+        run: pnpm check:colors
+
       - name: Typecheck
         run: pnpm turbo run typecheck
 

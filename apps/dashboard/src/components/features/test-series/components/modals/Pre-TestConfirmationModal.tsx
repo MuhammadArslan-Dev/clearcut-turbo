@@ -4,7 +4,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { AnimatePresence } from "framer-motion";
 import React, { useMemo } from "react";
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 import Text from "@clearcut/ui/text";
 import ModalHeader from "../ModalHeader";

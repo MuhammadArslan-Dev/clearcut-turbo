@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/icons";
 
 import { Modal } from "@/components/features/Sheets/Modal";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useMiniTestQuestions } from "../../hooks/useMiniTestQuestions";

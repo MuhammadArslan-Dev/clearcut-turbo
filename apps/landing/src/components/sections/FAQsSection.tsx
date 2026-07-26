@@ -348,8 +348,13 @@ const ExplanationCard = memo(function ExplanationCard({
   return (
     <div className="max-w-lg mx-auto bg-white rounded-xl border-2 border-brand p-6 space-y-4">
       <h3 className="!font-semibold heading-small">{content.title}</h3>
-      <p className="body-medium text-text-gray-subtle">{content.intro}</p>
-      <ul className="space-y-2 body-medium list-disc pl-5 text-text-gray-subtle">
+      {/* `font-normal` is explicit, not new styling: the shared typography classes
+          now carry a default weight (medium for body-*) from
+          @clearcut/design-tokens, which landing previously did not have. These two
+          elements measured 400 before, so the weight is pinned to keep them
+          identical. */}
+      <p className="body-medium font-normal text-text-gray-subtle">{content.intro}</p>
+      <ul className="space-y-2 body-medium font-normal list-disc pl-5 text-text-gray-subtle">
         {content.points.map((point, i) => <li key={i}>{point}</li>)}
         <div>{content.footer}</div>
       </ul>

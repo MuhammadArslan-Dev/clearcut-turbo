@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 
 import PageSwitchTab from "@/components/features/preparation/components/PageSwitchTab";
 import SectionsTab from "@/components/features/preparation/components/SectionsTab";

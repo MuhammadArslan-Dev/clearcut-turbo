@@ -1,6 +1,10 @@
 // TopicListCardSkeleton.tsx
 import * as React from 'react';
-import { Card, Skeleton, Stack } from '@mui/joy';
+// Only Skeleton is used here. `Card` and `Stack` were imported but never
+// rendered — and that unused `Card` was the last remaining @mui/joy Card import
+// in the monorepo, which made it look as though a second Card primitive was
+// still in play. Removed so the shared packages/ui Card is provably the only one.
+import Skeleton from "@clearcut/ui/skeleton";
 import clsx from 'clsx';
 
 interface Props {
@@ -23,14 +27,13 @@ const TopicListCardSkeleton: React.FC<Props> = (
                     {/* Row 1: title + time pill */}
                     <div className="flex items-center justify-between gap-2">
                         {/* Title skeleton */}
-                        <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                        <Skeleton variant="text" width="70%" style={{ fontSize: '1rem' }} />
 
                         {/* Time badge skeleton */}
                         <Skeleton
                             variant="text"
                             width={72}
-                            height={22}
-                            sx={{ borderRadius: 999 }}
+                            height={22} borderRadius={999}
                         />
                     </div>
 

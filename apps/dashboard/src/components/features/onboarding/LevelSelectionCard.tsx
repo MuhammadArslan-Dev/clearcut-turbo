@@ -1,6 +1,6 @@
 import CheckIcon from '@/components/ui/icons/check-icon'
 import { PencilIcon } from '@heroicons/react/24/outline'
-import Button from '@mui/joy/Button'
+import { Button } from "@clearcut/ui/button";
 import React from 'react'
 
 type LevelSelectionCardProps = {

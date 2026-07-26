@@ -5,7 +5,7 @@ import {
   StarBadge,
 } from "@/components/ui/icons";
 import TabSwitch, { TabItem } from "@/components/ui/tabs/TabSwitch";
-import { Skeleton } from "@mui/joy";
+import Skeleton from "@clearcut/ui/skeleton";
 import React, { memo, useMemo } from "react";
 
 const Tabs = ({
@@ -25,8 +25,7 @@ const Tabs = ({
             key={i}
             variant="rectangular"
             width={100}
-            height={32}
-            sx={{ borderRadius: 999 }}
+            height={32} borderRadius={999}
           />
         ))}
       </div>

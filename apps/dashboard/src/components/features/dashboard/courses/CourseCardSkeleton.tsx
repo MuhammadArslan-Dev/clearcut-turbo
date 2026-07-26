@@ -1,6 +1,5 @@
 import { Card } from "@clearcut/ui/card";
-import Skeleton from '@mui/joy/Skeleton';
-import Box from '@mui/joy/Box';
+import Skeleton from "@clearcut/ui/skeleton";
 
 export function CourseCardSkeleton() {
     return (
@@ -12,23 +11,27 @@ export function CourseCardSkeleton() {
                         <Skeleton
                             variant="circular"
                             width={64}
-                            height={64}
-                            sx={{ borderRadius: '999px' }}
+                            height={64} borderRadius={'999px'}
                         />
 
-                        <Box sx={{ mt: 0.5 }}>
-                            <Skeleton variant="text" width={100} sx={{ fontSize: '0.875rem' }} />
-                            <Skeleton variant="text" width={80} sx={{ fontSize: '0.75rem' }} />
-                        </Box>
+                        {/* was <Box sx={{ mt: 0.5 }}> — Joy's spacing unit is 8px,
+                            so mt:0.5 === 4px === Tailwind mt-1 (verified in-browser) */}
+                        <div className="mt-1">
+                            <Skeleton variant="text" width={100} style={{ fontSize: '0.875rem' }} />
+                            <Skeleton variant="text" width={80} style={{ fontSize: '0.75rem' }} />
+                        </div>
                     </div>
 
                     {/* Right: exam details rows */}
                     <div className="col-span-4 flex flex-col gap-2">
-                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Skeleton variant="text" width={140} sx={{ fontSize: '1rem' }} />
-                            <Skeleton variant="text" width={120} sx={{ fontSize: '0.75rem' }} />
-                            <Skeleton variant="text" width={100} sx={{ fontSize: '0.75rem' }} />
-                        </Box>
+                        {/* was <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            flex:1 === Tailwind flex-1 (both compute to `1 1 0%`);
+                            gap:1 === 8px === Tailwind gap-2 (verified in-browser) */}
+                        <div className="flex-1 flex flex-col gap-2">
+                            <Skeleton variant="text" width={140} style={{ fontSize: '1rem' }} />
+                            <Skeleton variant="text" width={120} style={{ fontSize: '0.75rem' }} />
+                            <Skeleton variant="text" width={100} style={{ fontSize: '0.75rem' }} />
+                        </div>
                     </div>
                 </div>
 
@@ -36,8 +39,7 @@ export function CourseCardSkeleton() {
                 <div className="flex flex-col gap-2 px-2 py-1">
                     <Skeleton
                         variant="rectangular"
-                        height={36}
-                        sx={{ borderRadius: '50px' }}
+                        height={36} borderRadius={'50px'}
                     />
                 </div>
             </div>

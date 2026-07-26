@@ -2,7 +2,8 @@
 import { ChevronIcon, CircleIcon } from "@/components/ui/icons";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreparationModalStore } from "@/components/features/preparation/store/usePreparationModalStore";
-import { Button, Skeleton } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
+import Skeleton from "@clearcut/ui/skeleton";
 import React, { useMemo } from "react";
 import {
   getNextTopic,
@@ -17,9 +18,12 @@ import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 
+// `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
+// padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
+// which would be dropped as an unknown inline-style key. Converted explicitly.
 const pillButtonSx = {
   borderRadius: "999px",
-  px: 2,
+  paddingX: "16px",
 };
 
 export type ParsedPaperName = Record<string, { name: string }>;
@@ -85,8 +89,7 @@ export default function BottomBar() {
             <Skeleton
               variant="text"
               width={220}
-              height={28}
-              sx={{ borderRadius: 6 }}
+              height={28} borderRadius={6}
             />
             <Skeleton variant="circular" width={32} height={32} />
           </div>
@@ -104,8 +107,7 @@ export default function BottomBar() {
           <Skeleton
             variant="rectangular"
             width={160}
-            height={40}
-            sx={{ borderRadius: 999 }}
+            height={40} borderRadius={999}
           />
 
           {/* Right controls */}

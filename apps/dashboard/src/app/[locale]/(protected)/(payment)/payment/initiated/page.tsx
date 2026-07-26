@@ -28,7 +28,7 @@ import { createSubscription, getPaymentPricing, PaymentPricing, PaymentType } fr
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";

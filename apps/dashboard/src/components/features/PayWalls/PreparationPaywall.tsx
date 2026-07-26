@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/icons";
 import Image from "next/image";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";

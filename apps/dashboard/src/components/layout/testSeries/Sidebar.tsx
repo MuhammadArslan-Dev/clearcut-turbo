@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/icons";
 import SandTimerIcon from "@/components/ui/icons/sand-timer-icon";
 import BookmarkIcon from "@/components/ui/icons/bookmark-icon";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import TickIcon from "@/components/ui/icons/tick-icon";
 import {
   ProgressData,

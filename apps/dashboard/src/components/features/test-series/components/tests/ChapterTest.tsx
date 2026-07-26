@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import TestCard from "../cards/TestCard";
 import Text from "@clearcut/ui/text";

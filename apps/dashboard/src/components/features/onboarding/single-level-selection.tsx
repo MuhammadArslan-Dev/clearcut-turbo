@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import LevelSelectionCard from "./LevelSelectionCard";
 import { useLevels } from "@/hooks/onboarding/useLevels";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import ButtonShimmerOverlay from "@/components/ui/button-shimmer-overlay";
 import {
   ChevronDoubleRightIcon,

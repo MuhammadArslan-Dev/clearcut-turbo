@@ -68,9 +68,12 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card({
   height,
   maxHeight,
   borderwidth = 1,
-  // Same value as the shared `--color-border-gray-subtle` design token —
-  // referenced by var() so a future palette change stays in sync here too.
-  bordercolor = "var(--color-border-gray-subtle, #CBD5E2)",
+  // The #CBD5E2 fallback that used to sit inside this var() was a second copy of
+  // the token's value, so a palette change would leave it stale. Dropped: all
+  // three apps @import @clearcut/design-tokens, so the token is always defined,
+  // and a missing token should fail visibly rather than silently render an
+  // out-of-date colour.
+  bordercolor = "var(--color-border-gray-subtle)",
   bgcolor = "transparent",
   padding,
   cursor,

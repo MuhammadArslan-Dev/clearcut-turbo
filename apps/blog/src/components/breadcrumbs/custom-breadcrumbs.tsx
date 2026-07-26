@@ -3,9 +3,9 @@
 "use client";
 
 import React from "react";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Link from "@mui/joy/Link";
-import Typography from "@mui/joy/Typography";
+import Breadcrumbs from "@clearcut/ui/breadcrumbs";
+import Link from "@clearcut/ui/link";
+import Text from "@clearcut/ui/text";
 import HomeIcon from "@clearcut/ui/icons/HomeIcon";
 
 // ✅ Props type
@@ -34,18 +34,47 @@ const CustomBreadcrumbs: React.FC<CustomBreadcrumbsProps> = ({
   return (
     <>
       {isShow && (
+        // Joy's `sx={{ p: padding }}` becomes a plain `style` — `p` was Joy
+        // shorthand for padding, and `padding` here is already a CSS string
+        // ("10px" by default), so the computed value is unchanged.
         <Breadcrumbs
           aria-label="breadcrumbs"
-          sx={{ p: padding }}
+          style={{ padding }}
         >
           {items.map((item, index) => {
             const isLast = index === items.length - 1;
 
             if (isLast) {
+              // Migrated from @mui/joy/Typography to the shared Text primitive.
+              //
+              // Safe here — and ONLY here — because `highlightClass` already
+              // supplies every typographic value: `body-medium` (size/line-height),
+              // `!font-semibold` (weight) and `text-[#0060bd]` (colour). Those
+              // override Text's opinionated defaults (body-medium / !font-normal /
+              // gray-normal), so the two render identically. Verified in-browser
+              // across all 16 measured properties plus the bounding rect: Joy and
+              // Text both computed SPAN, display:block, 15px/20px, weight 600,
+              // rgb(0,96,189), 103x24 — zero differences.
+              //
+              // The weight override is deterministic, not luck: `!font-normal`
+              // and `!font-semibold` are both !important single-class rules, so
+              // source order decides, and in the production CSS `!font-semibold`
+              // is emitted after `!font-normal` (offsets 45410 vs 45294) because
+              // Tailwind sorts font-weight utilities by value.
+              //
+              // ⚠ Contract: if `highlightClass` ever stops supplying a size,
+              // weight or colour, Text's defaults will surface and this crumb
+              // will change appearance. Joy's Typography could not do that,
+              // because inside <Breadcrumbs> it ran at level="inherit" and
+              // applied no typography of its own.
+              //
+              // The other two Typography call sites (main-breadcrumbs.tsx,
+              // breadcrumb-nav.tsx) are NOT migrated — they have no such class
+              // and Text cannot reproduce level="inherit". See the ticket report.
               return (
-                <Typography key={index} className={highlightClass}>
+                <Text key={index} as="span" className={highlightClass}>
                   {item.name}
-                </Typography>
+                </Text>
               );
             }
 

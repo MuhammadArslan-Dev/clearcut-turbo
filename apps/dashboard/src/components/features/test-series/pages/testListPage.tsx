@@ -5,7 +5,7 @@ import MainContainer from "@/components/ui/main-container";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
 import TestCard from "../components/cards/TestCard";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import ProgressCard from "../components/cards/ProgressCard";
 import { useTestSeriesModalStore } from "../store/useTestSeriesModalStore";
 import SectionalTest from "../components/tests/SectionalTest";

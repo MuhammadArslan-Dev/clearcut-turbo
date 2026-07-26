@@ -50,29 +50,63 @@
   --feedback-background-negative-intense: #d92d20;
 }
 
-@theme inline {
+/* `inline` is only correct for tokens whose value is already a var() reference:
+   it makes Tailwind substitute the value straight into utilities and NOT emit a
+   CSS custom property. Literal values therefore must not live here — anything
+   read back as var(--x) at runtime would resolve to nothing. Measured before the
+   split: getPropertyValue('--color-brand-dark') === '' in Blog, i.e. this app's
+   deliberate #006bd1 override was silently dead, and so was --color-softskyblue.
+   Reference-valued tokens stay in this block; literals moved to @theme static. */
+@theme static inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-oncloud-onintense: var(--surface-text-oncloud-onintense);
+}
+
+@theme static {
+  /* ================= Font contract =================
+     See packages/design-tokens/tokens.css. --font-latin is this app's binding for
+     the shared --font-sans name; --font-hindi is the Devanagari face for the `hi`
+     locale, applied by the `:lang(hi)` rule further down.
+
+     These replace `--font-sans: var(--font-geist-sans)` and
+     `--font-mono: var(--font-geist-mono)`, which were dead — --font-geist-sans and
+     --font-geist-mono are defined nowhere in this repo, so --font-sans measured
+     EMPTY at runtime and Tailwind's `font-sans` produced nothing. --font-mono is
+     not redeclared: `font-mono` has zero consumers in the codebase, so re-pointing
+     it would be inventing a token with no reader.
+
+     ⚠ These MUST live in `@theme static`, never in `@theme static inline`. `inline`
+     substitutes a token's value into utilities and does NOT emit the custom
+     property, so a runtime `var(--font-latin)` read would resolve to nothing.
+     Measured the hard way: declaring them in the inline block above left
+     --font-latin EMPTY and blog fell back to Times New Roman on every page.
+     Matches apps/landing, which declares both in `@theme static`. */
+  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
 
   /* --color-brand intentionally NOT redeclared here — @clearcut/design-tokens
      already defines it (#0083ff, same value), and Tailwind merges @theme
      blocks across files, so repeating it here was pure duplication.
      --color-brand-dark IS still declared here because it conflicts with the
-     package's value (#006bd1 here vs #0053a2 in the package) — see the note
-     on --primary-dark above; this app intentionally keeps its own value
-     until that conflict is resolved. */
+     package's value (#006bd1 here vs #0053a2 in the package); this app
+     intentionally keeps its own value until that conflict is resolved.
+     ⚠ This override is the reason --color-brand-dark means two different colours
+     depending on the app — see the note on --color-brand-dark-legacy in
+     packages/design-tokens/tokens.css. */
   --color-brand-dark: #006bd1;
+
+  /* NOTE (naming): --color-softskyblue and the --color-custom-teal-* scale are
+     named after raw colours, which the design-system convention forbids
+     (tokens should express intent: surface/accent/info…). They are also
+     app-local rather than canonical. Left in place because renaming them means
+     touching every consumer and picking a semantic meaning — flagged as debt,
+     not silently changed. */
   --color-softskyblue: #f3f7fd;
-  --color-oncloud-onintense: var(--surface-text-oncloud-onintense);
 
-
-  /* Define a color with a scale of shades */
   --color-custom-teal-50: #f0fdfa;
   --color-custom-teal-100: #ccfbf1;
   --color-custom-teal-200: #99f6e4;
-  /* ... and so on for all your shades */
   --color-custom-teal-500: #14b8a6;
   --color-custom-teal-900: #134e4a;
 }
@@ -98,45 +132,40 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-sans), sans-serif;
+  /* Resolves through the shared contract rather than reaching past it straight
+     to the next/font variable, so Tailwind's font-sans, the shared UI primitives
+     and the Joy theme all read the same name. Same rendered family as before
+     (measured: "Noto Sans" both sides). */
+  font-family: var(--font-latin);
   scroll-behavior: smooth;
+  /* ⚠ App-level base style, NOT part of the shared typography scale: this puts
+     -0.02em on every element in blog, which is why blog headings measure a flat
+     inherited -0.32px while dashboard headings measure a font-size-relative
+     -0.02em and landing headings measure `normal`. Left exactly as-is — unifying
+     tracking across the three apps changes rendering in at least two of them and
+     is a design decision. Documented in the ticket report as remaining debt. */
   letter-spacing: var(--letter-spacing);
 }
 
-/* The `.display-*`, `.heading-*`, and `.body-*` classes themselves now live
-   in @clearcut/design-tokens/tokens.css (imported at the top) — the single
-   product-wide source — and are WEIGHTLESS there (landing's model), so font
-   weight is controlled by Tailwind `font-*` utilities per element.
-
-   Blog previously baked font-weight straight into those classes (headings/
-   display = semibold, body = medium). To preserve that look everywhere it was
-   relied on — including the many usages that pass a class through component
-   props (`headingSize="display-medium"`), clsx, or template strings, which a
-   call-site migration can't safely reach — blog keeps its DEFAULT weights
-   here in @layer base. Because base ranks below Tailwind's utilities layer,
-   any `font-*` utility on an element still overrides these defaults, so the
-   per-element control of landing's model works too. Values come from the
-   shared --fw-* tokens. */
-@layer base {
-  .display-xlarge,
-  .display-large,
-  .display-medium,
-  .display-small,
-  .heading-2xxlarge,
-  .heading-2xlarge,
-  .heading-xlarge,
-  .heading-large,
-  .heading-medium,
-  .heading-small {
-    font-weight: var(--fw-semibold);
-  }
-  .body-large,
-  .body-medium,
-  .body-small,
-  .body-xsmall {
-    font-weight: var(--fw-medium);
-  }
+/* Devanagari face for the `hi` locale. Blog serves /hi via next-intl but had no
+   Hindi font at all before this — Devanagari text fell back to whatever the OS
+   offered. Only the family is switched: line-height/weight are deliberately NOT
+   adjusted here, because that would be a typographic redesign rather than a
+   repair of the font contract. */
+:lang(hi) {
+  font-family: var(--font-hindi);
 }
+
+/* The `.display-*`, `.heading-*`, `.body-*` classes AND their default weights
+   now both live in @clearcut/design-tokens/tokens.css (imported at the top) —
+   one definition, product-wide.
+
+   Blog's local `@layer base` weight block used to live here. It was the correct
+   pattern (base ranks below Tailwind's utilities layer, so `font-*` utilities
+   still win) and it has been moved verbatim into the shared tokens, where all
+   three apps now read it. Keeping a copy here would be exactly the duplication
+   this ticket removed from dashboard. Values are unchanged: semibold for
+   display/heading, medium for body, from the --fw-* tokens. */
 
 .text-body {
   color: #737780 !important;

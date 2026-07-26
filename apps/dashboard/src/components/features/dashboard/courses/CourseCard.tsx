@@ -8,7 +8,7 @@ import {
   ClockIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons";
-import Button from "@mui/joy/Button";
+import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 

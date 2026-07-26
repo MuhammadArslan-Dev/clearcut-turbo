@@ -4,7 +4,7 @@ import Link from "next/link";
 import { limitWords } from "@clearcut/utils/text-limit";
 import MainContainer from "@/components/main-container";
 import StarBadge from "@/components/ui/badge/star-badge";
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { useParams, usePathname } from "next/navigation";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Menu } from "lucide-react";
 
-import { Button } from "@mui/joy";
+import { Button } from "@clearcut/ui/button";
 
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 
