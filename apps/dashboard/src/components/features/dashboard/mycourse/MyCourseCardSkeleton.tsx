@@ -4,7 +4,14 @@ import Skeleton from "@clearcut/ui/skeleton";
 
 export function MyCourseCardSkeleton() {
     return (
-        <Card bgcolor='bg-white' padding={0}>
+        <Card
+            bgcolor='bg-white'
+            padding={0}
+            // Mirrors MyCourseCard: the badge placeholder below also hangs above
+            // the card's top edge and would otherwise be clipped, so the skeleton
+            // would not match the card it stands in for.
+            overflow="visible"
+        >
             <div className="flex flex-col gap-3 px-1 pt-3 pb-2 relative">
                 {/* Top-right badge */}
                 <div className="absolute -top-[10.5px] right-5">

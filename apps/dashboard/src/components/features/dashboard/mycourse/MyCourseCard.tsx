@@ -73,6 +73,10 @@ export default function MyCourseCard({
       minWidth={"250px"}
       padding={0}
       maxWidth={maxWidth}
+      // The status badge below is positioned at -top-[10.5px] to straddle the
+      // card's top edge, the way it does in production. Card clips by default,
+      // which cut off its upper half.
+      overflow="visible"
       className={cardClasses}
     >
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">

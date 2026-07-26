@@ -258,6 +258,31 @@
   /* Blue-grey used across auth + dashboard (rgb(108,132,157)). */
   --color-gray-blue: #6c849d;
 
+  /* ================= Button hover shades =================
+     Solid-variant hover backgrounds — the one step darker the product moves to
+     on hover. Every value below was MEASURED on the production Dashboard, not
+     chosen: hovering the "Change Exam" button reports rgb(0, 111, 219), i.e.
+     #006fdb. They correspond to the 600 rung of each ramp (the 500 rung is the
+     resting --color-brand / --color-danger / --color-gray).
+
+     Note --color-brand-hover (#006fdb) is NOT --color-brand-dark (#0053a2) or
+     --color-brand-dark-legacy (#006bd1) — three genuinely different blues with
+     three different jobs, so it needs its own name rather than reusing either.
+
+     Success needs no entry here: its 600 rung is already
+     --color-success-highlight (#008743). */
+  --color-brand-hover: #006fdb;
+  --color-danger-hover: #b42318;
+  --color-gray-hover: #4b5563;
+
+  /* Gray's soft/outlined/plain hover fills. Gray is the one colour the product
+     does NOT express as an alpha tint of its own 500 — it uses flat values off
+     the cool-gray ramp, so these cannot be derived and are spelled out.
+     --color-gray-bg-soft-hover is #d1d5db90 as it computes (0x90/255 = 0.565);
+     verified by hovering the course card's "Edit" button on production. */
+  --color-gray-bg-soft-hover: rgba(209, 213, 219, 0.565);
+  --color-gray-bg-subtle-hover: #f3f4f6;
+
   /* ================= Skeleton (loading placeholder) =================
      Added for the shared Skeleton primitive. These are NOT new colours: they
      are the exact values MUI Joy's Skeleton already resolved to, lifted out of
@@ -294,12 +319,19 @@
   --color-control-surface: #fbfcfe;
   --color-control-selected: #dde7ee;
 
-  /* 12%-alpha fills behind the shared Button's `soft` variant. Distinct from
-     --color-*-soft above, which are opaque pale tints used as page surfaces. */
+  /* Fills behind the shared Button's `soft` variant. Distinct from
+     --color-*-soft above, which are opaque pale tints used as page surfaces.
+     Most are 12%-alpha; gray is the exception, and deliberately so — see below. */
   --color-primary-bg-soft: rgba(0, 131, 255, 0.12);
   --color-danger-bg-soft: rgba(217, 45, 32, 0.12);
   --color-success-bg-soft: rgba(0, 162, 81, 0.12);
-  --color-gray-bg-soft: rgba(107, 114, 128, 0.12);
+  /* OPAQUE, not rgba(107, 114, 128, 0.12). The product's soft-gray button is a
+     flat #edf0f3 — measured on the production Dashboard ("Edit" on the course
+     card). The 12%-alpha form only *looked* right because it happened to be
+     composited over white, where it lands on ~rgb(237, 238, 240); on any tinted
+     surface (the blue "My Courses" card, a coloured section) it would pick up
+     the backdrop and drift, which the opaque value cannot do. */
+  --color-gray-bg-soft: #edf0f3;
   --color-neutral-bg-soft: rgba(159, 166, 173, 0.12);
   --color-warning-bg-soft: rgba(154, 91, 19, 0.12);
 
@@ -503,27 +535,49 @@
 
    Declaring the defaults HERE, inside `@layer base`, is what makes the model work
    everywhere: `base` ranks BELOW `utilities`, so these are true defaults that any
-   `font-*` utility overrides normally, with no `!important` needed. Values are the
-   --fw-* tokens and are byte-identical to what blog and dashboard already
-   rendered, so neither app changes. */
+   `font-*` utility overrides normally, with no `!important` needed.
+
+   The `.body-*` default is --fw-regular (400), NOT --fw-medium (500).
+
+   The table above is what the three apps rendered in THIS repo, and for .body-*
+   it was wrong as a product default: the 500 came from dashboard's own deleted
+   typography.css, which never matched the shipped product. Measured on the
+   production Dashboard, every `.body-*` element carrying no explicit weight
+   class computes 400 — body-large, body-medium and body-small alike (10
+   elements sampled across the Learning Streak / Quick Revision / Time Remaining
+   cards). Locally the same elements were rendering 500, i.e. every naked body
+   class was one step too heavy.
+
+   It is easy to miss because most call sites DO pass a weight — `body-medium
+   !font-normal` and friends were already correct and matched. Only the naked
+   ones drifted ("Upgrade now to finish syllabus before exam", "Longest Streak:
+   1 day").
+
+   The display / heading classes now carry NO weight default either — they
+   INHERIT. That earlier note ("no naked instance to measure, so the table's 600
+   stands until a screen with a naked heading turns up") is resolved: the exam
+   settings modal's level tabs are exactly that screen.
+
+   Its three tab labels are naked `.heading-small`, and the tab CONTAINER is what
+   carries the weight — `!font-semibold` on the selected tab, nothing on the other
+   two. Production therefore renders only the selected tab bold (600) and the
+   other two regular (400). A hard 600 on `.heading-small` overrode that
+   inheritance and made all three bold, erasing the selected/unselected
+   distinction entirely.
+
+   Inheriting also matches what the table above recorded for landing ("400, no
+   default"), so all three apps now agree with production instead of two of them
+   forcing a weight the product never asked for.
+
+   Note this is the same class of bug the `.body-*` default had, and it hid the
+   same way: most call sites pass an explicit weight and were always correct, so
+   only the naked ones drifted. */
 @layer base {
-  .display-xlarge,
-  .display-large,
-  .display-medium,
-  .display-small,
-  .heading-2xxlarge,
-  .heading-2xlarge,
-  .heading-xlarge,
-  .heading-large,
-  .heading-medium,
-  .heading-small {
-    font-weight: var(--fw-semibold);
-  }
   .body-large,
   .body-medium,
   .body-small,
   .body-xsmall {
-    font-weight: var(--fw-medium);
+    font-weight: var(--fw-regular);
   }
 }
 
