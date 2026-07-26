@@ -67,7 +67,6 @@ export default function CourseCard({ course, data, badge, viewDetailsClick, loca
               alt={course?.image?.alt ?? "Logo"}
               width={104}
               height={104}
-               priority
   unoptimized
             />
             <div className="absolute -bottom-1 right-0 rounded-full bg-white p-1">

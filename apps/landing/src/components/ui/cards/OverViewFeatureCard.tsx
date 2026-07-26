@@ -24,7 +24,6 @@ export default function OverViewFeatureCard({
             alt="course badge"
             width={20}
             height={20}
-             priority
   unoptimized
           />
           <Text

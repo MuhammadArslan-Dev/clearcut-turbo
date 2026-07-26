@@ -48,9 +48,15 @@ export default async function page({ params }: Props) {
   }
 
   // ✅ Correct API fetch Subjects
+  // `revalidate: 3600` rather than `no-store`: the subject list is public,
+  // identical for every visitor and changes on a content-editing cadence, not
+  // a per-request one. `no-store` opted this route out of the full route
+  // cache entirely, so every crawler hit re-rendered the page and re-queried
+  // the backend. 3600s matches the window used by the other blog content
+  // routes.
   const resSubjects = await fetch(
     `${process.env.BACKEND_URL}/blog/get-subject?exam_id=${examName}&slug=${level_id ?? ""}`,
-    { cache: "no-store" },
+    { next: { revalidate: 3600 } },
   );
 
   const dataSubjects = await resSubjects.json();

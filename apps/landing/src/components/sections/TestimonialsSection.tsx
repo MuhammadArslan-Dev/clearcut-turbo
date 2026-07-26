@@ -30,7 +30,6 @@ export default React.memo(function TestimonialsSection({
           width={48}
           height={48}
           className="w-full h-full object-cover"
-           priority
   unoptimized
         />
       ),

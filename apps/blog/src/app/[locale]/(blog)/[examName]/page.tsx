@@ -24,6 +24,37 @@ type Params = {
 };
 
 /* =========================================================
+   RENDERING STRATEGY — ISR
+   -----------------------------------------------------------------
+   This route was `ƒ` (server-rendered on every request) purely because its
+   one data read defaulted to `cache: "no-store"` (see lib/api/api2.ts, where
+   `revalidate` defaults to `false`). Nothing about the page is
+   request-specific: it renders exam navigation from a public endpoint, with
+   no cookies, headers or search params.
+
+   Measured cost of the old behaviour on a production build with the backend
+   on the SAME machine: TTFB 1449ms, DCL 2414ms for /ctet.
+
+   `generateStaticParams` is safe here because the parameter space is closed —
+   the page itself rejects anything but "ctet" (`allowedExams` below) and
+   redirects, so there is exactly one valid examName per locale. Unlisted
+   params still work: `dynamicParams` defaults to true, so any other slug is
+   rendered on demand and then hits the same redirect it always did.
+
+   3600s matches the window already used by the year/[year_id] route, so the
+   freshness contract across blog content routes stays consistent.
+========================================================= */
+
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return [
+    { locale: "en", examName: "ctet" },
+    { locale: "hi", examName: "ctet" },
+  ];
+}
+
+/* =========================================================
    METADATA
 ========================================================= */
 
@@ -97,6 +128,7 @@ export default async function Page({ params }: Params) {
   
   const data = await apiFetch(
     `/blog/exam?short_name=${examSlug}&enavigation=true&first=true`,
+    { revalidate: 3600 },
   );
   const examData = data?.data ?? null;
 

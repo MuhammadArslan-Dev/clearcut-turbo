@@ -17,8 +17,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/hi`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   );
 
+  // All four reads below use `revalidate: 3600` rather than `cache: "no-store"`.
+  //
+  // `no-store` made this route un-prerenderable: the production build logged
+  // `DYNAMIC_SERVER_USAGE — Route /sitemap.xml couldn't be rendered statically
+  // because it used revalidate: 0 fetch`, so the sitemap was rebuilt from
+  // scratch, with 4+ backend round trips, on every crawler request.
+  //
+  // A sitemap is the canonical case for time-based revalidation: it must be
+  // reasonably fresh, never per-request. The URL set is unchanged, so indexing
+  // behaviour is identical.
   try {
-    const examsRes = await fetch(`${API}/blog/exam?status=active`, { cache: "no-store" });
+    const examsRes = await fetch(`${API}/blog/exam?status=active`, { next: { revalidate: 3600 } });
     const examsJson = await examsRes.json();
     const exams: any[] = (examsJson?.data || []).filter((e: any) =>
       ALLOWED_EXAMS.includes(e?.short_name?.toLowerCase()),
@@ -53,8 +63,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       // Fetch levels and years in parallel
       const [levelsJson, yearsJson] = await Promise.all([
-        fetch(`${API}/blog/get-enavigation?parent_id=true`, { cache: "no-store" }).then((r) => r.json()),
-        fetch(`${API}/blog/get-years?exam_id=${examSlug}`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`${API}/blog/get-enavigation?parent_id=true`, { next: { revalidate: 3600 } }).then((r) => r.json()),
+        fetch(`${API}/blog/get-years?exam_id=${examSlug}`, { next: { revalidate: 3600 } }).then((r) => r.json()),
       ]);
 
       const levels: any[] = levelsJson?.data || [];
@@ -76,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // Fetch subjects for this level
         const subjectsRes = await fetch(
           `${API}/blog/get-subject?exam_id=${examSlug}&slug=${ls}`,
-          { cache: "no-store" },
+          { next: { revalidate: 3600 } },
         );
         const subjects: any[] = (await subjectsRes.json()).data || [];
 

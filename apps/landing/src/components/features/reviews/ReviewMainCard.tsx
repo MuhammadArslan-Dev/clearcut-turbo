@@ -23,7 +23,6 @@ export default function ReviewMainCard() {
               width={48}
               height={48}
               className="w-full h-full object-cover"
-               priority
   unoptimized
             />
           </div>

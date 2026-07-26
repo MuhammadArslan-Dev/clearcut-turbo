@@ -61,10 +61,16 @@ export default async function page({
   }
   const query = `slug=${chapter_name}&exam_name=${examName}`;
 
+  // `revalidate: 3600` rather than `no-store`. This is the deepest content
+  // route (chapter question bank) and the heaviest read on the blog, and it
+  // is the same for every visitor — no cookies, no personalisation. Under
+  // `no-store` every crawler request re-ran this query and re-rendered the
+  // page. Same window as the sibling year/[year_id] route, which already
+  // used 3600.
   const res = await fetch(
     `${process.env.BACKEND_URL}/blog/get-questions-by-chapter?${query}`,
     {
-      cache: "no-store",
+      next: { revalidate: 3600 },
     },
   );
   const data = await res.json();

@@ -25,10 +25,10 @@ const STEP_IMAGES: Record<string, React.ReactNode> = {
     <Image src={IMAGES.howItWork.step1} alt="how it work step 1 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" />
   ),
   "step-2": (
-    <Image src={IMAGES.howItWork.step2} alt="how it work step 2 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" priority unoptimized />
+    <Image src={IMAGES.howItWork.step2} alt="how it work step 2 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" unoptimized />
   ),
   "step-3": (
-    <Image src={IMAGES.howItWork.step3} alt="how it work step 3 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" priority unoptimized />
+    <Image src={IMAGES.howItWork.step3} alt="how it work step 3 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" unoptimized />
   ),
 };
 
