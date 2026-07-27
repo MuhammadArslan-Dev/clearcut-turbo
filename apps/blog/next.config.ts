@@ -54,6 +54,16 @@ const config: NextConfig = {
 };
 
 export default withSentryConfig(withNextIntl(config), {
+  // Official Sentry tree-shaking flags (docs: configuration/tree-shaking).
+  // These strip Sentry features this app does not use from ANY Sentry code
+  // that does get bundled — notably the server/edge runtime, which stays fully
+  // enabled. They were unset before this milestone.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayShadowDom: true,
+    excludeReplayIframe: true,
+    excludeReplayWorker: true,
+  },
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

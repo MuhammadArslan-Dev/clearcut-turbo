@@ -12,7 +12,30 @@ import { Button } from "@clearcut/ui/button";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/auth";
-import LanguageModal from "../feature/language-modal";
+import dynamic from "next/dynamic";
+
+/**
+ * Code-split, client-only. The header is rendered by the blog layout on EVERY
+ * page, so anything it imports statically lands in the critical path of the
+ * whole site. This modal was doing exactly that while being invisible until a
+ * user clicks the language switcher.
+ *
+ * It is a genuinely free win because the modal renders NOTHING when closed:
+ * `modals-bottom-sheet` wraps its body in `<AnimatePresence>{isOpen && …}`,
+ * so with `isOpen={false}` the server already emitted no markup for it.
+ * `ssr: false` therefore produces byte-identical HTML — no hydration
+ * mismatch, no layout shift, no SEO change — while moving the modal and its
+ * dependency tree (modals-bottom-sheet, the language store, next-intl routing
+ * helpers, Card, Button) out of the initial bundle.
+ *
+ * Note this does NOT remove framer-motion from the critical path: the header's
+ * own mobile menu uses `motion.div` / `AnimatePresence` directly (below), so
+ * the library is still required eagerly. That is intentional and correct —
+ * framer-motion stays.
+ */
+const LanguageModal = dynamic(() => import("../feature/language-modal"), {
+  ssr: false,
+});
 
 type SectionId =
   | "features"

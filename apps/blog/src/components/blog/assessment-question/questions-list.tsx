@@ -8,8 +8,20 @@ import { Button } from "@clearcut/ui/button";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { useParams, usePathname } from "next/navigation";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";
-import YearListModal from "@/components/feature/year-list-modal";
+import dynamic from "next/dynamic";
 import { useLanguageStore } from "@/store/useLanguageStore";
+
+/**
+ * Code-split, client-only — same reasoning as the language modal in
+ * components/blog/header.tsx. This modal shares the `modals-bottom-sheet`
+ * primitive, which renders nothing while `isOpen` is false, so `ssr: false`
+ * leaves the server HTML unchanged and simply defers the chunk until a user
+ * opens the year picker.
+ */
+const YearListModal = dynamic(
+  () => import("@/components/feature/year-list-modal"),
+  { ssr: false },
+);
 // NOTE: this file used to `import { isArray } from "util"` — Node's built-in
 // util module, in a "use client" component. It was never referenced (the code
 // uses Array.isArray), but it still pulled a Node polyfill into the browser
