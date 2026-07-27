@@ -47,15 +47,45 @@ const config: NextConfig = {
   async headers() {
     return [
       {
+        // /public assets are served with no explicit Cache-Control, so browsers
+        // revalidate them constantly — Lighthouse flagged ~201 KiB under
+        // "efficient cache lifetimes". `_next/static` is already immutable
+        // (hashed filenames); these are not hashed, so `immutable` would trap a
+        // stale logo forever. A week plus stale-while-revalidate gets nearly all
+        // the benefit while still letting an updated asset propagate.
+        source: "/:path*.(webp|png|jpg|jpeg|svg|gif|ico|avif)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           {
             key: "Link",
+            // Exactly ONE preconnect. Chrome holds a DNS+TCP+TLS connection open
+            // per preconnect, so the hint is only worth its cost for an origin
+            // needed EARLY. Lighthouse flagged this app for too many origins.
+            //
+            // Kept: the S3 bucket serves the above-the-fold exam logos, so the
+            // connection is genuinely on the critical path.
+            //
+            // Dropped (were preconnect, now cheap dns-prefetch only):
+            //   connect.facebook.net, www.googletagmanager.com,
+            //   www.google-analytics.com
+            // All three are INTERACTION-GATED in this codebase — LazyGTM and
+            // FacebookPixel render nothing until the first click/scroll/keydown,
+            // and google-analytics is loaded by GTM, so it is doubly deferred.
+            // Preconnecting for scripts that may never load on a bouncing visit
+            // is pure waste. dns-prefetch keeps the DNS win at ~no cost.
             value: [
               "<https://cc-teaching-content-ind.s3.dualstack.ap-south-1.amazonaws.com>; rel=preconnect",
-              "<https://connect.facebook.net>; rel=preconnect",
-              "<https://www.googletagmanager.com>; rel=preconnect",
-              "<https://www.google-analytics.com>; rel=preconnect",
+              "<https://connect.facebook.net>; rel=dns-prefetch",
+              "<https://www.googletagmanager.com>; rel=dns-prefetch",
+              "<https://www.google-analytics.com>; rel=dns-prefetch",
             ].join(", "),
           },
         ],

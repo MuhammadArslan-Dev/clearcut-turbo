@@ -86,10 +86,17 @@ export default async function RootLayout({
       className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
     >
       <head>
-        <link rel="preconnect" href="https://app.clearcutoff.in" />
+        {/* dns-prefetch only — no preconnect.
+            Lighthouse flagged this app for too many preconnect origins. A
+            preconnect holds a DNS + TCP + TLS connection open, which is only
+            worth paying for an origin needed during FIRST RENDER.
+            app.clearcutoff.in is the authenticated dashboard: it is reached by
+            navigating away after a login click, never during first paint, so
+            the DNS hint is the right weight of hint for it.
+            apptest.clearcutoff.in (the staging backend) was preconnected from
+            production pages and is removed entirely — production traffic should
+            never be opening connections to a test origin. */}
         <link rel="dns-prefetch" href="https://app.clearcutoff.in" />
-        <link rel="preconnect" href="https://apptest.clearcutoff.in" />
-        <link rel="dns-prefetch" href="https://apptest.clearcutoff.in" />
       </head>
       <body className="font-sans">
         <ReactQueryProvider>
