@@ -1,4 +1,4 @@
-import { INDIAN_MOBILE_REGEX } from "@clearcut/validation/common/phone";
+import { INDIAN_MOBILE_REGEX } from "@clearcut/validation/common/phone-regex";
 
 export { INDIAN_MOBILE_REGEX };
 export const INDIAN_MOBILE_FIRST_DIGIT_REGEX = /^[6-9]$/;
