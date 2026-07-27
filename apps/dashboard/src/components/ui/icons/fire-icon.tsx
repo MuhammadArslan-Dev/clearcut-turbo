@@ -8,6 +8,34 @@ interface IconProps {
   variant?: "filled" | "outline" | "red";
 }
 
+/**
+ * Resolves a design-token NAME to its CSS value, and passes anything else
+ * through untouched.
+ *
+ * Why this exists: `color` on this component has always been a raw CSS value
+ * (see the `var(--color-brand)` default). But the shared `Text` primitive uses
+ * the same prop name for a token NAME (`color="gray-muted"`), so call sites
+ * copied that convention here by analogy — and it fails silently. `fill:
+ * "gray-muted"` is not a valid colour, so the browser resolves `fill` to
+ * `none` and the SVG paints nothing at all: a 24x24 element, visible, opacity
+ * 1, and completely invisible.
+ *
+ * That was live in two places: Today's Goals (all three rows) and the payment
+ * success page. Neither showed an icon.
+ *
+ * Accepting both forms makes the two components agree instead of leaving a trap
+ * that depends on which primitive an author looked at last. Existing call sites
+ * passing real CSS values keep working unchanged.
+ */
+const TOKEN_COLORS: Record<string, string> = {
+  brand: "var(--color-brand)",
+  "gray-muted": "var(--color-surface-gray-muted)",
+  "gray-subtle": "var(--color-text-gray-subtle)",
+  "gray-normal": "var(--color-text-gray-normal)",
+};
+
+const resolveColor = (color: string) => TOKEN_COLORS[color] ?? color;
+
 const FireIcon: React.FC<IconProps> = ({
   size = 24,
   color = "var(--color-brand)",
@@ -15,6 +43,7 @@ const FireIcon: React.FC<IconProps> = ({
   variant = "filled",
 }) => {
   const height = (size * 27) / 27;
+  const fillColor = resolveColor(color);
 
   if (variant === "outline") {
     return (
@@ -29,7 +58,7 @@ const FireIcon: React.FC<IconProps> = ({
           fillRule="evenodd"
           clipRule="evenodd"
           d="M9 11.9999L8.10557 13.7887C8.83273 14.1523 9.70762 14.0395 10.3188 13.5035C10.9254 12.9714 11.1525 12.1274 10.8961 11.3635L10.895 11.3602C10.8941 11.3571 10.8927 11.3527 10.8911 11.347C10.869 11.2728 10.7913 10.9879 10.7471 10.585C10.6872 10.0387 10.6917 9.32116 10.9157 8.57458C11.3102 7.25945 11.8572 6.30576 12.4049 5.61843C12.7587 6.85061 13.4053 8.23364 14.5858 9.41409C14.8113 9.63958 15.0573 9.86359 15.3107 10.0942C16.5658 11.2367 18 12.5423 18 14.9999C18 17.6054 15.4622 19.9999 12 19.9999C8.72613 19.9999 6 17.7735 6 13.9999C6 13.4257 6.09373 12.7327 6.24353 11.9961C6.49464 12.3946 6.76542 12.7187 7.02329 12.9766C7.27363 13.2269 7.50868 13.412 7.69752 13.5427C7.82774 13.6329 7.96216 13.7168 8.10381 13.7879C8.10381 13.7879 8.10557 13.7887 9 11.9999ZM8.96162 8.13291C8.81983 8.64465 8.74994 9.13812 8.72522 9.59148C8.64919 10.9853 9 11.9999 9 11.9999C9 11.9999 8 11.4999 7.5 9.99988C7.3353 9.50578 7.11635 8.90317 6.89675 8.31715C6.89054 8.30056 6.884 8.2843 6.87716 8.26837C6.53619 7.47437 5.4352 7.49808 5.1629 8.338C4.61497 10.0281 4 12.303 4 13.9999C4 18.9999 7.74745 21.9999 12 21.9999C16.2526 21.9999 20 18.9999 20 14.9999C20 11.5713 17.7959 9.61213 16.5364 8.49259C16.3265 8.306 16.1429 8.14274 16 7.99988C14.5939 6.59378 14.1521 4.746 14.0254 3.47448C13.9552 2.77055 13.2759 2.27133 12.6864 2.66232C10.8011 3.91266 9.55753 5.98229 8.96162 8.13291Z"
-          fill={color}
+          fill={fillColor}
           fillOpacity={opacity}
         />
       </svg>
@@ -99,7 +128,7 @@ const FireIcon: React.FC<IconProps> = ({
     >
       <path
         d="M12 21.9999C16.2526 21.9999 20 18.9999 20 14.9999C20 10.9999 17 8.99988 16 7.99988C14.5939 6.59378 14.1521 4.746 14.0254 3.47448C13.9552 2.77055 13.2759 2.27133 12.6864 2.66232C11.5335 3.4269 9.90375 4.98737 9 7.99988C8.35747 10.1416 9 11.9999 9 11.9999C9 11.9999 8 11.4999 7.5 9.99988C7.3353 9.50578 7.11635 8.90317 6.89675 8.31715C6.58071 7.47375 5.44066 7.48122 5.1629 8.338C4.61497 10.0281 4 12.303 4 13.9999C4 18.9999 7.74745 21.9999 12 21.9999Z"
-        fill={color}
+        fill={fillColor}
         fillOpacity={opacity}
       />
     </svg>

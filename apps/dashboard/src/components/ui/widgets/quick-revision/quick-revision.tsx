@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import React, { useCallback } from "react";
 import MainButton from "../../button/main-button";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
-import { FireIcon } from "../../icons";
+import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "@/i18n/navigation";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
@@ -53,15 +53,28 @@ export default function QuickRevision({
         </div>
       </div>
 
+      {/* Filled check-circles in brand blue, per the Figma. These rows describe
+          what the feature ALREADY offers ("View notes by chapter and topics",
+          "Browse previous year papers") — they are capability statements, not
+          goals with a pending/complete state, so a check reads correctly where
+          the previous grey outline flame did not. The flame is kept in Today's
+          Goals, where it IS state-driven (`goal?.done ? "red" : "outline"`).
+          Colour comes from the `brand` theme token rather than a literal. */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <FireIcon variant={"outline"} color="gray-muted" />
+          <CheckCircleIcon
+            className="size-5 shrink-0 text-brand"
+            aria-hidden="true"
+          />
           <p className="body-medium !font-normal text-surface-gray-normal">
             {t("quickRvision.viewNotes")}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <FireIcon variant={"outline"} color="gray-muted" />
+          <CheckCircleIcon
+            className="size-5 shrink-0 text-brand"
+            aria-hidden="true"
+          />
           <p className="body-medium !font-normal text-surface-gray-normal">
             {t("quickRvision.viewPreviousPapers")}
           </p>

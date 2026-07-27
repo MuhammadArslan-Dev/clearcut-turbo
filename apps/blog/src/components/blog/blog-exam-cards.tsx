@@ -177,7 +177,7 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
         <div className="space-y-6">
           {centralExams?.length > 0 && (
             <div className="w-full">
-              <div className="heading-xlarge">
+              <div className="heading-xlarge font-semibold">
                 {highlightTextUtil("Central Teaching Exams", "Central")}
               </div>
               <div className="mt-5 grid items-start gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
