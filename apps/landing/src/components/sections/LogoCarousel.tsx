@@ -95,8 +95,8 @@ export default function LogoCarousel({
               width={88}
               height={88}
               className="grayscale opacity-70"
-               priority
-  unoptimized
+              sizes="88px"
+  
             />
 
             <div>

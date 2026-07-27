@@ -58,7 +58,6 @@ export default function HomeHero({
             width={320}
             height={320}
            priority
-  unoptimized
             sizes="(max-width: 768px) 80vw, 320px"
           />
         </div>
