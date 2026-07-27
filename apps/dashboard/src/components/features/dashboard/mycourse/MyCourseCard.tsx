@@ -77,7 +77,19 @@ export default function MyCourseCard({
       // card's top edge, the way it does in production. Card clips by default,
       // which cut off its upper half.
       overflow="visible"
-      className={cardClasses}
+      // `!max-w-full` below `md`: the inner card should stretch edge to edge on
+      // small screens, matching the outer column.
+      //
+      // The `!` is required, not cosmetic. `maxWidth` above resolves to an
+      // INLINE `max-width: 400px` inside the shared Card, and an inline style
+      // always beats a plain class — so a non-important `max-w-full` would be
+      // silently ignored. Tailwind's important modifier emits
+      // `max-width: 100% !important`, which does win. Same technique the blog's
+      // exam-levels cards already use on this component (`!border-2 !rounded-lg`).
+      //
+      // Deliberately done here rather than in packages/ui/src/card.tsx: the
+      // shared Card is global and must not change for one call site.
+      className={clsx("!max-w-full md:!max-w-[400px]", cardClasses)}
     >
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">
         <div
@@ -183,6 +195,7 @@ export default function MyCourseCard({
           {continueClick && (
             <div>
               <MainButton
+                className="mx-auto max-w-[280px] md:mx-0 md:max-w-none"
                 loading={continueLoading}
                 fullWidth
                 onClick={() => {
@@ -202,6 +215,7 @@ export default function MyCourseCard({
           {unlockClick && (
             <>
               <MainButton
+                className="mx-auto max-w-[280px] md:mx-0 md:max-w-none"
                 fullWidth
                 loading={unlockLoading}
                 color="success"

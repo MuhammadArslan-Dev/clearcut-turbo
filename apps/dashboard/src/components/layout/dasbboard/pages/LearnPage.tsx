@@ -126,11 +126,24 @@ export default function LearnPage() {
                       ) : <NextMilestone rounded="md:rounded-md" exam={exam} />}
                     </div>
                   )}
+                  {/* Once the countdown retires, its slot would otherwise sit
+                      empty: the row is a flex container, so the left column is
+                      still STRETCHED to the right column's height (measured
+                      680.1px) while holding only the My Courses card. Promoting
+                      Quick Revision into that slot fills it and rebalances the
+                      two columns instead of leaving a tall blank. It renders in
+                      exactly one place either way — see the matching
+                      `countdownFinished` guard in the right column. */}
+                  {countdownFinished && (
+                    <div className={hideWidgetsOnMobile}>
+                      <QuickRevision />
+                    </div>
+                  )}
                 </div>
                 <div className={`flex-1 space-y-2 md:space-y-4 ${hideWidgetsOnMobile}`}>
                   <TodayGoals rounded="md:rounded-md" exam={exam} />
                   {milestoneDate?.toLowerCase() !== "upcoming" ? <NextMilestone rounded="md:rounded-md" exam={exam} /> : null}
-                  <QuickRevision />
+                  {!countdownFinished && <QuickRevision />}
                 </div>
               </div>
 

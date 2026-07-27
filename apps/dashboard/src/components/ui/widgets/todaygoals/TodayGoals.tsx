@@ -100,14 +100,20 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
 
       {/* Goals List */}
       <div className="space-y-2">
-        {GOALS_CONFIG.map(({ key, label, videoCount }) => {
+        {GOALS_CONFIG.map(({ key, label, videoCount }, index) => {
           const goal = goals?.[key];
+          // Per the Figma: the first goal carries the full-colour flame, the rest
+          // are the plain grey outline. This is deliberately positional rather
+          // than driven by `goal.done` — the coloured flame marks the row the
+          // user should start with, so it must not disappear once that goal is
+          // completed (which is what a `done`-based variant did).
+          const isLeadGoal = index === 0;
 
           return (
             <div key={key} className="flex justify-between items-center">
               <div className="flex gap-2">
                 <FireIcon
-                  variant={goal?.done ? "red" : "outline"}
+                  variant={isLeadGoal ? "red" : "outline"}
                   color="gray-muted"
                 />
                 <p className="body-medium !font-normal text-surface-gray-normal">
