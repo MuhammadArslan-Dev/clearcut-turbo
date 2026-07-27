@@ -1,5 +1,6 @@
 "use client";
 import RemainingTimeWrapper from "@/components/ui/widgets/timer/RemainingTimeWrapper";
+import { isExamDatePassed } from "@/utils/date/dateUtils";
 import NextMilestone from "@/components/ui/widgets/nextmilestone/NextMilestone";
 import TodayGoals from "@/components/ui/widgets/todaygoals/TodayGoals";
 import LearningStreak from "@/components/ui/widgets/learningstreaks/LearningStreak";
@@ -71,6 +72,9 @@ export default function LearnPage() {
   }, [exam?.metadata]);
 
   const milestoneDate = metaData?.exam_date;
+  // Same rule the countdown widget applies to hide itself, so the layout and
+  // the widget can never disagree about whether that slot is occupied.
+  const countdownFinished = isExamDatePassed(milestoneDate);
 
   return (
     <>
@@ -95,20 +99,33 @@ export default function LearnPage() {
           <MainContainer maxWidth="max-w-[900px]" padding="pb-[114px] md:pb-0">
             <div className="flex flex-col gap-2 md:gap-4">
               <div className="flex flex-col md:flex-row gap-2 md:gap-4">
-                <div className="w-full max-w-[480px] md:max-w-[380px] space-y-2 md:space-y-4">
+                {/* No mobile max-width: below `md` this column is the whole page, so the
+                    My Courses card should stretch edge to edge. The old
+                    `max-w-[480px]` capped it, which left dead space on any viewport
+                    wider than 480px but narrower than `md`. The 380px cap still
+                    applies from `md` up, where it is a real side column. */}
+                <div className="w-full md:max-w-[380px] space-y-2 md:space-y-4">
                   <MyCoursesWrapTwo
                     activeCourse={activeCourse}
                     allCourses={allCourses}
                     data={courses}
                     isLoading={isFetching}
                   />
-                  <div className={hideWidgetsOnMobile}>
-                    {milestoneDate?.toLowerCase() !== "upcoming" ? (
-                      <div className="w-full max-w-[400px] overflow-hidden">
-                        <RemainingTimeWrapper rounded="md:rounded-md" exam={exam} />
-                      </div>
-                    ) : <NextMilestone rounded="md:rounded-md" exam={exam} />}
-                  </div>
+                  {/* The countdown hides itself once the exam date passes, but its
+                      WRAPPERS used to stay behind — and the parent `space-y-*`
+                      still applied margin to them, leaving a phantom gap under
+                      My Courses. Gating the wrappers on the same shared
+                      `isExamDatePassed` rule the widget uses means the column
+                      reflows properly instead of holding empty space. */}
+                  {!countdownFinished && (
+                    <div className={hideWidgetsOnMobile}>
+                      {milestoneDate?.toLowerCase() !== "upcoming" ? (
+                        <div className="w-full max-w-[400px] overflow-hidden">
+                          <RemainingTimeWrapper rounded="md:rounded-md" exam={exam} />
+                        </div>
+                      ) : <NextMilestone rounded="md:rounded-md" exam={exam} />}
+                    </div>
+                  )}
                 </div>
                 <div className={`flex-1 space-y-2 md:space-y-4 ${hideWidgetsOnMobile}`}>
                   <TodayGoals rounded="md:rounded-md" exam={exam} />

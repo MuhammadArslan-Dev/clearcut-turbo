@@ -117,3 +117,26 @@ export const getCountdownFromFormattedDate2 = (dateStr: string) => {
     return { days, hours, minutes, seconds };
 };
 
+
+/**
+ * True when a formatted exam date is real, parseable, and already behind us.
+ *
+ * Single source of truth for "is the countdown over?", shared by the countdown
+ * widget (which hides itself) and by the layout (which must also drop the
+ * wrapper divs around it). Without a shared helper the layout would have to
+ * re-derive the same rule, and the two could drift.
+ *
+ * `getCountdownFromFormattedDate2` clamps to 0 rather than going negative, so it
+ * cannot answer this question on its own — a passed date and a date exactly now
+ * both read as all-zeros.
+ *
+ * Returns false for a missing date, for the sentinel "upcoming", and for
+ * anything unparseable: those are "unknown", not "passed", and must not hide UI.
+ */
+export const isExamDatePassed = (dateStr?: string | null): boolean => {
+    if (!dateStr) return false;
+    if (dateStr.toLowerCase() === "upcoming") return false;
+    const target = new Date(dateStr).getTime();
+    if (Number.isNaN(target)) return false;
+    return target <= Date.now();
+};

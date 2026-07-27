@@ -150,7 +150,8 @@ export default function MainButton({
   };
 
   return (
-    <div className={clsx("overflow-hidden", fullWidth && "w-full", className)}>
+
+    <div className={clsx(fullWidth && "w-full", className)}>
       <MotionButton
         size={size}
         sx={{ paddingY }}

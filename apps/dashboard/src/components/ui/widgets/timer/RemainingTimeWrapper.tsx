@@ -5,6 +5,7 @@ import TimerDotes from "./TimerDotes";
 import { Exam, ExamMetadata } from "@/types/Exam";
 import {
   getCountdownFromFormattedDate2,
+  isExamDatePassed,
   CountdownTime,
 } from "@/utils/date/dateUtils";
 import { useTranslations } from "next-intl";
@@ -48,14 +49,10 @@ const RemainingTimeWrapper: React.FC<RemainingTimeWrapperProps> = ({
      false anyway, but stating it makes the intent clear: only a date we can
      actually read and that is genuinely behind us hides the widget. "upcoming"
      keeps its existing early return further down.                            */
-  const examDatePassed = useMemo(() => {
-    if (!milestoneDate || milestoneDate.toLowerCase() === "upcoming") {
-      return false;
-    }
-    const target = new Date(milestoneDate).getTime();
-    if (Number.isNaN(target)) return false;
-    return target <= Date.now();
-  }, [milestoneDate]);
+  const examDatePassed = useMemo(
+    () => isExamDatePassed(milestoneDate),
+    [milestoneDate],
+  );
 
   /* ---------------- Loading Guard ---------------- */
 
