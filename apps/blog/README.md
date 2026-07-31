@@ -1,6 +1,6 @@
 # blog
 
-ClearCutOff's learner-facing content app — exam question banks, practice tests, and blog content for competitive teaching exams (CTET, HTET, UPTET, and others). Next.js 16 (App Router), MUI Joy for UI, i18n via `next-intl`.
+ClearCutOff's learner-facing content app — exam question banks, practice tests, and blog content for competitive teaching exams (CTET, HTET, UPTET, and others). Next.js 16 (App Router), Tailwind CSS v4 with shared `@clearcut/ui` primitives, i18n via `next-intl`.
 
 Part of the `clearcut-master` monorepo — see the [root README](../../README.md) for the overall layout and shared packages this app depends on.
 
@@ -20,7 +20,7 @@ Or from inside `apps/blog`:
 npm run dev
 ```
 
-Opens on [http://localhost:3001](http://localhost:3001) (falls back to the next free port if 3000/3001 are taken).
+No port is pinned, so Next takes the first free one starting at 3000 — check the dev server's own output for the URL, especially when running several apps in parallel.
 
 ## Scripts
 

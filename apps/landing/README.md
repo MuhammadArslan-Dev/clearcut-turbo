@@ -20,7 +20,7 @@ Or from inside `apps/landing`:
 npm run dev
 ```
 
-Opens on [http://localhost:3002](http://localhost:3002) (falls back to the next free port if 3000/3001 are taken).
+No port is pinned, so Next takes the first free one starting at 3000 — check the dev server's own output for the URL, especially when running several apps in parallel.
 
 **`CMS_URL` must point to a running Payload CMS instance** — several pages fetch content from it at build time, and `next build` will fail with `ECONNREFUSED` if it's unreachable.
 
