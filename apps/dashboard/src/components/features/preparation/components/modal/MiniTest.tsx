@@ -36,6 +36,7 @@ import { updateLearningProgress } from "@/lib/dashboard/userInteractions";
 import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
+import { logger } from "@/lib/sentry/sentry-logger";
 
 /* -------------------------------------------------------------------------- */
 /*                                  MAIN                                      */
@@ -58,7 +59,7 @@ export default function MiniTest() {
     markTopicFieldDone,
   } = usePreparationStore();
 
-  const { loading } = useMiniTestQuestions(
+  const { loading, error, refetchData } = useMiniTestQuestions(
     isOpen ? selectedTopic?.id : undefined,
     course?.group_code!,
   );
@@ -97,18 +98,40 @@ export default function MiniTest() {
   }, [courseData]);
 
   useEffect(() => {
+    // These are fire-and-forget progress pings. If the backend is down or slow
+    // the rejected promise used to go unhandled and take the whole page down,
+    // so every call swallows its own failure — the test itself keeps working.
     updateLearningProgress({
       course_id: course?.group_code!,
       section_id: selectedSectionId!,
       chapter_id: selectedChapter?.id!,
       topic_id: selectedTopic?.id.toString()!,
       mini_quizzes_taken: true,
+    }).catch((err) => {
+      logger.error(err, {
+        tags: { type: "background_sync", module: "mini-test" },
+        extra: {
+          action: "updateLearningProgress",
+          topicId: selectedTopic?.id,
+          courseId: course?.group_code,
+        },
+      });
     });
 
     createLearningInteraction({
       topic_id: Number(selectedTopic?.id),
       interaction_type: "mini_quiz_taken",
-    }).then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }));
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
+      .catch((err) => {
+        logger.error(err, {
+          tags: { type: "background_sync", module: "mini-test" },
+          extra: {
+            action: "createLearningInteraction",
+            topicId: selectedTopic?.id,
+          },
+        });
+      });
 
     trackEvent("Topic Status Changed", {
       topic_name: selectedTopic?.name!,
@@ -128,10 +151,12 @@ export default function MiniTest() {
   const hasSelected = selected !== undefined;
   const hasChecked = checked[currentIndex] === true;
 
+  // A partial/failed response can leave a question without translations —
+  // optional-chain everything so it renders empty instead of throwing.
   const translate =
     selectSection?.type === "subject"
-      ? question?.translations.find((t: any) => t.locale === language)
-      : question?.translations[0];
+      ? question?.translations?.find((t: any) => t.locale === language)
+      : question?.translations?.[0];
 
   const correctKey = translate
     ? Number(translate?.answer?.correct_option)
@@ -160,8 +185,12 @@ export default function MiniTest() {
         >
           <Header onClose={() => closeModal("mini-test")} />
 
-          {loading || !question ? (
+          {loading ? (
             <SekeletonMiniTest />
+          ) : !question ? (
+            // Server unreachable or empty/partial payload — show a recoverable
+            // message instead of an endless skeleton or a crash.
+            <LoadFailed onRetry={refetchData} isError={!!error} />
           ) : (
             <Content
               question={translate}
@@ -179,19 +208,21 @@ export default function MiniTest() {
             />
           )}
 
-          <Footer
-            currentIndex={currentIndex}
-            hasSelected={hasSelected}
-            hasChecked={hasChecked}
-            isLast={isLast}
-            onPrev={prev}
-            onCheck={() => checkAnswer(currentIndex)}
-            onNext={next}
-            onResult={() => {
-              closeModal("mini-test");
-              open("mini-test-result", {}, false);
-            }}
-          />
+          {question && (
+            <Footer
+              currentIndex={currentIndex}
+              hasSelected={hasSelected}
+              hasChecked={hasChecked}
+              isLast={isLast}
+              onPrev={prev}
+              onCheck={() => checkAnswer(currentIndex)}
+              onNext={next}
+              onResult={() => {
+                closeModal("mini-test");
+                open("mini-test-result", {}, false);
+              }}
+            />
+          )}
         </motion.div>
       </Container>
     </AnimatePresence>
@@ -314,10 +345,12 @@ const Content = ({
 
                 const t =
                   selectedSection?.type === "subject"
-                    ? q.translations.find((tr: any) => tr.locale === locale)
-                    : q.translations[0];
+                    ? q?.translations?.find((tr: any) => tr.locale === locale)
+                    : q?.translations?.[0];
 
-                const correct = t ? Number(t.answer.correct_option) : null;
+                const correct = t?.answer?.correct_option
+                  ? Number(t.answer.correct_option)
+                  : null;
 
                 // correct answer
                 if (selected === correct) {
@@ -446,7 +479,7 @@ const Content = ({
           >
             <ExplanationTitle
               title=" Answer & Explanation"
-              index={correctKey - 1}
+              index={Number.isFinite(correctKey) ? correctKey - 1 : 0}
             />
 
             <Exaplanation explanation={question?.answer?.explanation} />
@@ -505,7 +538,10 @@ const Footer = ({
               >
                 <div className="flex items-center gap-2">
                   <p>Check My Answer</p>
-                  <TickIcon color={!hasSelected ? "#006bd130" : "white"} />
+                  {/* Keep the tick visible in the disabled (nothing selected)
+                      state too — it used to be #006bd130, which is ~19% alpha
+                      and invisible against the button's light blue fill. */}
+                  <TickIcon color="white" />
                 </div>
               </Button>
             </div>
@@ -556,12 +592,59 @@ const Footer = ({
             }}
           >
             <div className="flex items-center gap-2">
-              <p>Finish Mini Test</p>
+              <p>Finish Topic Test</p>
               <ChevronIcon variant="right" color="white" type="double" />
             </div>
           </Button>
         )}
       </div>
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                               LOAD FAILED                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Shown when the questions request failed (server down / timed out) or came
+ * back empty. Keeps the modal usable — the user can retry or close — instead
+ * of sitting on a skeleton that never resolves.
+ */
+const LoadFailed = ({
+  onRetry,
+  isError,
+}: {
+  onRetry: () => void;
+  isError: boolean;
+}) => {
+  return (
+    <div className="w-full flex flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+      <WarningCirleIcon size={40} />
+
+      <div className="space-y-1">
+        <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
+          {isError ? "Couldn't load the test" : "No questions available"}
+        </Text>
+        <Text as="p" variant="body-medium" weight="normal" color="gray-muted">
+          {isError
+            ? "We couldn't reach the server. Check your connection and try again."
+            : "There are no questions for this topic yet. Please try another topic."}
+        </Text>
+      </div>
+
+      {isError && (
+        <div className="w-[200px]">
+          <Button
+            onClick={onRetry}
+            color="primary"
+            fullWidth
+            sx={{ borderRadius: "50px" }}
+          >
+            Try Again
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

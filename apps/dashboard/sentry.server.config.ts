@@ -1,34 +1,41 @@
+// Node-runtime Sentry initialization — Server Components, route handlers under
+// src/app/api/*, and server-side rendering. Loaded by src/instrumentation.ts.
+
 import * as Sentry from "@sentry/nextjs";
+import {
+  IGNORE_ERRORS,
+  SENTRY_DSN,
+  SENTRY_ENVIRONMENT,
+  TRACES_SAMPLE_RATE,
+  scrubSensitiveData,
+} from "@/lib/sentry/sentry-shared";
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+  // Reads NEXT_PUBLIC_SENTRY_DSN first, then SENTRY_DSN — both runtimes report
+  // into the same project. This used to read only SENTRY_DSN, which was never
+  // set anywhere, so every server-side error went unreported.
+  dsn: SENTRY_DSN,
+  environment: SENTRY_ENVIRONMENT,
+  enabled: Boolean(SENTRY_DSN),
 
-  tracesSampleRate: 1.0,
-  environment: process.env.NODE_ENV,
+  tracesSampleRate: TRACES_SAMPLE_RATE,
+  enableLogs: true,
 
   integrations: [Sentry.httpIntegration()],
 
-  beforeSend(event) {
-    // ✅ Remove sensitive data
-    if (event.request?.headers?.authorization) {
-      delete event.request.headers.authorization;
-    }
+  // The server sees raw auth headers and request bodies; keep them out.
+  sendDefaultPii: false,
 
-    // ✅ Add global tags
+  ignoreErrors: IGNORE_ERRORS,
+
+  beforeSend(event) {
+    scrubSensitiveData(event);
+
     event.tags = {
       ...event.tags,
-      module: "nextjs-server",
-      env: process.env.NODE_ENV,
+      runtime: "nextjs-server",
     };
 
     return event;
   },
-
-  ignoreErrors: [
-    "ResizeObserver loop limit exceeded",
-    "Network Error",
-    "Failed to fetch",
-    "Load failed",
-    "fetch failed",
-  ],
 });

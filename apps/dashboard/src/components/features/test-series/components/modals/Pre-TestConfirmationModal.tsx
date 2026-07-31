@@ -32,6 +32,7 @@ export default function PreTestConfirmationModal() {
   const isMobile = useIsMobile();
   const t = useTranslations("testListContent");
   const { get } = useQueryParams();
+  const { exam } = useGetCurrentCourseStore();
 
   const active = stack[stack.length - 1];
   const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
@@ -46,10 +47,17 @@ export default function PreTestConfirmationModal() {
         ? t("sectionalTestModal.fullLengthTest", { number: test?.order! })
         : t("sectionalTestModal.sectionTest", { number: test?.order! });
 
+  // Title is always the test number; the subtitle is the scope the test covers:
+  // chapter test -> chapter name, sectional test -> section name,
+  // full-length paper -> the exam/course itself.
   const modalSubtitle =
-    testType === "full-length-papers"
-      ? "Full-length Paper"
-      : testAny?.metadata?.section_name ?? "—";
+    testType === "chapter-tests"
+      ? (testAny?.metadata?.chapter_name ??
+        testAny?.metadata?.section_name ??
+        "—")
+      : testType === "full-length-papers"
+        ? (exam?.name ?? exam?.short_name ?? "—")
+        : (testAny?.metadata?.section_name ?? "—");
 
   return (
     <AnimatePresence>

@@ -15,6 +15,7 @@ import {
   StarBadge,
 } from "@/components/ui/icons";
 import ReactMarkdown from "react-markdown";
+import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 
 import { motion } from "framer-motion";
 import Text from "@clearcut/ui/text";
@@ -36,11 +37,32 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import OptionCard from "./OptionCard";
 
+type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
+
+/**
+ * Why a given filter has nothing to show. Tapping an empty filter keeps the
+ * current list in place and surfaces one of these instead of blanking the page.
+ */
+const EMPTY_FILTER_MESSAGES: Record<QuestionFilter, string> = {
+  all: "There are no questions in this section.",
+  correct: "You didn't answer any question correctly in this test.",
+  incorrect: "No incorrect answers — nothing to review here.",
+  skipped: "You attempted every question, so nothing was skipped.",
+};
+
 export default function ExamReportSheet() {
   const { isOpen, examId, closeModal, stack } = useExamModalStore();
   const [activeTab, setActiveTab] = useState("summary");
   const [language, setLanguage] = useState("hi");
-  const [questionFilter, setQuestionFilter] = useState<"all" | "correct" | "incorrect" | "skipped">("all");
+  const [questionFilter, setQuestionFilter] = useState<QuestionFilter>("all");
+  // Set when a filter with zero questions is tapped; clears itself after a moment.
+  const [emptyFilterNotice, setEmptyFilterNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!emptyFilterNotice) return;
+    const timer = setTimeout(() => setEmptyFilterNotice(null), 4000);
+    return () => clearTimeout(timer);
+  }, [emptyFilterNotice]);
 
   const isMobile = useIsMobile();
   const t = useTranslations("modals.performanceReport");
@@ -294,21 +316,62 @@ export default function ExamReportSheet() {
                       <div className="px-3 pb-1 flex flex-col gap-3">
                         <Text as="p" variant="body-large" weight="medium" color="gray-subtle">Filter Questions</Text>
                         <div className="flex flex-wrap gap-2">
-                          {(["all", "correct", "incorrect", "skipped"] as const).map((f) => (
-                            <button
-                              key={f}
-                              onClick={() => setQuestionFilter(f)}
-                              className={clsx(
-                                "px-3 py-1 cursor-pointer rounded-full body-small !font-bold capitalize transition-colors",
-                                questionFilter === f
-                                  ? "border-2 border-blue-400 text-[var(--color-brand-dark)] bg-blue-100"
-                                  : "text-gray-500 border-2 border-gray-300"
-                              )}
-                            >
-                              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)} ({filterCounts[f]})
-                            </button>
-                          ))}
+                          {(["all", "correct", "incorrect", "skipped"] as const).map((f) => {
+                            const count = filterCounts[f];
+                            const isEmpty = count === 0;
+                            const isActive = questionFilter === f;
+
+                            return (
+                              <button
+                                key={f}
+                                type="button"
+                                aria-disabled={isEmpty}
+                                // Native tooltip on hover; the inline notice below covers touch.
+                                title={isEmpty ? EMPTY_FILTER_MESSAGES[f] : undefined}
+                                onClick={() => {
+                                  if (isEmpty) {
+                                    setEmptyFilterNotice(EMPTY_FILTER_MESSAGES[f]);
+                                    return;
+                                  }
+                                  setEmptyFilterNotice(null);
+                                  setQuestionFilter(f);
+                                }}
+                                className={clsx(
+                                  "px-3 py-1 cursor-pointer rounded-full body-small !font-bold capitalize transition-colors",
+                                  isEmpty
+                                    ? "text-gray-400 border-2 border-gray-200 bg-gray-50"
+                                    : isActive
+                                      ? "border-2 border-blue-400 text-[var(--color-brand-dark)] bg-blue-100"
+                                      : "text-gray-500 border-2 border-gray-300"
+                                )}
+                              >
+                                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)} ({count})
+                              </button>
+                            );
+                          })}
                         </div>
+
+                        <AnimatePresence>
+                          {emptyFilterNotice && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex items-center gap-1.5 rounded-md bg-[#006bd1]/8 px-2.5 py-1.5"
+                            >
+                              <WarningCirleIcon size={16} />
+                              <Text
+                                as="p"
+                                variant="body-small"
+                                weight="normal"
+                                color="gray-muted"
+                              >
+                                {emptyFilterNotice}
+                              </Text>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       {/* Question list */}
@@ -390,6 +453,9 @@ const Footer = ({
           </div>
         </div>
 
+        {/* "Go back" — temporarily hidden. It did the same thing as
+            "Continue Test Series" above. Uncomment to restore.
+
         <div>
           <Button
             variant="soft"
@@ -404,6 +470,7 @@ const Footer = ({
             </div>
           </Button>
         </div>
+        */}
       </div>
     </div>
   );

@@ -252,7 +252,8 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     >
       <div className="flex flex-col gap-5 justify-between md:flex-row">
         {/* Left */}
-        <div className="space-y-4 md:w-[50%] md:flex md:flex-col md:items-center">
+        {/* md:w-[50%] -> md:w-full while the Quick Revision column is commented out */}
+        <div className="space-y-4 md:w-full md:flex md:flex-col md:items-center">
           <Title
             title={t("notes.detailedTitle")}
             subtext={t("notes.detailedSubtitle")}
@@ -385,10 +386,12 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
           )}
         </div>
 
-        {/* Divider */}
+        {/* Divider + Quick Revision Notes (Coming soon) — temporarily hidden.
+            To restore: uncomment the block below and change the Left column's
+            className back to "space-y-4 md:w-[50%] md:flex md:flex-col md:items-center".
+
         <div className="w-0.5 md:block hidden bg-gray-300"></div>
 
-        {/* Right */}
         <div className="md:w-[50%] space-y-4 md:flex md:flex-col md:items-center">
           <Title
             title={t("notes.quickTitle")}
@@ -429,6 +432,7 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
             </div>
           </div>
         </div>
+        */}
       </div>
     </motion.div>
   );

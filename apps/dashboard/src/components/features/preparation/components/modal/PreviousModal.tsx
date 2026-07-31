@@ -204,7 +204,9 @@ const QuestionItem = React.memo(function QuestionItem({
   language?: string | null;
   onStartLearning: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  // First question starts expanded (question + options only); its answer &
+  // explanation stays collapsed until the user asks for it.
+  const [isOpen, setIsOpen] = useState(index === 0);
   const [isExplanation, setIsExplanation] = useState(false);
 
   const translation = useMemo(

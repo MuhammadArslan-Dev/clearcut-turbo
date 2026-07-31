@@ -3,18 +3,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { getQuestionForTester } from "@/lib/tests/getQuestionForTester";
 import { QuestionTesterData } from "../types";
+import { isApiError } from "@/lib/api/api-error";
 
 const QUERY_KEY = (id: string) => ["question-tester", id];
 
 /** Try to pull a clean `message` out of the JSON error body thrown by apiFetch. */
 function parseErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) return "Something went wrong";
-  try {
-    const parsed = JSON.parse(error.message);
-    if (parsed?.message) return parsed.message as string;
-  } catch {
-    /* not JSON — fall through */
+
+  // apiFetch now throws ApiError, which keeps the response body in its own
+  // field — `error.message` is the grouping label ("API 404 GET /...").
+  const body = isApiError(error) ? error.responseBody : error.message;
+
+  if (body) {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed?.message) return parsed.message as string;
+    } catch {
+      /* not JSON — fall through */
+    }
   }
+
   return error.message || "Something went wrong";
 }
 

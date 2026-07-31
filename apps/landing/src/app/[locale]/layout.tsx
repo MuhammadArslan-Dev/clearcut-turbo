@@ -10,7 +10,7 @@ import { ReactQueryProvider } from "@clearcut/react-query/provider";
 import AnalyticsLoader from "@/components/global/AnalyticsLoader";
 import { AuthProvider, AuthModal } from "@/lib/auth";
 import { Suspense } from "react";
-import LazyGTM from "@/components/thirdparties/LazyGTM";
+import AnalyticsProvider from "@clearcut/analytics/provider";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
 
@@ -57,8 +57,6 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const isProduction = process.env.ENVIRONMENT === "production";
-
 // Pre-render both locales at build time. Only `en` and `hi` are valid.
 export const dynamicParams = false;
 
@@ -104,7 +102,7 @@ export default async function RootLayout({
             <AuthProvider>{children}</AuthProvider>
           </NextIntlClientProvider>
 
-          {isProduction && <LazyGTM />}
+          <AnalyticsProvider />
 
           <Suspense fallback={null}>
             <FacebookPixel />

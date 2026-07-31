@@ -2,7 +2,11 @@
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { CrossIcon, HindiLangCircleIcon } from "@/components/ui/icons";
+import {
+  CrossIcon,
+  HindiLangCircleIcon,
+  LockIcon,
+} from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import { AnimatePresence } from "framer-motion";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
@@ -14,8 +18,6 @@ import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { Chapter } from "../../types/types";
 import { getChapterProgress } from "../../util/progressTracker";
 import Text from "@clearcut/ui/text";
-import CounterCard from "@/components/ui/cards/CounterCard";
-import { LockIcon } from "lucide-react";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
 
@@ -128,12 +130,9 @@ export default function ChapterIndex() {
                       }
                       trailingIcon={
                         chapter?.locked && (
-                          <CounterCard
-                            width="w-8"
-                            height="h-8"
-                            borderColor="border-[#0083ff] border-2"
-                            value={<LockIcon size={20} color="#0083ff" />}
-                          />
+                          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                            <LockIcon size={20} color="#0083ff" />
+                          </div>
                         )
                       }
                     />

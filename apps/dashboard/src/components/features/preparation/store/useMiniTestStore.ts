@@ -134,12 +134,13 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
       const selected = answers[index];
       if (selected === undefined) return;
 
-      // find translation by locale
-      const translation = q.translations.find(
+      // find translation by locale — a partial API response can omit
+      // translations/answer entirely, so never index into them blindly.
+      const translation = q?.translations?.find(
         (t) => t.locale === locale
       );
 
-      if (!translation) return;
+      if (!translation?.answer?.correct_option) return;
 
       const correctOption = Number(
         translation.answer.correct_option

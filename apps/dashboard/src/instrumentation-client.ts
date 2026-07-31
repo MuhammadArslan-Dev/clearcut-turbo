@@ -1,31 +1,96 @@
-// This file configures the initialization of Sentry on the client.
-// The added config here will be used whenever a users loads a page in their browser.
+// Browser-side Sentry initialization.
+//
+// With @sentry/nextjs v10 this file — NOT the legacy `sentry.client.config.ts`
+// — is what the SDK loads for the browser. See that file's header for details.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import {
+  DENY_URLS,
+  IGNORE_ERRORS,
+  SENTRY_DSN,
+  SENTRY_ENVIRONMENT,
+  TRACES_SAMPLE_RATE,
+  scrubSensitiveData,
+} from "@/lib/sentry/sentry-shared";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 Sentry.init({
-  dsn: "https://7d08ddeac1d6326a9674c2180612333c@o4508801367015424.ingest.de.sentry.io/4511182850555984",
+  dsn: SENTRY_DSN,
+  environment: SENTRY_ENVIRONMENT,
 
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  // With no DSN the SDK no-ops anyway; being explicit makes a missing env var
+  // obvious rather than mysterious.
+  enabled: Boolean(SENTRY_DSN),
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
+  integrations: [
+    Sentry.replayIntegration({
+      // Recordings are for diagnosing, not for reading user data back.
+      maskAllText: true,
+      blockAllMedia: true,
+    }),
+    // Turns fetch/XHR calls, clicks and route changes into breadcrumbs, so an
+    // event shows the steps that led up to it rather than just the throw site.
+    Sentry.breadcrumbsIntegration({
+      console: true,
+      dom: true,
+      fetch: true,
+      history: true,
+      xhr: true,
+    }),
+  ],
+
+  tracesSampleRate: TRACES_SAMPLE_RATE,
   enableLogs: true,
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
-
-  // Define how likely Replay events are sampled when an error occurs.
+  // Session replays are expensive; sample a slice of ordinary sessions but
+  // always keep the one where an error actually happened.
+  replaysSessionSampleRate: isProduction ? 0.05 : 0,
   replaysOnErrorSampleRate: 1.0,
 
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  // Off: we attach the fields we actually need (user id/email via
+  // setSentryUser, endpoint/status via ApiError) instead of shipping
+  // everything Sentry can scrape.
+  sendDefaultPii: false,
+
+  ignoreErrors: IGNORE_ERRORS,
+  denyUrls: DENY_URLS,
+
+  beforeSend(event) {
+    scrubSensitiveData(event);
+
+    event.tags = {
+      ...event.tags,
+      runtime: "browser",
+    };
+
+    // Where it happened, in terms a human can act on.
+    if (typeof window !== "undefined") {
+      event.extra = {
+        ...event.extra,
+        url: window.location.href,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        referrer: document.referrer || undefined,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+      };
+    }
+
+    return event;
+  },
 });
+
+// Unhandled promise rejections (a fire-and-forget API call whose promise nobody
+// caught) never reach a React error boundary. Without this they only show up as
+// a dev-overlay warning and never reach Sentry.
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (event) => {
+    Sentry.captureException(event.reason, {
+      tags: { type: "unhandled_rejection", runtime: "browser" },
+      extra: { pathname: window.location.pathname },
+    });
+  });
+}
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

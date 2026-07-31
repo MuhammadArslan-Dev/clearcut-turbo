@@ -105,7 +105,7 @@ export default function ExamLevelsSection({ data, examName }: { data?: NavItem[]
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4 px-3'>
 
                     {visible.map((item) => (
-                        <Card bgcolor='white' key={item.id} cursor="pointer" padding={1.3} className='!border-2 !border-gray-200 !rounded-lg' onClick={() => handleSelect(item)}>
+                        <Card bgcolor='white' key={item.id} cursor="pointer" padding="10.4px" className='!border-2 !border-gray-200 !rounded-lg' onClick={() => handleSelect(item)}>
                             <div className='flex items-center justify-between'>
                                 <div>{item.name}</div>
                                 <div className='click:block hidden'>

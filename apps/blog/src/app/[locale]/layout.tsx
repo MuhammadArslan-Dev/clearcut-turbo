@@ -9,6 +9,7 @@ import "@/app/globals.css";
 import MainThemeProvider from "@/components/providers/main-theme-provider";
 import { AuthProvider, AuthModal } from "@/lib/auth";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
+import AnalyticsProvider from "@clearcut/analytics/provider";
 
 export const dynamicParams = true;
 
@@ -77,6 +78,8 @@ export default async function LocaleLayout({
               </AuthProvider>
             </NextIntlClientProvider>
           </MainThemeProvider>
+
+          <AnalyticsProvider />
       </body>
     </html>
   );

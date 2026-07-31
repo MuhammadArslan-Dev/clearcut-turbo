@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { logger } from "@/lib/sentry/sentry-logger";
 
 import { motion } from "framer-motion";
 
@@ -205,7 +206,16 @@ export default function Sidebar() {
       });
     };
 
-    setResume();
+    // Fire-and-forget: a dead/slow backend must not reject unhandled and take
+    // the whole preparation page down with it. Swallowed for the UI, but still
+    // reported — a silently failing resume-state is exactly the kind of bug
+    // that otherwise goes unnoticed for weeks.
+    setResume().catch((err) => {
+      logger.error(err, {
+        tags: { type: "background_sync", module: "preparation-sidebar" },
+        extra: { action: "setResumeState", courseId: course?.group_code },
+      });
+    });
 
     if (!selectedTopic || !chapters) return;
 
@@ -438,14 +448,9 @@ export default function Sidebar() {
                               counter={{
                                 custom: chapter?.locked ? true : false,
                                 value: chapter?.locked ? (
-                                  <CounterCard
-                                    width="w-8"
-                                    height="h-8"
-                                    borderColor="border-[#0083ff] border-2"
-                                    value={
-                                      <LockIcon size={20} color="#0083ff" />
-                                    }
-                                  />
+                                  <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                                    <LockIcon size={20} color="#0083ff" />
+                                  </div>
                                 ) : (
                                   topicIndex + 1
                                 ),

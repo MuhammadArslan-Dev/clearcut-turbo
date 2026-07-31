@@ -1,15 +1,34 @@
 'use client'
 
 import Topbar from '@/components/layout/dasbboard/Topbar'
-import React from 'react'
+import React, { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 export default function Error({
   error,
   reset,
 }: {
-  error: Error
+  error: Error & { digest?: string }
   reset: () => void
 }) {
+  // This boundary sits below the root `app/error.tsx`, so it catches dashboard
+  // crashes first — and used to swallow them without reporting, meaning nothing
+  // that broke on this page ever reached Sentry.
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: {
+        boundary: 'dashboard-error',
+        digest: error.digest ?? 'none',
+      },
+      extra: {
+        digest: error.digest,
+        pathname:
+          typeof window !== 'undefined' ? window.location.pathname : undefined,
+        url: typeof window !== 'undefined' ? window.location.href : undefined,
+      },
+    })
+  }, [error])
+
   return (
     < div className="flex flex-1 flex-col min-h-0 min-w-0" >
                 <Topbar />

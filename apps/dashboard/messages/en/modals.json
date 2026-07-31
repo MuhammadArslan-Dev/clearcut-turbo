@@ -80,7 +80,7 @@
   },
 
   "miniTest": {
-    "title": "Mini Test",
+    "title": "Topic Test",
     "subtitle": "Mini-tests will help you get confidence on the topic you just learned!",
     "status": {
       "inProgress": "In Progress"
@@ -143,7 +143,7 @@
   },
 
   "miniTestResult": {
-    "title": "Mini Test",
+    "title": "Topic Test",
     "messages": {
       "perfect": "Excellent! You're exam ready 🔥",
       "almostPerfect": "Very good! Almost perfect",

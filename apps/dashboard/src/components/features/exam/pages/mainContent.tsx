@@ -18,7 +18,7 @@ import { submitAnswer } from "@/lib/exam";
 import { apiFetch } from "@/lib/api/client";
 import { useRouter } from "@/i18n/navigation";
 import CounterCard from "@/components/ui/cards/CounterCard";
-import { ChevronIcon } from "@/components/ui/icons";
+import { ChevronIcon, TrashIcon } from "@/components/ui/icons";
 import { useExamModalStore } from "../store/useExamModalStore";
 import ExamSkeleton from "./ExamSkeleton";
 import useExamTimer from "../hooks/useExamTimer";
@@ -597,10 +597,8 @@ const ExamAction = memo(
               onClick={onClear}
             >
               <div className="flex items-center gap-2">
-                <ChevronIcon
+                <TrashIcon
                   size={20}
-                  type="double"
-                  variant="left"
                   color={!selectedOption && !draftAnswer ? "rgb(107 114 128 / 50%)" : "black"}
                 />{" "}
                 <span className=""> Clear Response</span>
@@ -632,10 +630,8 @@ const ExamAction = memo(
               onClick={onClear}
             >
               <div className="flex items-center gap-1">
-                <ChevronIcon
+                <TrashIcon
                   size={20}
-                  type="double"
-                  variant="left"
                   color={!selectedOption && !draftAnswer ? "rgb(107 114 128 / 50%)" : "black"}
                 />{" "}
                 <span className="body-small"> Clear</span>

@@ -17,6 +17,9 @@ importers:
       '@amplitude/analytics-browser':
         specifier: ^2.29.0
         version: 2.45.1
+      '@clearcut/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
       '@clearcut/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -319,6 +322,9 @@ importers:
       '@amplitude/analytics-browser':
         specifier: ^2.35.3
         version: 2.45.1
+      '@clearcut/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
       '@clearcut/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -461,6 +467,28 @@ importers:
       tailwindcss:
         specifier: ^4.1.14
         version: 4.3.2
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/analytics:
+    dependencies:
+      '@next/third-parties':
+        specifier: ^16.1.6
+        version: 16.2.10(next@16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      next:
+        specifier: '*'
+        version: 16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: '*'
+        version: 19.2.7
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
       typescript:
         specifier: ^5
         version: 5.9.3

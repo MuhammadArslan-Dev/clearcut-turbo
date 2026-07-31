@@ -106,7 +106,16 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   const handleStartTest = useCallback(
     (test: SectionalTestItem, section: SectionalSection) => {
       open("pre-test-confirmation", {
-        test: { ...test, order: String(test.test_number), st_status: test.is_mandatory ? "mandatory" : "optional" } as any,
+        test: {
+          ...test,
+          order: String(test.test_number),
+          st_status: test.is_mandatory ? "mandatory" : "optional",
+          // The pre-test modal shows the section name as its subtitle.
+          metadata: {
+            ...((test as any).metadata ?? {}),
+            section_name: section.name ?? "",
+          },
+        } as any,
         sectionId: section.id,
       });
 

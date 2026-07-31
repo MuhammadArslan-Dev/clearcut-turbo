@@ -173,6 +173,12 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
           ...test,
           order: String(test.test_number),
           st_status: test.is_mandatory ? "mandatory" : "optional",
+          // The pre-test modal shows the chapter name as its subtitle.
+          metadata: {
+            ...((test as any).metadata ?? {}),
+            section_name: selectedSection?.name ?? "",
+            chapter_name: chapter.name ?? "",
+          },
         } as any,
         sectionId: chapter.id,
       });
@@ -182,7 +188,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
         test_status: test.is_mandatory ? "mandatory" : "optional",
       });
     },
-    [open],
+    [open, selectedSection],
   );
 
   const handleViewHistory = useCallback(

@@ -34,6 +34,7 @@ export { default as VideoCamIcon } from "./video-cam-icon";
 export { default as MediaPlayerIcon } from "./media-player-icon";
 export { default as CrossIcon } from "./cross-icon";
 export { default as LockIcon } from "./lock-icon";
+export { default as TrashIcon } from "./trash-icon";
 export { default as ChevronIcon } from "./chevron-icon";
 export { default as ArrowIcon } from "./arrow-icon";
 export { default as CircleIcon } from "./circle-icon";
