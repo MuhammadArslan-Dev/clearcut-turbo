@@ -18,6 +18,7 @@ import {
 } from "@/components/features/preparation/components/modal";
 import PreviousModal from "@/components/features/preparation/components/modal/PreviousModal";
 import ChangePaperModal from "@/components/features/preparation/components/modal/ChangePaperModal";
+import EditCourseModal from "@/components/modals/course/edit-course-modal/edit-course-modal";
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywall";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
@@ -161,6 +162,12 @@ export default function PreparationShell({
         <PreparationGuideModal />
       )}
       {isOpen && activeModal === "change-paper" && <ChangePaperModal />}
+      {/*
+        Opened by BottomBar's "Add Paper". Driven by useCourseStore (not the
+        preparation modal stack above) and self-gates on `mode === "edit"`, so
+        mounting it unconditionally renders nothing until it is asked for.
+      */}
+      <EditCourseModal />
       {isOpenPaywall && mode === "preparation-paywall" && (
         <PreparationPaywall />
       )}

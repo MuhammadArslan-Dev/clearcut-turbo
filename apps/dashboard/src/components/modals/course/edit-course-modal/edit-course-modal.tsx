@@ -58,7 +58,7 @@ const LANGUAGES = [
 ];
 
 export default function EditCourseModal() {
-  const { isOpen, data, close, mode } = useCourseStore();
+  const { isOpen, data, close, mode, onSuccess } = useCourseStore();
   const isMobile = useIsMobile();
   const modalT = useTranslations("modals.editCourseModal");
   const invalidateMyCourses = useInvalidateQuery(MY_COURSES_KEY);
@@ -305,14 +305,25 @@ export default function EditCourseModal() {
       ? setContinueLearningLoading(true)
       : setSaveChangesLoading(true);
 
+    // `selections` is a full re-sync, not a delta: POST /v1/exam/selectedexam
+    // DELETEs every enrollment row for this exam and recreates them from what
+    // is sent (and UExamEnrollment has no SoftDeletes trait, so that delete is
+    // permanent). Any already-enrolled paper missing from this payload is
+    // therefore destroyed, not left alone.
+    //
+    // Papers the user is already enrolled in arrive via `selectedData2` and are
+    // preloaded into `selectionState`. They are kept unconditionally — a
+    // preloaded root whose `finalSelection` is null is an incomplete path, not
+    // an intent to unenrol, and dropping it would silently delete a paper the
+    // user never touched.
     const selections = Object.fromEntries(
       Object.entries(selectionState)
-        .filter(([, s]) => s.finalSelection)
+        .filter(([id, s]) => s.finalSelection || selectedData2?.[Number(id)])
         .map(([id, s]) => [Number(id), s.path.map((l) => l.id)]),
     );
 
     try {
-      
+
       const res = await purchaseLevels({
         language: contentLang,
         exam_id: data.id,
@@ -327,6 +338,10 @@ export default function EditCourseModal() {
         clearCache(); // clear cache.
 
         invalidateMyCourses(); // refresh courses list
+
+        // Screen-specific refresh (e.g. preparation's paper tabs). See the
+        // `onSuccess` docs in useCourseStore.
+        onSuccess?.();
 
         if (continueLearning) {
           router.push(`/preparation/${res?.data?.group_code}`);

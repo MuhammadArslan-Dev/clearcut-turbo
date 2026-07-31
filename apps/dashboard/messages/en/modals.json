@@ -79,6 +79,10 @@
     "continueButton": "Continue with this paper"
   },
 
+  "addPaper": {
+    "title": "Add Paper"
+  },
+
   "miniTest": {
     "title": "Topic Test",
     "subtitle": "Mini-tests will help you get confidence on the topic you just learned!",

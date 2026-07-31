@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
 // padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
@@ -35,12 +36,21 @@ export default function BottomBar() {
   const nextTopic = usePreparationStore(getNextTopic);
   const prevTopic = usePreparationStore(getPrevTopic);
   const changeP = useTranslations("modals.changePaper");
+  const addP = useTranslations("modals.addPaper");
   const actions = useTranslations("actions");
   const t = useTranslations("modals");
   const { locale } = useLanguageSwitch();
 
   const { selectedPaperId, papers, selectPaper, loading, selectedTopic, course } =
     usePreparationStore();
+
+  const { canAddPaper, openAddPaper } = useAddPaper();
+
+  // Only the single-paper case earns a slot in the bar. Once a second paper
+  // exists the bar already carries the "Current Paper" switcher, and showing
+  // both pills side by side crowded it — from two papers on, adding lives
+  // inside that switcher's modal instead.
+  const showAddPaperInBar = canAddPaper && papers.length === 1;
 
   const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
     queryKey: ["minitest-check", selectedTopic?.id],
@@ -153,6 +163,23 @@ export default function BottomBar() {
                   {changeP("title")}
                 </span>
                 <CircleIcon size={20} color="#0083ff" />
+              </div>
+            </Button>
+          </div>
+        )}
+
+        {showAddPaperInBar && (
+          <div className="hidden 2md:flex items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-3">
+            <Button
+              size="sm"
+              variant="outlined"
+              sx={pillButtonSx}
+              onClick={openAddPaper}
+            >
+              <div className="flex items-center gap-2">
+                <span className="body-small !font-semibold">
+                  {addP("title")}
+                </span>
               </div>
             </Button>
           </div>

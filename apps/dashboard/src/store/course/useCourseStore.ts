@@ -22,8 +22,23 @@ interface EditCourseState {
   data: Exam | undefined | null;
   mode: EditCourseMode | null;
   source?: PropertySource | null;
+  /**
+   * Run after the enrollment is saved successfully, before the modal closes.
+   *
+   * The modal already invalidates the my-courses list, which is all the
+   * dashboard needs. Callers opened from a screen that renders enrollment data
+   * of its own (preparation, whose paper tabs come from a separate
+   * `["preparation", courseId]` query) pass their own refresh here rather than
+   * having the modal grow knowledge of every screen that can open it.
+   */
+  onSuccess?: (() => void) | null;
 
-  open: (mode: EditCourseMode, data: Exam, source?: PropertySource) => void;
+  open: (
+    mode: EditCourseMode,
+    data: Exam,
+    source?: PropertySource,
+    onSuccess?: () => void,
+  ) => void;
   close: () => void;
 }
 
@@ -36,8 +51,9 @@ export const useCourseStore = create<EditCourseState>((set) => ({
   data: null,
   mode: null,
   source: null,
+  onSuccess: null,
 
-  open: (mode, data, source) => {
+  open: (mode, data, source, onSuccess) => {
     if (isMobile()) {
       window.history.pushState({ drawer: true }, "");
     }
@@ -47,6 +63,7 @@ export const useCourseStore = create<EditCourseState>((set) => ({
       mode,
       data,
       source,
+      onSuccess: onSuccess ?? null,
     });
   },
 
@@ -56,5 +73,6 @@ export const useCourseStore = create<EditCourseState>((set) => ({
       mode: null,
       source: null,
       data: null,
+      onSuccess: null,
     }),
 }));

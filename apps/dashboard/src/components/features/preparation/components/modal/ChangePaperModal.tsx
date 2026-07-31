@@ -15,6 +15,7 @@ import { usePreparationStore } from "../../store/usePreparationDataStore";
 import OptionSelectionCard from "@/components/ui/cards/option-selection-card";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useTranslations } from "next-intl";
+import { useAddPaper } from "../../hooks/useAddPaper";
 
 export default function ChangePaperModal() {
   const isMobile = useIsMobile();
@@ -56,6 +57,16 @@ export default function ChangePaperModal() {
   const handleChangePaper = () => {
     selectPaper(Number(selected));
     closeModal("change-paper");
+  };
+
+  const { canAddPaper, openAddPaper } = useAddPaper();
+
+  // Close this modal before opening the edit one — leaving both mounted stacks
+  // a Modal on top of a Modal, and this one owns the mobile history entry via
+  // useBackHandler.
+  const handleAddPaper = () => {
+    closeModal("change-paper");
+    openAddPaper();
   };
 
   const active = stack.at(-1); // safe
@@ -105,7 +116,10 @@ export default function ChangePaperModal() {
                 />
               ))}
             </div>
-            <Footer onResult={handleChangePaper} />
+            <Footer
+              onResult={handleChangePaper}
+              onAddPaper={canAddPaper ? handleAddPaper : undefined}
+            />
           </div>
         </Container>
       )}
@@ -149,16 +163,20 @@ const Header = React.memo(function Header({
 
 const Footer = React.memo(function Footer({
   onResult,
+  onAddPaper,
 }: {
   onResult?: () => void;
+  /** Omitted when the user already owns every paper, or is out of edits. */
+  onAddPaper?: () => void;
 }) {
   const changeP = useTranslations("modals.changePaper");
+  const addP = useTranslations("modals.addPaper");
 
   return (
     <div className="sticky bottom-0 z-10 px-3 py-2 bg-white">
       <div className="w-full flex flex-col items-center gap-4">
         <div className="w-full flex flex-col items-center gap-1">
-          <div className="w-full flex justify-between md:gap-6 max-w-[400px]">
+          <div className="w-full flex flex-col items-center gap-2 max-w-[400px]">
             <Button
               sx={{
                 borderRadius: "50px",
@@ -172,6 +190,22 @@ const Footer = React.memo(function Footer({
                 {changeP("continueButton")}
               </div>
             </Button>
+
+            {onAddPaper && (
+              <Button
+                sx={{
+                  borderRadius: "50px",
+                }}
+                onClick={onAddPaper}
+                size="lg"
+                variant="outlined"
+                fullWidth
+              >
+                <div className="flex body-large !font-semibold gap-1 items-center">
+                  {addP("title")}
+                </div>
+              </Button>
+            )}
           </div>
         </div>
       </div>
