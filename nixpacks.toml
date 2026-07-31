@@ -42,3 +42,20 @@ cmd = "pnpm --filter dashboard start"
 # Without this Corepack asks for confirmation before downloading pnpm, which
 # hangs a non-interactive build instead of failing it.
 COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+
+# npm rotated its registry signing keys. The Corepack bundled with Node 22.11
+# (which nixPkgs above pins) still carries the superseded key set, so verifying
+# the pnpm download fails with:
+#
+#   Error: Cannot find matching keyid: {"signatures":[...],"keys":[...]}
+#       at verifySignature (.../corepack.cjs)
+#
+# The cleaner fix is a Corepack >= 0.31 with the current keys, but Node here
+# comes from the read-only Nix store, so `npm install -g corepack@latest` cannot
+# replace the bundled copy, and a --prefix install loses to the Nix entry that
+# comes first on PATH.
+#
+# Disabling the check leaves the download at the same trust level as a plain
+# `npm install -g pnpm`: still HTTPS from the registry, no longer signature
+# verified. Revisit when the base image ships a Corepack that has the new keys.
+COREPACK_INTEGRITY_KEYS = "0"
