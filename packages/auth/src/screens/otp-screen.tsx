@@ -13,6 +13,7 @@ import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
+import { trackFacebookLead } from "../facebook-pixel";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
 import type { AuthScreenDeps } from "./types";
@@ -140,6 +141,7 @@ export function createOtpScreen({
         if (status !== "success") throw new Error("Verification failed");
 
         setToken(data.token);
+        trackFacebookLead(localStorage.getItem("is_new_user") === "true");
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,

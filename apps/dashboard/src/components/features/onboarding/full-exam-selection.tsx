@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import DotsLoader from "@/components/ui/loader/DotsLoader";
 import OptionCard from "./option-card";
 import { getAuthTokenClient } from "@/lib/auth-token-client";
+import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
 
 type SelectionState = {
   path: Level[];
@@ -213,6 +214,9 @@ export default function FullExamSelection({ data }: { data: any }) {
     const formData = { exam_id: data?.exam?.id, selections };
     const req = await purchaseLevels(formData);
 
+    if (req?.status === "success") {
+      trackFacebookEvent("StartTrial");
+    }
 
     // if (req?.status === "success") {
     //     localStorage.removeItem('onboarding-storage')

@@ -17,6 +17,7 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import { Level, purchaseLevels } from "@/lib/api/onboarding";
 import { getAuthTokenClient } from "@/lib/auth-token-client";
+import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
 
 export default function SingleLevelSelection({ data }: { data: any }) {
   const rootId = data?.level?.id as number | undefined;
@@ -110,6 +111,7 @@ export default function SingleLevelSelection({ data }: { data: any }) {
     const req = await purchaseLevels(formData);
     if (req?.status === "success") {
       setSubmiting(false);
+      trackFacebookEvent("StartTrial");
       trackEvent("Onboarding Step Completed", {
         step_number: 3,
         step_name: "subject_selection",

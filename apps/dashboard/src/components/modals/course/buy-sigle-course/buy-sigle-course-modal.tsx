@@ -175,7 +175,7 @@ export default function BuySigleCourseModal() {
           selected_navigation_names: selectionNames,
         });
         await invalidateMyCourses();
-        router.push(`/preparation/${req.data.group_code}`);
+        router.push(`/preparation/${req.data.group_code}?subject_selected=1`);
       }
     } finally {
       setSubmitting(false);

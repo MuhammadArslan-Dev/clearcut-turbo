@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect } from "react";
 
@@ -8,13 +8,43 @@ const FB_PIXEL_ID = "1126041265682766";
 
 export default function FacebookPixel() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (window.fbq) {
-      window.fbq("track", "PageView");
+    if (!window.fbq) return;
+
+    window.fbq("track", "PageView");
+
+    // One-shot signals appended by the navigation that lands the user here.
+    // Each is stripped after firing so a refresh/back-navigation to this URL
+    // doesn't double-count it.
+    const params = new URLSearchParams(searchParams.toString());
+    let hasOneShotSignal = false;
+
+    // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
+    // here is the "completed registration" moment.
+    if (params.get("user_type") === "new") {
+      window.fbq("track", "CompleteRegistration");
+      params.delete("user_type");
+      hasOneShotSignal = true;
     }
-  }, [pathname, searchParams]);
+
+    // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
+    // here is the "start trial" moment for that subject.
+    if (params.get("subject_selected") === "1") {
+      window.fbq("track", "StartTrial");
+      params.delete("subject_selected");
+      hasOneShotSignal = true;
+    }
+
+    if (hasOneShotSignal) {
+      router.replace(
+        params.toString() ? `${pathname}?${params.toString()}` : pathname,
+        { scroll: false },
+      );
+    }
+  }, [pathname, searchParams, router]);
 
   return (
     <>
