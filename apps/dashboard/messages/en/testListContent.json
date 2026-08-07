@@ -1,0 +1,86 @@
+{
+  "questionsInfo": "{count} questions x {marks} marks",
+  "startTest": "Start Test",
+  "timeInfo": "{time} mins",
+  "goBack": "Go back",
+
+  "progress": {
+    "title": "Progress",
+    "sectionalTests": "{completed}/{total} sectional tests",
+    "attemptMessage": "Attempt 2+ sectional tests to improve score"
+  },
+
+  "recommendedNext": {
+    "title": "Recommended Next",
+    "subtitle": "(based on your progress)",
+    "chapter": "Chapter {number} • {name}"
+  },
+
+  "testSeries": {
+    "title": "Clear Cutoff Test Series",
+    "preparedUsing": "Prepared using PYQs",
+    "basedOnPattern": "Based on latest {course} exam pattern",
+    "noNegativeMarking": "No negative marking"
+  },
+
+  "sectionalTestModal": {
+    "sectionTest": "Sectional Test {number}",
+    "fullLengthTest": "Full-length Test {number}",
+    "subject": "Child Development and Pedagogy",
+
+    "duration": "{hours} hour {minutes} mins",
+    "scoring": "+{positive} correct, No negative marking",
+
+    "instruction": {
+      "saveMark": "Save, Clear or Mark answer for review",
+      "autoSave": "Your answers are auto-saved. You can safely resume if interrupted.",
+      "submitAnytime": "Submit anytime before time ends"
+    },
+
+    "startButton": "Start Sectional Test",
+    "coverageNote": "This test covers high-frequency {course} PYQs",
+    "goBack": "Go back"
+  },
+
+  "sectionalTestAttempts": {
+    "title": "Sectional Test {number}",
+    "subject": "Child Development and Pedagogy",
+
+    "attempt": "Attempt {number}",
+
+    "bestScore": "Best Score",
+
+    "viewReport": "View Report",
+
+    "reattemptButton": "Re-attempt {type}",
+
+    "reattemptNote": "Re-attempt will not affect your previous score"
+  },
+
+  "testInfoBanner": {
+    "basedOnPattern": "Based on latest {course} pattern",
+    "preparedUsing": "Prepared using PYQs",
+
+    "separator": " • ",
+
+    "combined": "Based on latest {course} pattern • Prepared using PYQs"
+  },
+  "testCard": {
+    "fullLengthTitle": "Full-length Paper {number}",
+    "sectionalTitle": "Sectional Test {number}",
+    "chapterTitle": "Chapter Test {number}",
+
+    "questionsInfo": "{count} ques x {marks} marks",
+    "duration": "{time} mins",
+
+    "score": "Score: {score} / {total}",
+
+    "startTest": "Start Test",
+    "viewReport": "View Report",
+
+    "mustAttempt": "Must attempt",
+    "extraPractice": "Extra practice",
+
+    "nextRecommended": "Next recommended sectional test"
+  }
+}

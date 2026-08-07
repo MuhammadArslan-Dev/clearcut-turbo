@@ -1,0 +1,23 @@
+{
+  "name": "@clearcut/react-query",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./query-client": "./src/query-client.ts",
+    "./get-query-client": "./src/get-query-client.ts",
+    "./provider": "./src/provider.tsx",
+    "./query-keys": "./src/query-keys.ts"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.90.2",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "common": {
+    "continueFree": "Continue Free Prep",
+    "continueFreeShort": "Continue for Free",
+    "startFree": "Start for free"
+  },
+  "nav": {
+    "pricing": "Pricing",
+    "features": "Features",
+    "faqs": "FAQs"
+  },
+  "footer": {
+    "phone": "Phone",
+    "whatsapp": "WhatsApp",
+    "privacy": "Policy",
+    "terms": "Terms & Conditions",
+    "refund": "Refund",
+    "contact": "Contact",
+    "rights": "All rights reserved!"
+  }
+}

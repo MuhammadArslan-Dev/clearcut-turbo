@@ -1,0 +1,386 @@
+@import "tailwindcss";
+/* Tailwind v4 only scans this app's own tree by default — explicitly
+   include shared component packages so their utility classes (e.g. the
+   Button's compound-variant colors, or the auth modal's layout classes)
+   actually get generated. Matches apps/landing's setup. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/auth/src/**/*.{ts,tsx}";
+@source "../../../../packages/utils/src/**/*.{ts,tsx}";
+/* Imported first so this app's own token overrides below (same variable
+   names, different values in places) win the cascade and existing blog
+   styling is unaffected — this only fills in variables blog didn't already
+   define (e.g. --color-text-gray-normal, shadcn's --primary) that the
+   shared @clearcut/ui / @clearcut/auth components rely on. */
+@import "@clearcut/design-tokens/tokens.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --letter-spacing: -0.02em;
+
+  /* Font weights, fluid font sizes, and line heights come from
+     @clearcut/design-tokens/tokens.css (imported above) — the single source
+     of every typography VALUE. They are intentionally NOT redeclared here;
+     the local copies were byte-identical duplicates and were removed so blog
+     can never silently drift from the shared type scale again. The typography
+     utility CLASSES below still live per-app (blog bakes font-weight into
+     them, landing does not) but read their sizes/line-heights from these
+     shared tokens. */
+
+  /* Values that are byte-identical to a @clearcut/design-tokens color now
+     point at that token via var() instead of repeating the literal hex, so
+     they can never silently drift from the shared palette. Values with no
+     token equivalent (including --primary-dark, which is #006bd1 here but
+     #0053a2 in the package's --color-brand-dark — a real, unresolved
+     conflict, not a missing token) are left as their original literals. */
+  --surface-text-gray-normal: var(--color-text-gray-normal);
+  --surface-text-oncloud-onintense: #8bc7ff;
+  --neutral-blueGrayLight: var(--color-text-gray-subtle);
+  --yellow-200: var(--color-text-gray-normal);
+  --neutral-500: #8c8b89;
+  --surface-border-gray-normal: #90a5bb;
+  --surface-text-primary-normal: var(--color-brand);
+  --primary-dark: #006bd1;
+  --surface-text-gray-muted: var(--color-text-gray-muted);
+  --interactive-text-positive-normal: var(--color-success-highlight);
+  --surface-success: var(--color-success-soft);
+  --interactive-text-onPrimary-normal: var(--color-textWhite);
+  --feedback-background-notice-intense: #e9690c;
+  --feedback-background-positive-intense: var(--color-success);
+  --feedback-background-negative-intense: #d92d20;
+}
+
+/* `inline` is only correct for tokens whose value is already a var() reference:
+   it makes Tailwind substitute the value straight into utilities and NOT emit a
+   CSS custom property. Literal values therefore must not live here — anything
+   read back as var(--x) at runtime would resolve to nothing. Measured before the
+   split: getPropertyValue('--color-brand-dark') === '' in Blog, i.e. this app's
+   deliberate #006bd1 override was silently dead, and so was --color-softskyblue.
+   Reference-valued tokens stay in this block; literals moved to @theme static. */
+@theme static inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-oncloud-onintense: var(--surface-text-oncloud-onintense);
+}
+
+@theme static {
+  /* ================= Font contract =================
+     See packages/design-tokens/tokens.css. --font-latin is this app's binding for
+     the shared --font-sans name; --font-hindi is the Devanagari face for the `hi`
+     locale, applied by the `:lang(hi)` rule further down.
+
+     These replace `--font-sans: var(--font-geist-sans)` and
+     `--font-mono: var(--font-geist-mono)`, which were dead — --font-geist-sans and
+     --font-geist-mono are defined nowhere in this repo, so --font-sans measured
+     EMPTY at runtime and Tailwind's `font-sans` produced nothing. --font-mono is
+     not redeclared: `font-mono` has zero consumers in the codebase, so re-pointing
+     it would be inventing a token with no reader.
+
+     ⚠ These MUST live in `@theme static`, never in `@theme static inline`. `inline`
+     substitutes a token's value into utilities and does NOT emit the custom
+     property, so a runtime `var(--font-latin)` read would resolve to nothing.
+     Measured the hard way: declaring them in the inline block above left
+     --font-latin EMPTY and blog fell back to Times New Roman on every page.
+     Matches apps/landing, which declares both in `@theme static`. */
+  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
+
+  /* --color-brand intentionally NOT redeclared here — @clearcut/design-tokens
+     already defines it (#0083ff, same value), and Tailwind merges @theme
+     blocks across files, so repeating it here was pure duplication.
+     --color-brand-dark IS still declared here because it conflicts with the
+     package's value (#006bd1 here vs #0053a2 in the package); this app
+     intentionally keeps its own value until that conflict is resolved.
+     ⚠ This override is the reason --color-brand-dark means two different colours
+     depending on the app — see the note on --color-brand-dark-legacy in
+     packages/design-tokens/tokens.css. */
+  --color-brand-dark: #006bd1;
+
+  /* NOTE (naming): --color-softskyblue and the --color-custom-teal-* scale are
+     named after raw colours, which the design-system convention forbids
+     (tokens should express intent: surface/accent/info…). They are also
+     app-local rather than canonical. Left in place because renaming them means
+     touching every consumer and picking a semantic meaning — flagged as debt,
+     not silently changed. */
+  --color-softskyblue: #f3f7fd;
+
+  --color-custom-teal-50: #f0fdfa;
+  --color-custom-teal-100: #ccfbf1;
+  --color-custom-teal-200: #99f6e4;
+  --color-custom-teal-500: #14b8a6;
+  --color-custom-teal-900: #134e4a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+  }
+}
+
+/* Hide scrollbars for all elements */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* Hide scrollbars for Chrome, Safari, and Edge */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Resolves through the shared contract rather than reaching past it straight
+     to the next/font variable, so Tailwind's font-sans, the shared UI primitives
+     and the Joy theme all read the same name. Same rendered family as before
+     (measured: "Noto Sans" both sides). */
+  font-family: var(--font-latin);
+  scroll-behavior: smooth;
+  /* ⚠ App-level base style, NOT part of the shared typography scale: this puts
+     -0.02em on every element in blog, which is why blog headings measure a flat
+     inherited -0.32px while dashboard headings measure a font-size-relative
+     -0.02em and landing headings measure `normal`. Left exactly as-is — unifying
+     tracking across the three apps changes rendering in at least two of them and
+     is a design decision. Documented in the ticket report as remaining debt. */
+  letter-spacing: var(--letter-spacing);
+}
+
+/* Devanagari face for the `hi` locale. Blog serves /hi via next-intl but had no
+   Hindi font at all before this — Devanagari text fell back to whatever the OS
+   offered. Only the family is switched: line-height/weight are deliberately NOT
+   adjusted here, because that would be a typographic redesign rather than a
+   repair of the font contract. */
+:lang(hi) {
+  font-family: var(--font-hindi);
+}
+
+/* The `.display-*`, `.heading-*`, `.body-*` classes AND their default weights
+   now both live in @clearcut/design-tokens/tokens.css (imported at the top) —
+   one definition, product-wide.
+
+   Blog's local `@layer base` weight block used to live here. It was the correct
+   pattern (base ranks below Tailwind's utilities layer, so `font-*` utilities
+   still win) and it has been moved verbatim into the shared tokens, where all
+   three apps now read it. Keeping a copy here would be exactly the duplication
+   this ticket removed from dashboard. Values are unchanged: semibold for
+   display/heading, medium for body, from the --fw-* tokens. */
+
+.text-body {
+  color: #737780 !important;
+}
+.surface-text-gray-normal {
+  color: var(--surface-text-gray-normal) !important;
+}
+.neutral-blueGrayLight {
+  color: var(--neutral-blueGrayLight) !important;
+}
+.back-neutral-blueGrayLight {
+  background: var(--neutral-blueGrayLight) !important;
+}
+.subtle-background {
+  background: var(--color-background-gray-subtle) !important;
+}
+.surface-success-background {
+  background: var(--surface-success) !important;
+}
+.yellow-200 {
+  color: var(--yellow-200) !important;
+}
+.neutral-500 {
+  color: #8c8b89 !important;
+}
+.surface-text-primary-normal {
+  color: var(--surface-text-primary-normal) !important;
+}
+.surface-text-gray-muted {
+  color: var(--surface-text-gray-muted) !important;
+}
+.interactive-text-positive-normal {
+  color: var(--interactive-text-positive-normal) !important;
+}
+.interactive-text-onPrimary-normal {
+  color: var(--interactive-text-onPrimary-normal) !important;
+}
+.feedback-background-notice-intense {
+  color: #e9690c !important;
+}
+.interactive-text-notice-normal {
+  color: #c65c10 !important;
+}
+.surface-border-gray-normal {
+  color: var(--surface-border-gray-normal) !important;
+}
+.feedback-background-positive-intense {
+  color: var(--feedback-background-positive-intense) !important;
+}
+.feedback-background-negative-intense {
+  color: #d92d20 !important;
+}
+.back-feedback-background-positive-intense {
+  background: var(--feedback-background-positive-intense) !important;
+}
+/* YouTubePlayerWithProgress.css */
+.youtube-container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 10px;
+  background-color: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4caf50;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+
+.scroll-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* Pause animation on hover */
+.scroll-wrapper:hover .scroll-track {
+  animation-play-state: paused;
+}
+
+.scroll-track {
+  display: inline-block;
+}
+
+.scroll-item {
+  display: inline-block;
+  margin: 0 18px !important;
+}
+
+@media (max-width: 768px) {
+  .scroll-item {
+    margin: 0 12px !important;
+  }
+}
+
+/* Scroll Left */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Scroll Right */
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+
+
+
+.custom {
+  font-family: var(--font-noto-sans), sans-serif;
+  line-height: 1.7;
+  color: #374151; /* Tailwind gray-700 */
+}
+
+/* Headings */
+.custom h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+.custom h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+.custom h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+.custom h4,
+.custom h5,
+.custom h6 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+/* Paragraph */
+.custom p {
+  margin: 0.75rem 0;
+}
+
+/* Lists */
+.custom ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+.custom ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+.custom li {
+  margin: 0.25rem 0;
+}
+
+/* Blockquote */
+.custom blockquote {
+  border-left: 4px solid #9ca3af; /* gray-400 */
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563; /* gray-600 */
+  margin: 1rem 0;
+}
+
+/* Code */
+.custom code {
+  background: #f3f4f6; /* gray-100 */
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+.custom pre {
+  background: #1f2937; /* gray-900 */
+  color: #f9fafb; /* gray-50 */
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+/* Links */
+.custom a {
+  color: #2563eb; /* blue-600 */
+  text-decoration: underline;
+}
+.custom a:hover {
+  color: #1d4ed8; /* blue-700 */
+}
+
+/* Horizontal rule */
+.custom hr {
+  border: none;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+  margin: 1.5rem 0;
+}

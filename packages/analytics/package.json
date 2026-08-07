@@ -1,0 +1,26 @@
+{
+  "name": "@clearcut/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./provider": "./src/provider.tsx",
+    "./lazy-gtm": "./src/lazy-gtm.tsx",
+    "./env": "./src/env.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "dependencies": {
+    "@next/third-parties": "^16.1.6"
+  },
+  "peerDependencies": {
+    "next": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

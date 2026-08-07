@@ -1,0 +1,101 @@
+{
+  "Error": {
+    "description": "<p>Es ist leider ein Problem aufgetreten.</p><p>Du kannst versuchen <retry>diese Seite neu zu laden</retry>.</p>",
+    "title": "Etwas ist schief gelaufen!"
+  },
+  "IndexPage": {
+    "description": "Dies ist ein Beispiel, das die Verwendung von <code>next-intl</code> mit dem Next.js App Router demonstriert. Bei Ändern der Sprache rechts oben ändert sich der Inhalt dieser Seite.",
+    "title": "Clear cutoff"
+  },
+  "LocaleLayout": {
+    "title": "Clear cutoff",
+    "description": "This is a basic example that demonstrates the usage of <code>next-intl</code> with the Next.js App Router. Try changing the locale in the top right corner and see how the content changes."
+  },
+  "LocaleSwitcher": {
+    "label": "Sprache ändern",
+    "locale": "{locale, select, tr {TR Deutsch} en {🇺🇸 English} other {Unbekannt}}"
+  },
+  "Manifest": {
+    "name": ""
+  },
+  "Navigation": {
+    "home": "Start",
+    "pathnames": "Pfadnamen"
+  },
+  "NotFoundPage": {
+    "description": "Bitte überprüfe die Addressleiste deines Browsers oder verwende die Navigation um zu einer bekannten Seite zu wechseln.",
+    "title": "Seite nicht gefunden"
+  },
+  "PageLayout": {
+    "links": {
+      "docs": {
+        "description": "Erfahre mehr über next-intl in der offiziellen Dokumentation.",
+        "href": "https://next-intl.dev",
+        "title": "Dokumentation"
+      },
+      "source": {
+        "description": "Sieh dir den Quellcode dieses Beispiels auf GitHub an.",
+        "href": "https://github.com/amannn/next-intl/tree/main/examples/example-app-router",
+        "title": "Quellcode"
+      }
+    }
+  },
+  "PathnamesPage": {
+    "description": "<p>Auch die Pfadnamen sind internationalisiert.</p><p>Wenn du die Standardsprache Englisch verwendest, siehst du <code>/en/pathnames</code> in der Adressleiste des Browsers auf dieser Seite.</p><p>Wenn du die Sprache auf Deutsch änderst, wird die URL entsprechend lokalisiert (<code>/de/pfadnamen</code>).</p>",
+    "title": "Pfadnamen"
+  },
+  "CourseHeader": {
+    "title": "हमारे साथ {courseName} परीक्षा पास करें!",
+    "description": "हमारे ऑल-इन-वन कोर्स और टेस्ट सीरीज़ के साथ सफलता की राह पर चलें!",
+    "trialText": "3 दिन का मुफ़्त ट्रायल",
+    "ratingsbyourstudents": "हमारे छात्रों द्वारा दी गई औसत रेटिंग"
+  },
+  "Buttons": {
+    "login": "लॉगिन करें",
+    "register": "मुफ़्त में शुरू करें",
+    "logout": "Logout"
+  },
+  "carousel": {
+    "text": "अन्य परीक्षाओं की तैयारी कर रहे हैं? क्लियर कटऑफ द्वारा सभी शिक्षण परीक्षाओं को चेक करें!",
+    "highlight": "सभी शिक्षण परीक्षाओं",
+    "button": {
+      "text": "सभी कोर्स और टेस्ट सीरीज देखें!"
+    }
+  },
+  "PricingSection": {
+    "eyebrow": "सरल। पारदर्शी। सामान्य मूल्य।",
+    "title": "एक कीमत, सब कुछ शामिल",
+    "description": "हमारे सफल छात्रों के बारे में",
+    "tailContent": {
+      "title": "10,000+ छात्रों ने {courseName} परीक्षा पास करने के लिए इसे इस्तेमाल किया।",
+      "description": "सैकड़ों सफल {courseName} उम्मीदवारों से जुड़ें, जिन्होंने महंगे कोचिंग की बजाय स्मार्ट और किफायती पढ़ाई को चुना!",
+      "rating": {
+        "rat": "4.9+",
+        "text": "हमारे छात्रों द्वारा दी गई औसत रेटिंग!"
+      }
+    }
+  },
+
+   "footer": {
+    "copyright": "© 2026 Clear Cutoff. सभी अधिकार सुरक्षित!",
+
+    "contact": {
+      "phone": "7210708599",
+      "email": "hi@clearcutoff.in",
+      "whatsapp": "व्हाट्सऐप"
+    },
+
+    "links": {
+      "policy": "नीति",
+      "terms": "नियम और शर्तें",
+      "refund": "रिफंड नीति",
+      "contact": "संपर्क करें"
+    },
+
+    "social": {
+      "instagram": "इंस्टाग्राम",
+      "facebook": "फेसबुक",
+      "linkedin": "लिंक्डइन"
+    }
+  }
+}

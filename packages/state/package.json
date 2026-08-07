@@ -1,0 +1,25 @@
+{
+  "name": "@clearcut/state",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "exports": {
+    "./create-store": "./src/create-store.ts",
+    "./create-persisted-store": "./src/create-persisted-store.ts",
+    "./use-hydrate-store": "./src/use-hydrate-store.ts"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "zustand": "^5.0.8",
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "vitest": "^3.2.4"
+  }
+}

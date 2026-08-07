@@ -1,0 +1,67 @@
+{
+  "studyTabs": {
+    "tabs": {
+      "notes": "Notes",
+      "bonusVideos": "Bonus videos",
+      "trends": "Trends",
+      "concepts": "Concepts"
+    },
+
+    "notes": {
+      "detailedTitle": "Detailed Notes",
+      "detailedSubtitle": "Complete explanation to understand the topic",
+      "quickTitle": "Quick Revision Notes (Coming soon)",
+      "quickSubtitle": "1-page summary for last-minute revision",
+
+      "meta": {
+        "pages": "Pages",
+        "updatedFor": "Updated for",
+        "language": "Language"
+      },
+
+      "buttons": {
+        "download": "Download PDF",
+        "notify": "Notify me when available"
+      },
+
+      "footerHint": "Best for first-time learning & clarity"
+    },
+
+    "bonusVideos": {
+      "title": "Same topic, different teachers",
+      "subtitle": "Watch only if the main video wasn’t clear",
+      "startVideo": "Start Video"
+    },
+
+    "trends": {
+      "title": "Trends from Previous Exam",
+      "subtitle": "Based on recent CTET exams",
+
+      "labels": {
+        "topicImportance": "Topic Importance",
+        "marksAsked": "Marks Asked",
+        "lastAppeared": "Last Appeared",
+        "questionsPerExam": "Questions (per exam)"
+      },
+
+      "values": {
+        "marksRange": "{{min}}-{{max}} marks",
+        "questionsCount": "{{count}} per exam",
+        "basedOnYears": "(Based on {{years}} year)"
+      },
+
+      "buttons": {
+        "viewQuestions": "View CTET Questions ({{count}})"
+      }
+    },
+
+    "concepts": {
+      "title": "Jump to exact concept in video",
+      "subtitle": "Click on any concept for faster learning and revision",
+      "status": {
+        "inProgress": "In Progress"
+      },
+      "hint": "Click on any concept for"
+    }
+  }
+}

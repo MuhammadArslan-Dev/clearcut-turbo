@@ -1,0 +1,87 @@
+{
+  "questionsInfo": "{count} प्रश्न × {marks} मार्क्स",
+  "startTest": "टेस्ट स्टार्ट करें",
+  "timeInfo": "{time} मिनट",
+  "goBack": "वापस जाएं",
+
+  "progress": {
+    "title": "प्रोग्रेस",
+    "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
+    "attemptMessage": "स्कोर इम्प्रूव करने के लिए 2+ सेक्शनल टेस्ट अटेम्प्ट करें"
+  },
+
+  "recommendedNext": {
+    "title": "रिकमेंडेड नेक्स्ट",
+    "subtitle": "(आपकी प्रोग्रेस के बेस पर)",
+    "chapter": "चैप्टर {number} • {name}"
+  },
+
+  "testSeries": {
+    "title": "कटऑफ क्लियर टेस्ट सीरीज़",
+    "preparedUsing": "PYQs के बेस पर तैयार",
+    "basedOnPattern": "लेटेस्ट {course} एग्ज़ाम पैटर्न पर बेस्ड",
+    "noNegativeMarking": "नेगेटिव मार्किंग नहीं है"
+  },
+
+  "sectionalTestModal": {
+    "sectionTest": "सेक्शनल टेस्ट {number}",
+    "fullLengthTest": "फुल-लेंथ टेस्ट {number}",
+    "subject": "चाइल्ड डेवलपमेंट एंड पेडागॉजी",
+
+    "duration": "{hours} आवर {minutes} मिनट",
+    "scoring": "+{positive} करेक्ट, नेगेटिव मार्किंग नहीं",
+
+    "instruction": {
+      "saveMark": "आंसर सेव करें, क्लियर करें या रिव्यू के लिए मार्क करें",
+      "autoSave": "आपके आंसर ऑटो-सेव होते हैं। इंटरप्शन के बाद भी रिज़्यूम कर सकते हैं।",
+      "submitAnytime": "टाइम खत्म होने से पहले कभी भी सबमिट करें"
+    },
+
+    "startButton": "सेक्शनल टेस्ट स्टार्ट करें",
+    "coverageNote": "यह टेस्ट हाई-फ्रिक्वेंसी {course} PYQs कवर करता है",
+    "goBack": "वापस जाएं"
+  },
+
+  "sectionalTestAttempts": {
+    "title": "सेक्शनल टेस्ट {number}",
+    "subject": "बाल विकास एवं शिक्षाशास्त्र",
+
+    "attempt": "प्रयास {number}",
+
+    "bestScore": "बेस्ट स्कोर",
+
+    "viewReport": "रिपोर्ट देखें",
+
+    "reattemptButton": "री-अटेम्प्ट टेस्ट",
+
+    "reattemptNote": "री-अटेम्प्ट से आपका प्रीवियस स्कोर अफेक्ट नहीं होगा"
+  },
+
+  "testInfoBanner": {
+    "basedOnPattern": "लेटेस्ट {course} पैटर्न पर बेस्ड",
+    "preparedUsing": "PYQs के बेस पर तैयार",
+
+    "separator": " • ",
+
+    "combined": "लेटेस्ट {course} पैटर्न पर बेस्ड • PYQs के बेस पर तैयार"
+  },
+
+  "testCard": {
+    "fullLengthTitle": "फुल-लेंथ पेपर {number}",
+    "sectionalTitle": "सेक्शनल टेस्ट {number}",
+    "chapterTitle": "चैप्टर टेस्ट {number}",
+
+    "questionsInfo": "{count} प्रश्न × {marks} मार्क्स",
+    "duration": "{time} मिनट",
+
+    "score": "स्कोर: {score} / {total}",
+
+    "startTest": "टेस्ट स्टार्ट करें",
+    "viewReport": "रिपोर्ट देखें",
+
+    "mustAttempt": "मस्ट अटेम्प्ट",
+    "extraPractice": "एक्स्ट्रा प्रैक्टिस",
+
+    "nextRecommended": "नेक्स्ट रिकमेंडेड सेक्शनल टेस्ट"
+  }
+}

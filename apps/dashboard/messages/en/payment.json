@@ -1,0 +1,56 @@
+{
+  "almostThere": "Almost there",
+  "dontMiss": "Don't miss your {exam} preparation momentum",
+
+  "notCompletedTitle": "Payment not completed",
+  "notCompletedDesc": "No money was deducted. Complete payment to unlock tests, notes & full syllabus.",
+
+  "priceNote": "{amount} (incl. GST)",
+
+  "validity": "Valid till exam",
+  "accessDuration": "Access all tests & classes",
+  "delayWarning": "{exam} is approaching – delay now",
+
+  "completePayment": "Complete Payment to Continue",
+  "needHelp": "Need help completing payment?",
+
+  "benefits": {
+    "watched": "You've already watched {count, plural, one {# video} other {# videos}}.",
+    "watchedHighlight": "{count, plural, one {# video} other {# videos}}.",
+    "consistency": "Students who stay consistent clear {exam} in less attempts",
+    "urgency": "{exam} is approaching – delay now means failure later"
+  },
+
+  "warning": "Students who delay starting test series struggle in the {exam} Exam",
+
+  "paymentWarning": {
+    "title": "Don't stop now!",
+    "subtitle": "Your {exam} preparation will pause",
+
+    "noVideos": "No access exam-ready notes for revision",
+    "noVideosNotes": "exam-ready notes",
+    "noTests": "No latest",
+    "noTestsNote": "exam-pattern mini-tests",
+    "noNotes": "No access to full",
+    "noNotesNote": "Test Series used by toppers",
+
+    "unlockNow": "Unlock Full Access for {exam}",
+    "continueFree": "Continue free learning"
+  },
+
+  "paymentSuccess": {
+    "officialPrep": "You're officially preparing for {exam}",
+    "startPrep": "Let's start your {exam} preparation",
+
+    "unlockedTitle": "{exam} Access Unlocked",
+    "featuresAvailable": "Everything you need available",
+
+    "featureVideos": "Watch videos",
+    "featureNotes": "Download notes",
+    "featureTests": "Attempt Mini-Tests",
+
+    "followUpStudents": "Students who follow daily study goals are 3× more likely to clear {exam}",
+
+    "resume": "Resume from where you left"
+  }
+}

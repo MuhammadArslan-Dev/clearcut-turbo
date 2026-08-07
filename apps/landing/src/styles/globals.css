@@ -1,0 +1,216 @@
+@import "tailwindcss";
+/* Tailwind v4 only scans this app's own tree by default — explicitly
+   include shared component packages so their utility classes (e.g. the
+   Button's compound-variant colors, or the auth modal's layout classes)
+   actually get generated. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/auth/src/**/*.{ts,tsx}";
+@source "../../../../packages/utils/src/**/*.{ts,tsx}";
+/* ./typography.css was an EMPTY file left behind after landing's type scale
+   moved into @clearcut/design-tokens. Removed (file + import) because an empty,
+   still-imported stylesheet is a live footgun: it loads AFTER the shared tokens,
+   so any rule added to it would silently shadow the shared display, heading and
+   body typography scale for landing only — exactly how apps/dashboard ended up
+   with a divergent, weighted copy of the same classes. No rules were deleted,
+   so there is no visual change. */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@clearcut/design-tokens/tokens.css";
+
+@theme static {
+  /* Font families — bound to the next/font loaded faces (hashed family names
+     exposed via the CSS variables), with the literal names as a fallback. */
+  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
+}
+
+/* ================= Utility Animations ================= */
+
+@keyframes badgeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes badgeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.badge-slide-up {
+  animation: badgeSlideUp 0.25s ease-out both;
+}
+.badge-slide-down {
+  animation: badgeSlideDown 0.25s ease-out both;
+}
+
+/* ================= Scrollbar Hide ================= */
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ================= Base Body ================= */
+
+body {
+  font-family: var(--font-latin);
+  scroll-behavior: smooth;
+}
+
+/* ================= Hindi Typography ================= */
+
+:lang(hi) {
+  /* Only switch the font family — keep each element's own weight and size so
+     the Hindi page matches the English typographic hierarchy (bold headings
+     stay bold). Previously this rule force-set font-weight: 300 and
+     font-size: 0.96em on every element, which flattened Hindi to a light,
+     uniform look once <html lang="hi"> started matching. */
+  font-family: var(--font-hindi);
+
+  line-height: calc(1em * var(--hi-line-height-ratio));
+  font-weight: calc(500 + var(--hi-weight-adjust));
+
+  button[type="button"] > span:first-child {
+    padding: 3px 0 0 0;
+  }
+}
+
+/* Better heading spacing for Hindi */
+
+:lang(hi) .display-xlarge,
+:lang(hi) .display-large,
+:lang(hi) .display-medium,
+:lang(hi) .display-small,
+:lang(hi) .heading-2xxlarge,
+:lang(hi) .heading-2xlarge,
+:lang(hi) .heading-xlarge,
+:lang(hi) .heading-large {
+  line-height: calc(1em * 1.15);
+}
+
+/* ================= Content Styling ================= */
+
+.custom {
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  color: #374151;
+}
+
+/* Headings */
+
+.custom h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.custom h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.custom h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.custom h4,
+.custom h5,
+.custom h6 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+/* Paragraph */
+
+.custom p {
+  margin: 0.75rem 0;
+}
+
+/* Lists */
+
+.custom ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.custom ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.custom li {
+  margin: 0.25rem 0;
+}
+
+/* Blockquote */
+
+.custom blockquote {
+  border-left: 4px solid #9ca3af;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563;
+  margin: 1rem 0;
+}
+
+/* Code */
+
+.custom code {
+  background: #f3f4f6;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.custom pre {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+/* Links */
+
+.custom a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.custom a:hover {
+  color: #1d4ed8;
+}
+
+/* HR */
+
+.custom hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+/* The display, heading, and body typography utility classes now live in
+   @clearcut/design-tokens/tokens.css (imported at the top) — the single
+   product-wide source. They were byte-identical to the definitions that used
+   to live here, so removing them is a no-op for landing. */

@@ -1,0 +1,55 @@
+{
+  "name": "@clearcut/ui",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./breadcrumbs": "./src/breadcrumbs.tsx",
+    "./button": "./src/button.tsx",
+    "./card": "./src/card.tsx",
+    "./chip": "./src/chip.tsx",
+    "./input": "./src/input.tsx",
+    "./json-ld": "./src/json-ld.tsx",
+    "./link": "./src/link.tsx",
+    "./links-list": "./src/links-list.tsx",
+    "./main-input": "./src/main-input.tsx",
+    "./overlay": "./src/overlay.tsx",
+    "./page-not-found": "./src/page-not-found.tsx",
+    "./select": "./src/select.tsx",
+    "./separator": "./src/separator.tsx",
+    "./skeleton": "./src/skeleton.tsx",
+    "./text": "./src/text.tsx",
+    "./utils": "./src/utils.ts",
+    "./icons/HomeIcon": "./src/icons/HomeIcon.tsx",
+    "./icons/calendar-icon": "./src/icons/calendar-icon.tsx",
+    "./icons/circle-clock-icon": "./src/icons/circle-clock-icon.tsx",
+    "./icons/email-icon": "./src/icons/email-icon.tsx",
+    "./icons/facebook-icon": "./src/icons/facebook-icon.tsx",
+    "./icons/instagram-icon": "./src/icons/instagram-icon.tsx",
+    "./icons/linked-in-icon": "./src/icons/linked-in-icon.tsx",
+    "./icons/phone-icon": "./src/icons/phone-icon.tsx",
+    "./icons/telegram-icon": "./src/icons/telegram-icon.tsx",
+    "./icons/warning-circle-icon": "./src/icons/warning-circle-icon.tsx",
+    "./icons/youtube-icon": "./src/icons/youtube-icon.tsx"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.35.0",
+    "radix-ui": "^1.6.2",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependencies": {
+    "next": "*",
+    "react": "*",
+    "react-dom": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "next": "^16.1.6",
+    "typescript": "^5"
+  }
+}

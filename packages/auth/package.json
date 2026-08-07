@@ -1,0 +1,37 @@
+{
+  "name": "@clearcut/auth",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./token": "./src/token.ts",
+    "./api": "./src/api.ts",
+    "./redirect": "./src/redirect.ts",
+    "./context": "./src/context.tsx",
+    "./use-web-otp-autofill": "./src/use-web-otp-autofill.ts",
+    "./validators": "./src/validators.ts",
+    "./create-auth-feature": "./src/create-auth-feature.tsx"
+  },
+  "dependencies": {
+    "@clearcut/hooks": "workspace:*",
+    "@clearcut/state": "workspace:*",
+    "@clearcut/ui": "workspace:*",
+    "@clearcut/utils": "workspace:*",
+    "@clearcut/validation": "workspace:*",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.35.0"
+  },
+  "peerDependencies": {
+    "next": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "axios": "^1.12.2",
+    "next": "^16.1.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

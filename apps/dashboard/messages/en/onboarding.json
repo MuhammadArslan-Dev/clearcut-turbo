@@ -1,0 +1,24 @@
+{
+  "language": {
+    "welcome_to": "Welcome to",
+    "choose_language": "Choose Language",
+    "highlight_text": "Language",
+    "description": "You can change this anytime."
+  },
+  "exam": {
+    "select_exam": "Select Exam",
+    "highlight_text": "Exam",
+    "description": "You can update this later",
+    "select_your_state": "Select your state"
+  },
+  "subject": {
+    "select_subject": "Select Subjects",
+    "highlight_text": "Subjects",
+    "description": "You can update this later",
+    "levels_steps": {
+      "select_level_for": "Select Level for {subject}",
+      "description": "(Your subjects depend on this choice)"
+    }
+  },
+  "continue": "Continue"
+}

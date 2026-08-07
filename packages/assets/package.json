@@ -1,0 +1,14 @@
+{
+  "name": "@clearcut/assets",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./image-registry": "./src/image-registry.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

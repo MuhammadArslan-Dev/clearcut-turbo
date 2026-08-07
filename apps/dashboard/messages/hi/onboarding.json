@@ -1,0 +1,24 @@
+{
+  "language": {
+    "welcome_to": "आपका स्वागत है",
+    "choose_language": "भाषा चुनें",
+    "highlight_text": "भाषा",
+    "description": "आप इसे कभी भी बदल सकते हैं।"
+  },
+  "exam": {
+    "select_exam": "एग्ज़ाम चुनें",
+    "highlight_text": "एग्ज़ाम",
+    "description": "आप इसे बाद में अपडेट कर सकते हैं।",
+    "select_your_state": "अपना राज्य चुनें"
+  },
+  "subject": {
+    "select_subject": "विषय चुनें",
+    "highlight_text": "विषय",
+    "description": "आप इसे बाद में अपडेट कर सकते हैं।",
+    "levels_steps": {
+      "select_level_for": "{subject} के लिए स्तर चुनें",
+      "description": "(आपके विषय इसी चयन पर डिपेंड करेंगे)"
+    }
+  },
+  "continue": "आगे बढ़ें"
+}

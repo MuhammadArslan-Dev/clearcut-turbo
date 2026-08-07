@@ -1,0 +1,251 @@
+{
+  "Sidebar": {
+    "exams": "Exams",
+    "exam": "Exam",
+    "learn": "Learn",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "myCourses": "My Courses",
+    "payments": "Payments",
+    "settings": "Settings",
+    "referral": "Referral"
+  },
+  "DashboardPage": {
+    "metaTitle": "Dashboard | ClearCutoff",
+    "metaDescription": "Dashboard"
+  },
+  "Exam": {
+    "metaTitle": "Exam Settings | ClearCutoff",
+    "metaDescription": "Settings"
+  },
+  "Learn": {
+    "metaTitle": "Learn | ClearCutoff",
+    "metaDescription": "Settings"
+  },
+  "Profile": {
+    "metaTitle": "Settings | ClearCutoff",
+    "metaDescription": "Settings"
+  },
+  "SettingsPage": {
+    "metaTitle": "Settings | ClearCutoff",
+    "metaDescription": "Settings"
+  },
+  "PaymentsPage": {
+    "metaTitle": "Payments | ClearCutoff",
+    "metaDescription": "Payments"
+  },
+  "MyCoursesPage": {
+    "metaTitle": "My Courses | ClearCutoff",
+    "metaDescription": "My Courses"
+  },
+  "Header": {
+    "logo": "LMS.io",
+    "features": "Features",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "login": "Login",
+    "signup": "Sign Up"
+  },
+  "todayGoals": {
+    "title": "Today's Goals",
+    "estimatedTime": "Time to complete goals: {min}-{max} min",
+    "watchVideos": "Watch any {count, plural, one {# video} other {# videos}}",
+    "studyNotes": "Download and study {count, plural, one {# note} other {# notes}}",
+    "attemptTests": "Attempt any {count, plural, one {# mini-test} other {# mini-tests}}",
+    "progress": "{completed} / {total}",
+    "start": "Start Today's Goals",
+    "continue": "Continue",
+    "basedOnPattern": "Based on latest exam pattern"
+  },
+  "quickRvision": {
+    "title": "Quick Revision",
+    "subtitle": "Short on time? Revise key topics using notes & PYQs",
+    "viewNotes": "View notes by chapter and topics",
+    "viewPreviousPapers": "Browse previous year papers",
+    "viewPYQs": "Prepared and checked by exam experts",
+    "notes": "{note} notes",
+    "papers": "{paper} papers",
+    "openNotesandPapers": "Open Notes and Papers"
+  },
+  "appDownload": {
+    "title": "Study faster on App",
+    "subtitle": "Short on time? Revise key topics using notes & PYQs",
+    "offlineNotes": "Offline notes and PDFs",
+    "dailyReminders": "Daily reminders and streaks",
+    "fasterTests": "Faster tests, No loading",
+    "continueInApp": "Continue in App",
+    "unlockTopics": "Unlock one topic daily for FREE in App —"
+  },
+  "nextMilestone": {
+    "title": "Next Milestone",
+    "chaptersAway": "{count, plural, one {# chapter} other {# chapters}} away from completing {subject}",
+    "count": "{count, plural, one {# chapter} other {# chapters}}",
+    "cta": "Complete next milestone"
+  },
+  "learningStreak": {
+    "title": "Learning Streak",
+    "minutesToKeepStreak": "{minutes, plural, one {# minute} other {# minutes}} today to keep {streak, plural, one {#-day} other {#-days}} streak",
+    "day": "{streak, plural, one {#-day} other {#-days}} streak",
+    "minute": "{minutes, plural,  =0 {# minute} one {# minute} other {# minutes}}",
+    "longestStreak": "Longest Streak: {days, plural, one {# day} other {# days}}"
+  },
+  "common": {
+    "continue": "Continue",
+    "index": "Index",
+    "save": "Save",
+    "video": "Video",
+    "notes": "Notes",
+    "minitest": "Topic Test",
+    "edit": "Edit",
+    "today": "Today",
+    "upgrade": "Upgrade",
+    "section": "Section",
+    "sections": "Sections",
+    "chapter": "Chapter",
+    "chapters": "Chapters",
+    "course": "Course",
+    "courses": "Courses",
+    "testSeries": "Test Series",
+    "mark": "Mark",
+    "marks": "Marks",
+    "question": "Question",
+    "questions": "Questions",
+    "to_review": "To Review",
+    "not_answered": "Not Answered",
+    "answered": "Answered",
+    "not_visited": "Not Visited",
+    "papers": "Papers"
+  },
+  "timeRemainingTillExam": {
+    "title": "Time Remaining till Exam",
+    "countdown": {
+      "days": "{count, plural, one {Day} other {Days}}",
+      "hours": "{count, plural, one {Hour} other {Hours}}",
+      "minutes": "{count, plural, one {Min} other {Mins}}",
+      "seconds": "{count, plural, one {Sec} other {Secs}}"
+    },
+    "upgradeHint": "Upgrade now to finish syllabus before exam"
+  },
+  "examCard": {
+    "date": "Date:",
+    "mode": "Mode:",
+    "duration": "Duration:",
+    "cutoff": "Cutoff:",
+    "ctaTrial": "Start {days}-day FREE Trial"
+  },
+  "examMode": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "languages": {
+    "english": "English",
+    "hindi": "Hindi"
+  },
+  "actions": {
+    "add": "Add",
+    "delete": "Delete",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next",
+    "end_test": "End Test",
+    "save_and_next": "Save & Next",
+    "clear_response": "Clear Response",
+    "mark_for_review_and_next": "Mark this for Review & Next",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "confirm_language": "Confirm Language",
+    "previous_topic": "Previous Topic",
+    "next_topic": "Next Topic",
+    "logout": "Logout"
+  },
+  "profile": {
+    "title": "My Profile",
+    "greeting": "Hi, {name}",
+    "personalDetails": {
+      "name": "Name",
+      "gender": "Gender",
+      "dob": "Date of birth",
+      "email": "Email",
+      "phone": "Phone",
+      "notAdded": "Not added",
+      "edit": "Edit",
+      "add": "Add"
+    }
+  },
+  "profileMenu": {
+    "personalDetails": {
+      "title": "Personal Details",
+      "subtitle": "Name, age, gender and more"
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "Courses purchased from us"
+    },
+    "changeLanguage": {
+      "title": "Change Language",
+      "subtitle": "English, हिंदी, मराठी"
+    },
+    "helpSupport": {
+      "title": "Help & Support",
+      "subtitle": "Call and chat with us"
+    },
+    "tncAndSocial": {
+      "title": "TnC & Social Media",
+      "subtitle": "Terms, social media and more"
+    },
+    "subscriptions": {
+      "title": "Subscriptions",
+      "subtitle": "Manage your active plans"
+    }
+  },
+  "course": {
+    "courseStatus": {
+      "trial": "3 days left in FREE Trial",
+      "trialEnd": "Trial Ended",
+      "active": "Active",
+      "completed": "Completed",
+      "dropped": "Dropped",
+      "expired": "Expired",
+      "cleared": "Cleared",
+      "unknown": "Unknown"
+    }
+  },
+  "myCourses": {
+    "title": "My Courses",
+    "freeTrialBadge": "FREE Trial",
+    "chaptersCompleted": "Chapters Completed",
+    "topicsCompleted": "Topics Completed",
+    "testsAttempted": "Tests Attempted",
+    "chaptersLabel": "Chapters",
+    "testSeriesLabel": "Test Series",
+    "continueLearning": "Continue Free Learning",
+    "continueLearningActive": "Continue Learning",
+    "unlockFullAccess": "Unlock Full Access",
+    "buyFullCourse": "Buy Full Course",
+    "priceNote": "₹{price} only • Subscription per month",
+    "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only"
+  },
+  "resumeBar": {
+    "currentExam": "Current Exam: {exam}",
+    "changeExam": "Change Exam",
+    "lessonPath": "{subject} > Chapter {chapter} • Topic {topic}",
+    "timeToComplete": "{minutes, plural, one {# min} other {# mins}} to complete goal",
+    "minutes": "{minutes, plural, one {# min} other {# mins}}",
+    "resume": "Resume"
+  },
+  "footer": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "refund": "Refund",
+    "contact": "Contact",
+    "copyright": "© {year} {brand}. All rights reserved."
+  },
+  "LanguageCard": {
+    "select_language": "Select Language"
+  },
+  "ReferralPage": {
+    "metaTitle": "Referral Program | ClearCutoff",
+    "metaDescription": "Invite friends and earn rewards"
+  }
+}

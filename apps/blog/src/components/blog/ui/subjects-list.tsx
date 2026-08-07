@@ -1,0 +1,40 @@
+import RightArrowBox from '@/components/ui/arrows/right-arrow-box';
+import NumberedShape from '@/components/ui/numbered-shape';
+import Link from 'next/link';
+import React from 'react'
+
+interface Props {
+    index?: number,
+    title?: string,
+    subtitle?: string,
+    onClick?: () => void,
+    loading?: boolean,
+    pathname?: string
+}
+
+export default function SubjectsList({ index = 1, title = "", subtitle = "150 questions & detailed answers", onClick, loading, pathname }: Props) {
+
+
+    // prefetch is deliberately off. This list links to year/subject detail
+    // pages, which now server-render their full question set — so each RSC
+    // prefetch is ~184 KB. With prefetch={true} the year index eagerly pulled
+    // five of them: measured 918 KB of prefetch traffic on a single page view,
+    // for pages the visitor may never open. Those pages still render
+    // server-side in ~200 ms on click.
+    return (
+        // <div className={[loading ? 'opacity-50 cursor-not-allowed' : ''].join(' ')}>
+            <Link prefetch={false} href={`${pathname}`} onClick={onClick}>
+                <div className='flex items-center justify-between py-4 px-3 border-b border-gray-300'>
+                    <div className='flex items-center gap-4'>
+                        <NumberedShape number={index} />
+                        <div>
+                            <div className='body-large !font-semibold text-gray-900'> {title}</div>
+                            <div className='body-small !font-normal text-gray-500'>{subtitle}</div>
+                        </div>
+                    </div>
+                    <RightArrowBox size={30} onClick={onClick} />
+                </div>
+            </Link>
+        // </div>
+    )
+}

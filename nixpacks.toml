@@ -1,0 +1,61 @@
+# Nixpacks build config for apps/dashboard.
+#
+# The build context MUST be the repository root — this file's directory, the one
+# holding pnpm-workspace.yaml, turbo.json and the root package.json. If the
+# platform's "root directory" setting points at apps/dashboard instead, the
+# `workspace:*` dependencies cannot resolve: every @clearcut/* package lives
+# outside that subtree, and pnpm-lock.yaml / pnpm-workspace.yaml are not in it
+# either.
+
+[phases.setup]
+# Next 16 requires Node >= 20.9; CI (.github/workflows/ci.yml) uses 22, so the
+# build image matches it rather than picking up whatever Nixpacks defaults to.
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+# `corepack enable` on its own is deliberate. It installs exactly the pnpm
+# version pinned by `packageManager` in the root package.json (pnpm@10.33.0).
+#
+# Do NOT replace this with `corepack prepare pnpm@latest --activate`: latest is
+# currently pnpm 11.x, so that would silently ignore the pin that pnpm-lock.yaml
+# (lockfileVersion 9.0) was generated against — the exact drift --frozen-lockfile
+# exists to catch. Pinning is also why no explicit version belongs here; bumping
+# the root package.json is the single place that decides it.
+cmds = [
+  "corepack enable",
+  "pnpm install --frozen-lockfile",
+]
+
+[phases.build]
+# --filter=dashboard builds the app plus only the workspace packages it actually
+# depends on. A bare `pnpm build` would also build apps/landing, which fetches
+# content from a live Payload CMS during the build and dies with ECONNREFUSED
+# unless CMS_URL points somewhere reachable — a failure that has nothing to do
+# with the dashboard.
+cmds = ["pnpm turbo run build --filter=dashboard"]
+
+[start]
+# `next start` reads PORT from the environment, which the platform provides.
+cmd = "pnpm --filter dashboard start"
+
+[variables]
+# Without this Corepack asks for confirmation before downloading pnpm, which
+# hangs a non-interactive build instead of failing it.
+COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+
+# npm rotated its registry signing keys. The Corepack bundled with Node 22.11
+# (which nixPkgs above pins) still carries the superseded key set, so verifying
+# the pnpm download fails with:
+#
+#   Error: Cannot find matching keyid: {"signatures":[...],"keys":[...]}
+#       at verifySignature (.../corepack.cjs)
+#
+# The cleaner fix is a Corepack >= 0.31 with the current keys, but Node here
+# comes from the read-only Nix store, so `npm install -g corepack@latest` cannot
+# replace the bundled copy, and a --prefix install loses to the Nix entry that
+# comes first on PATH.
+#
+# Disabling the check leaves the download at the same trust level as a plain
+# `npm install -g pnpm`: still HTTPS from the registry, no longer signature
+# verified. Revisit when the base image ships a Corepack that has the new keys.
+COREPACK_INTEGRITY_KEYS = "0"

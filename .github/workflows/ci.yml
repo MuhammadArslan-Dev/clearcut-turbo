@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm turbo run lint
+
+      # Design-system guard: fails if a PR adds a hardcoded colour instead of a
+      # token from @clearcut/design-tokens. Gated against a per-package baseline
+      # (scripts/hardcoded-colors-baseline.json) so the ~920 pre-existing literals
+      # don't block merges — the count can only go down. Runs before typecheck
+      # because it is fast and gives the clearest failure message.
+      - name: Design tokens — no new hardcoded colours
+        run: pnpm check:colors
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+      - name: Test
+        run: pnpm turbo run test
+
+      # apps/landing's build fetches content from a live Payload CMS at
+      # build time (see apps/landing/src/lib/api/cms.ts) — it needs a
+      # network-reachable CMS_URL or this step fails with ECONNREFUSED,
+      # regardless of code correctness. Set a CMS_URL repo/environment
+      # secret pointing at a real, reachable CMS instance before relying
+      # on this step; until then, a red build here may mean "no CMS
+      # configured for CI" rather than a real regression.
+      - name: Build
+        env:
+          CMS_URL: ${{ secrets.CMS_URL }}
+        run: pnpm turbo run build

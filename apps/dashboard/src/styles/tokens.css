@@ -1,0 +1,189 @@
+/* styles/tokens.css */
+
+:root {
+  /* Layout sizes */
+  --dashboard-sidebar-width: 260px;
+  --dashboard-header-height: 64px;
+  --dashboard-mobile-bar-height: 54px;
+  --dashboard-container-max-width: 1200px;
+  --preparation-sidebar-width: 400px;
+  --preparation-header-height: 64px;
+
+  /* Background Colors */
+  --background: #ffffff;
+  --background-soft: #f9fafb;
+  --background-dark: #111827;
+  --background-gray: #edf0f3;
+  --background-gray-subtle: var(--color-background-gray-subtle);
+
+  /* Icons */
+  --icon-gray-muted: var(--color-surface-gray-muted);
+  --icon-gray-normal: var(--color-text-gray-normal);
+  --icon-gray-subtle: var(--color-text-gray-subtle);
+  --icon-gray-disabled: #6d849d42;
+
+  /* Interactive / Icon / Primary */
+  --icon-primary-normal: var(--color-brand-dark-legacy);
+  --icon-primary-subtle: var(--color-brand);
+  --icon-primary-muted: #2e9aff;
+  --icon-primary-disabled: rgba(0, 107, 209, 0.18);
+
+  /* / Icon / Positive */
+  --icon-positive-normal: var(--color-success-highlight);
+  --icon-positive-subtle: var(--color-success);
+  --icon-positive-muted: #48d08c;
+  --icon-positive-disabled: rgba(0, 162, 81, 0.32);
+
+  /* / Icon / Negative */
+  --icon-negative-normal: var(--color-danger);
+  --icon-negative-subtle: var(--color-danger-subtle);
+  --icon-negative-muted: var(--color-danger-muted);
+  --icon-negative-disabled: rgba(217, 45, 32, 0.32);
+
+  /* / Icon / Notice */
+  --icon-notice-normal: var(--color-warning);
+  --icon-notice-subtle: var(--color-warning-subtle);
+  --icon-notice-muted: var(--color-warning-muted);
+  --icon-notice-disabled: rgba(233, 105, 12, 0.32);
+
+  /* / Icon / Information */
+  --icon-information-normal: var(--color-info);
+  --icon-information-subtle: var(--color-info-subtle);
+  --icon-information-muted: var(--color-info-muted);
+  --icon-information-disabled: rgba(18, 145, 208, 0.32);
+
+  /* TEXT COLOR  */
+  /* Surface / Text / Gray */
+  --text-gray-normal: var(--color-text-gray-normal);
+  --text-gray-subtle: var(--color-text-gray-subtle);
+  --text-gray-muted: var(--color-surface-gray-muted);
+  --text-gray-disabled: rgba(108, 132, 157, 0.32);
+
+  /* / Text / Primary */
+  --text-primary-normal: var(--color-brand);
+
+  /* / Text / Static */
+  --text-staticWhite-normal: var(--primary-foreground);
+  --text-staticWhite-subtle: rgba(255, 255, 255, 0.88);
+  --text-staticWhite-muted: rgba(255, 255, 255, 0.48);
+  --text-staticWhite-disabled: rgba(255, 255, 255, 0.32);
+
+  --text-staticBlack-normal: #000000;
+  --text-staticBlack-subtle: rgba(0, 0, 0, 0.72);
+  --text-staticBlack-muted: rgba(0, 0, 0, 0.56);
+  --text-staticBlack-disabled: rgba(0, 0, 0, 0.32);
+
+  /* Border */
+  /* Surface / Border / Gray */
+  --border-gray-subtle: var(--color-border-gray-subtle);
+  --border-gray-normal: #90a5bb;
+  --border-gray-muted: rgba(108, 132, 157, 0.18);
+
+  /* / Border / Primary */
+  --border-primary-normal: var(--color-brand);
+  --border-primary-muted: rgba(0, 107, 209, 0.18);
+
+  /* Colors
+     ── Removed by the design-token audit ──────────────────────────────────────
+     This block used to re-declare 11 tokens that @clearcut/design-tokens already
+     defines with IDENTICAL values (--color-brand, --color-brand-dark,
+     --color-primary, --color-primary-soft/subtle, --color-success and its three
+     variants, --color-surface-gray-normal/muted/subtle). Because globals.css
+     imports the canonical sheet FIRST and this file second, these local copies
+     silently WON — so editing the shared token changed landing and blog but not
+     Dashboard. They are deleted, not re-pointed: canonical now applies directly,
+     and since the values were identical there is no visual change.
+
+     Also removed: --color-bg / --color-bg-soft / --color-surface / --color-border
+     / --color-text / --color-text-muted / --color-danger / --color-warning.
+     Those were a dark-surface set whose ONLY consumer was src/config/theme.ts,
+     which nothing imports (verified: 0 importers, 0 Tailwind utility usages).
+     Three of them additionally shadowed canonical names with DIFFERENT values
+     (--color-border #1e293b vs canonical var(--border); --color-danger #ef4444 vs
+     #d92d20; --color-warning #f97316 vs #c65c10), so keeping them would have left
+     one token name meaning two colours depending on the app. */
+  --surface-border-gray-subtle: var(--color-border-gray-subtle);
+  --surface-border-normal-lowcontrast: var(--color-border-gray-subtle);
+
+  /* icons tokens  */
+  --icon-neutral-intense: #243547;
+
+  /* Typography.
+     --font-sans is NOT redeclared here. It used to hold a hardcoded
+     `system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif`
+     stack, which won over the shared contract and meant Tailwind's `font-sans`
+     utility (and anything in packages/ui using it) painted a completely different
+     typeface from the app font — measured at runtime:
+       --font-sans -> system-ui, …, "Inter", "Segoe UI", sans-serif
+       body        -> "Noto Sans"
+     --font-sans now resolves through @clearcut/design-tokens to --font-latin,
+     which globals.css binds to this app's next/font instance. */
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Spacing (8px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.7);
+
+  /* Optional: z-index levels */
+  --dashboard-z-header: 50;
+  --dashboard-z-sidebar: 40;
+  --z-modal: 100;
+
+  /* Fluid Font Sizes */
+  --fluid-dxl: clamp(40px, 6vw, 72px); /* Display Extra Large */
+  --fluid-dl: clamp(38px, 5vw, 64px); /* Display Large */
+  --fluid-dm: clamp(36px, 4.5vw, 56px); /* Display Medium */
+  --fluid-ds: clamp(34px, 4vw, 48px); /* Display Small */
+
+  --fluid-h2xxl: clamp(32px, 3.5vw, 38px); /* Heading 2XL */
+  --fluid-h2xl: clamp(32px, 3.5vw, 40px); /* Heading 2XL */
+  --fluid-hxl: clamp(24px, 3vw, 32px); /* Heading XL */
+  --fluid-hl: clamp(20px, 2.5vw, 24px); /* Heading Large */
+  --fluid-hm: clamp(18px, 2vw, 20px); /* Heading Medium */
+  --fluid-hs: clamp(16px, 1.5vw, 18px); /* Heading Small */
+
+  --fluid-bl: clamp(16px, 1.5vw, 16px); /* Body Large */
+  --fluid-bm: clamp(14px, 1vw, 15px); /* Body Medium */
+  --fluid-bs: clamp(12px, 0.9vw, 13px); /* Body Small */
+  --fluid-bxs: clamp(10px, 0.8vw, 11px); /* Body Extra Small */
+  --letter-space: -0.02em;
+
+  /* font-linght  */
+  --flh-dxl: clamp(48px, 5vw, 78px);
+  --flh-dl: clamp(46px, 4.5vw, 70px);
+  --flh-dm: clamp(42px, 5vw, 64px);
+  --flh-ds: clamp(40px, 3.5vw, 56px);
+  --flh-h2xl: clamp(38px, 3vw, 46px);
+  --flh-hxl: clamp(32px, 2.5vw, 38px);
+  --flh-hl: clamp(26px, 2vw, 32px);
+  --flh-hm: clamp(24px, 1.8vw, 26px);
+  --flh-hs: clamp(22px, 1.5vw, 24px);
+  --flh-bl: clamp(24px, 1.3vw, 24px);
+  --flh-bm: clamp(20px, 1.2vw, 20px);
+  --flh-bs: clamp(18px, 1vw, 18px);
+  --flh-bxs: clamp(14px, 1vw, 14px);
+}
