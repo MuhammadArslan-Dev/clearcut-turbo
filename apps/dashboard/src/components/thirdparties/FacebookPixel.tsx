@@ -25,7 +25,10 @@ export default function FacebookPixel() {
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
-      window.fbq("track", "CompleteRegistration");
+      window.fbq("track", "CompleteRegistration", {
+        value: 0.0,
+        currency: "USD",
+      });
       params.delete("user_type");
       hasOneShotSignal = true;
     }
