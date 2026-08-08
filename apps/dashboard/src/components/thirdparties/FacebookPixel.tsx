@@ -27,7 +27,7 @@ export default function FacebookPixel() {
     if (params.get("user_type") === "new") {
       window.fbq("track", "CompleteRegistration", {
         value: 0.0,
-        currency: "USD",
+        currency: "INR",
       });
       params.delete("user_type");
       hasOneShotSignal = true;
