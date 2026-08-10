@@ -13,8 +13,12 @@ import type {
     AnalyticsUserTraits,
 } from './types';
 
-// These are replaced at build time; safe to read in client code
-const AMPLITUDE_API_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
+// These are replaced at build time; safe to read in client code.
+// Falls back to the same key apps/blog and apps/landing use when
+// NEXT_PUBLIC_AMPLITUDE_API_KEY isn't set, so Amplitude still has a key to
+// init with even on an env that never configured a dashboard-specific one.
+const AMPLITUDE_API_KEY =
+    process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '87599b5b5616563df5517932f9d6ca84';
 const AMPLITUDE_ENABLED =
     process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED === 'true';
 
