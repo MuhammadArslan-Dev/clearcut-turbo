@@ -145,6 +145,14 @@ Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not
 
 Note: `@sentry/nextjs` declares peer support for Next 13–15, not Next 16 (which all three apps run). It builds and typechecks clean regardless — re-verify after any Sentry version bump.
 
+## Deployment (`nixpacks.toml`)
+
+Only `apps/dashboard` has a deployment config (`nixpacks.toml` at repo root) — blog and landing have none. Three things about it are easy to get wrong by copying a generic Nixpacks setup instead of reading it:
+
+- The build context **must be the repo root** (where `nixpacks.toml`, `pnpm-workspace.yaml`, and `turbo.json` live), not `apps/dashboard` — the `workspace:*` `@clearcut/*` deps and the lockfile aren't reachable from inside the app subtree.
+- It builds with `pnpm turbo run build --filter=dashboard`, deliberately not a bare `pnpm build` — building all apps would also build `apps/landing`, which fails with `ECONNREFUSED` in an environment without a reachable `CMS_URL`, for reasons unrelated to dashboard.
+- Node and pnpm versions are pinned to match the rest of the repo on purpose: `nodejs_22` mirrors CI's Node 22, and install is a bare `corepack enable` (no `pnpm@latest` override) so it picks up the exact `packageManager` pin in the root `package.json` — bumping the pnpm version belongs there, not in this file.
+
 ## Key Backend / External Paths (not in this repo)
 
 - **Laravel backend** (exam content, auth, payments): `NEXT_PUBLIC_API_URL`/`BACKEND_URL`/`API_URL` in blog/landing; `NEXT_PUBLIC_LARAVEL_MAIN_BACKEND` (client) and `LARAVEL_API_URL`/`LARAVEL_MAIN_BACKEND` (server route handlers) in dashboard. **These base URLs must include the trailing `/api`** — dashboard's clients concatenate paths directly (`${BASE}/v1/auth-user`), and `app/api/auth/login/route.ts` reads the server vars with a non-null assertion and no fallback, so an unset value silently fetches `undefined/auth/login`.

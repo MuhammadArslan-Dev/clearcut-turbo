@@ -54,6 +54,7 @@ export function createOtpScreen({
 
     const {
       phone,
+      userId,
       otp,
       setOtp,
       goToLogin,
@@ -141,7 +142,11 @@ export function createOtpScreen({
         if (status !== "success") throw new Error("Verification failed");
 
         setToken(data.token);
-        trackFacebookLead(localStorage.getItem("is_new_user") === "true");
+        trackFacebookLead(
+          localStorage.getItem("is_new_user") === "true",
+          phone,
+          userId,
+        );
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,

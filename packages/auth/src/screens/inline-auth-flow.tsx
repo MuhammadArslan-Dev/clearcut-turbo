@@ -79,6 +79,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
     SubmitButton?: InlineAuthFlowSubmitButton;
   }) {
     const [phone, setPhone] = useState("");
+    const [userId, setUserId] = useState("");
     const [isNewUser, setIsNewUser] = useState(false);
     const [otp, setOtp] = useState("");
     const [error, setError] = useState("");
@@ -129,6 +130,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         const res = await authApi.loginUser({ phone: number });
         const { message, status } = res?.data;
         setIsNewUser(res?.data?.data?.is_new_user || false);
+        setUserId(res?.data?.data?.user_id || "");
         if (status !== "success") { setError(message); return; }
         await onEvent?.("Verification Sent", { phone: number, source: "onboading_steps", verification_method: "Number", verification_mode: "SMS", verification_purpose: "Login" });
         await authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" });
@@ -164,7 +166,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         const { data, status } = res.data;
         if (status !== "success") throw new Error("Verification failed");
         setToken(data.token);
-        trackFacebookLead(isNewUser);
+        trackFacebookLead(isNewUser, phone, userId);
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
           token: data.token,
