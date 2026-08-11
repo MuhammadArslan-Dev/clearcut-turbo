@@ -33,7 +33,10 @@ export default function robots(): MetadataRoute.Robots {
         disallow: "/",
       },
     ],
-    sitemap: "https://clearcutoff.in/sitemap.xml",
+    sitemap: [
+      "https://clearcutoff.in/sitemap.xml",
+      "https://clearcutoff.in/go/sitemap.xml", // Astro marketing pages, served via the Cloudflare Worker at /go/*
+    ],
     host: "https://clearcutoff.in",
   };
 }
