@@ -139,8 +139,6 @@ const TopicListCard: React.FC<Props> = ({
         {/* Title + Time */}
         <div className="flex items-center justify-between gap-2">
           <p className={clsx("", titleClassName)}>{title}</p>
-
-          {badge && badge}
         </div>
 
         {/* Meta info */}
@@ -164,6 +162,11 @@ const TopicListCard: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Badge: sibling of the content column so the outer row's items-center
+          vertically centers it across the full card height (title + meta
+          rows), instead of pinning it to the title row alone. */}
+      {badge && <div className="shrink-0">{badge}</div>}
     </div>
   );
 };

@@ -16,6 +16,7 @@ import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { useRouter } from "@/i18n/navigation";
 import QuickRevision from "@/components/ui/widgets/quick-revision/quick-revision";
+import AppDownloadWidget from "@/components/ui/widgets/app-download/app-download-widget";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 
 
@@ -151,6 +152,15 @@ export default function LearnPage() {
 
                 <div className="flex-1 overflow-hidden">
                   <LearningStreak rounded="md:rounded-md" />
+                </div>
+              </div>
+
+              <div className={`flex flex-col md:flex-row gap-2 md:gap-4 ${hideWidgetsRowOnMobile}`}>
+                <div className="flex-1 overflow-hidden">
+                  <AppDownloadWidget
+                    rounded="md:rounded-md"
+                    examTitle={exam?.short_name}
+                  />
                 </div>
               </div>
             </div>

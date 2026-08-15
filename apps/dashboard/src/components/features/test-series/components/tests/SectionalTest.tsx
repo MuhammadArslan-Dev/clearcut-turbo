@@ -17,8 +17,7 @@ import CounterCard from "@/components/ui/cards/CounterCard";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
 import { SectionalTestItem, SectionalSection } from "@/lib/tests/getExam";
-import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
-import { useRouter } from "@/i18n/navigation";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 
 interface SectionalTestProps {
   courseId?: string | number;
@@ -27,13 +26,13 @@ interface SectionalTestProps {
 export default React.memo(function SectionalTest({ courseId }: SectionalTestProps) {
   const t = useTranslations();
   const cardT = useTranslations("testListContent");
-  const router = useRouter();
 
   const { course: courseData } = useGetCurrentCourseStore();
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
   const { open } = useTestSeriesModalStore();
+  const { open: openPaywall } = usePaywallsStore();
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
   const { get } = useQueryParams();
   const testType = get("testType");
@@ -223,7 +222,13 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
             text: cardT("testCard.startTest"),
             isShow: isLocked,
             variant: isRecommended ? "solid" : "outlined",
-            onClick: () => handleOpenPaywall(router, "full_test_card_clicked", courseData),
+            onClick: () =>
+              openPaywall(
+                "test-locked-modal",
+                courseData?.exam!,
+                "sectional_test_card_clicked",
+                courseData,
+              ),
           }}
           startTest={{
             text: cardT("testCard.startTest"),
@@ -231,7 +236,12 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
             variant: isRecommended ? "solid" : "outlined",
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "sectional_test_card_clicked",
+                    courseData,
+                  )
                 : handleStartTest(test, section),
           }}
           viewReport={{
@@ -239,14 +249,19 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
             isShow: isCompleted,
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "sectional_test_card_clicked",
+                    courseData,
+                  )
                 : handleViewHistory(test, section),
           }}
           announcement={isRecommended ? "Next recommended sectional test" : undefined}
         />
       );
     },
-    [cardT, courseData, handleStartTest, handleViewHistory, recommendedTest, router],
+    [cardT, courseData, handleStartTest, handleViewHistory, recommendedTest, openPaywall],
   );
 
   /* ================= STATES ================= */

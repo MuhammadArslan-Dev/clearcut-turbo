@@ -1,31 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
-export function useScrollDirection() {
+/**
+ * Tracks scroll direction of `target` (defaults to `window`). Small scrolls
+ * (< 35px) are ignored so direction doesn't flip on every frame.
+ */
+export function useScrollDirection(target?: RefObject<HTMLElement | null>) {
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up");
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
-    let lastScrollY = window.scrollY;
+    const el = target?.current ?? window;
+    lastScrollY.current = target?.current
+      ? target.current.scrollTop
+      : window.scrollY;
 
     const updateScrollDirection = () => {
-      const scrollY = window.scrollY;
+      const scrollY = target?.current
+        ? target.current.scrollTop
+        : window.scrollY;
 
-      if (Math.abs(scrollY - lastScrollY) < 35) return; // ignore small scrolls
+      if (Math.abs(scrollY - lastScrollY.current) < 35) return; // ignore small scrolls
 
-      if (scrollY > lastScrollY) {
-        setScrollDirection("down");
-      } else {
-        setScrollDirection("up");
-      }
-
-      lastScrollY = scrollY;
+      setScrollDirection(scrollY > lastScrollY.current ? "down" : "up");
+      lastScrollY.current = scrollY;
     };
 
-    window.addEventListener("scroll", updateScrollDirection);
+    el.addEventListener("scroll", updateScrollDirection);
 
     return () => {
-      window.removeEventListener("scroll", updateScrollDirection);
+      el.removeEventListener("scroll", updateScrollDirection);
     };
-  }, []);
+  }, [target]);
 
   return scrollDirection;
 }

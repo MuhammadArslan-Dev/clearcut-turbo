@@ -28,8 +28,6 @@ import {
   usePaywallsStore,
 } from "@/components/features/PayWalls/usePaywallsStore";
 import { trackEvent } from "@/lib/analytics/browser";
-import { useRouter } from "@/i18n/navigation";
-import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 
 interface FullTestProps {
   courseId?: string | number;
@@ -38,7 +36,6 @@ interface FullTestProps {
 export default function FullTest({ courseId }: FullTestProps) {
   const t = useTranslations();
   const cardT = useTranslations("testListContent");
-  const router = useRouter();
 
   const { get } = useQueryParams();
   const testType = get("testType");
@@ -246,7 +243,13 @@ export default function FullTest({ courseId }: FullTestProps) {
             text: cardT("testCard.startTest"),
             isShow: isLocked,
             variant: isRecommended ? "solid" : "outlined",
-            onClick: () => handleOpenPaywall(router, "full_test_card_clicked", courseData),
+            onClick: () =>
+              openPaywall(
+                "test-locked-modal",
+                courseData?.exam!,
+                "full_test_card_clicked",
+                courseData,
+              ),
           }}
           startTest={{
             text: cardT("testCard.startTest"),
@@ -254,7 +257,12 @@ export default function FullTest({ courseId }: FullTestProps) {
             variant: isRecommended ? "solid" : "outlined",
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "full_test_card_clicked",
+                    courseData,
+                  )
                 : open("pre-test-confirmation", { test }),
           }}
           viewReport={{
@@ -262,7 +270,12 @@ export default function FullTest({ courseId }: FullTestProps) {
             isShow: isCompleted,
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "full_test_card_clicked",
+                    courseData,
+                  )
                 : open("attempt-history", { test }),
           }}
         />
@@ -270,10 +283,11 @@ export default function FullTest({ courseId }: FullTestProps) {
     },
     [
       cardT,
+      courseData,
       getTestAttemptScore,
-      handleOpenPaywall,
       isTestAttempted,
       open,
+      openPaywall,
       paper?.id,
       recommendedTest,
     ],

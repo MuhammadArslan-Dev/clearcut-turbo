@@ -14,6 +14,7 @@ import { useExamModalStore } from "@/components/features/exam/store/useExamModal
 import ExamReportSheet from "@/components/features/exam-report/ExamReportSheet";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywall";
+import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 
 export default function TestSeriesShell({ children }: { children: ReactNode }) {
@@ -63,6 +64,7 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
       {isOpenPaywall && mode === "preparation-paywall" && (
         <PreparationPaywall />
       )}
+      <LockedContentModal />
     </div>
   );
 }

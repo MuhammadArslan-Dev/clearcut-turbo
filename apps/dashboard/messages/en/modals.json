@@ -51,6 +51,34 @@
     "paymentMethods": "UPI / Card / Net banking"
   },
 
+  "topicLockedModal": {
+    "title": "This Topic is Locked",
+    "subtitle": "Unlock to continue your preparation",
+    "unlockAndGet": "Unlock and get",
+    "features": {
+      "accessTopic": "Access this topic & all lessons",
+      "practiceTests": "Practice questions & tests",
+      "trackProgress": "Track your progress",
+      "boostScore": "Boost your score"
+    },
+    "cta": "Unlock Now",
+    "continueFree": "Continue free learning"
+  },
+
+  "testLockedModal": {
+    "title": "Test Locked",
+    "subtitle": "Unlock to attempt this test",
+    "unlockAndGet": "Unlock and get",
+    "features": {
+      "attemptTest": "Attempt this test",
+      "detailedSolutions": "Detailed solutions & analysis",
+      "compareRank": "Compare your rank",
+      "improveClear": "Improve and clear {exam}"
+    },
+    "cta": "Unlock Test",
+    "continueFree": "Continue free learning"
+  },
+
   "buySingleCourseModal": {
     "paperSelection": {
       "title": "Select Paper",

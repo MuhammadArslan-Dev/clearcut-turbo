@@ -23,8 +23,7 @@ import { ChangePaperButton } from "./FullTest";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
-import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
-import { useRouter } from "@/i18n/navigation";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import SectionSwitchUI from "@/components/ui/tabs/SectionSwitchUI";
 import { TabItem } from "@/components/ui/tabs/TabSwitch";
 import { ArrowRightIcon } from "lucide-react";
@@ -37,13 +36,13 @@ interface ChapterTestProps {
 export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   const t = useTranslations();
   const cardT = useTranslations("testListContent");
-  const router = useRouter();
 
   const { course: courseData } = useGetCurrentCourseStore();
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
   const { open } = useTestSeriesModalStore();
+  const { open: openPaywall } = usePaywallsStore();
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
   const { set: setQueryParam } = useQueryParams();
 
@@ -285,7 +284,13 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
             text: cardT("testCard.startTest"),
             isShow: isLocked,
             variant: isRecommended ? "solid" : "outlined",
-            onClick: () => handleOpenPaywall(router, "full_test_card_clicked", courseData),
+            onClick: () =>
+              openPaywall(
+                "test-locked-modal",
+                courseData?.exam!,
+                "full_test_card_clicked",
+                courseData,
+              ),
           }}
           startTest={{
             text: cardT("testCard.startTest"),
@@ -293,7 +298,12 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
             variant: isRecommended ? "solid" : "outlined",
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "full_test_card_clicked",
+                    courseData,
+                  )
                 : handleStartTest(test, chapter),
           }}
           viewReport={{
@@ -301,14 +311,19 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
             isShow: isCompleted,
             onClick: () =>
               isLocked
-                ? handleOpenPaywall(router, "full_test_card_clicked", courseData)
+                ? openPaywall(
+                    "test-locked-modal",
+                    courseData?.exam!,
+                    "full_test_card_clicked",
+                    courseData,
+                  )
                 : handleViewHistory(test, chapter),
           }}
           announcement={isRecommended ? "Next recommended chapter test" : undefined}
         />
       );
     },
-    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, router],
+    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall],
   );
 
   /* ================= LOADING / ERROR STATES ================= */

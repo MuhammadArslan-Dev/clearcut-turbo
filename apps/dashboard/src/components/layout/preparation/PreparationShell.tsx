@@ -21,6 +21,7 @@ import ChangePaperModal from "@/components/features/preparation/components/modal
 import EditCourseModal from "@/components/modals/course/edit-course-modal/edit-course-modal";
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywall";
+import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useParams } from "next/navigation";
@@ -171,6 +172,7 @@ export default function PreparationShell({
       {isOpenPaywall && mode === "preparation-paywall" && (
         <PreparationPaywall />
       )}
+      <LockedContentModal />
     </div>
   );
 }

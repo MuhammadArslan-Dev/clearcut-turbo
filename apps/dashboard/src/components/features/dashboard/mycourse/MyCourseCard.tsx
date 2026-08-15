@@ -195,7 +195,7 @@ export default function MyCourseCard({
           {continueClick && (
             <div>
               <MainButton
-                className="mx-auto max-w-[280px] md:mx-0 md:max-w-none"
+                className="mx-auto max-w-[320px] md:mx-0 md:max-w-none"
                 loading={continueLoading}
                 fullWidth
                 onClick={() => {
@@ -215,7 +215,7 @@ export default function MyCourseCard({
           {unlockClick && (
             <>
               <MainButton
-                className="mx-auto max-w-[280px] md:mx-0 md:max-w-none"
+                className="mx-auto max-w-[320px] md:mx-0 md:max-w-none"
                 fullWidth
                 loading={unlockLoading}
                 color="success"

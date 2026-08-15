@@ -4,35 +4,49 @@ import { Card } from "@clearcut/ui/card";
 import { trackEvent } from "@/lib/analytics/browser";
 import React, { useEffect, useState } from "react";
 
+// Real values, confirmed against the RN app's app.json / constants/config.ts.
+const APP_SCHEME = "clearcutoffapp://";
+const ANDROID_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.clearcutoff.app";
+// The iOS app isn't published yet (constants/config.ts has an empty
+// IOS_APP_ID) — there's no store link to fall back to on iOS until then.
+
 export default function AppDownloadWidget() {
   const [isWebView, setIsWebView] = useState(false);
 
   useEffect(() => {
     const ua = navigator.userAgent;
-    if (/wv/.test(ua) || /Android.*Version\/[\d.]+/.test(ua)) {
+    // `window.ReactNativeWebView` is injected automatically by the
+    // react-native-webview package on both Android and iOS — no native app
+    // change needed, and it catches iOS (whose WKWebView doesn't mark
+    // itself in the user agent the way Android's WebView does with "wv").
+    if (
+      typeof (window as any).ReactNativeWebView !== "undefined" ||
+      /wv/.test(ua) ||
+      /Android.*Version\/[\d.]+/.test(ua)
+    ) {
       setIsWebView(true);
     }
   }, []);
 
   const handleOpenApp = async () => {
-    const appScheme = "myapp://home"; // <-- change this
-    const playStoreUrl =
-      "https://play.google.com/store/apps/details?id=com.shani9300.ClearCutoffApp"; // <-- change this
-
     await trackEvent("App Download Initiated", {
       widget_location: "course_page",
       widget_type: "floating_widget",
     });
 
-    const timeout = setTimeout(() => {
-      window.location.href = playStoreUrl;
-    }, 1500);
+    const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isIOSDevice) {
+      const timeout = setTimeout(() => {
+        window.location.href = ANDROID_STORE_URL;
+      }, 1500);
 
-    window.location.href = appScheme;
+      window.addEventListener("blur", () => clearTimeout(timeout), {
+        once: true,
+      });
+    }
 
-    window.addEventListener("blur", () => {
-      clearTimeout(timeout);
-    });
+    window.location.href = APP_SCHEME;
   };
 
   return (

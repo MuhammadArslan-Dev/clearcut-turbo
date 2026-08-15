@@ -67,6 +67,26 @@
     "papers": "{paper} पेपर्स",
     "openNotesandPapers": "नोट्स और पेपर्स खोलें"
   },
+  "appDownload": {
+    "titleLine1": "सीखें। अभ्यास करें। सफल हों।",
+    "titleLine2": "सब कुछ एक ऐप में!",
+    "features": {
+      "completeCourse": {
+        "title": "पूरा कोर्स",
+        "subtitle": "एक्सपर्ट कंटेंट के साथ सभी चैप्टर पढ़ें"
+      },
+      "practiceMore": {
+        "title": "ज़्यादा अभ्यास करें",
+        "subtitle": "टॉपिक टेस्ट, मॉक टेस्ट और PYQs"
+      },
+      "clearExam": {
+        "title": "{exam} पास करें",
+        "subtitle": "प्रगति ट्रैक करें और अपना लक्ष्य हासिल करें"
+      }
+    },
+    "continueInApp": "ऐप में जारी रखें",
+    "unlockTopics": "ऐप में रोज़ाना एक टॉपिक मुफ़्त अनलॉक करें —"
+  },
   "nextMilestone": {
     "title": "अगला माइलस्टोन",
     "chaptersAway": "{subject} पूरा करने से {count, plural, one {# चैप्टर} other {# चैप्टर्स}} दूर",

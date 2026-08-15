@@ -68,11 +68,22 @@
     "openNotesandPapers": "Open Notes and Papers"
   },
   "appDownload": {
-    "title": "Study faster on App",
-    "subtitle": "Short on time? Revise key topics using notes & PYQs",
-    "offlineNotes": "Offline notes and PDFs",
-    "dailyReminders": "Daily reminders and streaks",
-    "fasterTests": "Faster tests, No loading",
+    "titleLine1": "Learn. Practice. Succeed.",
+    "titleLine2": "All in one App!",
+    "features": {
+      "completeCourse": {
+        "title": "Complete Course",
+        "subtitle": "Study all chapters with expert content"
+      },
+      "practiceMore": {
+        "title": "Practice More",
+        "subtitle": "Topic tests, mock tests & PYQs"
+      },
+      "clearExam": {
+        "title": "Clear {exam}",
+        "subtitle": "Track progress & achieve your goal"
+      }
+    },
     "continueInApp": "Continue in App",
     "unlockTopics": "Unlock one topic daily for FREE in App —"
   },

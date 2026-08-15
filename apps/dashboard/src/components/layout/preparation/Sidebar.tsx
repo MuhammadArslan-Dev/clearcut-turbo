@@ -31,6 +31,7 @@ import {
 
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { useSearchParams } from "next/navigation";
 
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
@@ -60,9 +61,8 @@ import {
   usePaywallsStore,
 } from "@/components/features/PayWalls/usePaywallsStore";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
-import PaywallFloatingWidget, {
-  handleOpenPaywall,
-} from "@/components/features/PayWalls/PaywallFloatingWidget";
+import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
+import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import AppDownloadWidget from "@/components/features/PayWalls/AppDownloadWidget";
 import { useRouter } from "@/i18n/navigation";
 
@@ -127,6 +127,18 @@ export default function Sidebar() {
       topicContainerRef.current.scrollTop = 0;
     }
   }, [selectedPaperId]);
+
+  // Mobile-only: hide the Topbar's title row while scrolling down the
+  // chapter list, bring it back as soon as the user scrolls up.
+  const chapterListScrollDirection = useScrollDirection(topicContainerRef);
+  const setTopbarVisible = useTopbarVisibilityStore((s) => s.setVisible);
+  useEffect(() => {
+    if (!isMobile) return;
+    setTopbarVisible(chapterListScrollDirection === "up");
+  }, [isMobile, chapterListScrollDirection, setTopbarVisible]);
+
+  // Always show the Topbar again once we leave this screen/view.
+  useEffect(() => () => setTopbarVisible(true), [setTopbarVisible]);
 
   // Auto-scroll active topic into view
   useEffect(() => {
@@ -332,12 +344,13 @@ export default function Sidebar() {
               <React.Fragment key={chapter.id}>
                 <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full"></div>
                 <div className={clsx("flex flex-col gap-3")}>
-                  <div className="sticky -top-4 z-0 bg-white">
+                  <div className="sticky -top-4 z-10 bg-white">
                     <SectionHeaderCard
                       onClick={() =>
                         chapter?.locked
-                          ? handleOpenPaywall(
-                            router,
+                          ? openPaywall(
+                            "topic-locked-modal",
+                            course?.exam!,
                             "topic_card_clicked",
                             course,
                           )
@@ -538,7 +551,12 @@ export default function Sidebar() {
                               onClick={() => {
                                 if (chapter?.locked) {
                                   chapter?.locked &&
-                                    handleOpenPaywall(router, "chapter_card_clicked", course);
+                                    openPaywall(
+                                      "topic-locked-modal",
+                                      course?.exam!,
+                                      "chapter_card_clicked",
+                                      course,
+                                    );
                                   return;
                                 } else {
                                   if (hasChildren) {

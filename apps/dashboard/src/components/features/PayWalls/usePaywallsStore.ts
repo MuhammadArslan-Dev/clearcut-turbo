@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { Exam } from "@/types/Exam";
+import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 
 /** Allowed modes */
 export type PaywallTypes =
   | "preparation-paywall"
   | "test-series-paywall"
   | "main-paywall"
-  | "course-paywall";
+  | "course-paywall"
+  | "topic-locked-modal"
+  | "test-locked-modal";
 
 export type PaywallSource =
   | "my_courses_card_clicked"
@@ -21,10 +24,21 @@ export type PaywallSource =
 interface EditCourseState {
   isOpen: boolean;
   data: Exam | undefined | null;
+  /**
+   * Full enrollment, needed alongside `data` (the bare exam) by callers that
+   * navigate to `/payment/initiated` — that route needs `group_code`, which
+   * only lives on the enrollment, not on `Exam` itself.
+   */
+  course?: ExamEnrollmentWithExam | null;
   mode: PaywallTypes | null;
   source?: PaywallSource | null;
 
-  open: (mode: PaywallTypes, data: Exam, source?: PaywallSource) => void;
+  open: (
+    mode: PaywallTypes,
+    data: Exam,
+    source?: PaywallSource,
+    course?: ExamEnrollmentWithExam | null,
+  ) => void;
   close: () => void;
 }
 
@@ -35,10 +49,11 @@ const isMobile = () =>
 export const usePaywallsStore = create<EditCourseState>((set) => ({
   isOpen: false,
   data: null,
+  course: null,
   mode: null,
   source: null,
 
-  open: (mode, data, source) => {
+  open: (mode, data, source, course) => {
     if (isMobile()) {
       window.history.pushState({ drawer: true }, "");
     }
@@ -48,6 +63,7 @@ export const usePaywallsStore = create<EditCourseState>((set) => ({
       mode,
       data,
       source,
+      course: course ?? null,
     });
   },
 
@@ -57,5 +73,6 @@ export const usePaywallsStore = create<EditCourseState>((set) => ({
       mode: null,
       source: null,
       data: null,
+      course: null,
     }),
 }));

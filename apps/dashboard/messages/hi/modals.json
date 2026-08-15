@@ -171,6 +171,34 @@
     "paymentMethods": "यूपीआई / कार्ड / नेट बैंकिंग"
   },
 
+  "topicLockedModal": {
+    "title": "यह टॉपिक लॉक है",
+    "subtitle": "अपनी तैयारी जारी रखने के लिए अनलॉक करें",
+    "unlockAndGet": "अनलॉक करें और पाएं",
+    "features": {
+      "accessTopic": "यह टॉपिक और सभी पाठ एक्सेस करें",
+      "practiceTests": "अभ्यास प्रश्न और टेस्ट",
+      "trackProgress": "अपनी प्रगति ट्रैक करें",
+      "boostScore": "अपना स्कोर बढ़ाएं"
+    },
+    "cta": "अभी अनलॉक करें",
+    "continueFree": "निःशुल्क पढ़ाई जारी रखें"
+  },
+
+  "testLockedModal": {
+    "title": "टेस्ट लॉक है",
+    "subtitle": "इस टेस्ट को देने के लिए अनलॉक करें",
+    "unlockAndGet": "अनलॉक करें और पाएं",
+    "features": {
+      "attemptTest": "यह टेस्ट दें",
+      "detailedSolutions": "विस्तृत समाधान और विश्लेषण",
+      "compareRank": "अपनी रैंक की तुलना करें",
+      "improveClear": "{exam} में सुधार करें और उसे पास करें"
+    },
+    "cta": "टेस्ट अनलॉक करें",
+    "continueFree": "निःशुल्क पढ़ाई जारी रखें"
+  },
+
   "languageSelector": {
     "title": "भाषा चुनें",
 
