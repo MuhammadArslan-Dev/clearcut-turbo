@@ -39,6 +39,17 @@ const PRICE_CARD_ROUNDING = 12;
 
 // const ALLOWED_PHONES = ["9988776655", "7210708599"];
 
+// Shared by the "1month" default price, CustomizeProduct's target price, and
+// AddPaymentInfo's selected price — one place to change the numbers.
+function getPriceForVariant(
+  variant: PaymentType,
+  pricing: PaymentPricing | null,
+) {
+  if (variant === "1month") return 99;
+  if (variant === "1month-onetime") return pricing?.onetime_1month_price ?? 139;
+  return pricing?.onetime_1year_price ?? 599;
+}
+
 export default function InitiatedPage() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
   const { get, set } = useQueryParams();
@@ -57,15 +68,6 @@ export default function InitiatedPage() {
   const [selectVariant, setSelectVariant] =
     React.useState<PaymentType>("1month");
 
-  const handleSelectVariant = useCallback(
-    (variant: PaymentType) => {
-      setSelectVariant((current) => {
-        if (current !== variant) trackFacebookEvent("CustomizeProduct");
-        return variant;
-      });
-    },
-    [],
-  );
   const [subscriptionLoading, setSubscriptionLoading] = React.useState(false);
   const [pricing, setPricing] = React.useState<PaymentPricing | null>(null);
   const [pricingLoading, setPricingLoading] = React.useState(true);
@@ -94,6 +96,38 @@ export default function InitiatedPage() {
   const datacourse = allCourses?.find((c) => c?.group_code === courseId);
   const data = datacourse?.exam;
 
+  // Shared Meta params for InitiateCheckout / AddPaymentInfo / CustomizeProduct
+  // — same shape as the "Lead" event's advanced-matching params
+  // (packages/auth/src/facebook-pixel.ts): ph/external_id let Meta match the
+  // event to a user without a first-party cookie.
+  const buildMetaParams = (price: number) => {
+    const params: Record<string, unknown> = {
+      value: price,
+      currency: "INR",
+      content_id: data?.exam_id,
+      content_category: "Course, PDF Notes and Mock Tests",
+      content_name: [data?.name, data?.short_name].filter(Boolean).join(" - "),
+    };
+    if (userPhone) params.ph = `91${userPhone}`;
+    if (authUser?.id) params.external_id = String(authUser.id);
+    return params;
+  };
+
+  const handleSelectVariant = useCallback(
+    (variant: PaymentType) => {
+      setSelectVariant((current) => {
+        if (current !== variant) {
+          trackFacebookEvent(
+            "CustomizeProduct",
+            buildMetaParams(getPriceForVariant(variant, pricing)),
+          );
+        }
+        return variant;
+      });
+    },
+    [pricing, data, userPhone, authUser],
+  );
+
   const { levels: levelsRaw = [], loading: levelsLoading } = useLevels(
     data?.id,
   );
@@ -105,7 +139,9 @@ export default function InitiatedPage() {
       entry_point: source,
       product_id: data?.short_name!,
     });
-    trackFacebookEvent("InitiateCheckout");
+    // Page just opened — selectVariant is still its "1month" default, so
+    // this is always the ₹99 starting price.
+    trackFacebookEvent("InitiateCheckout", buildMetaParams(99));
     const sendWebhook = async () => {
       try {
         await webhookPaymentInitiate(datacourse?.group_code ?? "");
@@ -159,11 +195,10 @@ export default function InitiatedPage() {
     [data?.logo_url],
   );
 
-  const selectedPrice = useMemo(() => {
-    if (selectVariant === "1month") return 99;
-    if (selectVariant === "1month-onetime") return pricing?.onetime_1month_price ?? 139;
-    return pricing?.onetime_1year_price ?? 599;
-  }, [selectVariant, pricing]);
+  const selectedPrice = useMemo(
+    () => getPriceForVariant(selectVariant, pricing),
+    [selectVariant, pricing],
+  );
 
   useEffect(() => {
     if (selectedPrice != null) {
@@ -350,16 +385,21 @@ export default function InitiatedPage() {
   }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
-    trackFacebookEvent("AddPaymentInfo", {
-      value: selectedPrice,
-      currency: "INR",
-    });
+    trackFacebookEvent("AddPaymentInfo", buildMetaParams(selectedPrice));
     if (selectVariant === "1month") {
       handleSubscriptionPayment();
     } else {
       handlePayment();
     }
-  }, [selectVariant, selectedPrice, handleSubscriptionPayment, handlePayment]);
+  }, [
+    selectVariant,
+    selectedPrice,
+    data,
+    userPhone,
+    authUser,
+    handleSubscriptionPayment,
+    handlePayment,
+  ]);
 
   /* ---------------------------------- states ---------------------------------- */
 
