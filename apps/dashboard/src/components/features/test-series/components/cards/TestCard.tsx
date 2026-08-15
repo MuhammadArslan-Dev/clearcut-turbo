@@ -15,6 +15,7 @@ import Text from "@clearcut/ui/text";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import { Button } from "@clearcut/ui/button";
 import CounterCard from "@/components/ui/cards/CounterCard";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -69,6 +70,9 @@ export interface TestCardProps {
 
   startTest?: StartTestProps;
   viewReport?: ViewReportProps;
+
+  /** Free-trial reward nudge, shown as a small badge in the card's top-right corner. */
+  showReward?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -122,6 +126,7 @@ export default function TestCard({
   viewReport = {
     onClick: () => {},
   },
+  showReward,
 }: TestCardProps) {
   const {
     size = 32,
@@ -135,11 +140,24 @@ export default function TestCard({
     <div
       onClick={viewReport.isShow ? () => {} : () => startTest?.onClick()}
       className={clsx(
-        "rounded-md px-3 py-2",
+        "relative rounded-md px-3 py-2",
         containerClassName,
         cardBg ?? "bg-white ",
       )}
     >
+      {/* Free-trial reward nudge — corner badge, kept clear of the counter,
+          title/chip row, and the desktop actions column below it. */}
+      {showReward && (
+        <div className="absolute -top-3 -right-2 pointer-events-none">
+          <DotLottieReact
+            style={{ width: 32, height: 32 }}
+            src="/lotifiles/current-chapter.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      )}
+
       <div className="flex items-center gap-5">
         {/* Counter */}
         <div className="max-w-[30px]">
@@ -165,7 +183,16 @@ export default function TestCard({
 
         {/* Content */}
         <div className="flex-1 space-y-2">
-          <div className=" flex items-center gap-2">
+          {/* Mobile: title left, chip pushed to the far right with a gap.
+              When the corner reward badge is shown, the row is padded so the
+              chip stops short of it instead of sitting underneath it.
+              Desktop stays as-is — tight gap, no stretch. */}
+          <div
+            className={clsx(
+              "flex items-center justify-between gap-2 md:justify-start",
+              showReward && "pr-3 md:pr-0",
+            )}
+          >
             <Text
               as="h5"
               variant="body-medium"

@@ -246,6 +246,10 @@ export default function Sidebar() {
     : [];
   const fromSection = sections.find((s) => s.id === selectedSectionId);
 
+  // Reward animation is a nudge for free/trial users to upgrade — once the
+  // course is purchased ("active"), it has served its purpose and stays hidden.
+  const isFreeUser = course?.status !== "active";
+
   return (
     <aside className=" relative flex h-full w-full md:w-[var(--preparation-sidebar-width)] flex-col overflow-hidden md:p-2">
       <div className="h-full bg-[var(--background-gray-subtle)] md:bg-white shadow-sm space-y-4 overflow-hidden  md:rounded-md">
@@ -340,7 +344,7 @@ export default function Sidebar() {
                           : {}
                       }
                       trailingIcon={
-                        chapter?.locked && (
+                        chapter?.locked ? (
                           <CounterCard
                             width="w-[100px]"
                             height="h-8"
@@ -360,6 +364,19 @@ export default function Sidebar() {
                               </div>
                             }
                           />
+                        ) : (
+                          // Doesn't look good on the chapter card — reward icon stays on
+                          // free-trial topic rows only (below).
+                          // isFreeUser &&
+                          // selectedChapter?.id === chapter.id && (
+                          //   <DotLottieReact
+                          //     style={{ width: 40, height: 40 }}
+                          //     src="/lotifiles/current-chapter.lottie"
+                          //     loop
+                          //     autoplay
+                          //   />
+                          // )
+                          undefined
                         )
                       }
                       breadcrumb={
@@ -413,6 +430,7 @@ export default function Sidebar() {
                           <div ref={isActive ? activeTopicRef : null}>
                             <TopicListCard
                               cardBgColor="!px-0"
+                              showReward={isFreeUser && !chapter?.locked}
                               badge={
                                 <div className="flex gap-2">
                                   <Text as="p" className="whitespace-nowrap">

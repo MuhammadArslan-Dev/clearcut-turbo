@@ -47,6 +47,9 @@ export default function FullTest({ courseId }: FullTestProps) {
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
 
   const { course: courseData } = useGetCurrentCourseStore();
+  // Reward animation nudges free/trial users on tests they can already
+  // attempt — once the course is purchased ("active"), it stays hidden.
+  const isFreeUser = courseData?.status !== "active";
   const { open: openPaywall } = usePaywallsStore();
 
   /* ======================= QUERY ======================= */
@@ -210,6 +213,7 @@ export default function FullTest({ courseId }: FullTestProps) {
               />
             )
           }
+          showReward={isFreeUser && !isLocked}
           counter={{
             value: isLocked ? (
               <CounterCard

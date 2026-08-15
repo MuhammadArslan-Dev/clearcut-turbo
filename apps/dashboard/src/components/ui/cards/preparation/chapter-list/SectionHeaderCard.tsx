@@ -79,15 +79,15 @@ const SectionHeaderCard: React.FC<SectionHeaderCardProps> = ({
     >
       <div className="flex items-center justify-between gap-3">
         {/* Left content */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
           {leadingIcon && (
             <div className={leadingIconClassName}>{leadingIcon}</div>
           )}
 
-          <div className="space-y-0">
+          <div className="space-y-0 flex-1 min-w-0">
             {breadcrumb && <div className={breadcrumbClassName}>{breadcrumb}</div>}
 
-            <h2 className={titleClassName}>{title}</h2>
+            <h2 className={clsx("w-full", titleClassName)}>{title}</h2>
           </div>
         </div>
 

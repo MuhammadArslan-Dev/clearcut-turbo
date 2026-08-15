@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/icons";
 import StatusChip from "../chapter-list/StatusChip";
 import CounterCard from "../../CounterCard";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 type CounterVariant = "filled" | "warning" | "simple" | "progress";
 type CounterColorKey = "success" | "error" | "info" | "custom";
@@ -54,6 +55,9 @@ interface Props {
   cardClassName?: string;
   titleClassName?: string;
   metaTextClassName?: string;
+
+  /** Free-trial reward nudge, shown as a small badge in the card's top-right corner. */
+  showReward?: boolean;
 }
 
 /* ------------------ Stable defaults ------------------ */
@@ -81,6 +85,7 @@ const TopicListCard: React.FC<Props> = ({
   player,
   features = DEFAULT_FEATURES,
   onClick,
+  showReward,
 }) => {
   const handleClick = useCallback(() => {
     onClick?.();
@@ -90,12 +95,24 @@ const TopicListCard: React.FC<Props> = ({
     <div
       onClick={handleClick}
       className={clsx(
-        "flex gap-3 rounded-md items-center p-1",
+        "relative flex gap-3 rounded-md items-center p-1",
         cursor,
         bgColor,
         containerClassName,
       )}
     >
+      {/* Free-trial reward nudge — corner badge, kept clear of the counter and title/badge row. */}
+      {showReward && (
+        <div className="absolute -top-3 -right-1 pointer-events-none">
+          <DotLottieReact
+            style={{ width: 26, height: 26 }}
+            src="/lotifiles/current-chapter.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      )}
+
       {counter &&
         (counter?.custom ? (
           counter.value

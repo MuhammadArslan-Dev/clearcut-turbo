@@ -146,8 +146,10 @@ export default function MyCoursesWrapTwo({
       open("edit", exam!);
     },
 
+    // No subject selected yet (new user, stage_id null) → only "Continue
+    // Learning" should show, so this stays undefined until they've picked one.
     unlockClick:
-      activeExam?.status === "active"
+      !activeExam?.stage_id || activeExam?.status === "active"
         ? undefined
         : () =>
             route.push(
@@ -220,7 +222,7 @@ export default function MyCoursesWrapTwo({
                       open("edit", exam.exam!);
                     }}
                     onUnlock={
-                      exam.status === "active"
+                      !exam.stage_id || exam.status === "active"
                         ? undefined
                         : async () => {
                             trackEvent("Purchase Intent Initiated", {

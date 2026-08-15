@@ -30,6 +30,9 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   const router = useRouter();
 
   const { course: courseData } = useGetCurrentCourseStore();
+  // Reward animation nudges free/trial users on tests they can already
+  // attempt — once the course is purchased ("active"), it stays hidden.
+  const isFreeUser = courseData?.status !== "active";
   const { open } = useTestSeriesModalStore();
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
   const { get } = useQueryParams();
@@ -183,6 +186,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
               />
             )
           }
+          showReward={isFreeUser && !isLocked}
           counter={{
             value: isLocked ? (
               <CounterCard
