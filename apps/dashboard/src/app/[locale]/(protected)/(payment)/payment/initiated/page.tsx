@@ -105,6 +105,7 @@ export default function InitiatedPage() {
       entry_point: source,
       product_id: data?.short_name!,
     });
+    trackFacebookEvent("InitiateCheckout");
     const sendWebhook = async () => {
       try {
         await webhookPaymentInitiate(datacourse?.group_code ?? "");
@@ -349,13 +350,16 @@ export default function InitiatedPage() {
   }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
-    trackFacebookEvent("InitiateCheckout");
+    trackFacebookEvent("AddPaymentInfo", {
+      value: selectedPrice,
+      currency: "INR",
+    });
     if (selectVariant === "1month") {
       handleSubscriptionPayment();
     } else {
       handlePayment();
     }
-  }, [selectVariant, handleSubscriptionPayment, handlePayment]);
+  }, [selectVariant, selectedPrice, handleSubscriptionPayment, handlePayment]);
 
   /* ---------------------------------- states ---------------------------------- */
 

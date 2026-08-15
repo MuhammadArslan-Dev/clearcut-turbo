@@ -3,8 +3,11 @@ import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import React, { useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { PaywallSource, usePaywallsStore } from "./usePaywallsStore";
 import { useRouter } from "@/i18n/navigation";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { ChevronIcon } from "@/components/ui/icons";
 
@@ -12,6 +15,11 @@ export default function PaywallFloatingWidget() {
   const { course } = useGetCurrentCourseStore();
 
   const router = useRouter();
+  const isMobile = useIsMobile();
+  // Same scroll signal that hides/shows the Topbar's title row — keeps both
+  // collapsing in sync while the user scrolls the chapter/test list.
+  const topbarVisible = useTopbarVisibilityStore((s) => s.visible);
+  const showPriceRow = !isMobile || topbarVisible;
 
   const examTitle = useMemo(
     () => course?.exam?.short_name ?? "",
@@ -33,26 +41,37 @@ export default function PaywallFloatingWidget() {
           bordercolor="var(--color-brand)"
         >
           <div className="flex w-full flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <Text as="h6" variant="heading-large" weight="semibold">
-                {examTitle}
-              </Text>
-              <Text
-                variant="body-large"
-                weight="normal"
-                className="text-surface-gray-subtle whitespace-nowrap"
-              >
-                <Text
-                  as="span"
-                  variant="heading-large"
-                  weight="semibold"
-                  className="text-surface-gray-normal"
+            <AnimatePresence initial={false}>
+              {showPriceRow && (
+                <motion.div
+                  key="paywall-widget-price-row"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="flex items-center justify-between gap-2 overflow-hidden"
                 >
-                  ₹99
-                </Text>
-                /month • All subjects
-              </Text>
-            </div>
+                  <Text as="h6" variant="heading-large" weight="semibold">
+                    {examTitle}
+                  </Text>
+                  <Text
+                    variant="body-large"
+                    weight="normal"
+                    className="text-surface-gray-subtle whitespace-nowrap"
+                  >
+                    <Text
+                      as="span"
+                      variant="heading-large"
+                      weight="semibold"
+                      className="text-surface-gray-normal"
+                    >
+                      ₹99
+                    </Text>
+                    /month • All subjects
+                  </Text>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Button
               onClick={() => {

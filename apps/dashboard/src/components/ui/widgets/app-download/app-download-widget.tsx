@@ -94,20 +94,18 @@ export default function AppDownloadWidget({
       widget_type: "app_promo_banner",
     });
 
+    // By the time this widget is visible, the mount-time probe has already
+    // decided the app isn't installed (or couldn't tell) — so this button
+    // goes straight to the store instead of re-attempting the custom-scheme
+    // deep link, which is unreliable as an explicit-click action too.
     const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    // No iOS store link to fall back to yet — only arm the Play Store
-    // fallback on Android so we don't redirect iOS users to a broken URL.
-    if (!isIOSDevice) {
-      const timeout = setTimeout(() => {
-        window.location.href = ANDROID_STORE_URL;
-      }, 1500);
-
-      window.addEventListener("blur", () => clearTimeout(timeout), {
-        once: true,
-      });
+    if (isIOSDevice) {
+      // No iOS store link yet — best effort is still the app scheme.
+      window.location.href = APP_SCHEME;
+      return;
     }
 
-    window.location.href = APP_SCHEME;
+    window.location.href = ANDROID_STORE_URL;
   };
 
   if (hidden) return null;
