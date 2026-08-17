@@ -12,7 +12,6 @@ import {
   SheildIcon,
 } from "@/components/ui/icons";
 import StarIcon from "@/components/ui/icons/star-icon";
-import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import Text from "@clearcut/ui/text";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
