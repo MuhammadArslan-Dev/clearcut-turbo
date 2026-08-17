@@ -38,6 +38,10 @@ const PRICE_CARD_ROUNDING = 12;
 
 // const ALLOWED_PHONES = ["9988776655", "7210708599"];
 
+// Same pixel ID FacebookPixel.tsx already initialized (without user data) on
+// page load — re-used here to re-call init with advanced-matching data.
+const FB_PIXEL_ID = "1126041265682766";
+
 // Shared by the "1month" default price, CustomizeProduct's target price, and
 // AddPaymentInfo's selected price — one place to change the numbers.
 function getPriceForVariant(
@@ -110,8 +114,11 @@ export default function InitiatedPage() {
     content_name: [data?.name, data?.short_name].filter(Boolean).join(" - "),
   });
 
-  // Sets Meta's advanced-matching data once per page load — call before the
-  // first track() so subsequent events on this page are matched to the user.
+  // Re-sends Meta's advanced-matching data via `init` (same pixel ID
+  // FacebookPixel.tsx already initialized without user data on page load) —
+  // never inside a track() call's custom-data object, which Meta doesn't
+  // auto-hash. Call before the first track() so subsequent events on this
+  // page are matched to the user.
   const setMetaUserData = () => {
     if (typeof window === "undefined" || !window.fbq) return;
 
@@ -120,7 +127,7 @@ export default function InitiatedPage() {
     if (authUser?.id) userData.external_id = String(authUser.id);
 
     if (Object.keys(userData).length > 0) {
-      window.fbq("set", "userData", userData);
+      window.fbq("init", FB_PIXEL_ID, userData);
     }
   };
 
