@@ -36,7 +36,7 @@ export const STATIC_EXAMS: Exam[] = [
     exam_frequency: "Biannual",
     evaluation_type: null,
     ai_evaluation_supported: null,
-    status: "Active",
+    status: "Inactive",
     rating: "4.9/5",
     price: { final_price: 499, actual_price: "900" },
     combo_price: null,
