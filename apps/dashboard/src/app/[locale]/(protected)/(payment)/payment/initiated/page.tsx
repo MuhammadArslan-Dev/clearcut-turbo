@@ -96,21 +96,33 @@ export default function InitiatedPage() {
   const datacourse = allCourses?.find((c) => c?.group_code === courseId);
   const data = datacourse?.exam;
 
-  // Shared Meta params for InitiateCheckout / AddPaymentInfo / CustomizeProduct
-  // — same shape as the "Lead" event's advanced-matching params
-  // (packages/auth/src/facebook-pixel.ts): ph/external_id let Meta match the
-  // event to a user without a first-party cookie.
-  const buildMetaParams = (price: number) => {
-    const params: Record<string, unknown> = {
-      value: price,
-      currency: "INR",
-      content_id: data?.exam_id,
-      content_category: "Course, PDF Notes and Mock Tests",
-      content_name: [data?.name, data?.short_name].filter(Boolean).join(" - "),
-    };
-    if (userPhone) params.ph = `91${userPhone}`;
-    if (authUser?.id) params.external_id = String(authUser.id);
-    return params;
+  // Event-level Meta params for InitiateCheckout / AddPaymentInfo /
+  // CustomizeProduct. Deliberately excludes ph/external_id — those are PII
+  // and go through `fbq('set', 'userData', …)` once instead (see
+  // setMetaUserData below), matching the same fix applied to the "Lead"
+  // event in packages/auth/src/facebook-pixel.ts: Meta only auto-hashes
+  // recognized PII fields when they're set via init/set-userData, not when
+  // passed inside a track() call's custom-data object.
+  const buildMetaParams = (price: number) => ({
+    value: price,
+    currency: "INR",
+    content_id: data?.exam_id,
+    content_category: "Course, PDF Notes and Mock Tests",
+    content_name: [data?.name, data?.short_name].filter(Boolean).join(" - "),
+  });
+
+  // Sets Meta's advanced-matching data once per page load — call before the
+  // first track() so subsequent events on this page are matched to the user.
+  const setMetaUserData = () => {
+    if (typeof window === "undefined" || !window.fbq) return;
+
+    const userData: { ph?: string; external_id?: string } = {};
+    if (userPhone) userData.ph = `91${userPhone}`;
+    if (authUser?.id) userData.external_id = String(authUser.id);
+
+    if (Object.keys(userData).length > 0) {
+      window.fbq("set", "userData", userData);
+    }
   };
 
   const handleSelectVariant = useCallback(
@@ -125,7 +137,7 @@ export default function InitiatedPage() {
         return variant;
       });
     },
-    [pricing, data, userPhone, authUser],
+    [pricing, data],
   );
 
   const { levels: levelsRaw = [], loading: levelsLoading } = useLevels(
@@ -139,6 +151,7 @@ export default function InitiatedPage() {
       entry_point: source,
       product_id: data?.short_name!,
     });
+    setMetaUserData();
     // Page just opened — selectVariant is still its "1month" default, so
     // this is always the ₹99 starting price.
     trackFacebookEvent("InitiateCheckout", buildMetaParams(99));
@@ -391,15 +404,7 @@ export default function InitiatedPage() {
     } else {
       handlePayment();
     }
-  }, [
-    selectVariant,
-    selectedPrice,
-    data,
-    userPhone,
-    authUser,
-    handleSubscriptionPayment,
-    handlePayment,
-  ]);
+  }, [selectVariant, selectedPrice, data, handleSubscriptionPayment, handlePayment]);
 
   /* ---------------------------------- states ---------------------------------- */
 
