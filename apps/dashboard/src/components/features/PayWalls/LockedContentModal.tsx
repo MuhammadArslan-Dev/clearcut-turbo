@@ -71,11 +71,11 @@ export default function LockedContentModal() {
           >
             <div className="bg-white flex flex-col gap-3 p-5">
               {/* Close */}
-              <div className="flex justify-end">
+              <div className="relative z-10 flex justify-end">
                 <button
                   type="button"
                   onClick={close}
-                  className="cursor-pointer"
+                  className="cursor-pointer p-2 -m-2"
                   aria-label="Close"
                 >
                   <CrossIcon />
@@ -83,7 +83,7 @@ export default function LockedContentModal() {
               </div>
 
               {/* Lock icon + title */}
-              <div className="flex flex-col items-center gap-1 -mt-6">
+              <div className="flex flex-col items-center gap-1">
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4">
                 
                   <DotLottieReact

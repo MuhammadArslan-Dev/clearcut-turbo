@@ -13,6 +13,7 @@ import LazyGTM from "@/components/thirdparties/LazyGTM";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 import { Suspense } from "react";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
+import GlobalModalReset from "@/components/thirdparties/GlobalModalReset";
 import { SoundProvider } from "@/context/SoundContext";
 
 const notoSans = Noto_Sans({
@@ -138,6 +139,7 @@ export default async function LocaleLayout({
       </head>
       <body suppressHydrationWarning className="antialiased">
         <Suspense fallback={null}>
+          <GlobalModalReset />
           <FacebookPixel />
           <AuthProvider>
             <SoundProvider>

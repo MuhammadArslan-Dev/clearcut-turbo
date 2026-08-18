@@ -61,19 +61,21 @@ export default function SectionNotes({
     /* ================= HELPERS ================= */
 
     const getNotesFromData = (dataArray: any[]) =>
-        dataArray.flatMap((item) => {
-            const notes = item?.content || [];
+        dataArray
+            .filter((item) => item?.type === "note")
+            .flatMap((item) => {
+                const notes = item?.content || [];
 
-            if (courseType === "subject") {
-                return notes.filter((note: any) => note?.language === selectedLang);
-            }
+                if (courseType === "subject") {
+                    return notes.filter((note: any) => note?.language === selectedLang);
+                }
 
-            if (courseType === "language") {
-                return notes.length > 0 ? [notes[0]] : [];
-            }
+                if (courseType === "language") {
+                    return notes.length > 0 ? [notes[0]] : [];
+                }
 
-            return notes;
-        });
+                return notes;
+            });
 
     const handlePDFClick = (note: any, locked?: boolean) => {
         if (locked) {
@@ -82,7 +84,9 @@ export default function SectionNotes({
             return;
         }
 
-        setSelectedPDF(note?.note_content);
+        // `note.link` is the actual PDF file URL (parallel to video items'
+        // `video_link`); `note_content` isn't a URL, which left the popup blank.
+        setSelectedPDF(note?.link);
     };
 
     /* ================= RENDER ================= */
