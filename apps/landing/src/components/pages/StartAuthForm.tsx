@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import MainInput from "@clearcut/ui/main-input";
+import OtpBoxInput from "./OtpBoxInput";
 import Image from "next/image";
 import { Link } from "@clearcut/i18n/navigation";
 import { authApi } from "@/lib/auth";
@@ -130,7 +131,6 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   const hasTrackedRef = useRef(false);
   const isVerifyingRef = useRef(false);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
-  const otpInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---------------- ANALYTICS (same event names as login-screen.tsx) ---------------- */
 
@@ -266,7 +266,6 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       setTimeout(() => {
         setLoading(false);
         setStep("otp");
-        otpInputRef.current?.focus();
       }, 200);
     } catch {
       setLoading(false);
@@ -406,19 +405,21 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   Mobile or WhatsApp Number
                 </Text>
 
-                <MainInput
-                  ref={phoneInputRef}
-                  value={phone}
-                  placeholder="10-digit number"
-                  inputType="phone"
-                  error={error}
-                  maxLength={10}
-                  className="h-full"
-                  inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
-                  onChange={(e) => validatePhone(e.target.value)}
-                  inputPrefix="+91 -"
-                  showError={false}
-                />
+                <div className="w-full h-[48px] relative">
+                  <MainInput
+                    ref={phoneInputRef}
+                    value={phone}
+                    placeholder="10-digit number"
+                    inputType="phone"
+                    error={error}
+                    maxLength={10}
+                    className="h-full"
+                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                    onChange={(e) => validatePhone(e.target.value)}
+                    inputPrefix="+91 -"
+                    showError={false}
+                  />
+                </div>
 
                 <p
                   className={`text-sm min-h-[1.25rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
@@ -467,16 +468,13 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
                   4-digit OTP
                 </Text>
-                <MainInput
-                  ref={otpInputRef}
-                  error={error}
-                  showError={false}
+                <OtpBoxInput
+                  length={OTP_LENGTH}
                   value={otp}
-                  placeholder="4 digit OTP"
-                  inputType="phone"
-                  maxLength={OTP_LENGTH}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
+                  error={!!error}
+                  disabled={loading}
+                  autoFocus
+                  onChange={(val) => {
                     setOtp(val);
                     if (val.length === OTP_LENGTH) handleVerify(val);
                   }}

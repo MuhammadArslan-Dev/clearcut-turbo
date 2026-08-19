@@ -215,12 +215,12 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
           </div>
         </div>
 
-        <div className="hidden lg:block w-[360px] xl:w-[440px] shrink-0">
+        <div className="hidden lg:block w-[360px] xl:w-[400px] shrink-0 mt-26">
           <Image
             src={IMAGES.startIllustration}
             alt=""
             width={440}
-            height={402}
+            height={395}
             priority
             sizes="440px"
             className="w-full h-auto"
