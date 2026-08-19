@@ -26,6 +26,15 @@ import { setSentryUser } from "@/lib/sentry/sentry-logger";
 type AuthContextType = {
   user: UserPreview | null;
   loading: boolean;
+  /**
+   * True as soon as we know whether a token exists and (if so) have written
+   * it to storage — near-instant, unlike `loading`, which stays true for the
+   * full /v1/auth-user round trip (measured 2.6-4.2s). ProtectedPage gates
+   * rendering on this instead of `loading` so the shell and any query that
+   * only needs the token (not the resolved user object) can start as soon as
+   * the token is actually in storage, rather than waiting out that request.
+   */
+  tokenReady: boolean;
   logout: () => Promise<void>;
 };
 
@@ -42,6 +51,7 @@ let inFlightAuthUser: { token: string; promise: ReturnType<typeof getMeApi> } | 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserPreview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tokenReady, setTokenReady] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,6 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const token = tokenFromQuery || getAuthTokenClient();
+
+    // Token existence is now known and (if present) already written to
+    // storage by setAuthToken() above — safe for anything that only needs
+    // the token, before we wait out the slower /v1/auth-user validation below.
+    if (isMounted) setTokenReady(true);
 
     if (!token) {
       if (isMounted) setLoading(false);
@@ -167,7 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Memoized context value (IMPORTANT)
    * --------------------------------------
    */
-  const value = useMemo(() => ({ user, loading, logout }), [user, loading]);
+  const value = useMemo(
+    () => ({ user, loading, tokenReady, logout }),
+    [user, loading, tokenReady],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

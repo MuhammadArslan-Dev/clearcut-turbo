@@ -8,7 +8,13 @@ interface CourseState {
   selectedPaperId: number | null;
   selectedSections: number | null;
 
+  // Tracks ContentShell's syllabus fetch — papers/sectionsMap stay empty
+  // until setData runs, so notes-page/paper-page use this to render a
+  // skeleton instead of a tab bar that's empty for one tick and then pops in.
+  isLoading: boolean;
+
   setData: (papers: Paper[], sections: Record<number, Section[]>) => void;
+  setLoading: (isLoading: boolean) => void;
   selectPaper: (paperId: number) => void;
   toggleSection: (sectionId: number) => void;
 }
@@ -19,6 +25,7 @@ export const useContentDataStore = create<CourseState>((set, get) => ({
 
   selectedPaperId: null,
   selectedSections: null,
+  isLoading: true,
 
   setData: (papers, sections) => {
     const firstPaperId = papers[0]?.id;
@@ -29,8 +36,11 @@ export const useContentDataStore = create<CourseState>((set, get) => ({
       sectionsMap: sections,
       selectedPaperId: firstPaperId,
       selectedSections: firstSections[0] ? firstSections[0].id : null,
+      isLoading: false,
     });
   },
+
+  setLoading: (isLoading) => set({ isLoading }),
 
   selectPaper: (paperId) => {
     const { sectionsMap } = get();

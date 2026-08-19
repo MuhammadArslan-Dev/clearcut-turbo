@@ -14,7 +14,7 @@ import { useContentDataStore } from "@/components/features/downloadable-content/
 
 export default function ContentShell({ children, courseId }: { children: ReactNode; courseId: string | number | null }) {
 
-  const { data } = useQuery<ExamSyllabusData>({
+  const { data, isLoading } = useQuery<ExamSyllabusData>({
     queryKey: P_QUERY_KEY(courseId),
     enabled: !!courseId,
 
@@ -30,8 +30,8 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
   });
 
   const {
-  
     setData,
+    setLoading,
   } = useContentDataStore();
 
 
@@ -40,6 +40,10 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
       setData(data.paper, data.sections);
     }
   }, [data, setData]);
+
+  React.useEffect(() => {
+    setLoading(isLoading);
+  }, [isLoading, setLoading]);
 
   const { isOpen, stack } = useExamModalStore();
   const activeModal = useMemo(

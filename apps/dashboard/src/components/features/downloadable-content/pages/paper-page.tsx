@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useContentDataStore } from '../store/useContentDataStore';
 import useLanguageSwitch from '@/hooks/useLanguageSwitch';
 import { mapPapersToItems } from '@/lib/mapPapersToItems';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PYQFile {
   file: string;
@@ -75,6 +76,7 @@ export default function PaperPage({ examId }: { examId?: string }) {
     selectedSections,
     toggleSection,
     setData,
+    isLoading: isSyllabusLoading,
   } = useContentDataStore();
 
   const openInstanceModal = (instance: ExamInstance) => {
@@ -127,12 +129,8 @@ console.log("PYQ Data:", papers);
     filesToShow = (levelMetadata as Record<string, PYQFile[]>)[subjectFilter] ?? [];
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center py-16">
-        <span className="body-medium text-surface-gray-light">Loading...</span>
-      </div>
-    );
+  if (isLoading || isSyllabusLoading) {
+    return <PaperPageSkeleton />;
   }
 
   if (!data || levelTabs.length === 0) {
@@ -252,6 +250,36 @@ console.log("PYQ Data:", papers);
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PaperPageSkeleton() {
+  return (
+    <div>
+      <div className="flex gap-2 px-4 py-3 overflow-hidden">
+        {["w-24", "w-20", "w-24", "w-16", "w-32"].map((w, i) => (
+          <Skeleton key={i} className={`h-10 shrink-0 ${w}`} rounded="rounded-t-lg" />
+        ))}
+      </div>
+
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[1, 2].map((_, i) => (
+          <div key={i} className="p-4 bg-white rounded-lg space-y-3 border border-[var(--border-gray-muted)]">
+            <Skeleton className="h-4 w-40" />
+            <div className="flex items-center justify-between p-2 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-10 h-10" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-20" rounded="rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

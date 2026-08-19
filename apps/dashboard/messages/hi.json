@@ -124,7 +124,8 @@
     "to_review": "रिव्यू के लिए",
     "not_answered": "अनआंसरड",
     "answered": "आंसरड",
-    "not_visited": "अभी तक नहीं देखा"
+    "not_visited": "अभी तक नहीं देखा",
+    "papers": "पेपर्स"
   },
   "timeRemainingTillExam": {
     "title": "एग्ज़ाम तक बचा हुआ समय",
