@@ -373,7 +373,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   }, step === "otp");
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-14 lg:px-20">
+    <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-between items-center">
         <Link href="/" className="md:hidden">
           <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={120} height={34} priority />

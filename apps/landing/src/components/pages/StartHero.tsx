@@ -89,37 +89,38 @@ function StarIcon() {
 
 function VideoIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="5" width="20" height="14" rx="3" fill="var(--color-brand)" fillOpacity="0.12" />
-      <path d="M10 9.5l6 2.5-6 2.5v-5z" fill="var(--color-brand)" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="var(--color-brand)" strokeWidth="1.8" />
+      <path d="M10 8.5l6 3.5-6 3.5v-7z" fill="var(--color-brand)" />
     </svg>
   );
 }
 
 function NotesIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path
-        d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"
-        fill="var(--color-brand)"
-        fillOpacity="0.12"
+        d="M6 3h8l5 5v12.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 016 20.5v-16A1.5 1.5 0 017.5 3H6z"
+        stroke="var(--color-brand)"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
       />
-      <path d="M8 12h8M8 16h8M8 8h4" stroke="var(--color-brand)" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 12.5h6M9 16h6" stroke="var(--color-brand)" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
 function PyqIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" fill="var(--color-brand)" fillOpacity="0.12" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9.5" stroke="var(--color-brand)" strokeWidth="1.8" />
       <path
-        d="M9.5 9.5a2.5 2.5 0 114.5 1.5c-.6.6-1.5 1-1.5 2.5"
+        d="M9.3 9.6a2.7 2.7 0 115 1.4c-.7.7-1.6 1.1-1.6 2.6"
         stroke="var(--color-brand)"
-        strokeWidth="1.5"
+        strokeWidth="1.8"
         strokeLinecap="round"
       />
-      <circle cx="12.5" cy="17" r="1" fill="var(--color-brand)" />
+      <circle cx="12.6" cy="17" r="1.2" fill="var(--color-brand)" />
     </svg>
   );
 }
@@ -137,7 +138,7 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
   const t = CONTENT[locale];
 
   return (
-    <div className="relative hidden md:flex md:w-1/2 overflow-y-auto bg-[var(--color-brand)] flex-col gap-6 px-10 py-6 lg:px-14 lg:py-8 text-white">
+    <div className="relative hidden md:flex md:w-[60%] overflow-y-auto bg-[var(--color-brand)] flex-col gap-6 px-10 py-6 lg:px-14 lg:py-8 text-white">
       {/* Decorative dot grid, purely visual */}
       <div
         aria-hidden
@@ -183,7 +184,7 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
               const Icon = FEATURE_ICONS[i];
               return (
                 <li key={feature.title} className="flex items-start gap-3">
-                  <div className="shrink-0 w-9 h-9 rounded-lg bg-white flex items-center justify-center">
+                  <div className="shrink-0 w-10 h-10 rounded-lg bg-white flex items-center justify-center">
                     <Icon />
                   </div>
                   <div>
@@ -214,14 +215,14 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
           </div>
         </div>
 
-        <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0">
+        <div className="hidden lg:block w-[360px] xl:w-[440px] shrink-0">
           <Image
             src={IMAGES.startIllustration}
             alt=""
-            width={320}
-            height={293}
+            width={440}
+            height={402}
             priority
-            sizes="320px"
+            sizes="440px"
             className="w-full h-auto"
           />
         </div>
