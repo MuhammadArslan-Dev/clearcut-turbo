@@ -9,6 +9,7 @@
     "./token": "./src/token.ts",
     "./api": "./src/api.ts",
     "./redirect": "./src/redirect.ts",
+    "./facebook-pixel": "./src/facebook-pixel.ts",
     "./context": "./src/context.tsx",
     "./use-web-otp-autofill": "./src/use-web-otp-autofill.ts",
     "./validators": "./src/validators.ts",

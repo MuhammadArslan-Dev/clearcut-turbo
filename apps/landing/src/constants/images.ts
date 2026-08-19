@@ -27,6 +27,7 @@ export const IMAGES = defineImages({
   languageIcon: "/images/language.svg",
   mainLogo: "/logos/main-logo.svg",
   heroImage: "/images/hero-img.webp",
+  startIllustration: "/images/start-illustration.webp",
   howItWork: {
     step1: "/images/howitwork1.webp",
     step2: "/images/howitwork2.webp",
