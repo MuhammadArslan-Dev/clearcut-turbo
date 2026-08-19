@@ -57,6 +57,24 @@ export const IGNORE_ERRORS: (string | RegExp)[] = [
   /^chrome-extension:\/\//,
   /^moz-extension:\/\//,
   "ResizeObserver is not defined",
+  // MathJax's own accessibility/speech module (tex-chtml.js) calls the Web
+  // Speech API without feature-detecting it; throws on WebViews that don't
+  // expose `speechSynthesis` (Chrome Mobile WebView, in-app browsers). Bug
+  // lives inside the MathJax bundle, not our code.
+  "speechSynthesis is not defined",
+  // Android WebView host apps (Instagram/Facebook in-app browser) inject a
+  // native performance-logging bridge that throws once its Java-side object
+  // has been garbage collected — happens on navigation/backgrounding, not
+  // triggered by our code.
+  /Error invoking .*: Java object is gone/,
+  // Classic React/browser-extension DOM race (e.g. Google Translate mutating
+  // nodes React still tracks) on unmount; already caught by an error
+  // boundary (`handled: true`) where it occurs.
+  "Failed to execute 'removeChild' on 'Node'",
+  // Benign pointer-capture race on fast pointerup/pointercancel sequences —
+  // observed originating from Next's own dev-mode devtools overlay as well
+  // as third-party pointer-event libraries; not actionable.
+  "Failed to execute 'releasePointerCapture' on 'Element'",
 ];
 
 /** Third-party scripts we cannot fix and do not want reports from. */

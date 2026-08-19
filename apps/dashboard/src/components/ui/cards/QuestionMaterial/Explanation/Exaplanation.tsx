@@ -25,6 +25,8 @@ export default function Exaplanation({
   display = "flex flex-col justify-center items-start gap-4",
   bgColor = "bg-[#006bd108]",
 }: ExaplanationProps) {
+  if (!explanation) return null;
+
   return (
     <div className={clsx(bgColor, padding, border, display, rounded)}>
       <Text
