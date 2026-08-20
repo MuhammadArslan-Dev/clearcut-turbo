@@ -205,12 +205,22 @@ export default function Sidebar() {
     [isMobile, set, setChapter, setTopic],
   );
 
-  // Hydrating into a section fires this 2-3 times in quick succession
-  // (chapters set -> chapter/topic auto-selected -> URL params applied), each
-  // a genuine state change. Debounce just the network call so only the final
-  // settled selection is persisted, instead of POSTing every intermediate
-  // step — the local UI sync below stays synchronous/untouched.
+  // Hydrating into a section fires this 2-3+ times in quick succession
+  // (chapters set -> chapter/topic auto-selected -> URL params applied),
+  // each a genuine state change, spaced out by whatever the chapters fetch
+  // takes — often well past any reasonable debounce window on a slow
+  // connection. Skip entirely (no timer, no request) until chapters AND a
+  // topic both exist for the first time on this mount; only once hydration
+  // has actually produced a real selection do we start persisting it, and
+  // debounce from then on for genuine subsequent changes (user picks a
+  // different topic, etc). The local UI sync below stays untouched.
+  const hasSettledOnce = useRef(false);
   useEffect(() => {
+    if (!hasSettledOnce.current) {
+      if (!chapters?.length || !selectedTopic) return;
+      hasSettledOnce.current = true;
+    }
+
     const timeoutId = setTimeout(() => {
       // Fire-and-forget: a dead/slow backend must not reject unhandled and
       // take the whole preparation page down with it. Swallowed for the UI,
@@ -239,6 +249,7 @@ export default function Sidebar() {
     selectedSectionId,
     selectedChapter?.id,
     selectedTopic?.id,
+    chapters,
   ]);
 
   useEffect(() => {

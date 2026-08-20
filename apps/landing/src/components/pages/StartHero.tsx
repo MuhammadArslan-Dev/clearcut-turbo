@@ -138,43 +138,40 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
   const t = CONTENT[locale];
 
   return (
-    <div className="relative hidden md:flex md:w-[60%] overflow-y-auto bg-[var(--color-brand)] flex-col gap-6 px-10 py-6 lg:px-14 lg:py-8 text-white">
-      {/* Decorative dot grid, purely visual */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-8 right-10 grid grid-cols-6 gap-2 opacity-20"
-      >
-        {Array.from({ length: 24 }).map((_, i) => (
-          <span key={i} className="w-1 h-1 rounded-full bg-white" />
-        ))}
-      </div>
+    <div className="relative hidden md:flex md:w-[55%] overflow-y-auto flex-col gap-6 px-10 py-8 lg:px-14 lg:py-10">
+      {/* The illustration itself IS the panel background now (no blue tint).
+          This asset is transparent except for the illustration + blue curve
+          sitting at its bottom — object-bottom keeps that visible when the
+          image gets cropped to fit a panel taller than its own aspect,
+          instead of cropping away the only part that has content. */}
+      <Image
+        src={IMAGES.startIllustration}
+        alt=""
+        fill
+        priority
+        sizes="60vw"
+        className="object-cover object-bottom z-0"
+      />
 
-      <Link href="/" className="w-fit">
-        <Image
-          src={IMAGES.mainLogo}
-          alt="Clear Cutoff"
-          width={140}
-          height={40}
-          priority
-          className="brightness-0 invert"
-        />
-      </Link>
+      <div className="relative z-10 flex flex-col gap-6">
+        <Link href="/" className="w-fit">
+          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={140} height={40} priority />
+        </Link>
 
-      <div className="flex-1 flex items-center gap-8">
-        <div className="flex-1 flex flex-col gap-5 max-w-[420px]">
-          <div className="w-fit flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5">
+        <div className="flex flex-col gap-5 max-w-[420px]">
+          <div className="w-fit flex items-center gap-2 rounded-full bg-[var(--color-brand)]/10 px-3 py-1.5">
             <BadgeCheckIcon />
-            <Text as="span" variant="body-small" weight="semibold" className="!text-white">
+            <Text as="span" variant="body-small" weight="semibold" color="primary-normal">
               {t.badge}
             </Text>
           </div>
 
           <div>
-            <Text as="h1" variant="heading-2xlarge" weight="bold" className="!text-white leading-tight">
+            <Text as="h1" variant="heading-2xlarge" weight="bold" className="leading-tight">
               {t.headingLine1}{" "}
-              <span className="text-[#FECF49]">{t.headingAccent}</span>
+              <span className="text-[var(--color-brand)]">{t.headingAccent}</span>
             </Text>
-            <Text as="p" variant="body-large" className="!text-white/85 mt-2">
+            <Text as="p" variant="body-large" color="gray-muted" className="mt-2">
               {t.subheading}
             </Text>
           </div>
@@ -184,14 +181,14 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
               const Icon = FEATURE_ICONS[i];
               return (
                 <li key={feature.title} className="flex items-start gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                  <div className="shrink-0 w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
                     <Icon />
                   </div>
                   <div>
-                    <Text as="p" variant="body-medium" weight="semibold" className="!text-white">
+                    <Text as="p" variant="body-medium" weight="semibold">
                       {feature.title}
                     </Text>
-                    <Text as="p" variant="body-small" className="!text-white/70">
+                    <Text as="p" variant="body-small" color="gray-muted">
                       {feature.description}
                     </Text>
                   </div>
@@ -200,31 +197,19 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
             })}
           </ul>
 
-          <div className="flex flex-col gap-1 pt-3 border-t border-white/20">
+          <div className="flex flex-col gap-1 pt-3 border-t border-black/10">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
                 <StarIcon key={i} />
               ))}
             </div>
-            <Text as="p" variant="body-medium" weight="semibold" className="!text-white">
+            <Text as="p" variant="body-medium" weight="semibold">
               {t.rating}
             </Text>
-            <Text as="p" variant="body-small" className="!text-white/70">
+            <Text as="p" variant="body-small" color="gray-muted">
               {t.trust}
             </Text>
           </div>
-        </div>
-
-        <div className="hidden lg:block w-[360px] xl:w-[400px] shrink-0 mt-26">
-          <Image
-            src={IMAGES.startIllustration}
-            alt=""
-            width={440}
-            height={395}
-            priority
-            sizes="440px"
-            className="w-full h-auto"
-          />
         </div>
       </div>
     </div>
