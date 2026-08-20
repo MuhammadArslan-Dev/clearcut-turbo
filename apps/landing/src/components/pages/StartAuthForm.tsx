@@ -29,9 +29,11 @@ const REDIRECT_BASE_URL =
 const CONTENT: Record<
   Locale,
   {
-    subheading: string;
+    heading: string;
+    featuresLine: string;
     otpHint: string;
     terms: string;
+    andWord: string;
     mobileLabel: string;
     phonePlaceholder: string;
     continueBtn: string;
@@ -62,12 +64,14 @@ const CONTENT: Record<
   }
 > = {
   en: {
-    subheading: "Login or sign up to continue your exam preparation journey",
+    heading: "Start your exam preparation",
+    featuresLine: "Videos • Notes • PYQs",
     otpHint: "We will send you an OTP to verify your number",
     terms: "By continuing, you agree to our",
+    andWord: "and",
     mobileLabel: "Mobile or WhatsApp Number",
     phonePlaceholder: "10-digit number",
-    continueBtn: "Continue",
+    continueBtn: "Start FREE Preparation",
     verifyHeading: "Verify your number",
     otpSentTo: "OTP sent to",
     editLabel: "Edit",
@@ -94,12 +98,14 @@ const CONTENT: Record<
     errGeneric: "Something went wrong. Please try again.",
   },
   hi: {
-    subheading: "अपनी परीक्षा की तैयारी जारी रखने के लिए लॉगिन या साइन अप करें",
+    heading: "अपनी परीक्षा की तैयारी शुरू करें",
+    featuresLine: "वीडियो • नोट्स • PYQs",
     otpHint: "आपके नंबर को वेरीफाई करने के लिए हम एक OTP भेजेंगे",
     terms: "जारी रखकर, आप हमारी",
+    andWord: "और",
     mobileLabel: "मोबाइल या व्हाट्सएप नंबर",
     phonePlaceholder: "10-अंकों का नंबर",
-    continueBtn: "जारी रखें",
+    continueBtn: "मुफ़्त तैयारी शुरू करें",
     verifyHeading: "अपना नंबर सत्यापित करें",
     otpSentTo: "OTP भेजा गया",
     editLabel: "संपादित करें",
@@ -162,21 +168,8 @@ function ArrowRightIcon() {
   );
 }
 
-function GlobeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-}
-
 /**
- * Interactive right panel — the only client-rendered part of /start.
+ * Interactive left panel — the only client-rendered part of /start.
  * Same validation, same authApi calls, same analytics event names, same
  * Meta Lead tracking, same redirect builder as the login modal
  * (packages/auth's login-screen.tsx + otp-screen.tsx) — this is a visual
@@ -190,7 +183,6 @@ function GlobeIcon() {
  */
 export default function StartAuthForm({ locale = defaultLocale }: { locale?: Locale }) {
   const t = CONTENT[locale];
-  const otherLocale = locale === "en" ? "hi" : "en";
 
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
@@ -450,17 +442,9 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
-      <div className="flex justify-between items-center">
-        <Link href="/" className="md:hidden">
-          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={120} height={34} priority />
-        </Link>
-        <Link
-          href="/start"
-          locale={otherLocale}
-          className="ml-auto flex items-center gap-1.5 rounded-full border border-[var(--color-brand)]/20 px-3 py-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/8"
-        >
-          <GlobeIcon />
-          {otherLocale === "hi" ? "हिंदी" : "English"}
+      <div className="flex justify-center pt-10">
+        <Link href="/">
+          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={250} height={57} priority />
         </Link>
       </div>
 
@@ -468,9 +452,12 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
         <div className="w-full max-w-[380px] flex flex-col gap-5">
           {step === "phone" ? (
             <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-1">
-                <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                  {t.subheading}
+              <div className="flex flex-col items-center gap-1 text-center">
+                <Text as="h1" variant="heading-large" weight="bold">
+                  {t.heading}
+                </Text>
+                <Text as="p" variant="body-small" color="gray-muted">
+                  {t.featuresLine}
                 </Text>
               </div>
 
@@ -598,18 +585,17 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1 pt-4 border-t border-[var(--color-border-gray-subtle)]">
+          <div className="pt-4 border-t border-[var(--color-border-gray-subtle)]">
             <Text as="p" variant="body-small" color="gray-muted" className="text-center">
-              {t.terms}
-            </Text>
-            <Text as="p" variant="body-small" color="gray-muted" className="text-center">
-              <Link href="/terms-and-conditions" className="underline">
+              {t.terms}{" "}
+              <Link href="/terms-and-conditions" className="text-[var(--color-brand)] font-medium">
                 Terms &amp; Conditions
-              </Link>
-              {" · "}
-              <Link href="/privacy-policy" className="underline">
+              </Link>{" "}
+              {t.andWord}{" "}
+              <Link href="/privacy-policy" className="text-[var(--color-brand)] font-medium">
                 Privacy Policy
               </Link>
+              .
             </Text>
           </div>
         </div>

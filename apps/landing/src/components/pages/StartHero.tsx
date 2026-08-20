@@ -128,7 +128,7 @@ function PyqIcon() {
 const FEATURE_ICONS = [VideoIcon, NotesIcon, PyqIcon];
 
 /**
- * Static left panel — Server Component on purpose (no "use client"), so this
+ * Static right panel — Server Component on purpose (no "use client"), so this
  * entire half of the page (logo, copy, feature list, illustration) ships as
  * plain HTML with zero client JS. Only StartAuthForm (the actual form) is a
  * client island; splitting it out here is what keeps this page's JS payload
@@ -154,9 +154,7 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
       />
 
       <div className="relative z-10 flex flex-col gap-6">
-        <Link href="/" className="w-fit">
-          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={140} height={40} priority />
-        </Link>
+        
 
         <div className="flex flex-col gap-5 max-w-[420px]">
           <div className="w-fit flex items-center gap-2 rounded-full bg-[var(--color-brand)]/10 px-3 py-1.5">
