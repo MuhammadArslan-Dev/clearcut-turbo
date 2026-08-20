@@ -141,7 +141,7 @@ export default function OtpBoxInput({
             onPaste={handlePaste}
             onFocus={() => setFocusedIndex(i)}
             onBlur={() => setFocusedIndex((cur) => (cur === i ? null : cur))}
-            className="w-12 h-12 text-center body-large !font-semibold text-[var(--color-text-gray-normal)] outline-none border-b-2 transition-colors disabled:opacity-50"
+            className="w-12 h-12 text-center body-large !font-semibold text-[var(--color-text-gray-normal)] outline-none border-b-2 shadow-sm transition-colors disabled:opacity-50"
             style={{ borderBottomColor: borderColor, backgroundColor }}
             aria-label={`OTP digit ${i + 1}`}
           />

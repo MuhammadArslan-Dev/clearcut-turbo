@@ -55,16 +55,27 @@ export default function FullTest({ courseId }: FullTestProps) {
     queryKey: ["full-test", courseId],
     enabled: !!courseId,
     queryFn: async () => (await getFullLengthTestList(courseId)).data,
+    // Without this, staleTime defaults to 0 — every tab switch back to
+    // Full-length Papers re-fetches in the background (invisible here since
+    // cached data still renders first, but still a wasted request each time).
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   /* ======================= INIT PAPERS ======================= */
 
+  // Only seed `paper` the FIRST time (when nothing is selected yet) — `paper`
+  // is one shared, cross-tab selection (PaperSwitch/ChangePaperModal already
+  // treat it that way), so it shouldn't get reset to this tab's own default
+  // just because the user switched to it after picking a paper elsewhere.
   useEffect(() => {
     if (!data?.paper?.length) return;
 
     setPapers(data.paper);
-    setPaper(data.activePaper);
-  }, [data, setPapers, setPaper]);
+    if (!paper) setPaper(data.activePaper);
+  }, [data, paper, setPapers, setPaper]);
 
   /* ======================= DERIVED DATA ======================= */
 

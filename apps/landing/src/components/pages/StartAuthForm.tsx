@@ -30,20 +30,17 @@ const REDIRECT_BASE_URL =
 const CONTENT: Record<
   Locale,
   {
-    heading: string;
     subheading: string;
     otpHint: string;
     terms: string;
   }
 > = {
   en: {
-    heading: "Welcome Back!",
     subheading: "Login or sign up to continue your exam preparation journey",
     otpHint: "We will send you an OTP to verify your number",
     terms: "By continuing, you agree to our",
   },
   hi: {
-    heading: "वापसी पर स्वागत है!",
     subheading: "अपनी परीक्षा की तैयारी जारी रखने के लिए लॉगिन या साइन अप करें",
     otpHint: "आपके नंबर को वेरीफाई करने के लिए हम एक OTP भेजेंगे",
     terms: "जारी रखकर, आप हमारी",
@@ -380,7 +377,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
         <Link
           href="/start"
           locale={otherLocale}
-          className="ml-auto flex items-center gap-1.5 rounded-full border border-[var(--color-border-gray-subtle)] px-3 py-1.5 text-sm text-[var(--color-text-gray-normal)]"
+          className="ml-auto flex items-center gap-1.5 rounded-full border border-[var(--color-brand)]/20 px-3 py-1.5 text-sm font-medium text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand)]/8"
         >
           <GlobeIcon />
           {otherLocale === "hi" ? "हिंदी" : "English"}
@@ -392,10 +389,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
           {step === "phone" ? (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-1">
-                <Text as="h1" variant="heading-large" weight="bold">
-                  {t.heading}
-                </Text>
-                <Text as="p" variant="body-medium" color="gray-muted">
+                <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
                   {t.subheading}
                 </Text>
               </div>
@@ -405,7 +399,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   Mobile or WhatsApp Number
                 </Text>
 
-                <div className="w-full h-[48px] relative">
+                <div className="w-full h-[52px] relative">
                   <MainInput
                     ref={phoneInputRef}
                     value={phone}
@@ -413,10 +407,10 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     inputType="phone"
                     error={error}
                     maxLength={10}
-                    className="h-full"
-                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                    className="h-full !px-4 shadow-sm"
+                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)] pl-2 ml-1 border-l border-[var(--color-border-gray-subtle)]"
                     onChange={(e) => validatePhone(e.target.value)}
-                    inputPrefix="+91 -"
+                    inputPrefix="+91"
                     showError={false}
                   />
                 </div>
@@ -508,8 +502,10 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
             </div>
           )}
 
-          <div className="flex items-center gap-3 rounded-xl bg-[var(--color-brand)]/8 px-4 py-3">
-            <ShieldCheckIcon />
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand)]/15 bg-[var(--color-brand)]/8 px-4 py-3">
+            <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--color-brand)]/12 flex items-center justify-center">
+              <ShieldCheckIcon />
+            </div>
             <div>
               <Text as="p" variant="body-medium" weight="semibold" color="primary-normal">
                 3-day FREE Trial

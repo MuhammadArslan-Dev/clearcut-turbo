@@ -43,18 +43,40 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   const isFreeUser = courseData?.status !== "active";
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
-  const { paper, setData, setPaper, setPapers } = useTestListDataStore();
+  const {
+    paper,
+    setData,
+    setPaper,
+    setPapers,
+    defaultPaperIdByEndpoint,
+    setDefaultPaperId,
+  } = useTestListDataStore();
   const { set: setQueryParam } = useQueryParams();
 
   const [selectedSection, setSelectedSection] = useState<SectionalSection | null>(null);
 
   /* ================= QUERY ================= */
 
+  // Passing paper_id vs. omitting it returns byte-identical data as long as
+  // paper_id is the same paper the backend would've defaulted to anyway
+  // (verified directly against the API). So only pass it through once the
+  // user has genuinely picked a DIFFERENT paper than that default — not
+  // whenever `paper` merely mirrors this response's own default, which
+  // would otherwise turn every load into fetch-with-no-paper_id followed
+  // by an identical fetch-with-paper_id. This has to live in the shared
+  // store, not a local ref: switching tabs unmounts this component, and a
+  // ref would reset on remount, computing a different query key than this
+  // tab's first visit did and missing the cache (a fresh reload) every time
+  // you switch back.
+  const defaultPaperId = defaultPaperIdByEndpoint["chapter-test"] ?? null;
+  const explicitPaperId =
+    paper?.id && paper.id !== defaultPaperId ? paper.id : undefined;
+
   const { data, isLoading, error, refetch } = useQuery<SectionalTestV2Data>({
-    queryKey: ["chapter-test", courseId, paper?.id ?? null],
+    queryKey: ["chapter-test", courseId, explicitPaperId ?? null],
     enabled: !!courseId,
     queryFn: async () => {
-      const res = await getChapterTestList(courseId, paper?.id);
+      const res = await getChapterTestList(courseId, explicitPaperId);
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -68,8 +90,9 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   useEffect(() => {
     if (!data?.papers?.length) return;
     setPapers(data.papers);
-    setPaper(data.paper);
-  }, [data, setPaper, setPapers]);
+    setDefaultPaperId("chapter-test", data.paper?.id ?? null);
+    if (!paper) setPaper(data.paper);
+  }, [data, paper, setPaper, setPapers, setDefaultPaperId]);
 
   // Reset to null when paper changes; auto-select below will pick first section
   useEffect(() => {

@@ -33,19 +33,37 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   const isFreeUser = courseData?.status !== "active";
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
-  const { paper, setData, setPaper, setPapers } = useTestListDataStore();
+  const {
+    paper,
+    setData,
+    setPaper,
+    setPapers,
+    defaultPaperIdByEndpoint,
+    setDefaultPaperId,
+  } = useTestListDataStore();
   const { get } = useQueryParams();
   const testType = get("testType");
 
-  const { data, isLoading, error, refetchData } = useSectionalTestHook(courseId, paper?.id);
+  // Passing paper_id vs. omitting it returns byte-identical data as long as
+  // paper_id is the same paper the backend would've defaulted to anyway
+  // (verified directly against the API) — see ChapterTest.tsx for the full
+  // rationale, including why this lives in the shared store rather than a
+  // local ref (a ref would reset on every tab switch remount, missing the
+  // cache and reloading on every revisit).
+  const defaultPaperId = defaultPaperIdByEndpoint["sectional-test"] ?? null;
+  const explicitPaperId =
+    paper?.id && paper.id !== defaultPaperId ? paper.id : undefined;
+
+  const { data, isLoading, error, refetchData } = useSectionalTestHook(courseId, explicitPaperId);
 
   /* ================= DATA INIT ================= */
 
   useEffect(() => {
     if (!data?.papers?.length) return;
     setPapers(data.papers);
-    setPaper(data.paper);
-  }, [data, setPaper, setPapers]);
+    setDefaultPaperId("sectional-test", data.paper?.id ?? null);
+    if (!paper) setPaper(data.paper);
+  }, [data, paper, setPaper, setPapers, setDefaultPaperId]);
 
   /* ================= DERIVED DATA ================= */
 

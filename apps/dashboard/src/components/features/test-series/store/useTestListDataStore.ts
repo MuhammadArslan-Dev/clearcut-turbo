@@ -37,6 +37,15 @@ interface TestListDataStore {
   papers: Paper[] | null;
   paper: Paper | null;
 
+  // The paper id each test-series endpoint defaulted to on its own most
+  // recent no-paper_id response, per query-key prefix ("chapter-test",
+  // "sectional-test", ...). Lives here (not a per-component ref) so it
+  // survives a tab switch unmounting/remounting the component — otherwise
+  // a fresh ref reset the "is this the default paper or a real override"
+  // check on every remount, computing a different query key than the tab's
+  // first visit did and missing the cache on every revisit.
+  defaultPaperIdByEndpoint: Record<string, number | null>;
+
   recommendedTests: RecommendedTestData | null;
   progressData: ProgressData | null;
 
@@ -48,6 +57,7 @@ interface TestListDataStore {
   setLoading: (loading: boolean) => void;
   setPapers: (papers: Paper[] | null) => void;
   setPaper: (paper: Paper | null) => void;
+  setDefaultPaperId: (endpoint: string, paperId: number | null) => void;
   setError: (error: boolean) => void;
 
   refetch: () => Promise<void>;
@@ -60,12 +70,17 @@ export const useTestListDataStore = create<TestListDataStore>((set) => ({
   isError: false,
   papers: null,
   paper: null,
+  defaultPaperIdByEndpoint: {},
 
   recommendedTests: null,
   progressData: null,
 
   setPapers: (papers) => set({ papers }),
   setPaper: (paper) => set({ paper }),
+  setDefaultPaperId: (endpoint, paperId) =>
+    set((state) => ({
+      defaultPaperIdByEndpoint: { ...state.defaultPaperIdByEndpoint, [endpoint]: paperId },
+    })),
 
   setData: (recommendedTests, progressData) =>
     set({

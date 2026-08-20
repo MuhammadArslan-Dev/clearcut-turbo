@@ -233,7 +233,10 @@ export default function TestCard({
                     variant="soft"
                     size="xs"
                     color="gray"
-                    onClick={() => viewReport.onClick()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewReport.onClick();
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <span className="">
@@ -256,7 +259,7 @@ export default function TestCard({
         <div className="hidden md:flex min-w-[100px] items-end">
           <div className="flex flex-col gap-2">
             {unlock?.isShow && (
-              <div className="cursor-pointer">
+              <div className="cursor-pointer" onClick={(e) => e.stopPropagation()}>
                 <CounterCard
                   onClick={() => unlock?.onClick()}
                   width="w-[100px]"
@@ -281,7 +284,10 @@ export default function TestCard({
             )}
             {startTest.isShow && (
               <Button
-                onClick={() => startTest.onClick()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startTest.onClick();
+                }}
                 sx={{
                   borderRadius: "50px",
                   borderWidth: "2px",
@@ -318,7 +324,10 @@ export default function TestCard({
                 variant="soft"
                 size="xs"
                 color="gray"
-                onClick={() => viewReport.onClick()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  viewReport.onClick();
+                }}
               >
                 <div className="flex items-center gap-2">
                   <span className="">{viewReport.text ?? "View Report"}</span>
