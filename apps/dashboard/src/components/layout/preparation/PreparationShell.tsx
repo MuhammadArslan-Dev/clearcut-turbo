@@ -25,7 +25,7 @@ import LockedContentModal from "@/components/features/PayWalls/LockedContentModa
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useParams } from "next/navigation";
-import { changeCourse } from "@/lib/dashboard/learning";
+import { changeCourse, MyCoursesResponse } from "@/lib/dashboard/learning";
 import { useQueryClient } from "@tanstack/react-query";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 
@@ -74,6 +74,15 @@ export default function PreparationShell({
   useEffect(() => {
     const courseId = params?.courseId as string | undefined;
     if (!courseId) return;
+
+    // Skip the switch-active-course round trip (+ the course-list refetch it
+    // triggers) when this course is already the server's active course —
+    // e.g. navigating Course -> Test Series -> Course within the same
+    // enrollment. Falls back to the normal call whenever we don't have this
+    // cached yet, so behavior is unchanged for a genuine course switch.
+    const cachedCourses = queryClient.getQueryData<MyCoursesResponse>(MY_COURSES_KEY);
+    if (cachedCourses?.active_course?.group_code === courseId) return;
+
     changeCourse(courseId).then(() => {
       queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY });
     });

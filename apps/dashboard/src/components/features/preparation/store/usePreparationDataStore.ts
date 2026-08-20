@@ -202,7 +202,14 @@ export const usePreparationStore = create<PreparationState>((set) => ({
 
   progressByTopicId: {},
 
-  loading: false,
+  // Starts true (not false) on purpose: a courseId is always present when this
+  // store is used, so the syllabus query is always enabled and genuinely
+  // loading on first render. `usePreparationData` syncs the real isLoading
+  // value in via a useEffect, which only runs AFTER the first paint — if this
+  // defaulted to false, VideoWrapper/RelatedContentWrapper would read
+  // loading=false + selectedTopic=undefined on that first paint and render
+  // blank instead of their skeleton, until the effect catches up.
+  loading: true,
   error: false,
 
   sectionsByPaperId: {},

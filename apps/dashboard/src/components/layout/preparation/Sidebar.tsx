@@ -205,9 +205,18 @@ export default function Sidebar() {
     [isMobile, set, setChapter, setTopic],
   );
 
+  // Hydrating into a section fires this 2-3 times in quick succession
+  // (chapters set -> chapter/topic auto-selected -> URL params applied), each
+  // a genuine state change. Debounce just the network call so only the final
+  // settled selection is persisted, instead of POSTing every intermediate
+  // step — the local UI sync below stays synchronous/untouched.
   useEffect(() => {
-    const setResume = async () => {
-      await setResumeState({
+    const timeoutId = setTimeout(() => {
+      // Fire-and-forget: a dead/slow backend must not reject unhandled and
+      // take the whole preparation page down with it. Swallowed for the UI,
+      // but still reported — a silently failing resume-state is exactly the
+      // kind of bug that otherwise goes unnoticed for weeks.
+      setResumeState({
         course_id: String(course?.group_code),
         paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
         section_id:
@@ -215,20 +224,24 @@ export default function Sidebar() {
         chapter_id:
           selectedChapter?.id != null ? String(selectedChapter.id) : null,
         topic_id: selectedTopic?.id ?? null,
+      }).catch((err) => {
+        logger.error(err, {
+          tags: { type: "background_sync", module: "preparation-sidebar" },
+          extra: { action: "setResumeState", courseId: course?.group_code },
+        });
       });
-    };
+    }, 500);
 
-    // Fire-and-forget: a dead/slow backend must not reject unhandled and take
-    // the whole preparation page down with it. Swallowed for the UI, but still
-    // reported — a silently failing resume-state is exactly the kind of bug
-    // that otherwise goes unnoticed for weeks.
-    setResume().catch((err) => {
-      logger.error(err, {
-        tags: { type: "background_sync", module: "preparation-sidebar" },
-        extra: { action: "setResumeState", courseId: course?.group_code },
-      });
-    });
+    return () => clearTimeout(timeoutId);
+  }, [
+    course?.group_code,
+    selectedPaperId,
+    selectedSectionId,
+    selectedChapter?.id,
+    selectedTopic?.id,
+  ]);
 
+  useEffect(() => {
     if (!selectedTopic || !chapters) return;
 
     // find parent topic that owns this child

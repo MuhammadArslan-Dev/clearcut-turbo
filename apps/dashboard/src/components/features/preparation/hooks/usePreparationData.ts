@@ -24,8 +24,8 @@ export function usePreparationData(examId?: string | number) {
       return res.data;
     },
 
-    // staleTime: 5 * 60 * 1000,
-    // gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -52,7 +52,7 @@ export function usePreparationData(examId?: string | number) {
   const clearData = () => {
     if (!examId) return;
     queryClient.removeQueries({
-      queryKey: QUERY_KEY(examId),
+      queryKey: P_QUERY_KEY(examId),
     });
   };
 
