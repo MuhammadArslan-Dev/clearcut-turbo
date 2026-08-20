@@ -60,24 +60,33 @@ export async function apiFetch<T>(
       cause,
     });
 
+    const unreachableDurationMs = Date.now() - startedAt;
+
     Sentry.addBreadcrumb({
       category: "api",
       type: "http",
       level: "error",
       message: `${method} ${endpoint} — unreachable`,
-      data: { url, durationMs: Date.now() - startedAt },
+      data: { url, durationMs: unreachableDurationMs },
     });
+    // Modern replacement for the deprecated Sentry.metrics.distribution() —
+    // attaches to the current active span so response times show up in
+    // Sentry's Performance UI, filterable/graphable by endpoint via tags.
+    Sentry.setMeasurement("api_response_time", unreachableDurationMs, "millisecond");
 
     throw error;
   }
+
+  const durationMs = Date.now() - startedAt;
 
   Sentry.addBreadcrumb({
     category: "api",
     type: "http",
     level: res.ok ? "info" : "error",
     message: `${method} ${endpoint} → ${res.status}`,
-    data: { url, status: res.status, durationMs: Date.now() - startedAt },
+    data: { url, status: res.status, durationMs },
   });
+  Sentry.setMeasurement("api_response_time", durationMs, "millisecond");
 
   if (res.status === 401) {
     redirectToLogin();

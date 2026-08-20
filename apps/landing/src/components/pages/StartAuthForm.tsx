@@ -23,7 +23,6 @@ import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
-const FAKE_NUMBER_ERROR = "Enter only a real mobile number";
 const REDIRECT_BASE_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in";
 
@@ -33,17 +32,98 @@ const CONTENT: Record<
     subheading: string;
     otpHint: string;
     terms: string;
+    mobileLabel: string;
+    phonePlaceholder: string;
+    continueBtn: string;
+    verifyHeading: string;
+    otpSentTo: string;
+    editLabel: string;
+    otpLabel: string;
+    resendingOtp: string;
+    resendOtpTimer: string;
+    resendOtp: string;
+    verifyOtpBtn: string;
+    trialTitle: string;
+    trialSubtitle: string;
+    errStartDigit: string;
+    errNo91: string;
+    errValid10: string;
+    errMax10: string;
+    errFakeNumber: string;
+    successValidPhone: string;
+    errInvalidPhone: string;
+    errEnterValidPhone: string;
+    errLoginFailed: string;
+    errEnterValidOtp: string;
+    errOtpInvalid: string;
+    errServer: string;
+    errNoInternet: string;
+    errGeneric: string;
   }
 > = {
   en: {
     subheading: "Login or sign up to continue your exam preparation journey",
     otpHint: "We will send you an OTP to verify your number",
     terms: "By continuing, you agree to our",
+    mobileLabel: "Mobile or WhatsApp Number",
+    phonePlaceholder: "10-digit number",
+    continueBtn: "Continue",
+    verifyHeading: "Verify your number",
+    otpSentTo: "OTP sent to",
+    editLabel: "Edit",
+    otpLabel: "4-digit OTP",
+    resendingOtp: "Resending OTP...",
+    resendOtpTimer: "Resend OTP ({seconds}s)",
+    resendOtp: "Resend OTP",
+    verifyOtpBtn: "Verify OTP",
+    trialTitle: "3-day FREE Trial",
+    trialSubtitle: "No card or payment required",
+    errStartDigit: "Phone number must start with 6, 7, 8, or 9",
+    errNo91: "Don't include 91 in number",
+    errValid10: "Enter valid 10-digit phone number",
+    errMax10: "Phone number cannot exceed 10 digits",
+    errFakeNumber: "Enter only a real mobile number",
+    successValidPhone: "Valid phone number",
+    errInvalidPhone: "Invalid phone number",
+    errEnterValidPhone: "Enter valid phone number",
+    errLoginFailed: "Login failed. Please try again.",
+    errEnterValidOtp: "Enter valid OTP",
+    errOtpInvalid: "Invalid or expired OTP. Please try again.",
+    errServer: "Server error. Please try again.",
+    errNoInternet: "No internet connection.",
+    errGeneric: "Something went wrong. Please try again.",
   },
   hi: {
     subheading: "अपनी परीक्षा की तैयारी जारी रखने के लिए लॉगिन या साइन अप करें",
     otpHint: "आपके नंबर को वेरीफाई करने के लिए हम एक OTP भेजेंगे",
     terms: "जारी रखकर, आप हमारी",
+    mobileLabel: "मोबाइल या व्हाट्सएप नंबर",
+    phonePlaceholder: "10-अंकों का नंबर",
+    continueBtn: "जारी रखें",
+    verifyHeading: "अपना नंबर सत्यापित करें",
+    otpSentTo: "OTP भेजा गया",
+    editLabel: "संपादित करें",
+    otpLabel: "4-अंकों का OTP",
+    resendingOtp: "OTP फिर से भेजा जा रहा है...",
+    resendOtpTimer: "OTP फिर से भेजें ({seconds}s)",
+    resendOtp: "OTP फिर से भेजें",
+    verifyOtpBtn: "OTP सत्यापित करें",
+    trialTitle: "3-दिन का मुफ़्त ट्रायल",
+    trialSubtitle: "कोई कार्ड या भुगतान आवश्यक नहीं",
+    errStartDigit: "फ़ोन नंबर 6, 7, 8, या 9 से शुरू होना चाहिए",
+    errNo91: "नंबर में 91 शामिल न करें",
+    errValid10: "मान्य 10-अंकों का फ़ोन नंबर दर्ज करें",
+    errMax10: "फ़ोन नंबर 10 अंकों से अधिक नहीं हो सकता",
+    errFakeNumber: "केवल असली मोबाइल नंबर दर्ज करें",
+    successValidPhone: "मान्य फ़ोन नंबर",
+    errInvalidPhone: "अमान्य फ़ोन नंबर",
+    errEnterValidPhone: "मान्य फ़ोन नंबर दर्ज करें",
+    errLoginFailed: "लॉगिन विफल रहा। कृपया पुनः प्रयास करें।",
+    errEnterValidOtp: "मान्य OTP दर्ज करें",
+    errOtpInvalid: "अमान्य या समाप्त हो चुका OTP। कृपया पुनः प्रयास करें।",
+    errServer: "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
+    errNoInternet: "इंटरनेट कनेक्शन नहीं है।",
+    errGeneric: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
   },
 };
 
@@ -164,7 +244,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     }
 
     if (cleaned.length === 1 && !FIRST_DIGIT_REGEX.test(cleaned)) {
-      setError("Phone number must start with 6, 7, 8, or 9");
+      setError(t.errStartDigit);
       setSuccess("");
       setIsValidPhone(false);
       return;
@@ -176,41 +256,41 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       cleaned.startsWith("91") &&
       (cleaned.length === 2 || /^[6-9]$/.test(cleaned[2]))
     ) {
-      setError("Don't include 91 in number");
+      setError(t.errNo91);
       setSuccess("");
       setIsValidPhone(false);
       return;
     }
 
     if (cleaned.length < 10) {
-      setError("Enter valid 10-digit phone number");
+      setError(t.errValid10);
       setSuccess("");
       setIsValidPhone(false);
       return;
     }
 
     if (cleaned.length > 10) {
-      setError("Phone number cannot exceed 10 digits");
+      setError(t.errMax10);
       setSuccess("");
       setIsValidPhone(false);
       return;
     }
 
     if (PHONE_REGEX.test(cleaned) && isFakeNumber(cleaned)) {
-      setError(FAKE_NUMBER_ERROR);
+      setError(t.errFakeNumber);
       setSuccess("");
       setIsValidPhone(false);
       return;
     }
 
     if (PHONE_REGEX.test(cleaned)) {
-      setSuccess("Valid phone number");
+      setSuccess(t.successValidPhone);
       setError("");
       setIsValidPhone(true);
       return;
     }
 
-    setError("Invalid phone number");
+    setError(t.errInvalidPhone);
     setSuccess("");
     setIsValidPhone(false);
   };
@@ -229,12 +309,12 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     const number = phoneValue ?? phone;
 
     if (!PHONE_REGEX.test(number)) {
-      setError("Enter valid phone number");
+      setError(t.errEnterValidPhone);
       return;
     }
 
     if (isFakeNumber(number)) {
-      setError(FAKE_NUMBER_ERROR);
+      setError(t.errFakeNumber);
       setIsValidPhone(false);
       return;
     }
@@ -266,7 +346,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       }, 200);
     } catch {
       setLoading(false);
-      setError("Login failed. Please try again.");
+      setError(t.errLoginFailed);
     }
   };
 
@@ -316,7 +396,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
     const finalOtp = autoOtp || otp;
     if (!finalOtp || finalOtp.length !== OTP_LENGTH) {
-      setError("Enter valid OTP");
+      setError(t.errEnterValidOtp);
       return;
     }
 
@@ -350,13 +430,13 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       setLoading(false);
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 422 || status === 401) {
-        setError("Invalid or expired OTP. Please try again.");
+        setError(t.errOtpInvalid);
       } else if (status && status >= 500) {
-        setError("Server error. Please try again.");
+        setError(t.errServer);
       } else if (!navigator.onLine) {
-        setError("No internet connection.");
+        setError(t.errNoInternet);
       } else {
-        setError("Something went wrong. Please try again.");
+        setError(t.errGeneric);
       }
     } finally {
       isVerifyingRef.current = false;
@@ -396,14 +476,14 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
-                  Mobile or WhatsApp Number
+                  {t.mobileLabel}
                 </Text>
 
                 <div className="w-full h-[52px] relative">
                   <MainInput
                     ref={phoneInputRef}
                     value={phone}
-                    placeholder="10-digit number"
+                    placeholder={t.phonePlaceholder}
                     inputType="phone"
                     error={error}
                     maxLength={10}
@@ -438,29 +518,29 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 loading={loading}
                 rightIcon={<ArrowRightIcon />}
               >
-                Continue
+                {t.continueBtn}
               </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-1">
                 <Text as="h1" variant="heading-large" weight="bold">
-                  Verify your number
+                  {t.verifyHeading}
                 </Text>
                 <Text as="p" variant="body-medium" color="gray-muted">
-                  OTP sent to <strong>+91 {phone}</strong>{" "}
+                  {t.otpSentTo} <strong>+91 {phone}</strong>{" "}
                   <span
                     onClick={handleEditNumber}
                     className="text-[var(--color-brand)] font-semibold cursor-pointer"
                   >
-                    Edit
+                    {t.editLabel}
                   </span>
                 </Text>
               </div>
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
-                  4-digit OTP
+                  {t.otpLabel}
                 </Text>
                 <OtpBoxInput
                   length={OTP_LENGTH}
@@ -477,13 +557,15 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
                 <div className="text-sm">
                   {resendingOtp ? (
-                    <span className="text-[var(--color-brand)]">Resending OTP...</span>
+                    <span className="text-[var(--color-brand)]">{t.resendingOtp}</span>
                   ) : (
                     <span
                       onClick={handleResendOtp}
                       className={`text-[var(--color-brand)] font-semibold ${resendTimer > 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
-                      {resendTimer > 0 ? `Resend OTP (${resendTimer}s)` : "Resend OTP"}
+                      {resendTimer > 0
+                        ? t.resendOtpTimer.replace("{seconds}", String(resendTimer))
+                        : t.resendOtp}
                     </span>
                   )}
                 </div>
@@ -497,7 +579,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 loading={loading}
                 onClick={() => handleVerify()}
               >
-                Verify OTP
+                {t.verifyOtpBtn}
               </Button>
             </div>
           )}
@@ -508,10 +590,10 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
             </div>
             <div>
               <Text as="p" variant="body-medium" weight="semibold" color="primary-normal">
-                3-day FREE Trial
+                {t.trialTitle}
               </Text>
               <Text as="p" variant="body-small" color="gray-muted">
-                No card or payment required
+                {t.trialSubtitle}
               </Text>
             </div>
           </div>
