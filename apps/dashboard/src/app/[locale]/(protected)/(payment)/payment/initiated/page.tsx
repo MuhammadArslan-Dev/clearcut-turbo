@@ -23,6 +23,7 @@ import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
 import { webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { isApiError } from "@/lib/api/api-error";
 import { LevelTranslation } from "@/lib/api/onboarding";
 import { createSubscription, getPaymentPricing, PaymentPricing, PaymentType } from "@/lib/payment/payment";
 import { loadRazorpay } from "@/lib/loadRazorpay";
@@ -260,13 +261,54 @@ export default function InitiatedPage() {
         return;
       }
 
-      const res = await sentryApiClient(
-        () => createSubscription({ course_id: courseId, plan_id: 1 }),
-        {
-          endpoint: "/subscription/create",
-          module: "subscription-payment",
-        },
-      );
+      let res;
+      try {
+        res = await createSubscription({ course_id: courseId, plan_id: 1 });
+      } catch (err) {
+        // The backend rejects a duplicate subscribe attempt with 400 + the
+        // existing subscription in the body — a known, expected case (user
+        // hit "buy" for a course they already own), not a bug. Handle it
+        // directly instead of routing through sentryApiClient, which would
+        // log every occurrence as a generic api_error; genuinely unexpected
+        // failures still fall through to the same logging below.
+        if (isApiError(err) && err.status === 400) {
+          let existingSubscription: { status?: string } | undefined;
+          try {
+            existingSubscription = err.responseBody
+              ? JSON.parse(err.responseBody)?.subscription
+              : undefined;
+          } catch {
+            // responseBody wasn't JSON — fall through to generic handling.
+          }
+
+          if (existingSubscription?.status === "active") {
+            logger.warn("Subscribe attempted for an already-active subscription", {
+              tags: { module: "subscription-payment" },
+              extra: { course_id: courseId, user_id: authUser?.id },
+            });
+            alert("You already have an active subscription for this course.");
+            setRedirecting(true);
+            router.push(`/preparation/${courseId}`);
+            return;
+          }
+        }
+
+        logger.error(err, {
+          tags: {
+            type: "api_error",
+            module: "subscription-payment",
+            status: String(isApiError(err) ? err.status : "unknown"),
+            endpoint: "/subscription/create",
+          },
+          extra: {
+            callSite: "/subscription/create",
+            user_id: authUser?.id,
+            exam_id: data?.id,
+            course_id: courseId,
+          },
+        });
+        throw err;
+      }
 
       // Fire after API so we know whether this is a fresh or resumed session
       trackEvent("Payment Initiated", {
