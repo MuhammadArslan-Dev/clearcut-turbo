@@ -43,15 +43,40 @@ const PRICE_CARD_ROUNDING = 12;
 // page load — re-used here to re-call init with advanced-matching data.
 const FB_PIXEL_ID = "1126041265682766";
 
+// Per-exam overrides for the two one-time price tiers ("1month-onetime" and
+// "1year"). Both tiers are priced purely on the frontend — the amount is
+// sent as-is to the backend when creating the Razorpay order — so this is
+// the single place that decides them. Keyed by exam `short_name` (uppercased
+// for a case-insensitive match); exams with no entry here fall through to
+// the global `pricing` values from GET /v2/payment/pricing, unaffected.
+//
+// The "1month" recurring subscription tier is NOT covered here — it's a
+// Razorpay recurring Plan (subscription_plans table, plan_id hardcoded to 1
+// for every exam), which needs a genuinely separate Razorpay Plan + plan_id
+// per exam to price differently. Flagged, not done as part of this change.
+const EXAM_PRICE_OVERRIDES: Record<
+  string,
+  { onetime1Month: number; oneYear: number }
+> = {
+  HPTET: { onetime1Month: 229, oneYear: 799 },
+};
+
 // Shared by the "1month" default price, CustomizeProduct's target price, and
 // AddPaymentInfo's selected price — one place to change the numbers.
 function getPriceForVariant(
   variant: PaymentType,
   pricing: PaymentPricing | null,
+  examShortName?: string,
 ) {
+  const override = examShortName
+    ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
+    : undefined;
+
   if (variant === "1month") return 99;
-  if (variant === "1month-onetime") return pricing?.onetime_1month_price ?? 139;
-  return pricing?.onetime_1year_price ?? 599;
+  if (variant === "1month-onetime") {
+    return override?.onetime1Month ?? pricing?.onetime_1month_price ?? 139;
+  }
+  return override?.oneYear ?? pricing?.onetime_1year_price ?? 599;
 }
 
 export default function InitiatedPage() {
@@ -138,7 +163,7 @@ export default function InitiatedPage() {
         if (current !== variant) {
           trackFacebookEvent(
             "CustomizeProduct",
-            buildMetaParams(getPriceForVariant(variant, pricing)),
+            buildMetaParams(getPriceForVariant(variant, pricing, data?.short_name)),
           );
         }
         return variant;
@@ -216,8 +241,8 @@ export default function InitiatedPage() {
   );
 
   const selectedPrice = useMemo(
-    () => getPriceForVariant(selectVariant, pricing),
-    [selectVariant, pricing],
+    () => getPriceForVariant(selectVariant, pricing, data?.short_name),
+    [selectVariant, pricing, data?.short_name],
   );
 
   useEffect(() => {
@@ -630,7 +655,7 @@ export default function InitiatedPage() {
                   <div className="flex flex-col gap-1">
                     <p className="heading-medium !font-semibold text-surface-gray-normal">
                       {modalT("months", { count: 1 })} •{" "}
-                      {`₹${pricing?.onetime_1month_price ?? 139}`}{" "}
+                      {`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}{" "}
                       <Text className="line-through" variant="body-small">
                         {"₹1,499"}
                       </Text>
@@ -758,7 +783,7 @@ export default function InitiatedPage() {
                   <div className="flex flex-col gap-1">
                     <p className="heading-medium !font-semibold text-surface-gray-normal">
                       {modalT("months", { count: 12 })} •{" "}
-                      {`₹${pricing?.onetime_1year_price ?? 599}`}
+                      {`₹${getPriceForVariant("1year", pricing, data?.short_name)}`}
                     </p>
                     <div className="flex items-center gap-1">
                       <StarIcon />

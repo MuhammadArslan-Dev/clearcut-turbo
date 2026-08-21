@@ -18,7 +18,12 @@ export function useStreakTracker({ intervalMinutes = 5 }: Options = {}) {
       const now = Date.now();
       const diff = now - lastTracked.current;
 
-      const minutes = Math.floor(diff / 60000);
+      // Clamped to the backend's own `max:1440` validation rule (minutes in
+      // a day). A backgrounded/suspended tab can leave `lastTracked` stale
+      // for hours — JS timers don't run while suspended — so on resume this
+      // would otherwise compute a huge one-off value the backend rejects
+      // with a 422 (previously misreported as a 500; see StreakController).
+      const minutes = Math.min(Math.floor(diff / 60000), 1440);
 
       if (minutes > 0) {
         logMinutes(minutes);
