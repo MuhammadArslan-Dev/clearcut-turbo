@@ -354,6 +354,16 @@ export const usePreparationStore = create<PreparationState>((set) => ({
 
   selectSection: (sectionId) =>
     set((state) => {
+      // Re-selecting the already-active section is a no-op. Without this,
+      // every click — even on the current section — unconditionally wiped
+      // chapters/selectedChapter/selectedTopic below, and since the section
+      // id didn't actually change, useChapterData's query key stays the
+      // same and never re-fetches to repopulate them — the skeleton stays
+      // stuck until a genuinely different section is picked.
+      if (state.selectedSectionId === sectionId) {
+        return state;
+      }
+
       const paperId = state.selectedPaperId;
       const sections = paperId ? state.sectionsByPaperId?.[paperId] : undefined;
 
