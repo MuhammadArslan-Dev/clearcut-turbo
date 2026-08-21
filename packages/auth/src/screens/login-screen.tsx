@@ -36,6 +36,7 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
       loginSuccess,
       loading,
       screen,
+      userId,
       setUserId,
       setScreen,
       setLoading,
@@ -196,7 +197,14 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
       startLogin();
 
       try {
-        const res = await authApi.loginUser({ phone: number });
+        // Sends back the previous attempt's user_id, when there is one, so
+        // the backend can correct that pending (unverified) row's phone
+        // instead of leaving it behind as an orphan account and inserting a
+        // new one — see AuthController::login's `user_id` handling.
+        const res = await authApi.loginUser({
+          phone: number,
+          user_id: userId || undefined,
+        });
         const { data, message } = res?.data;
 
         // fire-and-forget — don't block OTP screen on analytics

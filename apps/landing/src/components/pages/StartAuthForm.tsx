@@ -316,7 +316,13 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     setLoading(true);
 
     try {
-      const res = await authApi.loginUser({ phone: number });
+      // Sends back the previous attempt's user_id, when there is one, so the
+      // backend can correct that pending (unverified) row's phone instead of
+      // leaving it behind as an orphan account and inserting a new one.
+      const res = await authApi.loginUser({
+        phone: number,
+        user_id: userId || undefined,
+      });
       const { data, message } = res?.data;
 
       logAmplitudeEvent("Verification Sent", {
@@ -360,7 +366,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
     setResendingOtp(true);
     try {
-      await authApi.loginUser({ phone });
+      await authApi.loginUser({ phone, user_id: userId || undefined });
       setResendTimer(RESEND_INTERVAL);
 
       logAmplitudeEvent("Verification Resent", {

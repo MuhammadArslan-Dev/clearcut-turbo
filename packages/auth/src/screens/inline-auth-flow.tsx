@@ -127,7 +127,13 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
       if (!PHONE_REGEX.test(number)) { setError("Enter valid phone number"); return; }
       setError(""); setSuccess(""); setLoading(true); setDisabled(false);
       try {
-        const res = await authApi.loginUser({ phone: number });
+        // Sends back the previous attempt's user_id, when there is one, so
+        // the backend can correct that pending (unverified) row's phone
+        // instead of leaving it behind as an orphan and inserting a new one.
+        const res = await authApi.loginUser({
+          phone: number,
+          user_id: userId || undefined,
+        });
         const { message, status } = res?.data;
         setIsNewUser(res?.data?.data?.is_new_user || false);
         setUserId(res?.data?.data?.user_id || "");
