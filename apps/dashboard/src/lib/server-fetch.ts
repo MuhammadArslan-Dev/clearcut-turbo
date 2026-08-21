@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { fetchWithRetry } from "./api/fetchWithRetry";
 
 // lib/api/server-fetch.ts
-const API_BASE_URL = process.env.LARAVEL_MAIN_BACKEND!;
+const API_BASE_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND!;
 
 export async function serverFetch<T>(
     path: string,

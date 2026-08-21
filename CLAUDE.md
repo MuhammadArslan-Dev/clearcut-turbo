@@ -155,7 +155,7 @@ Only `apps/dashboard` has a deployment config (`nixpacks.toml` at repo root) —
 
 ## Key Backend / External Paths (not in this repo)
 
-- **Laravel backend** (exam content, auth, payments): `NEXT_PUBLIC_API_URL`/`BACKEND_URL`/`API_URL` in blog/landing; `NEXT_PUBLIC_LARAVEL_MAIN_BACKEND` (client) and `LARAVEL_API_URL`/`LARAVEL_MAIN_BACKEND` (server route handlers) in dashboard. **These base URLs must include the trailing `/api`** — dashboard's clients concatenate paths directly (`${BASE}/v1/auth-user`), and `app/api/auth/login/route.ts` reads the server vars with a non-null assertion and no fallback, so an unset value silently fetches `undefined/auth/login`.
+- **Laravel backend** (exam content, auth, payments): `NEXT_PUBLIC_API_URL`/`BACKEND_URL`/`API_URL` in blog/landing; `NEXT_PUBLIC_LARAVEL_MAIN_BACKEND` in dashboard — a single canonical var covering both client code (`lib/api/client.ts`, `lib/api/apiClient.ts`) and server code (route handlers, `lib/server-fetch.ts`), since Next.js exposes `NEXT_PUBLIC_` vars in both contexts. (Previously split across five differently-named vars holding the same value — consolidated August 2026.) **These base URLs must include the trailing `/api`** — dashboard's clients concatenate paths directly (`${BASE}/v1/auth-user`), and `app/api/auth/login/route.ts` reads the var with a non-null assertion and no fallback, so an unset value silently fetches `undefined/auth/login`.
 - **Payload CMS** (landing's marketing content): `CMS_URL` in `apps/landing`.
 - **Amplitude** (dashboard product analytics): gated on `NEXT_PUBLIC_AMPLITUDE_ENABLED === "true"`, so local runs don't pollute product analytics.
 

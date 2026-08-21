@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = process.env.LARAVEL_MAIN_BACKEND!
+const API_BASE_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND!
 
 export async function GET() {
   try {

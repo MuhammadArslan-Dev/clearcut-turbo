@@ -39,7 +39,7 @@ No port is pinned, so Next takes the first free one starting at 3000 — check t
 See `.env.example` for the annotated list. The ones most likely to bite:
 
 - **Backend base URLs must include the trailing `/api`** — the API clients concatenate paths directly (`${BASE}/v1/auth-user`).
-- Several env names point at the same Laravel backend and there is no single canonical accessor. Match the existing variable for the layer you're editing: `NEXT_PUBLIC_LARAVEL_MAIN_BACKEND` for the client API layer, `LARAVEL_API_URL` / `LARAVEL_MAIN_BACKEND` for server route handlers and `src/lib/server-fetch.ts`, with `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_API_URL` in older spots. Only `LARAVEL_API_URL` and `NEXT_PUBLIC_API_BASE_URL` are zod-validated in `src/config/env.ts`; the rest are read raw. The server-side ones are read with a non-null assertion and no fallback, so unset means `app/api/auth/login/route.ts` silently fetches `undefined/auth/login`.
+- `NEXT_PUBLIC_LARAVEL_MAIN_BACKEND` is the single canonical backend base URL, used by both client code (`lib/api/client.ts`, `lib/api/apiClient.ts`) and server code (route handlers, `lib/server-fetch.ts`) — Next.js exposes `NEXT_PUBLIC_` vars in both contexts, so one var covers both. It used to be split across five differently-named vars; consolidated in August 2026. Several server-side reads use a non-null assertion and no fallback, so leaving it unset means `app/api/auth/login/route.ts` silently fetches `undefined/auth/login`.
 - `NEXT_PUBLIC_AMPLITUDE_ENABLED` must be exactly `"true"` to emit events, so local runs don't pollute product analytics.
 - `NEXT_PUBLIC_SENTRY_DSN` empty is a clean no-op (init is `enabled: Boolean(DSN)`).
 
