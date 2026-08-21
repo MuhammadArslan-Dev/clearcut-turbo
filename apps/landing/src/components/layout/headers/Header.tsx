@@ -17,7 +17,6 @@ export default function Header({ items = [], linkShow = true }: any) {
             width={190}
             height={160}
             priority
-  unoptimized
             sizes="(max-width: 768px) 120px, 190px"
           />
         </Link>

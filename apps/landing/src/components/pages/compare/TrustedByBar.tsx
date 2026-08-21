@@ -19,7 +19,7 @@ export default function TrustedByBar({ trustedBy }: { trustedBy?: MarketingProof
             const src = mediaUrl(entry.logo?.url);
             if (!src) return null;
             return (
-              <Image key={entry.name} src={src} alt={entry.name} width={120} height={32} unoptimized className="object-contain h-8 w-auto opacity-80" />
+              <Image key={entry.name} src={src} alt={entry.name} width={120} height={32} className="object-contain h-8 w-auto opacity-80" />
             );
           })}
         </div>

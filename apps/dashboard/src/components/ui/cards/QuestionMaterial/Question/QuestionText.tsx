@@ -1,7 +1,6 @@
 import Math from "@/components/features/mathjax/Math";
 import Text from "@clearcut/ui/text";
 import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
-import { ClassNames } from "@emotion/react";
 import Image from "next/image";
 import React from "react";
 

@@ -35,8 +35,7 @@ export default function GuaranteeBadge({ pY = "py-6" }: { pY?: string }) {
       }}
       className={clsx("flex flex-col md:flex-row items-center justify-center gap-5 px-1 md:p-4 cursor-pointer", pY)}
     >
-      <Image src={IMAGES.guaranteeBadge} alt=" money-back guarantee badge" width={150} height={120}
-  unoptimized/>
+      <Image src={IMAGES.guaranteeBadge} alt=" money-back guarantee badge" width={150} height={120} />
       <div>
         <Text as="p" variant="heading-medium" weight="semibold" className="text-center">
           {copy.title}

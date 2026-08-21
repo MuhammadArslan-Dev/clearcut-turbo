@@ -22,10 +22,8 @@ export default function Tick({
     // for early bandwidth with the real LCP image. Icons are never the LCP
     // element, so lazy-loading them is strictly correct.
     if (variant === "unchecked") {
-        return <Image src={IMAGES.tick.unchecked} alt="tick" width={width} height={height}
-  unoptimized/>;
+        return <Image src={IMAGES.tick.unchecked} alt="tick" width={width} height={height} />;
     }
 
-    return <Image src={IMAGES.tick.checked[color]} alt="tick" width={20} height={20}
-  unoptimized   />;
+    return <Image src={IMAGES.tick.checked[color]} alt="tick" width={20} height={20} />;
 }

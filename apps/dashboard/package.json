@@ -14,10 +14,9 @@
     "@amplitude/analytics-node": "^1.5.27",
     "@clearcut/design-tokens": "workspace:*",
     "@clearcut/i18n": "workspace:*",
+    "@clearcut/react-query": "workspace:*",
     "@clearcut/ui": "workspace:*",
     "@clearcut/utils": "workspace:*",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
@@ -46,11 +45,11 @@
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-breaks": "^4.0.0",
+    "sharp": "^0.35.3",
     "swiper": "^12.0.3",
     "swr": "^2.3.7",
     "zod": "^4.1.11",
-    "zustand": "^5.0.8",
-    "@clearcut/react-query": "workspace:*"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

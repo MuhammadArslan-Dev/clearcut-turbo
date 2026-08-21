@@ -19,6 +19,7 @@ const config: NextConfig = {
 
   experimental: {
     optimizeCss: true,
+    inlineCss: true, // inline critical CSS — trades stylesheet caching for faster first paint, worth it on a marketing page
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
 
@@ -34,6 +35,10 @@ const config: NextConfig = {
         protocol: "https",
         hostname:
           "cc-teaching-content-ind.s3.dualstack.ap-south-1.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "payloadcms.clearcutoff.in",
       },
       {
         protocol: "http",

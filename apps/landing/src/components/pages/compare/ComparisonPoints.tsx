@@ -56,7 +56,6 @@ export default function ComparisonPoints({
                         alt={competitorName}
                         width={36}
                         height={36}
-                        unoptimized
                         className="object-contain w-full h-full"
                       />
                     ) : (

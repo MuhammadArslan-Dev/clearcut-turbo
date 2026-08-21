@@ -439,7 +439,6 @@ function TestimonialsSection({ data }: any) {
             height={48}
             className="w-full h-full object-cover"
             priority
-            unoptimized
           />
         ),
         role: r.role,

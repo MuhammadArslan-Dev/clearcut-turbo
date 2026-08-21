@@ -15,6 +15,15 @@ const config: NextConfig = {
   // eslint: {
   //   ignoreDuringBuilds: true, // allows build even with lint errors
   // },
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: [
+      "lucide-react",
+      "@heroicons/react",
+      "recharts",
+      "framer-motion",
+    ],
+  },
   images: {
     remotePatterns: [
       {

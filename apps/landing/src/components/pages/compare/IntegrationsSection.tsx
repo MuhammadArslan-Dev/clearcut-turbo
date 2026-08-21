@@ -32,7 +32,7 @@ export default function IntegrationsSection({
           const src = mediaUrl(entry.logo?.url);
           if (!src) return null;
           return (
-            <Image key={entry.name} src={src} alt={entry.name} width={100} height={40} unoptimized className="object-contain h-10 w-auto" />
+            <Image key={entry.name} src={src} alt={entry.name} width={100} height={40} className="object-contain h-10 w-auto" />
           );
         })}
       </div>
