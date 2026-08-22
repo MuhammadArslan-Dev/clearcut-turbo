@@ -72,6 +72,16 @@ export function useQueryParams() {
       const queryString = params.toString();
       const url = queryString ? `${pathname}?${queryString}` : pathname;
 
+      // Writing the same value that's already there is a common pattern
+      // (an effect re-asserting a param) — router.replace()/push() still
+      // changes useSearchParams()'s identity even when the URL is
+      // byte-identical, which can re-trigger any effect that has this
+      // hook's setter in its dependency array, looping forever. Skipping
+      // a genuine no-op navigation is what breaks that loop.
+      if (url === `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`) {
+        return;
+      }
+
       if (replace) {
         router.replace(url, { scroll });
       } else {
@@ -94,6 +104,13 @@ export function useQueryParams() {
 
       const queryString = params.toString();
       const url = queryString ? `${pathname}?${queryString}` : pathname;
+
+      // See the same check in set() — skip a no-op navigation (e.g.
+      // removing keys that were never present) so it can't re-trigger an
+      // effect that depends on this setter's identity.
+      if (url === `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`) {
+        return;
+      }
 
       if (replace) {
         router.replace(url, { scroll });

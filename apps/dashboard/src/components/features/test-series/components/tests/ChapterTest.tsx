@@ -117,10 +117,18 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     return () => setIndexSections(null);
   }, [sections, setIndexSections]);
 
-  // Auto-switch to sectional-tests if chapter test data is empty after loading
+  // Auto-switch to sectional-tests if chapter test data is empty after loading.
+  // Bug history: this used to set testType back to "chapter-tests" — the
+  // same value already active (this component only renders when it is) —
+  // which is a no-op query-param write in intent but not in practice:
+  // useQueryParams.set() calls router.replace() unconditionally, which
+  // changes useSearchParams()'s identity, which recreates setQueryParam,
+  // which re-triggers this effect (it's in the dependency array), forever.
+  // Setting the actually-different value here is what stops that loop —
+  // once testType flips to "sectional-tests", this component unmounts.
   useEffect(() => {
     if (!isLoading && !error && data && sections.length === 0) {
-      setQueryParam({ testType: "chapter-tests" });
+      setQueryParam({ testType: "sectional-tests" });
     }
   }, [isLoading, error, data, sections.length, setQueryParam]);
 
