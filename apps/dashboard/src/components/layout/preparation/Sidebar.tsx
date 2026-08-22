@@ -228,20 +228,34 @@ export default function Sidebar() {
       hasSettledOnce.current = true;
     }
 
+    // Cancel the in-flight/pending call from the previous selection —
+    // without this, a fast follow-up selection (e.g. topic auto-settling
+    // right after chapter selection) leaves the earlier request racing the
+    // new one, and it eventually fails as "unreachable" (or, worse, could
+    // land after the newer one and overwrite it with stale data).
+    const controller = new AbortController();
+
     const timeoutId = setTimeout(() => {
       // Fire-and-forget: a dead/slow backend must not reject unhandled and
       // take the whole preparation page down with it. Swallowed for the UI,
       // but still reported — a silently failing resume-state is exactly the
-      // kind of bug that otherwise goes unnoticed for weeks.
-      setResumeState({
-        course_id: String(course?.group_code),
-        paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
-        section_id:
-          selectedSectionId != null ? String(selectedSectionId) : null,
-        chapter_id:
-          selectedChapter?.id != null ? String(selectedChapter.id) : null,
-        topic_id: selectedTopic?.id ?? null,
-      }).catch((err) => {
+      // kind of bug that otherwise goes unnoticed for weeks. An aborted
+      // request (superseded or unmounted) isn't a real failure, so it's not
+      // reported the same way.
+      setResumeState(
+        {
+          course_id: String(course?.group_code),
+          paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
+          section_id:
+            selectedSectionId != null ? String(selectedSectionId) : null,
+          chapter_id:
+            selectedChapter?.id != null ? String(selectedChapter.id) : null,
+          topic_id: selectedTopic?.id ?? null,
+        },
+        controller.signal,
+      ).catch((err) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+
         logger.error(err, {
           tags: { type: "background_sync", module: "preparation-sidebar" },
           extra: { action: "setResumeState", courseId: course?.group_code },
@@ -249,7 +263,10 @@ export default function Sidebar() {
       });
     }, 500);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [
     course?.group_code,
     selectedPaperId,

@@ -92,13 +92,16 @@ export async function getLearningProgressByTopic(
 /**
  * Create or update resume state
  */
-export async function setResumeState(payload: {
-  course_id: string|number;
-  paper_id?: string | number | null;
-  section_id?: string | number | null;
-  chapter_id?: string | number | null;
-  topic_id?: string | number | null;
-}): Promise<{ message: string; data: any }> {
+export async function setResumeState(
+  payload: {
+    course_id: string|number;
+    paper_id?: string | number | null;
+    section_id?: string | number | null;
+    chapter_id?: string | number | null;
+    topic_id?: string | number | null;
+  },
+  signal?: AbortSignal,
+): Promise<{ message: string; data: any }> {
   return apiFetch<{ message: string; data: any }>(
     "/v2/interactions/resume-state",
     {
@@ -108,6 +111,7 @@ export async function setResumeState(payload: {
         Authorization: `Bearer ${token()}`,
       },
       body: JSON.stringify(payload),
+      signal,
     },
   );
 }

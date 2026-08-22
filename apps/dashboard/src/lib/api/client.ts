@@ -48,6 +48,13 @@ export async function apiFetch<T>(
   try {
     res = await fetchWithRetry(url, { ...options, headers });
   } catch (cause) {
+    // An intentionally cancelled request (caller's AbortController) isn't a
+    // server-unreachable failure — don't brand it as one or breadcrumb it,
+    // just let the caller's own abort handling deal with it silently.
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw cause;
+    }
+
     // Server unreachable: DNS failure, connection refused, CORS, offline.
     // Previously this surfaced as a bare "TypeError: Failed to fetch" with no
     // indication of which call failed.
