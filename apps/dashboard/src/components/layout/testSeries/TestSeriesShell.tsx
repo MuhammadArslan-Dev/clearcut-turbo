@@ -19,13 +19,20 @@ import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
+import { useTestListDataStore } from "@/components/features/test-series/store/useTestListDataStore";
+import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
+import { ListIcon } from "@/components/ui/icons";
+import Text from "@clearcut/ui/text";
+import { useTranslations } from "next-intl";
 
 export default function TestSeriesShell({ children }: { children: ReactNode }) {
   const { set } = useQueryParams();
 
    useStreakTracker({ intervalMinutes: 1 });
 
-  const { isOpen, stack, reset } = useTestSeriesModalStore();
+  const { isOpen, stack, reset, open } = useTestSeriesModalStore();
+  const { indexSections } = useTestListDataStore();
+  const t = useTranslations("");
   useEffect(() => {
     set({
       testType: "chapter-tests",
@@ -66,11 +73,38 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
         <Sidebar />
 
         {/* Only this part scrolls */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto pb-24 md:pb-0">
           {children}
         </main>
         {/* <Footer /> */}
       </div>
+
+      {/* Mobile-only: Sidebar (and the Index button/PaywallFloatingWidget it
+          carries) is `hidden md:flex` — the test list is the whole screen
+          on mobile, there's no separate sidebar view to show them in like
+          preparation's mobile layout has. Reproduced here instead, fixed to
+          the bottom, so mobile users get the same access. */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 space-y-2 px-2"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+      >
+        {!!indexSections?.length && (
+          <div className="flex justify-center w-full">
+            <button
+              type="button"
+              onClick={() => open("section-index")}
+              className="w-[115px] px-3 py-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
+            >
+              <ListIcon size={20} variant="lines" />
+              <Text className="text-white" variant="heading-small" weight="semibold">
+                {t("common.index")}
+              </Text>
+            </button>
+          </div>
+        )}
+        <PaywallFloatingWidget />
+      </div>
+
       {isOpen && activeModal === "attempt-history" && <AttemptHistoryModal />}
       {isOpen && activeModal === "pre-test-confirmation" && (
         <PreTestConfirmationModal />

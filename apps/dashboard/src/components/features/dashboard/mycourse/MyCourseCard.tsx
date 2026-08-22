@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import React, { useMemo } from "react";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 
 export interface MyCOurseCardProps {
   price?: string | React.ReactNode | null;
@@ -19,6 +20,9 @@ export interface MyCOurseCardProps {
   examData?: string | number | null;
   rating?: string | number | null;
   badge?: string;
+  // Exam `short_name` — drives the per-exam price override (e.g. HPTET)
+  // shown in `myCourses.priceNote`. See @/lib/payment/examPriceOverrides.
+  examShortName?: string | null;
 
   // progress bar
   topics?: {
@@ -50,6 +54,7 @@ export default function MyCourseCard({
   examData,
   rating,
   badge,
+  examShortName,
   topics,
   tests,
   continueClick,
@@ -67,6 +72,13 @@ export default function MyCourseCard({
   });
 
   const examPrice = useMemo(() => JSON.parse(price ?? "{}") ?? 0, [price]);
+
+  // Per-exam override (e.g. HPTET → ₹149) from the same source of truth as
+  // payment/initiated — see @/lib/payment/examPriceOverrides.
+  const monthlyPrice = useMemo(
+    () => getPriceForVariant("1month", null, examShortName ?? undefined),
+    [examShortName],
+  );
   return (
     <Card
       bgcolor={bgColor}
@@ -232,11 +244,8 @@ export default function MyCourseCard({
                   <span>
                     {" "}
                     {t("myCourses.priceNote", {
-                      price: 99,
+                      price: monthlyPrice,
                     })}
-                    {/* {t("myCourses.priceNote", {
-                      price: examPrice?.final_price,
-                    })} */}
                   </span>
                 </p>
                 <p className="body-medium !font-normal text-surface-gray-muted">

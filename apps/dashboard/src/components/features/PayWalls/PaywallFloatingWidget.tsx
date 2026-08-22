@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { ChevronIcon } from "@/components/ui/icons";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 
 export default function PaywallFloatingWidget() {
   const { course } = useGetCurrentCourseStore();
@@ -23,6 +24,13 @@ export default function PaywallFloatingWidget() {
 
   const examTitle = useMemo(
     () => course?.exam?.short_name ?? "",
+    [course?.exam?.short_name],
+  );
+
+  // Per-exam override (e.g. HPTET → ₹149) from the same source of truth as
+  // payment/initiated — see @/lib/payment/examPriceOverrides.
+  const monthlyPrice = useMemo(
+    () => getPriceForVariant("1month", null, course?.exam?.short_name),
     [course?.exam?.short_name],
   );
 
@@ -65,7 +73,7 @@ export default function PaywallFloatingWidget() {
                       weight="semibold"
                       className="text-surface-gray-normal"
                     >
-                      ₹99
+                      {`₹${monthlyPrice}`}
                     </Text>
                     /month • All subjects
                   </Text>

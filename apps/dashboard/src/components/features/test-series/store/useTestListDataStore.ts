@@ -1,4 +1,4 @@
-import { TestsList } from "@/lib/tests/getExam";
+import { SectionalSection, TestsList } from "@/lib/tests/getExam";
 import { create } from "zustand";
 import { Paper } from "../../preparation/types/types";
 
@@ -49,6 +49,13 @@ interface TestListDataStore {
   recommendedTests: RecommendedTestData | null;
   progressData: ProgressData | null;
 
+  // Sections for whichever test-series tab is currently mounted
+  // (chapter-tests or sectional-tests — full-length-papers has no sections).
+  // Powers the shell-level "Index" button/modal, which lives outside
+  // ChapterTest/SectionalTest and otherwise has no access to their data.
+  indexSections: SectionalSection[] | null;
+  selectedSectionId: number | string | null;
+
   setData: (
     recommendedTests: RecommendedTestData | null,
     progressData: ProgressData | null,
@@ -59,6 +66,8 @@ interface TestListDataStore {
   setPaper: (paper: Paper | null) => void;
   setDefaultPaperId: (endpoint: string, paperId: number | null) => void;
   setError: (error: boolean) => void;
+  setIndexSections: (sections: SectionalSection[] | null) => void;
+  setSelectedSectionId: (id: number | string | null) => void;
 
   refetch: () => Promise<void>;
 }
@@ -74,6 +83,8 @@ export const useTestListDataStore = create<TestListDataStore>((set) => ({
 
   recommendedTests: null,
   progressData: null,
+  indexSections: null,
+  selectedSectionId: null,
 
   setPapers: (papers) => set({ papers }),
   setPaper: (paper) => set({ paper }),
@@ -81,6 +92,8 @@ export const useTestListDataStore = create<TestListDataStore>((set) => ({
     set((state) => ({
       defaultPaperIdByEndpoint: { ...state.defaultPaperIdByEndpoint, [endpoint]: paperId },
     })),
+  setIndexSections: (indexSections) => set({ indexSections }),
+  setSelectedSectionId: (selectedSectionId) => set({ selectedSectionId }),
 
   setData: (recommendedTests, progressData) =>
     set({

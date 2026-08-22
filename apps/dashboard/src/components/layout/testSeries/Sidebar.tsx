@@ -7,6 +7,7 @@ import Text from "@clearcut/ui/text";
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
 import {
   ChevronIcon,
+  ListIcon,
   PenIcon,
   SheildIcon,
 } from "@/components/ui/icons";
@@ -22,14 +23,17 @@ import {
 import { useTestSeriesModalStore } from "@/components/features/test-series/store/useTestSeriesModalStore";
 import { useTranslations } from "next-intl";
 import DiscountBadgeIcon from "@/components/ui/icons/discount-badge-icon";
+import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 
 /* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
 export default function Sidebar() {
-  const { recommendedTests, progressData, isLoading } =
+  const { recommendedTests, progressData, indexSections } =
     useTestListDataStore();
+  const { open } = useTestSeriesModalStore();
+  const t = useTranslations("");
 
   // Show skeleton while loading
   if (!recommendedTests) return <SidebarSkeleton />;
@@ -52,6 +56,34 @@ export default function Sidebar() {
         )}
 
         <ClearCutoffSection />
+      </div>
+
+      <div
+        className="space-y-2 z-50 w-full"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        {/* Index only makes sense for chapter-tests / sectional-tests —
+            full-length-papers has no sections, so indexSections stays empty. */}
+        {!!indexSections?.length && (
+          <div className="flex justify-center w-full">
+            <button
+              type="button"
+              onClick={() => open("section-index")}
+              className="w-[115px] px-3 py-2 md:py-2 md:px-4 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
+            >
+              <ListIcon size={20} variant="lines" />
+
+              <Text
+                className="text-white"
+                variant="heading-small"
+                weight="semibold"
+              >
+                {t("common.index")}
+              </Text>
+            </button>
+          </div>
+        )}
+        <PaywallFloatingWidget />
       </div>
     </aside>
   );

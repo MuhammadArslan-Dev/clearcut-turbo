@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@clearcut/ui/button";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import TestCard from "../cards/TestCard";
 import Text from "@clearcut/ui/text";
 import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/SectionHeaderCard";
@@ -14,7 +14,6 @@ import {
   getChapterTestList,
   SectionalTestItem,
   SectionalTestV2Data,
-  SectionalSection,
   ChapterItem,
 } from "@/lib/tests/getExam";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,10 +49,11 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     setPapers,
     defaultPaperIdByEndpoint,
     setDefaultPaperId,
+    setIndexSections,
+    selectedSectionId,
+    setSelectedSectionId,
   } = useTestListDataStore();
   const { set: setQueryParam } = useQueryParams();
-
-  const [selectedSection, setSelectedSection] = useState<SectionalSection | null>(null);
 
   /* ================= QUERY ================= */
 
@@ -96,12 +96,26 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
 
   // Reset to null when paper changes; auto-select below will pick first section
   useEffect(() => {
-    setSelectedSection(null);
-  }, [paper?.id]);
+    setSelectedSectionId(null);
+  }, [paper?.id, setSelectedSectionId]);
 
   /* ================= DERIVED DATA ================= */
 
   const sections = useMemo(() => data?.sections ?? [], [data]);
+
+  const selectedSection = useMemo(
+    () => sections.find((s) => s.id === selectedSectionId) ?? null,
+    [sections, selectedSectionId],
+  );
+
+  // Shared store so the shell-level Index modal can list/jump between
+  // sections — this component has no other way to expose its data to it.
+  // Cleared on unmount so switching to a tab with no sections (or nothing
+  // loaded yet) doesn't leave the Index button showing stale data.
+  useEffect(() => {
+    setIndexSections(sections.length ? sections : null);
+    return () => setIndexSections(null);
+  }, [sections, setIndexSections]);
 
   // Auto-switch to sectional-tests if chapter test data is empty after loading
   useEffect(() => {
@@ -112,10 +126,10 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
 
   // Auto-select first section once sections load
   useEffect(() => {
-    if (sections.length > 0 && !selectedSection) {
-      setSelectedSection(sections[0]);
+    if (sections.length > 0 && !selectedSectionId) {
+      setSelectedSectionId(sections[0].id);
     }
-  }, [sections, selectedSection]);
+  }, [sections, selectedSectionId, setSelectedSectionId]);
 
   const sectionItems = useMemo<TabItem[]>(
     () => sections.map((s) => ({ id: String(s.id), label: s.name })),
@@ -380,7 +394,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
           active={selectedSection?.id?.toString() ?? null}
           changeSection={(id) => {
             const section = sections.find((s) => String(s.id) === id);
-            if (section) setSelectedSection(section);
+            if (section) setSelectedSectionId(section.id);
           }}
         />
       </div>

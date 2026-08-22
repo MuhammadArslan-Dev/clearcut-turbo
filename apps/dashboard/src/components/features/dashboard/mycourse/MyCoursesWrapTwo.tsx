@@ -50,6 +50,7 @@ function CourseSlideCard({
       bgColor="bg-[#0053A2]"
       price={exam.exam.price}
       badge={exam.status}
+      examShortName={exam.exam?.short_name}
       courseName={`${exam.exam?.short_name} Exam`}
       logo={exam.exam?.logo_url}
       maxWidth="400px"
@@ -112,6 +113,7 @@ export default function MyCoursesWrapTwo({
     bgColor: "bg-[#0053A2] !important",
     price: exam?.price,
     badge: activeExam?.status,
+    examShortName: exam?.short_name,
     courseName: `${exam?.short_name} Exam`,
     logo: exam?.logo_url,
 

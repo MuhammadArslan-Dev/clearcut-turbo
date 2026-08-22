@@ -29,6 +29,7 @@ import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
 import StarIcon from "@/components/ui/icons/star-icon";
 import { PaymentType } from "@/lib/payment/payment";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useRouter } from "@/i18n/navigation";
 
 export const FALLBACK_IMAGE =
@@ -94,11 +95,18 @@ export default function PreparationPaywall() {
     [data?.logo_url],
   );
 
+  // Per-exam override (e.g. HPTET → ₹799) from the same source of truth as
+  // payment/initiated — see @/lib/payment/examPriceOverrides.
+  const oneYearPrice = useMemo(
+    () => getPriceForVariant("1year", null, data?.short_name),
+    [data?.short_name],
+  );
+
   /* ---------------------------------- payment hook ---------------------------------- */
   const { handlePayment, loading } = useRazorpayPayment({
     examId: data?.id!,
     examName: data?.short_name!,
-    price: 599, // 1year plan price
+    price: oneYearPrice, // 1year plan price
     // price:
     //   selectVariant === "6months"
     //     ? Price?.final_price
@@ -275,7 +283,7 @@ export default function PreparationPaywall() {
                       <div className="flex flex-col gap-1">
                         <p className="heading-medium !font-semibold text-surface-gray-normal">
                           {modalT("months", { count: 12 })} •{" "}
-                          {"₹599"}
+                          {`₹${oneYearPrice}`}
                         </p>
                         <div className="flex items-center gap-1">
                           <StarIcon />
@@ -334,7 +342,7 @@ export default function PreparationPaywall() {
                         />
                       }
                       text={modalT("cta", {
-                        exam: "₹599",
+                        exam: `₹${oneYearPrice}`,
                         // exam:
                         //   selectVariant === "6months"
                         //     ? "₹" + Price?.final_price

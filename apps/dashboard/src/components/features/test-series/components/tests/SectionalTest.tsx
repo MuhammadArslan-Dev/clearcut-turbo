@@ -40,6 +40,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     setPapers,
     defaultPaperIdByEndpoint,
     setDefaultPaperId,
+    setIndexSections,
   } = useTestListDataStore();
   const { get } = useQueryParams();
   const testType = get("testType");
@@ -68,6 +69,16 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   /* ================= DERIVED DATA ================= */
 
   const sections = useMemo(() => data?.sections ?? [], [data]);
+
+  // Shared store so the shell-level Index modal can list sections and
+  // scroll to one — SectionalTest has no tabs (all sections render inline),
+  // so "jumping" here means scrolling, unlike ChapterTest's tab switch.
+  // Cleared on unmount so switching to a tab with no sections (or nothing
+  // loaded yet) doesn't leave the Index button showing stale data.
+  useEffect(() => {
+    setIndexSections(sections.length ? sections : null);
+    return () => setIndexSections(null);
+  }, [sections, setIndexSections]);
 
   const totalSections = sections.length;
 
@@ -312,7 +323,10 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
           <React.Fragment key={section.id}>
             <div className="h-0.5 bg-gray-200" />
 
-            <div className="flex flex-col gap-2">
+            <div
+              id={`test-series-section-${section.id}`}
+              className="flex flex-col gap-2 scroll-mt-20"
+            >
               <SectionHeaderCard
                 breadcrumb={
                   <div className="flex gap-1">
