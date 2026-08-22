@@ -223,46 +223,53 @@ export default function TestCard({
             <Metric icon={<SandTimerIcon size={16} />} metric={time} />
           </div>
 
-          <div
-            className={clsx(
-              "flex items-start",
-              score ? " justify-between" : " justify-end",
-            )}
-          >
-            <Metric
-              icon={<WarningCircleIcon color="#768EA7" size={16} />}
-              metric={score}
-            />
-            {viewReport.isShow && (
-              <div className="block md:hidden min-w-[50px] flex items-end">
-                <div className="flex flex-col gap-2">
-                  <Button
-                    sx={{
-                      borderRadius: "50px",
-                    }}
-                    variant="soft"
-                    size="xs"
-                    color="gray"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      viewReport.onClick();
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="">
-                        {viewReport.text ?? "View Report"}
-                      </span>
-                      <ChartSuccessBarIcon
-                        color="var(--icon-gray-normal)"
-                        width={12}
-                        variant="graph-bar"
-                      />{" "}
-                    </div>
-                  </Button>
+          {/* Skip this row entirely when there's nothing to show (locked or
+              not-yet-completed test on mobile) — score is empty and the
+              mobile View Report button doesn't apply, but the row's own
+              space-y-2 top margin still applied even with no visible
+              content, leaving a dead gap under the marks/time row. */}
+          {(score || viewReport.isShow) && (
+            <div
+              className={clsx(
+                "flex items-start",
+                score ? " justify-between" : " justify-end",
+              )}
+            >
+              <Metric
+                icon={<WarningCircleIcon color="#768EA7" size={16} />}
+                metric={score}
+              />
+              {viewReport.isShow && (
+                <div className="block md:hidden min-w-[50px] flex items-end">
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      sx={{
+                        borderRadius: "50px",
+                      }}
+                      variant="soft"
+                      size="xs"
+                      color="gray"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        viewReport.onClick();
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="">
+                          {viewReport.text ?? "View Report"}
+                        </span>
+                        <ChartSuccessBarIcon
+                          color="var(--icon-gray-normal)"
+                          width={12}
+                          variant="graph-bar"
+                        />{" "}
+                      </div>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

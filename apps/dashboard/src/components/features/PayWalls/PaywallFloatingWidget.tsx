@@ -129,7 +129,7 @@ export default function PaywallFloatingWidget() {
                 <ChevronIcon size={20} type="double" variant="right" color="white" />
               }
             >
-              Unlock {examTitle} course to finish syllabus
+              Unlock {examTitle} course
             </Button>
           </div>
         </Card>
