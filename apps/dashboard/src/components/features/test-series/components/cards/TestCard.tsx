@@ -16,6 +16,7 @@ import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChi
 import { Button } from "@clearcut/ui/button";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -135,10 +136,19 @@ export default function TestCard({
     colorKey = "success",
     custom = false,
   } = counter || {};
+  const isMobile = useIsMobile();
+
+  // Desktop has two explicit buttons once a test is completed (Start Test/
+  // Again + View Report in the Actions column), so tapping the card body
+  // itself is a no-op there — you're expected to pick a button. Mobile
+  // hides that column entirely and only surfaces View Report as its own
+  // button, so the card itself has to stay the tap target for retaking,
+  // same as it already is before the test is ever attempted.
+  const cardClickable = !viewReport.isShow || isMobile;
 
   return (
     <div
-      onClick={viewReport.isShow ? () => {} : () => startTest?.onClick()}
+      onClick={cardClickable ? () => startTest?.onClick() : () => {}}
       className={clsx(
         "relative rounded-md px-3 py-2",
         containerClassName,
