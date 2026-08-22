@@ -171,6 +171,7 @@ declare const messages: {
     "confirm_language": "Confirm Language",
     "previous_topic": "Previous Topic",
     "next_topic": "Next Topic",
+    "unlock": "Unlock",
     "logout": "Logout"
   },
   "profile": {

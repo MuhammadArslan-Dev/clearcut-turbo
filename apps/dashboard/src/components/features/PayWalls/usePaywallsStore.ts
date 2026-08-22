@@ -20,7 +20,8 @@ export type PaywallSource =
   | "full_test_card_clicked"
   | "sectional_test_card_clicked"
   | "test_series_card_clicked"
-  | "payment_failed_retry_clicked";
+  | "payment_failed_retry_clicked"
+  | "next_button_clicked";
 interface EditCourseState {
   isOpen: boolean;
   data: Exam | undefined | null;

@@ -126,6 +126,71 @@ const flattenTopics = (topics: Topic[]): Topic[] => {
 
   return result;
 };
+
+// Whether `goToNextTopic()` would land the user in a locked chapter — used
+// by BottomBar to swap the "Next" button for an "Unlock" paywall trigger
+// instead of silently letting a free-plan user click through into content
+// they shouldn't have access to (locking is per-chapter, see `Chapter.locked`).
+export const isNextTopicLocked = (state: PreparationState): boolean => {
+  const { selectedChapter, selectedTopic, chapters } = state;
+
+  if (!chapters || !selectedChapter || !selectedTopic) return false;
+
+  const flatTopics = flattenTopics(selectedChapter.topics);
+  const topicIndex = getIndex(flatTopics, selectedTopic);
+
+  // Next topic is still inside the current chapter — already unlocked,
+  // since the user is viewing it.
+  if (topicIndex + 1 < flatTopics.length) return false;
+
+  // Crossing into the next chapter — locked if that chapter is locked.
+  const chapterIndex = getIndex(chapters, selectedChapter);
+  if (chapterIndex + 1 < chapters.length) {
+    return !!chapters[chapterIndex + 1].locked;
+  }
+
+  // Crossing into the next section — its chapters aren't loaded yet, so
+  // there's no `locked` flag to read. Only one chapter total is ever free,
+  // so a fresh section's first chapter is never free either — treat as
+  // locked rather than letting the user slip through unchecked.
+  return true;
+};
+
+// True only at the very first topic of the very first chapter of the very
+// first section — the one spot where BottomBar should hide "Previous"
+// entirely instead of rendering a button that's a silent no-op.
+export const isAtFirstTopicOverall = (state: PreparationState): boolean => {
+  const {
+    selectedPaperId,
+    selectedSectionId,
+    selectedChapter,
+    selectedTopic,
+    chapters,
+    sectionsByPaperId,
+  } = state;
+
+  if (
+    !selectedPaperId ||
+    !selectedSectionId ||
+    !chapters ||
+    !selectedChapter ||
+    !selectedTopic
+  ) {
+    return false;
+  }
+
+  const flatTopics = flattenTopics(selectedChapter.topics);
+  if (getIndex(flatTopics, selectedTopic) > 0) return false;
+
+  if (getIndex(chapters, selectedChapter) > 0) return false;
+
+  const sections = sectionsByPaperId[selectedPaperId];
+  const sectionIndex =
+    sections?.findIndex((s) => s.id === selectedSectionId) ?? -1;
+
+  return sectionIndex <= 0;
+};
+
 type TopicField = "videoWatched" | "notesTaken" | "miniTestDone";
 
 export type TopicProgress = {

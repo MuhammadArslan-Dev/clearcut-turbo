@@ -1,5 +1,6 @@
 "use client";
-import { ChevronIcon, CircleIcon } from "@/components/ui/icons";
+import { ChevronIcon, CircleIcon, LockIcon } from "@/components/ui/icons";
+import CounterCard from "@/components/ui/cards/CounterCard";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreparationModalStore } from "@/components/features/preparation/store/usePreparationModalStore";
 import { Button } from "@clearcut/ui/button";
@@ -8,8 +9,11 @@ import React, { useMemo } from "react";
 import {
   getNextTopic,
   getPrevTopic,
+  isAtFirstTopicOverall,
+  isNextTopicLocked,
   usePreparationStore,
 } from "@/components/features/preparation/store/usePreparationDataStore";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { limitChars } from "@clearcut/utils/text-limit";
 import Text from "@clearcut/ui/text";
@@ -35,6 +39,9 @@ export default function BottomBar() {
   const { goToNextTopic, goToPrevTopic } = usePreparationStore();
   const nextTopic = usePreparationStore(getNextTopic);
   const prevTopic = usePreparationStore(getPrevTopic);
+  const nextTopicLocked = usePreparationStore(isNextTopicLocked);
+  const isFirstTopicOverall = usePreparationStore(isAtFirstTopicOverall);
+  const { open: openPaywall } = usePaywallsStore();
   const changeP = useTranslations("modals.changePaper");
   const addP = useTranslations("modals.addPaper");
   const actions = useTranslations("actions");
@@ -187,30 +194,32 @@ export default function BottomBar() {
 
         {/* <div className="w-2 bg-gray-300"></div> */}
 
-        <div className="flex flex-col items-center h-full">
-          <div>
-            <Button
-              onClick={goToPrevTopic}
-              sx={{ padding: "0px 12px 0px 10px", borderRadius: "50px" }}
-              variant="soft"
-              size="sm"
-              color="gray"
-            >
-              <div className="flex items-center gap-1.5">
-                <ChevronIcon type="double" variant="left" color="black" />
-                <span className="body-small !font-semibold block md:hidden">
-                  Prev
-                </span>
-                <span className="body-small !font-semibold hidden md:block">
-                  {actions("previous_topic")}
-                </span>
-              </div>
-            </Button>
+        {!isFirstTopicOverall && (
+          <div className="flex flex-col items-center h-full">
+            <div>
+              <Button
+                onClick={goToPrevTopic}
+                sx={{ padding: "0px 12px 0px 10px", borderRadius: "50px" }}
+                variant="soft"
+                size="sm"
+                color="gray"
+              >
+                <div className="flex items-center gap-1.5">
+                  <ChevronIcon type="double" variant="left" color="black" />
+                  <span className="body-small !font-semibold block md:hidden">
+                    Prev
+                  </span>
+                  <span className="body-small !font-semibold hidden md:block">
+                    {actions("previous_topic")}
+                  </span>
+                </div>
+              </Button>
+            </div>
+            <h6 className="body-medium truncate hidden md:block w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
+              {prevTopic ? limitChars(prevTopic.name, 17) : ""}
+            </h6>
           </div>
-          <h6 className="body-medium truncate hidden md:block w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-            {prevTopic ? limitChars(prevTopic.name, 17) : ""}
-          </h6>
-        </div>
+        )}
 
         {showTopicTestButton && (
           <div className="max-w-[200px] w-full">
@@ -229,26 +238,60 @@ export default function BottomBar() {
 
         <div className="flex items-center flex-col">
           <div>
-            <Button
-              sx={{ padding: "6px 12px 5px 12px", borderRadius: "50px" }}
-              onClick={goToNextTopic}
-              variant="soft"
-              size="sm"
-              color="gray"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="body-small !font-semibold block md:hidden">
-                  Next
-                </span>
-                <span className="body-small !font-semibold hidden md:block">
-                  {actions("next_topic")}
-                </span>
-                <ChevronIcon variant="right" type="double" color="black" />
-              </div>
-            </Button>
+            {nextTopicLocked ? (
+              // Same "Unlock" pill design as the locked chapter card in
+              // Sidebar.tsx — keeps the paywall trigger visually consistent
+              // wherever it appears.
+              <CounterCard
+                width="w-[100px]"
+                height="h-8"
+                borderColor="border-[#0083ff] border-2"
+                onClick={() => {
+                  if (course?.exam) {
+                    openPaywall(
+                      "topic-locked-modal",
+                      course.exam,
+                      "next_button_clicked",
+                      course,
+                    );
+                  }
+                }}
+                value={
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <Text
+                      as="p"
+                      variant="body-medium"
+                      weight="normal"
+                      color="primary-normal"
+                    >
+                      {actions("unlock")}
+                    </Text>
+                    <LockIcon size={20} color="#0083ff" />
+                  </div>
+                }
+              />
+            ) : (
+              <Button
+                sx={{ padding: "6px 12px 5px 12px", borderRadius: "50px" }}
+                onClick={goToNextTopic}
+                variant="soft"
+                size="sm"
+                color="gray"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="body-small !font-semibold block md:hidden">
+                    Next
+                  </span>
+                  <span className="body-small !font-semibold hidden md:block">
+                    {actions("next_topic")}
+                  </span>
+                  <ChevronIcon variant="right" type="double" color="black" />
+                </div>
+              </Button>
+            )}
           </div>
           <h6 className="body-medium hidden md:block  truncate w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-            {nextTopic ? limitChars(nextTopic.name, 17) : ""}
+            {nextTopicLocked ? "" : nextTopic ? limitChars(nextTopic.name, 17) : ""}
           </h6>
         </div>
       </div>
