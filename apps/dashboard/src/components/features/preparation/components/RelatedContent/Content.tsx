@@ -27,6 +27,7 @@ import { useTranslations } from "next-intl";
 import { toLower } from "@clearcut/utils/text-format";
 import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
+import { logger } from "@/lib/sentry/sentry-logger";
 import PagesIcon from "@/components/ui/icons/page-icon";
 import BellIcon from "@/components/ui/icons/Bell-icon";
 import PieChartIcon from "@/components/ui/icons/pie-chart-icon";
@@ -222,7 +223,17 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     createLearningInteraction({
       topic_id: Number(selectedTopic?.id),
       interaction_type: "notes_taken",
-    }).then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }));
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
+      .catch((err) => {
+        logger.error(err, {
+          tags: { type: "background_sync", module: "related-content-notes" },
+          extra: {
+            action: "createLearningInteraction",
+            topicId: selectedTopic?.id,
+          },
+        });
+      });
 
     trackEvent("Topic Status Changed", {
       topic_name: selectedTopic?.name!,

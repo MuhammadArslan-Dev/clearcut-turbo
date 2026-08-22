@@ -10,6 +10,7 @@ import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
 import { useQueryClient } from "@tanstack/react-query";
 import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
+import { logger } from "@/lib/sentry/sentry-logger";
 import { ContentItem, VideoContent } from "../../types/topic-content-type";
 import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
@@ -62,7 +63,17 @@ export default function VideoWrapper() {
     createLearningInteraction({
       topic_id: Number(selectedTopic.id),
       interaction_type: "video_watched",
-    }).then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }));
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
+      .catch((err) => {
+        logger.error(err, {
+          tags: { type: "background_sync", module: "main-video" },
+          extra: {
+            action: "createLearningInteraction",
+            topicId: selectedTopic.id,
+          },
+        });
+      });
 
     markTopicFieldDone(Number(selectedTopic.id), "videoWatched");
 
