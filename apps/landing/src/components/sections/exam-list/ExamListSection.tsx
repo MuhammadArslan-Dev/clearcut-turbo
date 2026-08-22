@@ -35,8 +35,13 @@ export default async function ExamListSection({
         <div className="flex flex-col gap-12">
           <ExamListHeader />
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,350px))] justify-center gap-6">
-            {STATIC_EXAMS.map((item: Exam) => (
-              <CourseCard key={item.exam_id} data={item} locale={locale} />
+            {STATIC_EXAMS.map((item: Exam, index) => (
+              <CourseCard
+                key={item.exam_id}
+                data={item}
+                locale={locale}
+                priority={index === 0}
+              />
             ))}
           </div>
           <StudentTrustBlock locale={locale} />

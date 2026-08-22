@@ -52,9 +52,13 @@ type Props = {
   badge?: BadgeDetails;
   data?: Exam;
   viewDetailsClick?: () => void;
+  /** First card in a list is typically the LCP candidate on mobile — set
+   * only for that one, not the whole list (marking every image priority
+   * defeats the purpose and competes for bandwidth on slow connections). */
+  priority?: boolean;
 };
 
-export default function CourseCard({ course, data, badge, viewDetailsClick, locale = defaultLocale }: Props & { locale?: Locale }) {
+export default function CourseCard({ course, data, badge, viewDetailsClick, priority, locale = defaultLocale }: Props & { locale?: Locale }) {
   const t = CARD_COPY[locale];
   return (
     <Card maxWidth="max-w-[370px]" padding="8px 12px" rounded="rounded-2xl">
@@ -67,6 +71,7 @@ export default function CourseCard({ course, data, badge, viewDetailsClick, loca
               alt={course?.image?.alt ?? "Logo"}
               width={104}
               height={104}
+              priority={priority}
             />
             <div className="absolute -bottom-1 right-0 rounded-full bg-white p-1">
               <VerificationBadgeIcon size={24} color="#0083ff" />
