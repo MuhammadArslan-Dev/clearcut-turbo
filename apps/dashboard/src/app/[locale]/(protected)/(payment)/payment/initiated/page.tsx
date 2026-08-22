@@ -50,16 +50,33 @@ const FB_PIXEL_ID = "1126041265682766";
 // for a case-insensitive match); exams with no entry here fall through to
 // the global `pricing` values from GET /v2/payment/pricing, unaffected.
 //
-// The "1month" recurring subscription tier is NOT covered here — it's a
-// Razorpay recurring Plan (subscription_plans table, plan_id hardcoded to 1
-// for every exam), which needs a genuinely separate Razorpay Plan + plan_id
-// per exam to price differently. Flagged, not done as part of this change.
+// `planId` + `recurringMonthly` (optional, come as a pair) cover the
+// "1month" recurring subscription tier — a Razorpay recurring Plan
+// (subscription_plans table row). `recurringMonthly` must match that row's
+// `amount` (in rupees) — it's display/tracking only, the actual charge is
+// whatever the Razorpay Plan behind `planId` bills. Exams with neither here
+// fall through to the default plan (id 1, ₹99/month).
 const EXAM_PRICE_OVERRIDES: Record<
   string,
-  { onetime1Month: number; oneYear: number }
+  {
+    onetime1Month: number;
+    oneYear: number;
+    planId?: number;
+    recurringMonthly?: number;
+  }
 > = {
-  HPTET: { onetime1Month: 229, oneYear: 799 },
+  HPTET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
 };
+
+const DEFAULT_SUBSCRIPTION_PLAN_ID = 1;
+
+function getSubscriptionPlanId(examShortName?: string): number {
+  const override = examShortName
+    ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
+    : undefined;
+
+  return override?.planId ?? DEFAULT_SUBSCRIPTION_PLAN_ID;
+}
 
 // Shared by the "1month" default price, CustomizeProduct's target price, and
 // AddPaymentInfo's selected price — one place to change the numbers.
@@ -72,7 +89,7 @@ function getPriceForVariant(
     ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
     : undefined;
 
-  if (variant === "1month") return 99;
+  if (variant === "1month") return override?.recurringMonthly ?? 99;
   if (variant === "1month-onetime") {
     return override?.onetime1Month ?? pricing?.onetime_1month_price ?? 139;
   }
@@ -184,9 +201,11 @@ export default function InitiatedPage() {
       product_id: data?.short_name!,
     });
     setMetaUserData();
-    // Page just opened — selectVariant is still its "1month" default, so
-    // this is always the ₹99 starting price.
-    trackFacebookEvent("InitiateCheckout", buildMetaParams(99));
+    // Page just opened — selectVariant is still its "1month" default.
+    trackFacebookEvent(
+      "InitiateCheckout",
+      buildMetaParams(getPriceForVariant("1month", pricing, data?.short_name)),
+    );
     const sendWebhook = async () => {
       try {
         await webhookPaymentInitiate(datacourse?.group_code ?? "");
@@ -288,7 +307,10 @@ export default function InitiatedPage() {
 
       let res;
       try {
-        res = await createSubscription({ course_id: courseId, plan_id: 1 });
+        res = await createSubscription({
+          course_id: courseId,
+          plan_id: getSubscriptionPlanId(data?.short_name),
+        });
       } catch (err) {
         // The backend rejects a duplicate subscribe attempt with 400 + the
         // existing subscription in the body — a known, expected case (user
@@ -610,7 +632,7 @@ export default function InitiatedPage() {
                   <div className="flex flex-col gap-1">
                     <p className="heading-medium !font-semibold text-surface-gray-normal">
                       {modalT("months", { count: 1 })} •{" "}
-                      {"₹99"}{" "}
+                      {`₹${getPriceForVariant("1month", pricing, data?.short_name)}`}{" "}
                       <Text className="line-through" variant="body-small">
                         {"₹1,499"}
                       </Text>
