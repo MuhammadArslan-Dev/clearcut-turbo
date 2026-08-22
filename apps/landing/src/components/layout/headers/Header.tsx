@@ -14,8 +14,16 @@ export default function Header({ items = [], linkShow = true }: any) {
           <Image
             src={IMAGES.mainLogo}
             alt="Main logo"
+            // main-logo.svg's own viewBox is 127.12 x 24.88 (~5.1:1, a wide
+            // wordmark) — width/height here were 190x160 (~1.2:1), so the
+            // browser reserved a tall near-square box before the SVG loaded,
+            // then had to shrink it to the SVG's real ratio once it did.
+            // That reflow was the single largest Cumulative Layout Shift
+            // contributor on this page. Matching the real ratio here doesn't
+            // change how the logo looks (it already renders at its correct
+            // ratio today) — it just reserves the right space from the start.
             width={190}
-            height={160}
+            height={37}
             priority
             sizes="(max-width: 768px) 120px, 190px"
           />

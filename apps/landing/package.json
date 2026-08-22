@@ -65,11 +65,7 @@
     "typescript": "^5"
   },
   "browserslist": [
-    ">0.3%",
-    "last 2 versions",
-    "not dead",
-    "not op_mini all",
-    "not ios_saf < 15",
-    "not kaios <= 3.1"
+    "defaults and fully supports es6-module",
+    "maintained node versions"
   ]
 }
