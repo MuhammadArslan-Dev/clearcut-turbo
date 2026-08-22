@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 /**
  * Tracks scroll direction of `target` (defaults to `window`). Small scrolls
- * (< 35px) are ignored so direction doesn't flip on every frame.
+ * (< 15px) are ignored so direction doesn't flip on every frame. Kept small
+ * on purpose — a bigger threshold (this used to be 35px) delays how far the
+ * user has to scroll before a topbar hide/show even starts reacting, which
+ * reads as laggy/jerky instead of tracking the scroll gesture.
  *
  * A direction only commits once the same direction is seen on two
  * consecutive qualifying scroll events. This is deliberate: swapping in a
@@ -33,7 +36,7 @@ export function useScrollDirection(target?: RefObject<HTMLElement | null>) {
         ? target.current.scrollTop
         : window.scrollY;
 
-      if (Math.abs(scrollY - lastScrollY.current) < 35) return; // ignore small scrolls
+      if (Math.abs(scrollY - lastScrollY.current) < 15) return; // ignore small scrolls
 
       const direction = scrollY > lastScrollY.current ? "down" : "up";
       lastScrollY.current = scrollY;

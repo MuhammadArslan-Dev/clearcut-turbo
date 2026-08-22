@@ -2,8 +2,7 @@ import Button from "@clearcut/ui/button";
 import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
-import React, { useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PaywallSource, usePaywallsStore } from "./usePaywallsStore";
 import { useRouter } from "@/i18n/navigation";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -17,10 +16,35 @@ export default function PaywallFloatingWidget() {
 
   const router = useRouter();
   const isMobile = useIsMobile();
-  // Same scroll signal that hides/shows the Topbar's title row — keeps both
-  // collapsing in sync while the user scrolls the chapter/test list.
-  const topbarVisible = useTopbarVisibilityStore((s) => s.visible);
-  const showPriceRow = !isMobile || topbarVisible;
+  // Same raw scroll-hide offset Topbar itself reads (not the derived
+  // `progress`) — clamped against this row's OWN measured height below,
+  // mirroring Topbar's self-contained technique exactly rather than
+  // depending on another component having already written a derived value
+  // for this render.
+  const scrollOffset = useTopbarVisibilityStore((s) => s.offset);
+
+  const priceRowRef = useRef<HTMLDivElement>(null);
+  const [priceRowHeight, setPriceRowHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = priceRowRef.current;
+    if (!el) return;
+
+    const measure = () => setPriceRowHeight(el.scrollHeight);
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const clampedOffset =
+    isMobile && priceRowHeight != null
+      ? Math.min(scrollOffset, priceRowHeight)
+      : 0;
+  const visibleFraction = priceRowHeight
+    ? 1 - clampedOffset / priceRowHeight
+    : 1;
 
   const examTitle = useMemo(
     () => course?.exam?.short_name ?? "",
@@ -48,38 +72,50 @@ export default function PaywallFloatingWidget() {
           borderwidth={2}
           bordercolor="var(--color-brand)"
         >
-          <div className="flex w-full flex-col gap-3">
-            <AnimatePresence initial={false}>
-              {showPriceRow && (
-                <motion.div
-                  key="paywall-widget-price-row"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="flex items-center justify-between gap-2 overflow-hidden"
+          <div className="flex w-full flex-col">
+            <div
+              style={{
+                height:
+                  priceRowHeight != null
+                    ? priceRowHeight * visibleFraction
+                    : "auto",
+                opacity: priceRowHeight != null ? visibleFraction : 1,
+                // Was a flex `gap-3` on the parent, but a gap doesn't shrink
+                // away with a collapsed sibling — it still held a fixed 12px
+                // gap above the button even at height 0. Scaling this margin
+                // by the same fraction as the height keeps the two in sync
+                // (12px = Tailwind's gap-3) all the way down to a true 0.
+                marginBottom: 12 * visibleFraction,
+              }}
+              className="overflow-hidden"
+            >
+              <div
+                ref={priceRowRef}
+                style={{
+                  transform: `translateY(${(1 - visibleFraction) * -8}px)`,
+                }}
+                className="flex items-center justify-between gap-2"
+              >
+                <Text as="h6" variant="heading-large" weight="semibold">
+                  {examTitle}
+                </Text>
+                <Text
+                  variant="body-large"
+                  weight="normal"
+                  className="text-surface-gray-subtle whitespace-nowrap"
                 >
-                  <Text as="h6" variant="heading-large" weight="semibold">
-                    {examTitle}
-                  </Text>
                   <Text
-                    variant="body-large"
-                    weight="normal"
-                    className="text-surface-gray-subtle whitespace-nowrap"
+                    as="span"
+                    variant="heading-large"
+                    weight="semibold"
+                    className="text-surface-gray-normal"
                   >
-                    <Text
-                      as="span"
-                      variant="heading-large"
-                      weight="semibold"
-                      className="text-surface-gray-normal"
-                    >
-                      {`₹${monthlyPrice}`}
-                    </Text>
-                    /month • All subjects
+                    {`₹${monthlyPrice}`}
                   </Text>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  /month • All subjects
+                </Text>
+              </div>
+            </div>
 
             <Button
               onClick={() => {

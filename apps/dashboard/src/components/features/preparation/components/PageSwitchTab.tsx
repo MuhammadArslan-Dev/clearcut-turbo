@@ -7,7 +7,20 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
-export default React.memo(function PageSwitchTab() {
+interface PageSwitchTabProps {
+  // Two copies of this component can be mounted at once — Topbar's own and
+  // the bottom-fixed mirror that grows in while the top one scrolls away
+  // (see BottomPageSwitchReveal). Framer Motion's `layoutId` (used by
+  // TabSwitch's active-pill indicator) is shared globally by default, so
+  // two simultaneously-mounted instances with the SAME id fight over the
+  // same animated element — one of them visibly loses its content/sizing.
+  // Callers rendering a second copy must pass a distinct id.
+  layoutScopeId?: string;
+}
+
+export default React.memo(function PageSwitchTab({
+  layoutScopeId = "page-change-tab",
+}: PageSwitchTabProps) {
   const pathname = usePathname();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -42,7 +55,7 @@ export default React.memo(function PageSwitchTab() {
   return (
     <TabSwitch
       type="link"
-      layoutScopeId="page-change-tab"
+      layoutScopeId={layoutScopeId}
       scrollable
       items={[
         {

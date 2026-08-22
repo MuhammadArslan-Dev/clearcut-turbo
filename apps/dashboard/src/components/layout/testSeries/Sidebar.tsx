@@ -7,7 +7,6 @@ import Text from "@clearcut/ui/text";
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
 import {
   ChevronIcon,
-  ListIcon,
   PenIcon,
   SheildIcon,
 } from "@/components/ui/icons";
@@ -69,10 +68,8 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => open("section-index")}
-              className="w-[115px] px-3 py-2 md:py-2 md:px-4 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
+              className="w-[115px] h-9 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
             >
-              <ListIcon size={20} variant="lines" />
-
               <Text
                 className="text-white"
                 variant="heading-small"

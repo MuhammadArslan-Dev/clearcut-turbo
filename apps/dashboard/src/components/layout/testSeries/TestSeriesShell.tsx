@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import BottomPageSwitchReveal from "@/components/features/preparation/components/BottomPageSwitchReveal";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useTestSeriesModalStore } from "@/components/features/test-series/store/useTestSeriesModalStore";
 import AttemptHistoryModal from "@/components/features/test-series/components/modals/AttemptHistoryModal";
@@ -17,13 +18,17 @@ import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywal
 import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useTestListDataStore } from "@/components/features/test-series/store/useTestListDataStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
-import { ListIcon } from "@/components/ui/icons";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
+
+// Safe upper bound for the scroll-hide offset — Topbar clamps this against
+// its own measured title-row height, so this just needs to comfortably
+// cover it across locales/screen sizes.
+const TOPBAR_MAX_HIDE_OFFSET = 150;
 
 export default function TestSeriesShell({ children }: { children: ReactNode }) {
   const { set } = useQueryParams();
@@ -39,18 +44,17 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
     });
   }, []); // always reset to chapter-tests on mount
 
-  // Mobile-only: hide the Topbar's title row while scrolling down the test
-  // list, bring it back as soon as the user scrolls up (same behavior as
-  // the preparation screen — see layout/preparation/Sidebar.tsx).
+  // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
+  // scrolled the test list (see useScrollHideOffset) — same behavior as the
+  // preparation screen, see layout/preparation/Sidebar.tsx.
   const mainRef = useRef<HTMLElement | null>(null);
   const isMobile = useIsMobile();
-  const mainScrollDirection = useScrollDirection(mainRef);
-  const setTopbarVisible = useTopbarVisibilityStore((s) => s.setVisible);
+  const mainScrollOffset = useScrollHideOffset(mainRef, TOPBAR_MAX_HIDE_OFFSET);
+  const setTopbarOffset = useTopbarVisibilityStore((s) => s.setOffset);
   useEffect(() => {
-    if (!isMobile) return;
-    setTopbarVisible(mainScrollDirection === "up");
-  }, [isMobile, mainScrollDirection, setTopbarVisible]);
-  useEffect(() => () => setTopbarVisible(true), [setTopbarVisible]);
+    setTopbarOffset(isMobile ? mainScrollOffset : 0);
+  }, [isMobile, mainScrollOffset, setTopbarOffset]);
+  useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
 
   const activeModal = useMemo(
     () => (stack.length ? stack[stack.length - 1] : null),
@@ -88,20 +92,26 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 space-y-2 px-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
       >
-        {!!indexSections?.length && (
-          <div className="flex justify-center w-full">
+        <div className="flex justify-center items-center gap-2 w-full">
+          {/* Course/Test Series switch — lives in Topbar's title row, which
+              hides on scroll-down (see the effect above). Mirrored here so
+              it's still reachable while scrolled, growing in exact sync
+              with how much the top one has hidden instead of a separate
+              fixed-duration animation. */}
+          <BottomPageSwitchReveal />
+
+          {!!indexSections?.length && (
             <button
               type="button"
               onClick={() => open("section-index")}
-              className="w-[115px] px-3 py-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
+              className="w-[115px] h-9 shrink-0 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
             >
-              <ListIcon size={20} variant="lines" />
               <Text className="text-white" variant="heading-small" weight="semibold">
                 {t("common.index")}
               </Text>
             </button>
-          </div>
-        )}
+          )}
+        </div>
         <PaywallFloatingWidget />
       </div>
 

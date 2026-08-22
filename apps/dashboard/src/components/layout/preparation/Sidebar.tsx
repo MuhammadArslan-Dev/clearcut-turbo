@@ -6,8 +6,6 @@ import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { logger } from "@/lib/sentry/sentry-logger";
 
-import { motion } from "framer-motion";
-
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
 import TopicListCardSkeleton from "@/components/ui/cards/preparation/topic-card/topic-list-card-skeleton";
 import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/SectionHeaderCard";
@@ -17,12 +15,12 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import SectionsTab from "@/components/features/preparation/components/SectionsTab";
 import PaperSwitch from "@/components/features/preparation/components/PaperSwitch";
 import AreaTab from "@/components/features/preparation/components/AreaTab";
+import BottomPageSwitchReveal from "@/components/features/preparation/components/BottomPageSwitchReveal";
 
 import {
   ChevronIcon,
   CircleTickIcon,
   FireIcon,
-  ListIcon,
   LockIcon,
   PenIcon,
   StarBadge,
@@ -31,7 +29,7 @@ import {
 
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
 import { useSearchParams } from "next/navigation";
 
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
@@ -65,6 +63,11 @@ import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityS
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import AppDownloadWidget from "@/components/features/PayWalls/AppDownloadWidget";
 import { useRouter } from "@/i18n/navigation";
+
+// Safe upper bound for the scroll-hide offset — Topbar clamps this against
+// its own measured title-row height, so this just needs to comfortably
+// cover it across locales/screen sizes.
+const TOPBAR_MAX_HIDE_OFFSET = 150;
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -128,17 +131,21 @@ export default function Sidebar() {
     }
   }, [selectedPaperId]);
 
-  // Mobile-only: hide the Topbar's title row while scrolling down the
-  // chapter list, bring it back as soon as the user scrolls up.
-  const chapterListScrollDirection = useScrollDirection(topicContainerRef);
-  const setTopbarVisible = useTopbarVisibilityStore((s) => s.setVisible);
+  // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
+  // scrolled the chapter list (see useScrollHideOffset) — Topbar clamps
+  // this against its own measured height, so this just needs to be a safe
+  // upper bound.
+  const chapterListScrollOffset = useScrollHideOffset(
+    topicContainerRef,
+    TOPBAR_MAX_HIDE_OFFSET,
+  );
+  const setTopbarOffset = useTopbarVisibilityStore((s) => s.setOffset);
   useEffect(() => {
-    if (!isMobile) return;
-    setTopbarVisible(chapterListScrollDirection === "up");
-  }, [isMobile, chapterListScrollDirection, setTopbarVisible]);
+    setTopbarOffset(isMobile ? chapterListScrollOffset : 0);
+  }, [isMobile, chapterListScrollOffset, setTopbarOffset]);
 
   // Always show the Topbar again once we leave this screen/view.
-  useEffect(() => () => setTopbarVisible(true), [setTopbarVisible]);
+  useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
 
   // Auto-scroll active topic into view
   useEffect(() => {
@@ -294,14 +301,19 @@ export default function Sidebar() {
           className="absolute space-y-2 z-50 w-full bottom-0 left-1/2 -translate-x-1/2"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
-          <div className="flex justify-center w-full">
+          <div className="flex justify-center items-center gap-2 w-full">
+            {/* Course/Test Series switch — lives in Topbar's title row, which
+                hides on scroll-down (see the effect above). Mirrored here so
+                it's still reachable while scrolled, growing in exact sync
+                with how much the top one has hidden instead of a separate
+                fixed-duration animation. */}
+            <BottomPageSwitchReveal />
+
             <button
               type="button"
               onClick={() => open("chapter-index")}
-              className="w-[115px] px-3 py-2 md:py-2 md:px-4 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
+              className="w-[115px] h-9 shrink-0 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
             >
-              <ListIcon size={20} variant="lines" />
-
               <Text
                 className="text-white"
                 variant="heading-small"
