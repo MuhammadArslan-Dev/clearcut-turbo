@@ -3,8 +3,38 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect } from "react";
+import { getCachedUser } from "@/lib/auth-token-client";
+import type { UserPreview } from "@/types/User";
 
 const FB_PIXEL_ID = "1126041265682766";
+
+// Re-sends Meta's advanced-matching data via `init` (the base pixel script
+// below already called it once, without user data, on page load) — never
+// inside a track() call's custom-data object, which Meta doesn't auto-hash.
+// Same fix already applied to the "Lead" event (packages/auth/src/
+// facebook-pixel.ts) and to the payment page (setMetaUserData in
+// payment/initiated/page.tsx); CompleteRegistration/StartTrial fire from
+// here instead, and were missing it, which is why Phone/External ID showed
+// on only ~2% of Complete Registration events and 0% of Start Trial events.
+// Reads the auth cache directly (not useAuth()) because this component is
+// mounted as a sibling of AuthProvider, not a child of it — see layout.tsx.
+function setMetaUserData() {
+  if (typeof window === "undefined" || !window.fbq) return;
+
+  const cachedUser = getCachedUser<UserPreview>();
+  const digits = cachedUser?.phone?.replace(/\D/g, "");
+
+  const userData: { ph?: string; external_id?: string } = {};
+  if (digits) {
+    // Meta expects the country code with no leading "+" and no spaces.
+    userData.ph = digits.length === 10 ? `91${digits}` : digits;
+  }
+  if (cachedUser?.id) userData.external_id = String(cachedUser.id);
+
+  if (Object.keys(userData).length > 0) {
+    window.fbq("init", FB_PIXEL_ID, userData);
+  }
+}
 
 export default function FacebookPixel() {
   const pathname = usePathname();
@@ -25,6 +55,7 @@ export default function FacebookPixel() {
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
+      setMetaUserData();
       window.fbq("track", "CompleteRegistration", {
         value: 0.0,
         currency: "INR",
@@ -36,6 +67,7 @@ export default function FacebookPixel() {
     // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
     // here is the "start trial" moment for that subject.
     if (params.get("subject_selected") === "1") {
+      setMetaUserData();
       window.fbq("track", "StartTrial");
       params.delete("subject_selected");
       hasOneShotSignal = true;
