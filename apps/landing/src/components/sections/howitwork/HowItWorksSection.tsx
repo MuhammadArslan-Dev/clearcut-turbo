@@ -20,15 +20,20 @@ type StepItem = {
 };
 
 // Locale-independent step images, keyed by step id.
+// Source files are ~359x285-287 (a landscape ~1.26:1 ratio), not the square
+// 370x370 previously declared here — with `sizes` set, Tailwind's preflight
+// (img { height: auto }) computes height from the real file once it loads
+// rather than the declared attributes, so the wrong declared ratio meant
+// this row reflowed after load. Heights below match each file's real ratio.
 const STEP_IMAGES: Record<string, React.ReactNode> = {
   "step-1": (
-    <Image src={IMAGES.howItWork.step1} alt="how it work step 1 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" />
+    <Image src={IMAGES.howItWork.step1} alt="how it work step 1 image" width={370} height={294} className="aspect-[370/294]" sizes="(max-width: 768px) 90vw, 370px" />
   ),
   "step-2": (
-    <Image src={IMAGES.howItWork.step2} alt="how it work step 2 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" />
+    <Image src={IMAGES.howItWork.step2} alt="how it work step 2 image" width={370} height={296} className="aspect-[370/296]" sizes="(max-width: 768px) 90vw, 370px" />
   ),
   "step-3": (
-    <Image src={IMAGES.howItWork.step3} alt="how it work step 3 image" width={370} height={370} sizes="(max-width: 768px) 90vw, 370px" />
+    <Image src={IMAGES.howItWork.step3} alt="how it work step 3 image" width={370} height={294} className="aspect-[370/294]" sizes="(max-width: 768px) 90vw, 370px" />
   ),
 };
 

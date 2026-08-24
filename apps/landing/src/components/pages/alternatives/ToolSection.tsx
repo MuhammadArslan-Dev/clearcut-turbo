@@ -13,7 +13,7 @@ export default function ToolSection({ tool, index }: { tool: AlternativeTool; in
     <div id={slugify(tool.name)} className="scroll-mt-24 py-8 border-b border-border-gray-subtle last:border-b-0">
       <div className="flex items-center gap-3 mb-2">
         {logoSrc && (
-          <Image src={logoSrc} alt={tool.name} width={32} height={32} className="rounded-md object-contain" />
+          <Image src={logoSrc} alt={tool.name} width={32} height={32} className="rounded-md object-contain aspect-square" />
         )}
         <Text as="h2" variant="heading-large" weight="bold" color="gray-normal">
           {index + 1}. {tool.name}

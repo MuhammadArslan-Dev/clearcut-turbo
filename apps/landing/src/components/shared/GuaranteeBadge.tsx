@@ -35,7 +35,12 @@ export default function GuaranteeBadge({ pY = "py-6" }: { pY?: string }) {
       }}
       className={clsx("flex flex-col md:flex-row items-center justify-center gap-5 px-1 md:p-4 cursor-pointer", pY)}
     >
-      <Image src={IMAGES.guaranteeBadge} alt=" money-back guarantee badge" width={150} height={120} />
+      {/* guarantee-badge-img.webp is actually 499x499 (square) — the declared
+          150x120 doesn't match, and Tailwind's preflight (img { height:
+          auto }) means the browser already renders it at its real square
+          ratio once loaded, just without reserving that space upfront.
+          height=150 matches what's already visually rendered. */}
+      <Image src={IMAGES.guaranteeBadge} alt=" money-back guarantee badge" width={150} height={150} className="aspect-square" />
       <div>
         <Text as="p" variant="heading-medium" weight="semibold" className="text-center">
           {copy.title}

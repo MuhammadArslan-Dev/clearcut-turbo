@@ -40,7 +40,7 @@ export default function CompareHero({ comparison }: { comparison: ComparisonDoc 
           <div className="flex items-center gap-6">
             <div className="bg-white rounded-2xl shadow-lg p-6 w-32 h-32 flex items-center justify-center">
               {logoSrc ? (
-                <Image src={logoSrc} alt={competitorName} width={80} height={80} className="object-contain" />
+                <Image src={logoSrc} alt={competitorName} width={80} height={80} className="object-contain aspect-square" />
               ) : (
                 <Text as="span" variant="heading-medium" weight="semibold">
                   {competitorName}
