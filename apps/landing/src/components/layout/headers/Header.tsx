@@ -18,14 +18,18 @@ export default function Header({ items = [], linkShow = true }: any) {
             // wordmark) — width/height here were 190x160 (~1.2:1), so the
             // browser reserved a tall near-square box before the SVG loaded,
             // then had to shrink it to the SVG's real ratio once it did.
-            // That reflow was the single largest Cumulative Layout Shift
-            // contributor on this page. Matching the real ratio here doesn't
-            // change how the logo looks (it already renders at its correct
-            // ratio today) — it just reserves the right space from the start.
+            // Matching the real ratio here doesn't change how the logo
+            // looks (it already renders at its correct ratio today) — it
+            // just reserves the right space from the start. The explicit
+            // aspect-[] class is defense-in-depth: Tailwind's preflight
+            // resets all <img> to height:auto, which can override the
+            // aspect-ratio Next/Image would otherwise derive from
+            // width/height alone, reopening the same shift.
             width={190}
             height={37}
             priority
             sizes="(max-width: 768px) 120px, 190px"
+            className="aspect-[190/37] w-auto"
           />
         </Link>
 

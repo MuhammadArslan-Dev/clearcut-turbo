@@ -87,16 +87,25 @@ export default function LogoCarousel({
         {[...logos, ...logos, ...logos].map((logo, i) => (
           <div
             key={i}
-            className="w-[88] flex flex-col items-center gap-4 flex-shrink-0"
+            className="w-[88px] flex flex-col items-center gap-4 flex-shrink-0"
           >
+            {/* Tailwind's preflight resets all <img> to height:auto, which
+                overrides the aspect-ratio Next/Image would otherwise derive
+                from width/height — so the browser can't reserve this box
+                until the image (an S3-hosted exam logo, not guaranteed
+                square) finishes loading. aspect-square locks the box back
+                to 88x88 regardless of the source's real ratio, and
+                object-contain keeps a non-square logo from stretching to
+                fill it — this was the single largest Cumulative Layout
+                Shift contributor on this page (compounded across the many
+                logos in this carousel). */}
             <Image
               src={logo.src?.toString() ?? "/icons/Logo-48x48.png"}
               alt={logo.title}
               width={88}
               height={88}
-              className="grayscale opacity-70"
+              className="grayscale opacity-70 aspect-square object-contain"
               sizes="88px"
-  
             />
 
             <div>
