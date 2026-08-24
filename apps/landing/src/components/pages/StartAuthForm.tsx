@@ -526,7 +526,10 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              <div className="flex flex-col gap-2">
+              {/* Truecaller login — logic is fully wired (useTruecallerLogin
+                  above, backend endpoints, deep-link/poll flow), just not
+                  shown on the login page yet. Uncomment to enable. */}
+              {/* <div className="flex flex-col gap-2">
                 <Button
                   size="lg"
                   variant="outlined"
@@ -556,7 +559,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   </Text>
                   <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                 </div>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
