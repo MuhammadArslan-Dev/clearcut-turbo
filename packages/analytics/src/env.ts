@@ -13,6 +13,9 @@
 /** GTM container, e.g. "GTM-XXXXXXX". Never hardcoded — deployment config only. */
 export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
+/** Microsoft Clarity project ID, e.g. "abcd1234ef". Never hardcoded. */
+export const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;
+
 /**
  * `NODE_ENV`, not a custom `ENVIRONMENT` variable.
  *

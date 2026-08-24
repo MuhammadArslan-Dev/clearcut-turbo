@@ -10,6 +10,7 @@ import ThemeProvider from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { AnalyticsProvider } from "@/providers/AnalyticsProvider";
 import LazyGTM from "@/components/thirdparties/LazyGTM";
+import LazyClarity from "@/components/thirdparties/LazyClarity";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 import { Suspense } from "react";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
@@ -151,6 +152,7 @@ export default async function LocaleLayout({
                   <ThemeProvider>
                     <AnalyticsProvider>{children}</AnalyticsProvider>
                     <LazyGTM />
+                    <LazyClarity />
                   </ThemeProvider>
                 </ReactQueryProvider>
 
