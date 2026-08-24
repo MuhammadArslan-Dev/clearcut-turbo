@@ -31,7 +31,7 @@ import { useTranslations } from "next-intl";
 const TOPBAR_MAX_HIDE_OFFSET = 150;
 
 export default function TestSeriesShell({ children }: { children: ReactNode }) {
-  const { set } = useQueryParams();
+  const { get, set } = useQueryParams();
 
    useStreakTracker({ intervalMinutes: 1 });
 
@@ -39,10 +39,24 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
   const { indexSections } = useTestListDataStore();
   const t = useTranslations("");
   useEffect(() => {
-    set({
-      testType: "chapter-tests",
-    });
-  }, []); // always reset to chapter-tests on mount
+    // Only default testType when it's missing (e.g. a bare sidebar link) —
+    // testListPage renders nothing when testType is absent, so this is a
+    // real fallback, not decoration. Unconditionally overwriting it here
+    // used to race the report-modal redirect's own router.replace() (see
+    // testListPage's showReport/examId effect): both effects build their
+    // next URL from the same pre-navigation searchParams snapshot, so
+    // whichever committed second re-applied its own stale copy of
+    // showReport/examId and clobbered the other's testType — reopening the
+    // report modal (with the wrong tab) on the very next refresh, for any
+    // testType other than "chapter-tests" (the one value this effect used
+    // to always force, which is why chapter tests never showed the bug).
+    if (!get("testType")) {
+      set({
+        testType: "chapter-tests",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
   // scrolled the test list (see useScrollHideOffset) — same behavior as the

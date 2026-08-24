@@ -66,7 +66,6 @@ export default function ExamReportSheet() {
 
   const isMobile = useIsMobile();
   const t = useTranslations("modals.performanceReport");
-  const [loading, setLoading] = useState(true);
 
   const tabNames = useMemo(() => {
     return [
@@ -177,16 +176,6 @@ export default function ExamReportSheet() {
   }, [result]);
 
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000); // 3 seconds
-
-    return () => clearTimeout(timer); // cleanup
-  }, []);
-
-
-
 
 
   return (
@@ -200,7 +189,7 @@ export default function ExamReportSheet() {
           onClose={() => handleClose()}
         >
 
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center items-center">
               <DotLottieReact
                 style={{

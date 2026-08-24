@@ -42,7 +42,12 @@ type QOptionProps = {
   onClick?: () => void;
 };
 
-export default function QOption({
+// React.memo is safe to add regardless of whether callers pass stable
+// props: it only ever SKIPS a re-render when props are shallow-equal to
+// the last render, never causes a stale one. Effectiveness (not
+// correctness) depends on callers not recreating value/counter/onClick
+// inline on every render — see mainContent.tsx's callers.
+function QOption({
   value,
   quesClass,
   mainContainer = {
@@ -115,3 +120,5 @@ export default function QOption({
     </Card>
   );
 }
+
+export default React.memo(QOption);

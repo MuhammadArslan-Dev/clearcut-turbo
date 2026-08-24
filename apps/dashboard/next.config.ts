@@ -16,7 +16,22 @@ const config: NextConfig = {
   //   ignoreDuringBuilds: true, // allows build even with lint errors
   // },
   experimental: {
-    optimizeCss: true,
+    // optimizeCss (critters) was here before and did nothing — confirmed
+    // empirically (built + served + inspected raw HTML): critters is a
+    // Pages Router mechanism (no streaming support) and is a documented
+    // no-op under the App Router, which this app uses exclusively. Every
+    // page still shipped two blocking <link rel="stylesheet"> requests
+    // regardless of this flag. Removed rather than left in as dead config.
+    //
+    // The App Router's actual equivalent, experimental.inlineCss, DOES
+    // work — verified it fully inlines CSS and drops both stylesheet
+    // requests. Deliberately NOT enabling it though: on /sign-in it inlined
+    // ~147KB of CSS (this app's real bundle size) directly into the HTML,
+    // taking that page from 36KB to 612KB. The debugbear article's own
+    // guidance is that inlining only pays off under ~10KB — past that,
+    // you're trading two requests the browser parallelizes with everything
+    // else on the page for one much heavier blocking HTML response, which
+    // measured worse here, not better. Not worth it for this bundle size.
     optimizePackageImports: [
       "lucide-react",
       "@heroicons/react",
