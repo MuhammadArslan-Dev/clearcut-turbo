@@ -22,6 +22,7 @@ import {
 } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { setSentryUser } from "@/lib/sentry/sentry-logger";
+import { identifyClarityUser } from "@/lib/analytics/clarity";
 
 type AuthContextType = {
   user: UserPreview | null;
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (cached && isMounted) {
       setUser(cached);
       setLoading(false);
+      identifyClarityUser({ userId: cached.uuid, phone: cached.phone });
     }
 
     // Reuse the in-flight request for this token instead of repeating the ~3s
@@ -136,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(res.data);
           setCachedUser(res.data);
           setSentryUser(res.data);
+          identifyClarityUser({ userId: res.data.uuid, phone: res.data.phone });
         }
       })
       .catch(() => {

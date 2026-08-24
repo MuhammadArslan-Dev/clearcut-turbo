@@ -20,6 +20,8 @@ import { setToken } from "@clearcut/auth/token";
 import { buildPostVerifyRedirectUrl } from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
+import { useTruecallerLogin } from "@clearcut/auth/truecaller";
+import { identifyClarityUser } from "@clearcut/analytics/clarity";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
@@ -61,6 +63,10 @@ const CONTENT: Record<
     errServer: string;
     errNoInternet: string;
     errGeneric: string;
+    truecallerBtn: string;
+    truecallerWaiting: string;
+    truecallerUnavailable: string;
+    orDivider: string;
   }
 > = {
   en: {
@@ -96,6 +102,10 @@ const CONTENT: Record<
     errServer: "Server error. Please try again.",
     errNoInternet: "No internet connection.",
     errGeneric: "Something went wrong. Please try again.",
+    truecallerBtn: "Continue with Truecaller",
+    truecallerWaiting: "Waiting for Truecaller approval…",
+    truecallerUnavailable: "Truecaller app not found — continue below",
+    orDivider: "OR",
   },
   hi: {
     heading: "अपनी परीक्षा की तैयारी शुरू करें",
@@ -130,6 +140,10 @@ const CONTENT: Record<
     errServer: "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
     errNoInternet: "इंटरनेट कनेक्शन नहीं है।",
     errGeneric: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+    truecallerBtn: "Truecaller से जारी रखें",
+    truecallerWaiting: "Truecaller की स्वीकृति की प्रतीक्षा है…",
+    truecallerUnavailable: "Truecaller ऐप नहीं मिला — नीचे जारी रखें",
+    orDivider: "या",
   },
 };
 
@@ -149,6 +163,21 @@ function ShieldCheckIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// Generic placeholder mark — swap for Truecaller's actual brand icon
+// (subject to their brand guidelines) once real credentials are in.
+function TruecallerIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
+      <circle cx="12" cy="12" r="10" fill="#0087FF" fillOpacity="0.12" />
+      <path
+        d="M8 8.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5v1.19c0 .55-.31 1.05-.8 1.3l-1.7.86c.35 1 1.13 1.78 2.13 2.13l.86-1.7c.25-.49.75-.8 1.3-.8H18c.83 0 1.5.67 1.5 1.5 0 3.31-2.69 6-6 6h-.5C9.24 19 6.5 16.26 6.5 12.5V8.5H8z"
+        fill="#0087FF"
+        transform="translate(-1.5 -1.5) scale(0.85)"
       />
     </svg>
   );
@@ -413,6 +442,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
       setToken(data.token);
       trackFacebookLead(isNewUser, phone, userId);
+      identifyClarityUser({ userId, phone });
 
       const redirectUrl = buildPostVerifyRedirectUrl({
         baseUrl: REDIRECT_BASE_URL,
@@ -446,6 +476,35 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     handleVerify(code);
   }, step === "otp");
 
+  /* ---------------- TRUECALLER ---------------- */
+
+  const {
+    state: truecallerState,
+    error: truecallerError,
+    start: startTruecallerLogin,
+  } = useTruecallerLogin(authApi, (result) => {
+    setToken(result.token);
+
+    const tcUser = result.user as { uuid?: string; phone?: string } | undefined;
+    identifyClarityUser({ userId: tcUser?.uuid, phone: tcUser?.phone });
+
+    const lang = localStorage.getItem("locale") || "";
+    const course = localStorage.getItem("course");
+
+    const redirectUrl = buildPostVerifyRedirectUrl({
+      baseUrl: REDIRECT_BASE_URL,
+      token: result.token,
+      hasCourse: result.hasCourse,
+      userType: "old",
+      lang,
+      course,
+    });
+
+    window.location.replace(redirectUrl);
+  });
+
+  const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-center pt-10">
@@ -465,6 +524,38 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 <Text as="p" variant="body-small" color="gray-muted">
                   {t.featuresLine}
                 </Text>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="lg"
+                  variant="outlined"
+                  sx={{ borderRadius: "50px" }}
+                  fullWidth
+                  onClick={startTruecallerLogin}
+                  disabled={truecallerBusy}
+                  loading={truecallerBusy}
+                  leftIcon={<TruecallerIcon />}
+                >
+                  {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
+                </Button>
+
+                {truecallerState === "unavailable" && (
+                  <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
+                    {t.truecallerUnavailable}
+                  </p>
+                )}
+                {truecallerState === "error" && truecallerError && (
+                  <p className="text-sm text-center text-red-600">{truecallerError}</p>
+                )}
+
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                  <Text as="span" variant="body-small" color="gray-muted">
+                    {t.orDivider}
+                  </Text>
+                  <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                </div>
               </div>
 
               <div className="space-y-2">

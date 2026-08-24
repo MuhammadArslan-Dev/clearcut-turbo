@@ -511,6 +511,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@clearcut/analytics':
+        specifier: workspace:*
+        version: link:../analytics
       '@clearcut/hooks':
         specifier: workspace:*
         version: link:../hooks

@@ -14,6 +14,7 @@ import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
 import { trackFacebookLead } from "../facebook-pixel";
+import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
 import type { AuthScreenDeps } from "./types";
@@ -147,6 +148,7 @@ export function createOtpScreen({
           phone,
           userId,
         );
+        identifyClarityUser({ userId, phone });
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,

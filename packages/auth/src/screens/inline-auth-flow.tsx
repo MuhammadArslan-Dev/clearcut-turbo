@@ -13,6 +13,7 @@ import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
 import { trackFacebookLead } from "../facebook-pixel";
+import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
@@ -173,6 +174,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         if (status !== "success") throw new Error("Verification failed");
         setToken(data.token);
         trackFacebookLead(isNewUser, phone, userId);
+        identifyClarityUser({ userId, phone });
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
           token: data.token,

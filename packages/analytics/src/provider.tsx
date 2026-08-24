@@ -1,15 +1,19 @@
 "use client";
 
 import LazyGTM from "./lazy-gtm";
+import LazyClarity from "./lazy-clarity";
 
 /**
  * The single analytics entry point an application mounts.
  *
  * Apps render `<AnalyticsProvider />` once in their root layout and never
  * reference an individual tracker. That indirection is the whole point of this
- * package: adding GA4, Meta Pixel, Microsoft Clarity or LinkedIn Insight later
- * means adding a component here and a variable to `./env` — Landing and Blog do
- * not change at all.
+ * package: adding GA4, Meta Pixel or LinkedIn Insight later means adding a
+ * component here and a variable to `./env` — Landing and Blog do not change
+ * at all. Microsoft Clarity is one such tracker, already wired below; to
+ * identify a session by user (once the app knows who that is), call
+ * `identifyClarityUser` from `./clarity` — this component only loads the
+ * script.
  *
  * It renders no DOM of its own and no context. There is deliberately no
  * React context: nothing needs to read analytics state during render, and a
@@ -27,11 +31,11 @@ export default function AnalyticsProvider() {
   return (
     <>
       <LazyGTM />
+      <LazyClarity />
       {/*
         Future trackers mount here, each self-gating:
           <LazyGA4 />
           <LazyMetaPixel />
-          <LazyClarity />
       */}
     </>
   );

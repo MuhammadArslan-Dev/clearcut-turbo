@@ -42,6 +42,19 @@ export interface CreateCoursePayload {
   course_name: string;
 }
 
+export interface TruecallerInitiateResponseData {
+  request_nonce: string;
+  deep_link: string;
+}
+
+export interface TruecallerStatusResponseData {
+  status: "pending" | "success" | "failed" | "expired";
+  token?: string;
+  token_type?: string;
+  has_course?: boolean;
+  user?: unknown;
+}
+
 /**
  * Builds the auth endpoint functions bound to a given axios instance (create
  * one per app with `@clearcut/api`'s `createApiClient`, since base URL and
@@ -74,6 +87,16 @@ export function createAuthApi(apiClient: AxiosInstance) {
       ),
     createCourse: (data: CreateCoursePayload) =>
       apiClient.post("/v2/enrollment/create-by-name", data),
+    // Truecaller "verify profile" login — see packages/auth/src/truecaller.ts
+    // for the full initiate → deep-link → poll flow these two back.
+    truecallerInitiate: () =>
+      apiClient.post<{ data: TruecallerInitiateResponseData }>(
+        "/v1/auth/truecaller/initiate",
+      ),
+    truecallerStatus: (requestNonce: string) =>
+      apiClient.get<{ data: TruecallerStatusResponseData }>(
+        `/v1/auth/truecaller/status/${requestNonce}`,
+      ),
   };
 }
 

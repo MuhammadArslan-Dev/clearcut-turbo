@@ -8,6 +8,8 @@
   "exports": {
     "./provider": "./src/provider.tsx",
     "./lazy-gtm": "./src/lazy-gtm.tsx",
+    "./lazy-clarity": "./src/lazy-clarity.tsx",
+    "./clarity": "./src/clarity.ts",
     "./env": "./src/env.ts",
     "./constants": "./src/constants.ts"
   },
