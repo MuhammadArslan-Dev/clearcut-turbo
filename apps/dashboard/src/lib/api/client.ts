@@ -16,6 +16,7 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
   token?: string,
+  retryOptions?: { retries?: number; delayMs?: number },
 ): Promise<T> {
   let headers: Headers;
 
@@ -46,7 +47,12 @@ export async function apiFetch<T>(
   let res: Response;
 
   try {
-    res = await fetchWithRetry(url, { ...options, headers });
+    res = await fetchWithRetry(
+      url,
+      { ...options, headers },
+      retryOptions?.retries,
+      retryOptions?.delayMs,
+    );
   } catch (cause) {
     // An intentionally cancelled request (caller's AbortController) isn't a
     // server-unreachable failure — don't brand it as one or breadcrumb it,

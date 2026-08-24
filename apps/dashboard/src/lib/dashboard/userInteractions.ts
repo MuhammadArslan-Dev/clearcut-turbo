@@ -113,6 +113,13 @@ export async function setResumeState(
       body: JSON.stringify(payload),
       signal,
     },
+    undefined,
+    // Best-effort background write (see Sidebar.tsx caller) firing from
+    // mobile users on flaky connections — most "unreachable" reports for
+    // this endpoint are a single dropped mobile network blip that a second
+    // retry recovers from, not a dead backend. A dead backend still fails
+    // the same way after these, just slower.
+    { retries: 3, delayMs: 400 },
   );
 }
 
