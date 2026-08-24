@@ -94,15 +94,25 @@ export default function MainContent({ examId }: { examId: string }) {
   // EXAM TIMER AUTO-SUBMIT
   // ===============================
 
-  const handleAutoExpire = useCallback(() => {
+  const handleAutoExpire = useCallback(async () => {
     if (!exam) return;
-    apiFetch(`/v2/exam/end-exam/${exam.uuid}`, {
-      method: "GET",
-      cache: "no-store",
-    }).catch(console.error);
+    // Same reasoning as ExamEndConfirmationSheet's endExam(): prefer the
+    // type end-exam's own response reports for this exam over exam?.type
+    // from the store, which is the authoritative source rather than
+    // whatever happened to be in the store at this exact moment.
+    let examType: string | null | undefined = exam.type;
+    try {
+      const res = await apiFetch<{ data: { exam: { type: string | null } } }>(
+        `/v2/exam/end-exam/${exam.uuid}`,
+        { method: "POST", cache: "no-store" },
+      );
+      examType = res.data.exam.type;
+    } catch (error) {
+      console.error(error);
+    }
     const testTypeParam =
-      exam.type === "chapter"   ? "chapter-tests"    :
-      exam.type === "sectional" ? "sectional-tests"  :
+      examType === "chapter"   ? "chapter-tests"    :
+      examType === "sectional" ? "sectional-tests"  :
       "full-length-papers";
     router.replace(
       `/test-series/${exam.course?.group_code}?showReport=true&examId=${exam.uuid}&testType=${testTypeParam}`

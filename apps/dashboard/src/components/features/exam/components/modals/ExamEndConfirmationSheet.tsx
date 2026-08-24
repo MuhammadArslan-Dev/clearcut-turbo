@@ -20,10 +20,13 @@ import { apiFetch } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
 
 const endExamApi = async ({ examId }: { examId: string }) => {
-  return apiFetch(`/v2/exam/end-exam/${examId}`, {
-    method: "GET",
-    cache: "no-store",
-  });
+  return apiFetch<{ data: { exam: { type: string | null } } }>(
+    `/v2/exam/end-exam/${examId}`,
+    {
+      method: "POST",
+      cache: "no-store",
+    },
+  );
 };
 
 export default function ExamEndConfirmationSheet() {
@@ -45,14 +48,26 @@ export default function ExamEndConfirmationSheet() {
 
   const endExam = useCallback(async () => {
     handleClose();
+
+    // Reads the type from end-exam's own response, not exam?.type from the
+    // store: useGetExam only populates the store once its query for THIS
+    // examId resolves, and "End Test" is reachable from the very first
+    // paint (it's in the always-mounted layout Topbar, not gated behind
+    // MainContent's isLoading). Ending a test quickly — heavier
+    // sectional/full-length papers take longer to load than a 10-question
+    // chapter test, widening this window — could read the PREVIOUS exam's
+    // leftover type, sending testType (and therefore which tab/section
+    // list renders) to the wrong place after redirect.
+    let examType: string | null = exam?.type ?? null;
     try {
-      await endExamApi({ examId: exam?.uuid! });
+      const res = await endExamApi({ examId: exam?.uuid! });
+      examType = res.data.exam.type;
     } catch (error) {
       console.error("End exam failed:", error);
     }
     const testTypeParam =
-      exam?.type === "chapter" ? "chapter-tests" :
-      exam?.type === "sectional" ? "sectional-tests" :
+      examType === "chapter" ? "chapter-tests" :
+      examType === "sectional" ? "sectional-tests" :
       "full-length-papers";
     router.replace(
       `/test-series/${exam?.course?.group_code}?showReport=true&examId=${exam?.uuid}&testType=${testTypeParam}`,
