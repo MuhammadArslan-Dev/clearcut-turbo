@@ -29,7 +29,7 @@ export default function Header({ items = [], linkShow = true }: any) {
             height={37}
             priority
             sizes="(max-width: 768px) 120px, 190px"
-            className="aspect-[190/37] w-auto"
+            className="aspect-[190/37]"
           />
         </Link>
 
