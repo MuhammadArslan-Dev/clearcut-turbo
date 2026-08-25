@@ -553,7 +553,10 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              <div className="flex flex-col gap-2">
+              {/* Truecaller only works via its app deep-link — desktop has
+                  no app to hand off to, so the button (and its OR divider)
+                  only render below the md breakpoint. */}
+              <div className="flex md:hidden flex-col gap-2">
                 <Button
                   size="lg"
                   variant="outlined"
