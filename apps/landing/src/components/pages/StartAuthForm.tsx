@@ -25,6 +25,15 @@ import { identifyClarityUser } from "@clearcut/analytics/clarity";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
+// Persists the pending (unverified) signup's user_id across a page refresh
+// mid-flow. Without this, refreshing between "phone submitted" and "OTP
+// verified" loses it from this component's local state, so the next submit
+// omits user_id and AuthController::login creates a duplicate pending user
+// row instead of updating the existing one. Read directly (not via
+// useAuthStore's persisted pattern) because this value is never rendered —
+// it only feeds API payloads/analytics, so there's no hydration-mismatch
+// risk to guard against here.
+const PENDING_USER_ID_KEY = "pending_user_id";
 const REDIRECT_BASE_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in";
 
@@ -216,7 +225,11 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(() =>
+    typeof window !== "undefined"
+      ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
+      : "",
+  );
   const [isNewUser, setIsNewUser] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -363,7 +376,18 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
       localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
       setIsNewUser(Boolean(data?.is_new_user));
-      setUserId(data?.user_id ?? "");
+
+      // The backend only echoes `user_id` back for a genuinely new signup
+      // (AuthController::login) — an update to an already-known pending row
+      // returns none. Fall back to the id we already have instead of
+      // blanking it out, so a 2nd+ correction on the same pending row still
+      // carries it forward.
+      const nextUserId = data?.user_id ?? userId;
+      setUserId(nextUserId);
+      if (nextUserId) {
+        localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
+      }
+
       setSuccess(message);
 
       setResendTimer(RESEND_INTERVAL);
@@ -441,6 +465,9 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       if (status !== "success") throw new Error("Verification failed");
 
       setToken(data.token);
+      // Verified now — no longer a "pending" row a future refresh should
+      // try to reuse/update.
+      localStorage.removeItem(PENDING_USER_ID_KEY);
       trackFacebookLead(isNewUser, phone, userId);
       identifyClarityUser({ userId, phone });
 

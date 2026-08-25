@@ -21,6 +21,12 @@ import {
 import type { AuthApi } from "../api";
 
 const OTP_LENGTH = 4;
+// Same key/behavior as apps/landing's StartAuthForm — persists the pending
+// (unverified) signup's user_id across a page refresh mid-flow so a
+// resubmit updates that row instead of AuthController::login creating a
+// duplicate. Read directly (not via useAuthStore) since this widget
+// deliberately keeps its own independent local state (see file header).
+const PENDING_USER_ID_KEY = "pending_user_id";
 
 export type InlineAuthFlowSubmitButton = React.ComponentType<{
   showIcon?: boolean;
@@ -80,7 +86,11 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
     SubmitButton?: InlineAuthFlowSubmitButton;
   }) {
     const [phone, setPhone] = useState("");
-    const [userId, setUserId] = useState("");
+    const [userId, setUserId] = useState(() =>
+      typeof window !== "undefined"
+        ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
+        : "",
+    );
     const [isNewUser, setIsNewUser] = useState(false);
     const [otp, setOtp] = useState("");
     const [error, setError] = useState("");
@@ -137,7 +147,14 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         });
         const { message, status } = res?.data;
         setIsNewUser(res?.data?.data?.is_new_user || false);
-        setUserId(res?.data?.data?.user_id || "");
+        // The backend only echoes `user_id` back for a genuinely new signup
+        // — an update to an already-known pending row returns none. Fall
+        // back to the id already held instead of blanking it out.
+        const nextUserId = res?.data?.data?.user_id || userId;
+        setUserId(nextUserId);
+        if (nextUserId) {
+          localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
+        }
         if (status !== "success") { setError(message); return; }
         await onEvent?.("Verification Sent", { phone: number, source: "onboading_steps", verification_method: "Number", verification_mode: "SMS", verification_purpose: "Login" });
         await authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" });
@@ -173,6 +190,9 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         const { data, status } = res.data;
         if (status !== "success") throw new Error("Verification failed");
         setToken(data.token);
+        // Verified now — no longer a "pending" row a future refresh should
+        // try to reuse/update.
+        localStorage.removeItem(PENDING_USER_ID_KEY);
         trackFacebookLead(isNewUser, phone, userId);
         identifyClarityUser({ userId, phone });
         const redirectUrl = buildPostVerifyRedirectUrl({
