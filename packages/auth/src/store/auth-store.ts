@@ -1,4 +1,4 @@
-import { createStore } from "@clearcut/state/create-store";
+import { createPersistedStore } from "@clearcut/state/create-persisted-store";
 
 const isMobile = () =>
   typeof window !== "undefined" &&
@@ -44,9 +44,22 @@ export interface AuthState {
  * Factory (not a module-level singleton) so each app gets its own store
  * instance via `createAuthFeature`. 1:1 port of apps/landing's former
  * useAuthStore.ts, now built on the shared devtools-wrapped createStore.
+ *
+ * `userId` alone is persisted to localStorage (see `partialize` below) — the
+ * backend's login endpoint accepts an optional `user_id` and, when it
+ * matches an unverified/not-yet-tokened signup from the last 2 hours,
+ * UPDATES that same row instead of creating a new one (see
+ * AuthController::login). Without persisting it, a page refresh between
+ * "phone submitted" and "OTP verified" loses this value from React/Zustand
+ * state, so the next submit omits `user_id` and a duplicate pending user row
+ * gets created. Everything else here (screen, loading, phone, otp) stays
+ * ephemeral on purpose — reloading mid-flow should land back on a clean
+ * login screen, not a stuck loading/otp state.
  */
 export function createAuthStore() {
-  return createStore<AuthState>("authStore", (set) => ({
+  return createPersistedStore<AuthState, { userId: string }>(
+    "authStore",
+    (set) => ({
     // =============================
     // Initial State
     // =============================
@@ -163,7 +176,12 @@ export function createAuthStore() {
         phone: "",
         otp: "",
       })),
-  }));
+    }),
+    {
+      name: "clearcut-auth-pending-user",
+      partialize: (s) => ({ userId: s.userId }),
+    },
+  );
 }
 
 export type UseAuthStore = ReturnType<typeof createAuthStore>;
