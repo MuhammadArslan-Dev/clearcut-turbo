@@ -181,13 +181,19 @@ function ShieldCheckIcon() {
 // (subject to their brand guidelines) once real credentials are in.
 function TruecallerIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
-      <circle cx="12" cy="12" r="10" fill="#0087FF" fillOpacity="0.12" />
-      <path
-        d="M8 8.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5v1.19c0 .55-.31 1.05-.8 1.3l-1.7.86c.35 1 1.13 1.78 2.13 2.13l.86-1.7c.25-.49.75-.8 1.3-.8H18c.83 0 1.5.67 1.5 1.5 0 3.31-2.69 6-6 6h-.5C9.24 19 6.5 16.26 6.5 12.5V8.5H8z"
-        fill="#0087FF"
-        transform="translate(-1.5 -1.5) scale(0.85)"
-      />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0">
+      <circle cx="12" cy="12" r="12" fill="#0087FF" />
+      <text
+        x="12"
+        y="16.5"
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="700"
+        fontFamily="inherit"
+        fill="#fff"
+      >
+        T
+      </text>
     </svg>
   );
 }
@@ -561,6 +567,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   size="lg"
                   variant="outlined"
                   sx={{ borderRadius: "50px" }}
+                  className="!bg-brand/5 hover:!bg-brand/10 !border-[#0087FF]/30 shadow-sm"
                   fullWidth
                   onClick={startTruecallerLogin}
                   disabled={truecallerBusy}
