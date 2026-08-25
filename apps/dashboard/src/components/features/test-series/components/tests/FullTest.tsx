@@ -355,38 +355,45 @@ export const ChangePaperButton = () => {
 
   const localizedName = parsedName?.[locale]?.name ?? paper?.name ?? "";
 
+  // Outer white/border-brand card kept (that's the intended look) — only the
+  // extra empty space around the inner pill is gone. The old middle wrapper
+  // (`flex items-center justify-between w-full`) had a single child, so
+  // `w-full` just stretched it out to the outer's max-w-[400px], leaving
+  // blank white space beside the pill inside the border. Dropping that
+  // wrapper lets the outer card shrink-wrap to the inner pill's actual
+  // width. `hidden 2md:flex` moved onto the outer card so the border/bg-white
+  // frame doesn't render on its own (empty) between the md and 2md
+  // breakpoints, when previously only the inner pill hid there.
   return (
-    <div className="mx-h-[72px] max-w-[400px] md:rounded-xl flex items-center px-4 py-3 md:border md:border-brand bg-white">
-      <div className="flex items-center justify-between w-full">
-        <div className="hidden 2md:flex items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-3">
-          <Text
-            as="span"
-            variant="body-large"
-            weight="normal"
-            color="gray-muted"
-            className="hidden 2lg:block truncate"
-          >
-            {highlightTextUtil(
-              `${changeP("title")} : ${localizedName}`,
-              [localizedName],
-              "body-large text-surface-gray-subtle !font-semibold",
-            )}
-          </Text>
+    <div className="hidden 2md:flex max-w-[400px] items-center px-4 py-3 md:rounded-xl md:border md:border-brand bg-white">
+      <div className="flex items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-3">
+        <Text
+          as="span"
+          variant="body-large"
+          weight="normal"
+          color="gray-muted"
+          className="hidden 2lg:block truncate"
+        >
+          {highlightTextUtil(
+            `${changeP("title")} : ${localizedName}`,
+            [localizedName],
+            "body-large text-surface-gray-subtle !font-semibold",
+          )}
+        </Text>
 
-          <Button
-            size="sm"
-            variant="outlined"
-            sx={{ borderRadius: "50px" }}
-            onClick={() => open("change-paper-modal")}
-          >
-            <div className="flex items-center gap-2">
-              <span className="body-small !font-semibold hidden lg:block">
-                {changeP("title")}
-              </span>
-              <CircleIcon size={20} color="#0083ff" />
-            </div>
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="outlined"
+          sx={{ borderRadius: "50px" }}
+          onClick={() => open("change-paper-modal")}
+        >
+          <div className="flex items-center gap-2">
+            <span className="body-small !font-semibold hidden lg:block">
+              {changeP("title")}
+            </span>
+            <CircleIcon size={20} color="#0083ff" />
+          </div>
+        </Button>
       </div>
     </div>
   );
