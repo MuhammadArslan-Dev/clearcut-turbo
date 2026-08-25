@@ -14,7 +14,9 @@
     "./use-web-otp-autofill": "./src/use-web-otp-autofill.ts",
     "./truecaller": "./src/truecaller.ts",
     "./validators": "./src/validators.ts",
-    "./create-auth-feature": "./src/create-auth-feature.tsx"
+    "./create-auth-feature": "./src/create-auth-feature.tsx",
+    "./icons/truecaller-icon": "./src/icons/truecaller-icon.tsx",
+    "./icons/whatsapp-icon": "./src/icons/whatsapp-icon.tsx"
   },
   "dependencies": {
     "@clearcut/analytics": "workspace:*",

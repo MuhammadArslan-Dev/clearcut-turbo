@@ -174,6 +174,15 @@
      (which only need 3:1). Not to be confused with --color-brand-dark, whose
      correct value is still an open question — see the repo CLAUDE.md. */
   --color-brand-accessible: #0069cc;
+  /* Third-party brand colours (NOT part of Clear Cutoff's own palette) —
+     fixed values their own brand guidelines specify, used only for the
+     Truecaller/WhatsApp login buttons (packages/auth's login-screen.tsx and
+     apps/landing's StartAuthForm.tsx) so they stay recognizable as those
+     providers rather than picking up our blue. Tokenized (not raw hex at
+     each call site) purely to keep the colour-guard baseline honest — these
+     were previously duplicated as literals in multiple files. */
+  --color-truecaller-brand: #0087ff;
+  --color-whatsapp-brand: #25d366;
   /* NOTE: --color-textWhite is an alias of --primary-foreground and now lives in
      the @theme inline block below (var() is not resolved inside @theme). Its
      camelCase name and the raw-colour word "White" both violate the repo's

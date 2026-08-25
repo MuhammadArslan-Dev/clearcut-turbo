@@ -13,14 +13,10 @@ const FB_PIXEL_ID = "1126041265682766";
 // inside a track() call's custom-data object, which Meta doesn't auto-hash.
 // Same fix already applied to the "Lead" event (packages/auth/src/
 // facebook-pixel.ts) and to the payment page (setMetaUserData in
-// payment/initiated/page.tsx); CompleteRegistration/StartTrial fire from
-// here instead, and were missing it, which is why Phone/External ID showed
-// on only ~2% of Complete Registration events and 0% of Start Trial events.
-// Reads the auth cache directly (not useAuth()) because this component is
-// mounted as a sibling of AuthProvider, not a child of it — see layout.tsx.
-function setMetaUserData() {
-  if (typeof window === "undefined" || !window.fbq) return;
-
+// payment/initiated/page.tsx). Reads the auth cache directly (not useAuth())
+// because this component is mounted as a sibling of AuthProvider, not a
+// child of it — see layout.tsx.
+function getCachedUserData(): { ph?: string; external_id?: string } | null {
   const cachedUser = getCachedUser<UserPreview>();
   const digits = cachedUser?.phone?.replace(/\D/g, "");
 
@@ -31,9 +27,34 @@ function setMetaUserData() {
   }
   if (cachedUser?.id) userData.external_id = String(cachedUser.id);
 
-  if (Object.keys(userData).length > 0) {
-    window.fbq("init", FB_PIXEL_ID, userData);
+  return Object.keys(userData).length > 0 ? userData : null;
+}
+
+function setMetaUserData(userData: { ph?: string; external_id?: string }) {
+  if (typeof window === "undefined" || !window.fbq) return;
+  window.fbq("init", FB_PIXEL_ID, userData);
+}
+
+// CompleteRegistration/StartTrial fire on the FIRST-EVER dashboard load after
+// registration/a first purchase — exactly when the auth cache AuthProvider
+// writes to (after its own ~second-plus /v1/me round trip) is still empty.
+// A synchronous cache read here loses the race almost every time for a truly
+// new user, which is why Phone/External ID showed on only 53.8% of Start
+// Trial and 74.19% of Complete Registration events (vs ~100% for Lead/
+// Purchase, which fire once the cache already exists from an earlier visit).
+// Polling this same cache for a few seconds — instead of an independent
+// fetch — is deliberate: FacebookPixel mounts as AuthProvider's sibling, not
+// its child (see layout.tsx), so there's no context to await, and the token
+// AuthProvider is about to save from the URL isn't guaranteed written yet on
+// this component's very first effect run either.
+async function waitForCachedUserData(maxWaitMs = 4000, intervalMs = 250) {
+  const deadline = Date.now() + maxWaitMs;
+  let data = getCachedUserData();
+  while (!data && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    data = getCachedUserData();
   }
+  return data;
 }
 
 export default function FacebookPixel() {
@@ -43,8 +64,12 @@ export default function FacebookPixel() {
 
   useEffect(() => {
     if (!window.fbq) return;
+    // Captured once so the async one-shot callbacks below (which run after
+    // this effect returns) don't need TS to re-narrow `window.fbq` across a
+    // closure boundary — it's already known non-null here.
+    const fbq = window.fbq;
 
-    window.fbq("track", "PageView");
+    fbq("track", "PageView");
 
     // One-shot signals appended by the navigation that lands the user here.
     // Each is stripped after firing so a refresh/back-navigation to this URL
@@ -55,10 +80,12 @@ export default function FacebookPixel() {
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
-      setMetaUserData();
-      window.fbq("track", "CompleteRegistration", {
-        value: 0.0,
-        currency: "INR",
+      waitForCachedUserData().then((userData) => {
+        if (userData) setMetaUserData(userData);
+        fbq("track", "CompleteRegistration", {
+          value: 0.0,
+          currency: "INR",
+        });
       });
       params.delete("user_type");
       hasOneShotSignal = true;
@@ -67,8 +94,10 @@ export default function FacebookPixel() {
     // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
     // here is the "start trial" moment for that subject.
     if (params.get("subject_selected") === "1") {
-      setMetaUserData();
-      window.fbq("track", "StartTrial");
+      waitForCachedUserData().then((userData) => {
+        if (userData) setMetaUserData(userData);
+        fbq("track", "StartTrial");
+      });
       params.delete("subject_selected");
       hasOneShotSignal = true;
     }
