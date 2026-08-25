@@ -11,6 +11,7 @@ import { DrawerSheet } from "../ui/drawer-sheet";
 import { Modal } from "../ui/modal";
 import MainAppLogo from "../icons/main-app-logo";
 import FireIcon from "../icons/fire-icon";
+import WhatsappIcon from "../icons/whatsapp-icon";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -19,15 +20,52 @@ import {
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
   isFakeMobileNumber as isFakeNumber,
 } from "../validators";
-import type { AuthScreenDeps } from "./types";
+import { setToken } from "../token";
+import { buildPostVerifyRedirectUrl } from "../redirect";
+import { useTruecallerLogin } from "../truecaller";
+import { identifyClarityUser } from "@clearcut/analytics/clarity";
+import type { CreateOtpScreenOptions } from "./otp-screen";
 
 const FAKE_NUMBER_ERROR = "Enter only a real mobile number";
+
+// Same wa.me pre-filled-chat pattern as apps/landing's StartAuthForm — pure
+// frontend, no backend call. An n8n automation watching this WhatsApp number
+// handles everything past the user tapping send (identify sender, create/
+// look up account, reply with a login link).
+const WHATSAPP_NUMBER = "917404758398";
+const WHATSAPP_DEFAULT_MESSAGE = "Hi, I want to login to Clear Cutoff";
+
+// Generic placeholder mark — swap for Truecaller's actual brand icon
+// (subject to their brand guidelines) if this becomes visible.
+function TruecallerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0">
+      <circle cx="12" cy="12" r="12" fill="#0087FF" />
+      <text
+        x="12"
+        y="16.5"
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="700"
+        fontFamily="inherit"
+        fill="#fff"
+      >
+        T
+      </text>
+    </svg>
+  );
+}
 
 /**
  * 1:1 port of apps/landing's former login-screen.tsx, parameterized by the
  * app's authApi/stores/analytics instead of importing them directly.
  */
-export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreenDeps) {
+export function createLoginScreen({
+  authApi,
+  useAuthStore,
+  onEvent,
+  redirectBaseUrl,
+}: CreateOtpScreenOptions) {
   function LoginScreen() {
     const {
       phone,
@@ -55,6 +93,39 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
 
     const hasTrackedRef = useRef(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
+
+    /* ---------------- TRUECALLER ---------------- */
+
+    const {
+      state: truecallerState,
+      error: truecallerError,
+      start: startTruecallerLogin,
+    } = useTruecallerLogin(authApi, (result) => {
+      setToken(result.token);
+
+      const tcUser = result.user as { uuid?: string; phone?: string } | undefined;
+      identifyClarityUser({ userId: tcUser?.uuid, phone: tcUser?.phone });
+
+      const lang = localStorage.getItem("locale") || "";
+      const course = localStorage.getItem("course");
+
+      const redirectUrl = buildPostVerifyRedirectUrl({
+        baseUrl: redirectBaseUrl,
+        token: result.token,
+        hasCourse: result.hasCourse,
+        userType: "old",
+        lang,
+        course,
+      });
+
+      window.location.replace(redirectUrl);
+    });
+
+    const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+
+    const handleWhatsAppLogin = () => {
+      window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
+    };
 
     /* ---------------- ANALYTICS ---------------- */
 
@@ -278,6 +349,60 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
 
                   <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
                     <div className="flex flex-col gap-5 w-full items-center">
+                      {/* Truecaller only works via its app deep-link —
+                          desktop has no app to hand off to, so this row (and
+                          its OR divider) only render below the md
+                          breakpoint. */}
+                      <div className="flex md:hidden flex-col gap-2 w-full">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            sx={{ borderRadius: "50px" }}
+                            className="!bg-brand/5 hover:!bg-brand/10 !border-[#0087FF]/30 shadow-sm"
+                            fullWidth
+                            onClick={startTruecallerLogin}
+                            disabled={truecallerBusy}
+                            loading={truecallerBusy}
+                            leftIcon={<TruecallerIcon />}
+                          >
+                            {truecallerState === "waiting" ? "Waiting…" : "Truecaller"}
+                          </Button>
+
+                          {/* "Login with WhatsApp" — logic is fully wired
+                              (handleWhatsAppLogin, the wa.me deep link), just
+                              not shown yet. Uncomment to go live. */}
+                          {/* <Button
+                            size="sm"
+                            variant="outlined"
+                            sx={{ borderRadius: "50px" }}
+                            className="!bg-[#25D366]/5 hover:!bg-[#25D366]/10 !border-[#25D366]/30 shadow-sm"
+                            fullWidth
+                            onClick={handleWhatsAppLogin}
+                            leftIcon={<WhatsappIcon size={20} color="#25D366" />}
+                          >
+                            WhatsApp
+                          </Button> */}
+                        </div>
+
+                        {truecallerState === "unavailable" && (
+                          <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
+                            Truecaller app not found — continue below
+                          </p>
+                        )}
+                        {truecallerState === "error" && truecallerError && (
+                          <p className="text-sm text-center text-red-600">{truecallerError}</p>
+                        )}
+
+                        <div className="flex items-center gap-3 py-1 w-full">
+                          <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                          <Text as="span" variant="body-small" color="gray-muted">
+                            OR
+                          </Text>
+                          <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                        </div>
+                      </div>
+
                       {/* INPUT */}
                       <div className="space-y-4 w-full">
                         <div className="flex gap-3 items-center">
