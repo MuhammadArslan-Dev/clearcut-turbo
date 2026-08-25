@@ -218,7 +218,12 @@ export function createLoginScreen({ authApi, useAuthStore, onEvent }: AuthScreen
         localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
 
         setSuccess(message);
-        setUserId(data?.user_id);
+        // The backend only echoes `user_id` back for a genuinely new signup
+        // (AuthController::login) — an update to an already-known pending
+        // row returns none. Fall back to the id already held instead of
+        // blanking it out, so a 2nd+ correction on the same pending row
+        // still carries it forward (and stays persisted — see auth-store.ts).
+        setUserId(data?.user_id ?? userId);
 
         setTimeout(loginSuccess, 200);
       } catch {

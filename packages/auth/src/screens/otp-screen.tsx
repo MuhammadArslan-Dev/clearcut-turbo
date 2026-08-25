@@ -56,6 +56,7 @@ export function createOtpScreen({
     const {
       phone,
       userId,
+      setUserId,
       otp,
       setOtp,
       goToLogin,
@@ -143,6 +144,9 @@ export function createOtpScreen({
         if (status !== "success") throw new Error("Verification failed");
 
         setToken(data.token);
+        // Verified now — no longer a "pending" row a future refresh should
+        // try to reuse/update (also clears the persisted localStorage copy).
+        setUserId("");
         trackFacebookLead(
           localStorage.getItem("is_new_user") === "true",
           phone,
