@@ -21,6 +21,8 @@ import { buildPostVerifyRedirectUrl } from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import { useTruecallerLogin } from "@clearcut/auth/truecaller";
+import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
+import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 
 const OTP_LENGTH = 4;
@@ -182,42 +184,6 @@ function ShieldCheckIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// Generic placeholder mark — swap for Truecaller's actual brand icon
-// (subject to their brand guidelines) once real credentials are in.
-function TruecallerIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0">
-      <circle cx="12" cy="12" r="12" fill="#0087FF" />
-      <text
-        x="12"
-        y="16.5"
-        textAnchor="middle"
-        fontSize="13"
-        fontWeight="700"
-        fontFamily="inherit"
-        fill="#fff"
-      >
-        T
-      </text>
-    </svg>
-  );
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0">
-      <path
-        d="M11.5143 2.01158C6.2043 2.26158 2.0153 6.65158 2.0313 11.9286C2.03393 13.4819 2.40582 15.0123 3.1163 16.3936L2.0583 21.4946C2.04539 21.5584 2.04877 21.6244 2.06812 21.6865C2.08748 21.7486 2.12219 21.8048 2.16904 21.85C2.21589 21.8952 2.27337 21.9278 2.33616 21.9448C2.39896 21.9619 2.46504 21.9628 2.5283 21.9476L7.5623 20.7636C8.89558 21.4224 10.3592 21.775 11.8463 21.7956C17.2733 21.8786 21.7973 17.6006 21.9663 12.2156C22.1483 6.44058 17.3493 1.73458 11.5143 2.01058V2.01158ZM17.5213 17.3786C16.7958 18.1015 15.9347 18.6741 14.9875 19.0637C14.0403 19.4532 13.0255 19.652 12.0013 19.6486C10.7963 19.6523 9.60698 19.3756 8.5273 18.8406L7.8263 18.4936L4.7393 19.2196L5.3893 16.0886L5.0433 15.4166C4.4824 14.3293 4.19153 13.123 4.1953 11.8996C4.1953 9.82958 5.0073 7.88258 6.4813 6.41958C7.95049 4.96528 9.93405 4.14922 12.0013 4.14858C14.0873 4.14858 16.0473 4.95458 17.5213 6.41858C18.2475 7.13421 18.8238 7.98742 19.2165 8.92834C19.6092 9.86926 19.8103 10.879 19.8083 11.8986C19.8083 13.9506 18.9833 15.9286 17.5213 17.3796V17.3786Z"
-        fill="#25D366"
-      />
-      <path
-        d="M16.8424 14.045L14.9114 13.495C14.7868 13.4592 14.6548 13.4576 14.5294 13.4903C14.404 13.5231 14.2896 13.5889 14.1984 13.681L13.7264 14.159C13.6287 14.2579 13.5041 14.3259 13.368 14.3543C13.2319 14.3828 13.0905 14.3705 12.9614 14.319C12.0484 13.952 10.1264 12.256 9.63538 11.407C9.56655 11.2871 9.53511 11.1493 9.54509 11.0114C9.55507 10.8735 9.60601 10.7418 9.69138 10.633L10.1034 10.103C10.1827 10.0015 10.2329 9.88023 10.2486 9.75234C10.2642 9.62445 10.2448 9.4947 10.1924 9.377L9.38038 7.553C9.33446 7.45105 9.26551 7.36114 9.17896 7.29034C9.09242 7.21954 8.99063 7.16979 8.8816 7.14498C8.77257 7.12017 8.65928 7.12098 8.55062 7.14736C8.44196 7.17374 8.3409 7.22496 8.25538 7.297C7.71638 7.75 7.07638 8.437 6.99938 9.2C6.86238 10.543 7.44238 12.236 9.63638 14.27C12.1714 16.619 14.2024 16.93 15.5234 16.611C16.2734 16.431 16.8734 15.708 17.2504 15.117C17.3107 15.0231 17.3481 14.9164 17.3596 14.8054C17.3712 14.6945 17.3565 14.5823 17.3168 14.4781C17.2771 14.3738 17.2135 14.2803 17.1311 14.2051C17.0487 14.1299 16.9498 14.075 16.8424 14.045Z"
-        fill="#25D366"
       />
     </svg>
   );
@@ -588,18 +554,16 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              {/* Truecaller only works via its app deep-link — desktop has
-                  no app to hand off to, so this row (and its OR divider)
-                  only render below the md breakpoint. WhatsApp's wa.me link
-                  works on desktop too, but stays paired here rather than
-                  getting its own separate desktop layout. */}
-              <div className="flex md:hidden flex-col gap-2">
+              {/* Truecaller + WhatsApp login — both fully wired
+                  (startTruecallerLogin / handleWhatsAppLogin), just not
+                  shown yet. Uncomment to go live. */}
+              {/* <div className="flex md:hidden flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="outlined"
                     sx={{ borderRadius: "50px" }}
-                    className="!bg-brand/5 hover:!bg-brand/10 !border-[#0087FF]/30 shadow-sm"
+                    className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
                     fullWidth
                     onClick={startTruecallerLogin}
                     disabled={truecallerBusy}
@@ -609,17 +573,14 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
                   </Button>
 
-                  {/* "Login with WhatsApp" — logic is fully wired
-                      (handleWhatsAppLogin, the wa.me deep link), just not
-                      shown yet. Uncomment to go live. */}
                   <Button
                     size="sm"
                     variant="outlined"
                     sx={{ borderRadius: "50px" }}
-                    className="!bg-[#25D366]/5 hover:!bg-[#25D366]/10 !border-[#25D366]/30 shadow-sm"
+                    className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
                     fullWidth
                     onClick={handleWhatsAppLogin}
-                    leftIcon={<WhatsAppIcon />}
+                    leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
                   >
                     {t.whatsappBtn}
                   </Button>
@@ -641,7 +602,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   </Text>
                   <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                 </div>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
