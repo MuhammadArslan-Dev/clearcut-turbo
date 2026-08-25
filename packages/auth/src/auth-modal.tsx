@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useHydrateStore } from "@clearcut/state/use-hydrate-store";
 
 import type { CreateOtpScreenOptions } from "./screens/otp-screen";
 
@@ -22,6 +23,10 @@ export function createAuthModal(deps: CreateOtpScreenOptions) {
 
   function AuthModal() {
     const { screen } = deps.useAuthStore();
+    // authStore persists `userId` (see store/auth-store.ts) — this is the
+    // one always-mounted component (root layout, every app using this
+    // factory) where that deferred localStorage read can happen.
+    useHydrateStore(deps.useAuthStore);
 
     return (
       <>
