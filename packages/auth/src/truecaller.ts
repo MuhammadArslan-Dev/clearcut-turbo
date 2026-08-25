@@ -88,7 +88,16 @@ export function useTruecallerLogin(
 
       appOpenTimerRef.current = setTimeout(() => {
         if (document.visibilityState === "visible") {
-          clearTimers();
+          // Soften the UI to "probably not installed" WITHOUT stopping the
+          // poll/max-wait timers below. This is a heuristic, not a
+          // certainty — some browsers show an "Open in app?" interstitial
+          // before actually switching, so the page can still read as
+          // "visible" even though the user goes on to approve in Truecaller
+          // a moment later. Truecaller's server calls our backend directly,
+          // independent of this tab, so if polling had already been killed
+          // here, that later approval would complete server-side with
+          // nobody left listening for it — exactly the "record created but
+          // never redirected" symptom.
           setState("unavailable");
         }
       }, APP_OPEN_GRACE_MS);
@@ -120,9 +129,11 @@ export function useTruecallerLogin(
 
           setState("error");
           setError(
-            data.status === "expired"
-              ? "Truecaller login expired. Please try again."
-              : "Truecaller login failed. Please try again.",
+            data.error
+              ? data.error
+              : data.status === "expired"
+                ? "Truecaller login expired. Please try again."
+                : "Truecaller login failed. Please try again.",
           );
         } catch {
           // A single failed poll shouldn't kill the whole flow — network

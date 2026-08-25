@@ -53,6 +53,9 @@ export interface TruecallerStatusResponseData {
   token_type?: string;
   has_course?: boolean;
   user?: unknown;
+  /** Present on "failed" — the specific reason (e.g. "Only Indian mobile
+   * numbers are supported."), shown as-is instead of a generic message. */
+  error?: string;
 }
 
 /**
