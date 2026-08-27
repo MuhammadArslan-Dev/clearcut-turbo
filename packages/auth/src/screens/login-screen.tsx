@@ -23,7 +23,7 @@ import {
 } from "../validators";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
-import { useTruecallerLogin } from "../truecaller";
+import { useTruecallerLogin, useTruecallerAvailability } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
 
@@ -102,6 +102,7 @@ export function createLoginScreen({
     });
 
     const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+    const truecallerAvailability = useTruecallerAvailability();
 
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
@@ -329,55 +330,61 @@ export function createLoginScreen({
 
                   <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
                     <div className="flex flex-col gap-5 w-full items-center">
-                      {/* Truecaller + WhatsApp login — both fully wired
-                          (startTruecallerLogin / handleWhatsAppLogin), just
-                          not shown yet. Uncomment to go live. */}
-                      {/* <div className="flex md:hidden flex-col gap-2 w-full">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outlined"
-                            sx={{ borderRadius: "50px" }}
-                            className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
-                            fullWidth
-                            onClick={startTruecallerLogin}
-                            disabled={truecallerBusy}
-                            loading={truecallerBusy}
-                            leftIcon={<TruecallerIcon />}
-                          >
-                            {truecallerState === "waiting" ? "Waiting…" : "Truecaller"}
-                          </Button>
+                      {/* Only rendered once useTruecallerAvailability's early,
+                          on-first-interaction probe confirms the app is on
+                          this device — see that hook's docblock for why
+                          "hidden until confirmed" is the point, and the
+                          unavoidable trade-off of probing before the click.
+                          WhatsApp login is fully wired (handleWhatsAppLogin)
+                          but not shown yet — uncomment to go live. */}
+                      {truecallerAvailability === "available" && (
+                        <div className="flex md:hidden flex-col gap-2 w-full">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outlined"
+                              sx={{ borderRadius: "50px" }}
+                              className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
+                              fullWidth
+                              onClick={startTruecallerLogin}
+                              disabled={truecallerBusy}
+                              loading={truecallerBusy}
+                              leftIcon={<TruecallerIcon />}
+                            >
+                              {truecallerState === "waiting" ? "Waiting…" : "Truecaller"}
+                            </Button>
 
-                          <Button
-                            size="sm"
-                            variant="outlined"
-                            sx={{ borderRadius: "50px" }}
-                            className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
-                            fullWidth
-                            onClick={handleWhatsAppLogin}
-                            leftIcon={<WhatsappIcon size={20} color="var(--color-whatsapp-brand)" />}
-                          >
-                            WhatsApp
-                          </Button>
+                            {/* <Button
+                              size="sm"
+                              variant="outlined"
+                              sx={{ borderRadius: "50px" }}
+                              className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
+                              fullWidth
+                              onClick={handleWhatsAppLogin}
+                              leftIcon={<WhatsappIcon size={20} color="var(--color-whatsapp-brand)" />}
+                            >
+                              WhatsApp
+                            </Button> */}
+                          </div>
+
+                          {truecallerState === "unavailable" && (
+                            <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
+                              Truecaller app not found — continue below
+                            </p>
+                          )}
+                          {truecallerState === "error" && truecallerError && (
+                            <p className="text-sm text-center text-red-600">{truecallerError}</p>
+                          )}
+
+                          <div className="flex items-center gap-3 py-1 w-full">
+                            <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                            <Text as="span" variant="body-small" color="gray-muted">
+                              OR
+                            </Text>
+                            <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                          </div>
                         </div>
-
-                        {truecallerState === "unavailable" && (
-                          <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
-                            Truecaller app not found — continue below
-                          </p>
-                        )}
-                        {truecallerState === "error" && truecallerError && (
-                          <p className="text-sm text-center text-red-600">{truecallerError}</p>
-                        )}
-
-                        <div className="flex items-center gap-3 py-1 w-full">
-                          <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                          <Text as="span" variant="body-small" color="gray-muted">
-                            OR
-                          </Text>
-                          <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                        </div>
-                      </div> */}
+                      )}
 
                       {/* INPUT */}
                       <div className="space-y-4 w-full">

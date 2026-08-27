@@ -10,6 +10,7 @@ import MainThemeProvider from "@/components/providers/main-theme-provider";
 import { AuthProvider, AuthModal } from "@/lib/auth";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
 import AnalyticsProvider from "@clearcut/analytics/provider";
+import { Agentation } from "agentation";
 
 export const dynamicParams = true;
 
@@ -80,6 +81,8 @@ export default async function LocaleLayout({
           </MainThemeProvider>
 
           <AnalyticsProvider />
+
+          {process.env.NODE_ENV === "development" && <Agentation />}
       </body>
     </html>
   );

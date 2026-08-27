@@ -82,10 +82,10 @@ export default function FacebookPixel() {
     if (params.get("user_type") === "new") {
       waitForCachedUserData().then((userData) => {
         if (userData) setMetaUserData(userData);
-        fbq("track", "CompleteRegistration", {
-          value: 0.0,
-          currency: "INR",
-        });
+        // No value/currency — registration has no monetary amount, and
+        // Meta's Events Manager flagged formatting/missing-value issues on
+        // this pair, so they're left out rather than sent as a placeholder.
+        fbq("track", "CompleteRegistration");
       });
       params.delete("user_type");
       hasOneShotSignal = true;

@@ -18,7 +18,7 @@ interface Preset {
 
 const PRESETS: Record<PresetKey, Preset> = {
   photo: { label: "Photo", sublabel: "Passport size", width: 200, height: 230, minKB: 20, maxKB: 50 },
-  signature: { label: "Signature", sublabel: "Digital sign", width: 140, height: 60, minKB: 10, maxKB: 20 },
+  signature: { label: "Signature", sublabel: "Digital sign", width: 200, height: 230, minKB: 20, maxKB: 50 },
   custom: { label: "Custom", sublabel: "Your own size", width: 200, height: 200, minKB: 20, maxKB: 100 },
 };
 
@@ -88,15 +88,78 @@ function drawCover(
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
 }
 
-// Steps JPEG quality down until the file fits under maxKB (or quality bottoms
-// out) — the same "compress to a target size" approach every exam-photo
-// resizer uses, since there's no direct way to ask a browser's encoder for
-// an exact byte count.
+// `<input type="date">` always gives an ISO yyyy-mm-dd value regardless of
+// the browser's display locale — exam portals want DD/MM/YYYY on the photo
+// itself (matching the reference site's output), so this reformats rather
+// than trusting whatever the input happened to display while typing.
+function formatDateDDMMYYYY(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  if (!y || !m || !d) return isoDate;
+  return `${d}/${m}/${y}`;
+}
+
+// Government exam requirements (SSC/UPSC/NEET etc.) print the candidate's
+// name and a date on ONE line at the bottom of the signature — centered as
+// a group, bold and plain.
+function drawNameDateStamp(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  isoDate: string,
+  width: number,
+  height: number,
+) {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textColor = rootStyle.getPropertyValue("--color-text-gray-normal").trim() || "black";
+
+  const stripHeight = ctx.canvas.height - height;
+  let fontSize = Math.max(10, Math.round(stripHeight * 0.5));
+  const baselineY = height + stripHeight / 2 + 1;
+  const padding = width * 0.04;
+  const gap = width * 0.04;
+
+  const nameText = name ? name.toUpperCase() : "";
+  const dateText = isoDate ? formatDateDDMMYYYY(isoDate) : "";
+
+  ctx.fillStyle = textColor;
+  ctx.textBaseline = "middle";
+
+  // Measure both strings at the natural size and shrink the font until the
+  // combined group fits with room to spare — a fixed 60/40 width split (the
+  // earlier approach) still let a long name run into the date for names
+  // like "RIYA SHARMA".
+  ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+  const availableWidth = width - padding * 2;
+  const nameWidth = ctx.measureText(nameText).width;
+  const dateWidth = ctx.measureText(dateText).width;
+  const groupGap = nameText && dateText ? gap : 0;
+  let combinedWidth = nameWidth + dateWidth + groupGap;
+  if (combinedWidth > availableWidth && combinedWidth > 0) {
+    fontSize = Math.max(8, Math.floor(fontSize * (availableWidth / combinedWidth)));
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    combinedWidth = ctx.measureText(nameText).width + ctx.measureText(dateText).width + groupGap;
+  }
+
+  // Center the name+date pair as one group instead of pinning name/date to
+  // opposite edges — both draws use "left" alignment from a shared start
+  // point so the visible gap between them stays exactly `groupGap`.
+  let x = (width - combinedWidth) / 2;
+  ctx.textAlign = "left";
+  if (nameText) {
+    ctx.fillText(nameText, x, baselineY);
+    x += ctx.measureText(nameText).width + groupGap;
+  }
+  if (dateText) {
+    ctx.fillText(dateText, x, baselineY);
+  }
+}
+
 async function resizeAndCompress(
   file: File,
   width: number,
   height: number,
   maxKB: number,
+  stampName?: string,
+  stampDate?: string,
 ): Promise<Blob> {
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -110,7 +173,17 @@ async function resizeAndCompress(
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
-    drawCover(ctx, img, width, height);
+
+    const trimmedName = stampName?.trim();
+
+    if (trimmedName || stampDate) {
+      const stripHeight = Math.max(16, Math.round(height * 0.16));
+      const imageAreaHeight = height - stripHeight;
+      drawCover(ctx, img, width, imageAreaHeight);
+      drawNameDateStamp(ctx, trimmedName ?? "", stampDate ?? "", width, imageAreaHeight);
+    } else {
+      drawCover(ctx, img, width, height);
+    }
 
     let quality = 0.92;
     let blob = await canvasToJpegBlob(canvas, quality);
@@ -167,6 +240,8 @@ export default function ResizeImageTool() {
   const [width, setWidth] = useState(PRESETS.photo.width);
   const [height, setHeight] = useState(PRESETS.photo.height);
   const [maxKB, setMaxKB] = useState(PRESETS.photo.maxKB);
+  const [stampName, setStampName] = useState("");
+  const [stampDate, setStampDate] = useState("");
 
   const [file, setFile] = useState<File | null>(null);
   const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string | null>(null);
@@ -205,6 +280,10 @@ export default function ResizeImageTool() {
     setWidth(PRESETS[key].width);
     setHeight(PRESETS[key].height);
     setMaxKB(PRESETS[key].maxKB);
+    if (key !== "signature") {
+      setStampName("");
+      setStampDate("");
+    }
   };
 
   const processFile = useCallback(
@@ -231,7 +310,14 @@ export default function ResizeImageTool() {
 
       try {
         const [blob] = await Promise.all([
-          resizeAndCompress(selected, width, height, maxKB),
+          resizeAndCompress(
+            selected,
+            width,
+            height,
+            maxKB,
+            preset === "signature" ? stampName : undefined,
+            preset === "signature" ? stampDate : undefined,
+          ),
           delay(MIN_PROCESSING_MS),
         ]);
         setResult((prev) => {
@@ -244,8 +330,22 @@ export default function ResizeImageTool() {
         setStep("configure");
       }
     },
-    [width, height, maxKB, originalPreviewUrl],
+    [width, height, maxKB, preset, stampName, stampDate, originalPreviewUrl],
   );
+
+  // Editing the name/date after an image is already selected re-stamps the
+  // SAME file instead of forcing "Process Another" + a fresh upload just to
+  // fix a typo. Debounced so it reprocesses once typing pauses, not on
+  // every keystroke. Deliberately keyed only on stampName/stampDate (not
+  // `file`, which already triggers its own processFile call on selection).
+  useEffect(() => {
+    if (!file) return;
+    const timer = setTimeout(() => {
+      processFile(file);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stampName, stampDate]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -320,7 +420,7 @@ export default function ResizeImageTool() {
             </div>
           </div>
 
-          {preset === "custom" ? (
+          {preset === "custom" || preset === "signature" ? (
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Text as="label" variant="body-small" color="gray-muted">
@@ -367,6 +467,35 @@ export default function ResizeImageTool() {
               <span className="px-3 py-1 rounded-full text-sm bg-brand/8 text-[var(--color-primary-strong)] font-medium">
                 Format: JPG
               </span>
+            </div>
+          )}
+
+          {preset === "signature" && (
+            <div className="space-y-1.5">
+              <Text as="label" variant="body-small" weight="semibold" color="gray-muted">
+                Add name &amp; date (optional)
+              </Text>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={stampName}
+                  onChange={(e) => setStampName(e.target.value)}
+                  placeholder="e.g. RAHUL SHARMA"
+                  maxLength={30}
+                  style={{ textTransform: "uppercase" }}
+                  className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium"
+                />
+                <input
+                  type="date"
+                  value={stampDate}
+                  onChange={(e) => setStampDate(e.target.value)}
+                  className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium"
+                />
+              </div>
+              <Text as="p" variant="body-small" color="gray-muted">
+                Required by SSC, UPSC, NEET and other boards — printed in block letters at the bottom, inside the
+                same {width}×{height}px size.
+              </Text>
             </div>
           )}
 

@@ -152,3 +152,90 @@ export function useTruecallerLogin(
 
   return { state, error, start, reset };
 }
+
+export type TruecallerAvailability = "checking" | "available" | "unavailable";
+
+// The exact scheme Truecaller's own app registers on the device (see
+// AuthController::truecallerInitiate's docblock link to Truecaller's docs).
+// No nonce/partner key needed here — this is a presence probe, not a real
+// login attempt, so it deliberately does NOT call truecallerInitiate() (that
+// would mint a real backend nonce and cache entry for every random tap on
+// the page, not just an actual "Login with Truecaller" click).
+const TRUECALLER_SCHEME_PROBE = "truecallersdk://truesdk/web_verify";
+
+/**
+ * Detects whether the Truecaller app is installed on this device, so the
+ * button can be hidden entirely for users who don't have it instead of
+ * showing it and only failing after a click (see TruecallerLoginState's
+ * "unavailable", the reactive fallback this complements).
+ *
+ * There is no direct "is this app installed" browser API — iOS and most
+ * modern Android browsers deliberately removed that (privacy). The only
+ * available signal is the same one useTruecallerLogin's grace-period check
+ * already relies on: attempt the deep link and see whether the OS hands the
+ * tab off to the app (page becomes hidden) within a short window. Because
+ * that attempt is itself the detection mechanism, IF Truecaller is
+ * installed, the very first tap/touch anywhere on the page will briefly
+ * switch away to it — an unavoidable trade-off of doing this proactively
+ * rather than only after the user taps "Login with Truecaller" (flagged in
+ * the PR description, not silently hidden).
+ *
+ * Runs once, on the user's first interaction with the page — not on mount —
+ * for two reasons: (1) most browsers only allow navigating to a custom URL
+ * scheme as the direct result of a real user gesture (click/touch), a bare
+ * `useEffect` firing on mount is silently ignored in Chrome/Android; (2) it
+ * avoids an unsolicited app-switch before the user has done anything at all.
+ * A tap/scroll on the phone number field a moment after the page loads is
+ * enough to trigger it, so the result is ready well before the user reaches
+ * the button itself.
+ */
+export function useTruecallerAvailability(): TruecallerAvailability {
+  const [state, setState] = useState<TruecallerAvailability>("checking");
+  const hasRunRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Truecaller only exists as a phone app — no desktop counterpart to hand
+    // off to. Matches the existing `md:hidden` gate on the button itself.
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      setState("unavailable");
+      return;
+    }
+
+    const runDetection = () => {
+      if (hasRunRef.current) return;
+      hasRunRef.current = true;
+
+      let settled = false;
+      const finish = (result: TruecallerAvailability) => {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        clearTimeout(timer);
+        setState(result);
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === "hidden") finish("available");
+      };
+
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      const timer = setTimeout(() => {
+        finish(document.visibilityState === "hidden" ? "available" : "unavailable");
+      }, APP_OPEN_GRACE_MS);
+
+      window.location.href = TRUECALLER_SCHEME_PROBE;
+    };
+
+    document.addEventListener("pointerdown", runDetection, { once: true });
+    document.addEventListener("touchstart", runDetection, { once: true, passive: true });
+
+    return () => {
+      document.removeEventListener("pointerdown", runDetection);
+      document.removeEventListener("touchstart", runDetection);
+    };
+  }, []);
+
+  return state;
+}
