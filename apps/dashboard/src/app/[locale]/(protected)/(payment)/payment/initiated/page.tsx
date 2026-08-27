@@ -20,7 +20,7 @@ import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
-import { webhookPaymentInitiate } from "@/lib/api/auth";
+import { recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { isApiError } from "@/lib/api/api-error";
@@ -131,10 +131,17 @@ export default function InitiatedPage() {
     (variant: PaymentType) => {
       setSelectVariant((current) => {
         if (current !== variant) {
-          trackFacebookEvent(
-            "CustomizeProduct",
-            buildMetaParams(getPriceForVariant(variant, pricing, data?.short_name)),
-          );
+          const variantPrice = getPriceForVariant(variant, pricing, data?.short_name);
+          trackFacebookEvent("CustomizeProduct", buildMetaParams(variantPrice));
+
+          if (data?.id) {
+            // NOTE: data.id (numeric exams.id, the real FK) — not
+            // data.exam_id, which is a string slug ("teaching_HTET") only
+            // used for Facebook's content_id above.
+            recordCourseCustomization(data.id, { plan: variant, price: variantPrice }).catch(
+              (err) => console.error("recordCourseCustomization failed", err),
+            );
+          }
         }
         return variant;
       });

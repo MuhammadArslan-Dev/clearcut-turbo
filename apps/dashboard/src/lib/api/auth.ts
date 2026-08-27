@@ -47,3 +47,20 @@ export async function webhookPaymentInitiate(courseId: string, payload?: any) {
     body: JSON.stringify({ course_id: courseId, ...payload }),
   });
 }
+
+// Internal counterpart to the CustomizeProduct Facebook Pixel event — fired
+// alongside it from payment/initiated/page.tsx's handleSelectVariant.
+// Fire-and-forget: the backend dedupes to one "customization" record per
+// (user, course) regardless of how many times this is called.
+export async function recordCourseCustomization(
+  examId: number,
+  payload?: { plan?: string; price?: number },
+) {
+  return apiFetch(`/v2/enrollment/customization`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ exam_id: examId, ...payload }),
+  });
+}

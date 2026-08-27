@@ -13,6 +13,7 @@ import { Suspense } from "react";
 import AnalyticsProvider from "@clearcut/analytics/provider";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
+import { Agentation } from "agentation";
 
 const SITE_URL = "https://clearcutoff.in";
 const SITE_NAME = "Clear Cutoff";
@@ -115,6 +116,8 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <AnalyticsLoader />
           </Suspense>
+
+          {process.env.NODE_ENV === "development" && <Agentation />}
         </ReactQueryProvider>
       </body>
     </html>
