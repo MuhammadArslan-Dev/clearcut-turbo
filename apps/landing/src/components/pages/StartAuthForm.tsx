@@ -20,7 +20,7 @@ import { setToken } from "@clearcut/auth/token";
 import { buildPostVerifyRedirectUrl } from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
-import { useTruecallerLogin } from "@clearcut/auth/truecaller";
+import { useTruecallerLogin, useTruecallerAvailability } from "@clearcut/auth/truecaller";
 import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
 import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -532,6 +532,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   });
 
   const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+  const truecallerAvailability = useTruecallerAvailability();
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
@@ -554,55 +555,60 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              {/* Truecaller + WhatsApp login — both fully wired
-                  (startTruecallerLogin / handleWhatsAppLogin), just not
-                  shown yet. Uncomment to go live. */}
-              {/* <div className="flex md:hidden flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outlined"
-                    sx={{ borderRadius: "50px" }}
-                    className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
-                    fullWidth
-                    onClick={startTruecallerLogin}
-                    disabled={truecallerBusy}
-                    loading={truecallerBusy}
-                    leftIcon={<TruecallerIcon />}
-                  >
-                    {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
-                  </Button>
+              {/* Only rendered once useTruecallerAvailability's early,
+                  on-first-interaction probe confirms the app is on this
+                  device — see that hook's docblock for why "hidden until
+                  confirmed" is the point. WhatsApp login is fully wired
+                  (handleWhatsAppLogin) but not shown yet — uncomment to go
+                  live. */}
+              {truecallerAvailability === "available" && (
+                <div className="flex md:hidden flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outlined"
+                      sx={{ borderRadius: "50px" }}
+                      className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
+                      fullWidth
+                      onClick={startTruecallerLogin}
+                      disabled={truecallerBusy}
+                      loading={truecallerBusy}
+                      leftIcon={<TruecallerIcon />}
+                    >
+                      {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
+                    </Button>
 
-                  <Button
-                    size="sm"
-                    variant="outlined"
-                    sx={{ borderRadius: "50px" }}
-                    className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
-                    fullWidth
-                    onClick={handleWhatsAppLogin}
-                    leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
-                  >
-                    {t.whatsappBtn}
-                  </Button>
+                    {/* <Button
+                      size="sm"
+                      variant="outlined"
+                      sx={{ borderRadius: "50px" }}
+                      className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
+                      fullWidth
+                      onClick={handleWhatsAppLogin}
+                      leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
+                    >
+                      {t.whatsappBtn}
+                    </Button> */}
+                  </div>
+
+                  {truecallerState === "unavailable" && (
+                    <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
+                      {t.truecallerUnavailable}
+                    </p>
+                  )}
+                  {truecallerState === "error" && truecallerError && (
+                    <p className="text-sm text-center text-red-600">{truecallerError}</p>
+                  )}
+
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                    <Text as="span" variant="body-small" color="gray-muted">
+                      {t.orDivider}
+                    </Text>
+                    <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                  </div>
                 </div>
-
-                {truecallerState === "unavailable" && (
-                  <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
-                    {t.truecallerUnavailable}
-                  </p>
-                )}
-                {truecallerState === "error" && truecallerError && (
-                  <p className="text-sm text-center text-red-600">{truecallerError}</p>
-                )}
-
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                  <Text as="span" variant="body-small" color="gray-muted">
-                    {t.orDivider}
-                  </Text>
-                  <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                </div>
-              </div> */}
+              )}
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
