@@ -540,7 +540,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   });
 
   const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
-  const truecallerAvailability = useTruecallerAvailability();
+  const truecallerAvailability = useTruecallerAvailability(phoneInputRef);
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">

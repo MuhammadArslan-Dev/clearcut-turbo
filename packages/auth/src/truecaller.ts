@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { AuthApi, TruecallerStatusResponseData } from "./api";
 
 export type TruecallerLoginState =
@@ -182,26 +182,40 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  * "unavailable", the reactive fallback this complements).
  *
  * There is no direct "is this app installed" browser API — iOS and most
- * modern Android browsers deliberately removed that (privacy). The only
- * available signal is the same one useTruecallerLogin's grace-period check
- * already relies on: attempt the deep link and see whether the OS hands the
- * tab off to the app (page becomes hidden) within a short window. Because
- * that attempt is itself the detection mechanism, IF Truecaller is
- * installed, the very first tap/touch anywhere on the page will briefly
- * switch away to it — an unavoidable trade-off of doing this proactively
- * rather than only after the user taps "Login with Truecaller" (flagged in
- * the PR description, not silently hidden).
+ * modern Android browsers deliberately removed that (privacy: a site could
+ * otherwise fingerprint installed apps by probing thousands of schemes). The
+ * only available signal is the same one useTruecallerLogin's grace-period
+ * check already relies on: attempt the deep link and see whether the OS
+ * hands the tab off to the app (page becomes hidden) within a grace window.
+ * Because that attempt IS the detection mechanism, if Truecaller is
+ * installed, triggering it will briefly switch away to it — an unavoidable
+ * trade-off of checking proactively rather than only after the user taps
+ * "Login with Truecaller" (flagged in the PR description, not silently
+ * hidden).
  *
- * Runs once, on the user's first interaction with the page — not on mount —
- * for two reasons: (1) most browsers only allow navigating to a custom URL
- * scheme as the direct result of a real user gesture (click/touch), a bare
- * `useEffect` firing on mount is silently ignored in Chrome/Android; (2) it
- * avoids an unsolicited app-switch before the user has done anything at all.
- * A tap/scroll on the phone number field a moment after the page loads is
- * enough to trigger it, so the result is ready well before the user reaches
- * the button itself.
+ * `triggerRef` scopes that unavoidable trade-off to a single element —
+ * pass the phone-number input's ref. The probe then fires only on that
+ * field's first pointerdown/touchstart/focus, i.e. the moment the user is
+ * already declaring login intent, never from scrolling or interacting
+ * elsewhere on the page. (An earlier version listened on `document`, so ANY
+ * touch — including the touchstart that begins a scroll gesture — fired a
+ * real deep-link attempt; that's what caused Truecaller's own handoff UI to
+ * appear just from scrolling. Scoping the listener to one element is a pure
+ * config change with no runtime cost of its own — it's still just one event
+ * listener, same as before.)
+ *
+ * Doesn't run on mount, and can't be made to: browsers only allow navigating
+ * to a custom URL scheme as the direct, synchronous result of a real user
+ * gesture (click/touch/key) — a bare `useEffect` or a `setTimeout` firing
+ * after page load is silently ignored in Chrome/Safari/Firefox precisely to
+ * stop sites from background-probing installed apps. There is no delay or
+ * "run after load" variant of this that still works; the gesture requirement
+ * is what makes attaching the listener itself effectively free — it's inert
+ * until that specific tap happens.
  */
-export function useTruecallerAvailability(): TruecallerAvailability {
+export function useTruecallerAvailability(
+  triggerRef?: RefObject<HTMLElement | null>,
+): TruecallerAvailability {
   const [state, setState] = useState<TruecallerAvailability>("checking");
   const hasRunRef = useRef(false);
 
@@ -214,6 +228,9 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       setState("unavailable");
       return;
     }
+
+    const target: Pick<EventTarget, "addEventListener" | "removeEventListener"> =
+      triggerRef?.current ?? document;
 
     const runDetection = () => {
       if (hasRunRef.current) return;
@@ -240,14 +257,17 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       window.location.href = TRUECALLER_SCHEME_PROBE;
     };
 
-    document.addEventListener("pointerdown", runDetection, { once: true });
-    document.addEventListener("touchstart", runDetection, { once: true, passive: true });
+    target.addEventListener("pointerdown", runDetection, { once: true });
+    target.addEventListener("touchstart", runDetection, { once: true, passive: true });
+    // Covers keyboard/assistive-tech focus, which doesn't fire pointerdown.
+    target.addEventListener("focus", runDetection, { once: true });
 
     return () => {
-      document.removeEventListener("pointerdown", runDetection);
-      document.removeEventListener("touchstart", runDetection);
+      target.removeEventListener("pointerdown", runDetection);
+      target.removeEventListener("touchstart", runDetection);
+      target.removeEventListener("focus", runDetection);
     };
-  }, []);
+  }, [triggerRef]);
 
   return state;
 }

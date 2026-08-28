@@ -102,7 +102,7 @@ export function createLoginScreen({
     });
 
     const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
-    const truecallerAvailability = useTruecallerAvailability();
+    const truecallerAvailability = useTruecallerAvailability(inputRef);
 
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
