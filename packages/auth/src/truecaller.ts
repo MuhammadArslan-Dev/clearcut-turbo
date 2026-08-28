@@ -163,6 +163,18 @@ export type TruecallerAvailability = "checking" | "available" | "unavailable";
 // the page, not just an actual "Login with Truecaller" click).
 const TRUECALLER_SCHEME_PROBE = "truecallersdk://truesdk/web_verify";
 
+// Deliberately much longer than useTruecallerLogin's APP_OPEN_GRACE_MS
+// (1500ms). That constant times a *reactive* check after a real "Login with
+// Truecaller" click, where the OS typically switches apps near-instantly.
+// This ambient, first-touch probe is different: on many devices/browsers
+// (notably iOS Safari) navigating to an unregistered-looking custom scheme
+// surfaces a native "Open in Truecaller?" confirmation dialog first, which
+// waits on the user to notice and tap it — routinely well past 1500ms. Using
+// the short constant here made the probe settle "unavailable" (permanently,
+// via hasRunRef below) before that dialog was ever answered, hiding the
+// button on devices that DO have Truecaller installed.
+const AVAILABILITY_PROBE_GRACE_MS = 6000;
+
 /**
  * Detects whether the Truecaller app is installed on this device, so the
  * button can be hidden entirely for users who don't have it instead of
@@ -223,7 +235,7 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       document.addEventListener("visibilitychange", onVisibilityChange);
       const timer = setTimeout(() => {
         finish(document.visibilityState === "hidden" ? "available" : "unavailable");
-      }, APP_OPEN_GRACE_MS);
+      }, AVAILABILITY_PROBE_GRACE_MS);
 
       window.location.href = TRUECALLER_SCHEME_PROBE;
     };

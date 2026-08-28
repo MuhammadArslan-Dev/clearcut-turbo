@@ -24,6 +24,7 @@ import { useTruecallerLogin, useTruecallerAvailability } from "@clearcut/auth/tr
 import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
 import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
+import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
@@ -255,9 +256,16 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     });
   }, []);
 
+  const isMobile = useIsMobile();
+
+  // Auto-focus is desktop-only: on mobile it pops the keyboard open before
+  // the user has done anything, and dismissing that unsolicited keyboard via
+  // the OS back button/gesture then navigates the page back instead of just
+  // closing it.
   useEffect(() => {
+    if (isMobile) return;
     phoneInputRef.current?.focus();
-  }, []);
+  }, [isMobile]);
 
   /* ---------------- PHONE VALIDATION (verbatim from login-screen.tsx) ---------------- */
 
