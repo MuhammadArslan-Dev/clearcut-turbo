@@ -75,7 +75,7 @@ export default async function Course({ params }: Props) {
 
         <CoursePage params={{ slug, locale: resolvedLocale }} data={exam} />
       </div>
-      <FloatingButton />
+      <FloatingButton course={exam?.short_name?.toLowerCase()} />
     </>
   );
 }

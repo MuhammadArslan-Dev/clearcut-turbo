@@ -68,12 +68,6 @@ export default function ExamStep({
     [updateData],
   );
 
-  // The exam the user arrived with from a landing page (e.g. HTET) — kept
-  // separate from `data.exam` so that pinning it to the top of the list
-  // (below) doesn't get re-triggered/undone if the user goes on to pick a
-  // different exam manually.
-  const [pinnedCourseCode, setPinnedCourseCode] = useState<string | null>(null);
-
   // 🔹 Restore upcoming course
   useEffect(() => {
     const course = localStorage.getItem("UPCOMING_COURSE");
@@ -85,23 +79,26 @@ export default function ExamStep({
 
     if (alreadySelected) {
       selectExam(alreadySelected);
-      setPinnedCourseCode(alreadySelected.short_name?.toLowerCase() ?? null);
       localStorage.removeItem("UPCOMING_COURSE");
     }
   }, [exams, selectExam]);
 
-  // 🔹 Pin the preselected course to the top of the list
+  // 🔹 Pin whichever exam is currently selected to the top of the list —
+  // keyed off data.exam (persisted) rather than a one-shot "just arrived
+  // from landing" flag, so it stays pinned across a reload/re-visit too,
+  // not just in the same session that set it.
+  const selectedCode = data?.exam?.short_name?.toLowerCase();
   const orderedExams = useMemo(() => {
-    if (!pinnedCourseCode) return filteredExams2;
+    if (!selectedCode) return filteredExams2;
     const pinnedIndex = filteredExams2.findIndex(
-      (exam) => exam.short_name?.toLowerCase() === pinnedCourseCode,
+      (exam) => exam.short_name?.toLowerCase() === selectedCode,
     );
     if (pinnedIndex <= 0) return filteredExams2;
     const reordered = filteredExams2.slice();
     const [pinned] = reordered.splice(pinnedIndex, 1);
     reordered.unshift(pinned);
     return reordered;
-  }, [filteredExams2, pinnedCourseCode]);
+  }, [filteredExams2, selectedCode]);
 
   const isLoading = loading && !error;
 

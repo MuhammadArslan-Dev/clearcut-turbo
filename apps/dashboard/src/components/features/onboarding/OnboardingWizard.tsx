@@ -37,8 +37,6 @@ const STEPS: OnboardingStep[] = [
     // },
 ];
 
-const EXAM_STEP_INDEX = STEPS.findIndex((s) => s.id === "exam");
-
 export default function OnboardingWizard() {
     const {
         stepIndex,
@@ -47,7 +45,6 @@ export default function OnboardingWizard() {
         prevStep,
         updateData,
         reset,
-        setStepIndex,
     } = useOnboardingStore();
 
     const searchParams = useSearchParams();
@@ -56,15 +53,14 @@ export default function OnboardingWizard() {
     // The exam landing page (e.g. HTET) that sent the user into signup
     // already knows both the exam and the locale the user was reading in —
     // buildPostVerifyRedirectUrl (packages/auth) threads them here as
-    // `?course=` and `?lang=`. When `lang` is present, skip the language
-    // step entirely (it would just be asking the user to confirm something
-    // we already know) and land directly on the exam/course-list step with
-    // that language applied. `course` is stashed for ExamStep's existing
-    // "UPCOMING_COURSE" restore effect to preselect once the exams list
-    // loads (see ExamStep.tsx).
+    // `?course=` and `?lang=`. When `lang` is present, preselect that
+    // language's card on the Choose Language step — but the user still has
+    // to tap Continue themselves to move on; this only pre-fills the
+    // selection, it never auto-advances the step. `course` is stashed for
+    // ExamStep's "UPCOMING_COURSE" restore effect to preselect once the
+    // exams list loads (see ExamStep.tsx).
     const landingLang = searchParams.get("lang");
-    const hasKnownLandingLang =
-        (landingLang === "en" || landingLang === "hi") && EXAM_STEP_INDEX !== -1;
+    const hasKnownLandingLang = landingLang === "en" || landingLang === "hi";
 
     const appliedLandingContextRef = useRef(false);
     useEffect(() => {
@@ -82,7 +78,6 @@ export default function OnboardingWizard() {
             // route (it should — redirect.ts sends /hi/onboarding for
             // lang=hi) — only redirects as a fallback if it didn't.
             switchLanguage(landingLang as AppLocale);
-            setStepIndex(EXAM_STEP_INDEX);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -99,16 +94,13 @@ export default function OnboardingWizard() {
 
     const [direction, setDirection] = useState(1); // ← NEW
 
-    // Computed inline (not just via the effect above) so the very first
-    // render already skips straight past the language step — otherwise it
-    // would flash before the effect flips stepIndex a tick later.
-    const safeIndex = hasKnownLandingLang
-        ? EXAM_STEP_INDEX
-        : stepIndex >= 0 && stepIndex < STEPS.length ? stepIndex : 0;
+    const safeIndex =
+        stepIndex >= 0 && stepIndex < STEPS.length ? stepIndex : 0;
 
-    // Same reasoning: ExamStep reads data.language to fetch the exam list —
-    // fall back to the landing locale for this first render so it doesn't
-    // fire one request with no language before the effect above sets it.
+    // Computed inline (not just via the effect above) so the language card
+    // already shows as selected on the very first render — otherwise it
+    // would flash unselected before the effect updates the store a tick
+    // later. Purely a display pre-fill: it doesn't change which step shows.
     const effectiveData =
         hasKnownLandingLang && !data.language
             ? { ...data, language: landingLang as AppLocale }
