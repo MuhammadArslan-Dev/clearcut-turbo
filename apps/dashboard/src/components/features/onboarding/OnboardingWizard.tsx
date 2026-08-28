@@ -67,9 +67,26 @@ export default function OnboardingWizard() {
         if (appliedLandingContextRef.current) return;
         appliedLandingContextRef.current = true;
 
+        // useOnboardingStore persists `data`/`stepIndex` to localStorage
+        // indefinitely — with no reset, a brand-new login (different course,
+        // different day, even just re-testing) silently inherited whatever
+        // exam/step a PREVIOUS, unrelated onboarding attempt left behind
+        // (e.g. landing on REET's onboarding but seeing HTET preselected at
+        // step 2 because an earlier session never finished/reset). This
+        // route only exists for users who haven't enrolled in a course yet,
+        // so every fresh mount is a new first-run, never a "resume" — always
+        // start clean before applying this session's own landing context.
+        reset();
+
         const course = searchParams.get("course");
         if (course) {
             localStorage.setItem("UPCOMING_COURSE", course);
+        } else {
+            // Same staleness problem as above: an earlier session that set
+            // this but never reached ExamStep (which clears it once
+            // consumed) would otherwise leak its course into this
+            // unrelated session.
+            localStorage.removeItem("UPCOMING_COURSE");
         }
 
         if (hasKnownLandingLang) {
@@ -94,15 +111,25 @@ export default function OnboardingWizard() {
 
     const [direction, setDirection] = useState(1); // ← NEW
 
+    // Before the mount effect above has run (i.e. before its reset() has
+    // actually cleared the persisted store), treat this render as if the
+    // store were already clean — otherwise the very first paint would flash
+    // whatever stale step/exam a previous, unrelated onboarding attempt left
+    // in localStorage before the reset kicks in a tick later.
+    const hasAppliedLandingContext = appliedLandingContextRef.current;
+
     const safeIndex =
-        stepIndex >= 0 && stepIndex < STEPS.length ? stepIndex : 0;
+        hasAppliedLandingContext && stepIndex >= 0 && stepIndex < STEPS.length
+            ? stepIndex
+            : 0;
 
     // Computed inline (not just via the effect above) so the language card
     // already shows as selected on the very first render — otherwise it
     // would flash unselected before the effect updates the store a tick
     // later. Purely a display pre-fill: it doesn't change which step shows.
-    const effectiveData =
-        hasKnownLandingLang && !data.language
+    const effectiveData = !hasAppliedLandingContext
+        ? {}
+        : hasKnownLandingLang && !data.language
             ? { ...data, language: landingLang as AppLocale }
             : data;
 

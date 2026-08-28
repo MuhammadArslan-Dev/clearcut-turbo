@@ -17,7 +17,7 @@ import {
   isFakeMobileNumber as isFakeNumber,
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
-import { buildPostVerifyRedirectUrl } from "@clearcut/auth/redirect";
+import { buildPostVerifyRedirectUrl, getCurrentLocale } from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import { useTruecallerLogin } from "@clearcut/auth/truecaller";
@@ -465,8 +465,14 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     setLoading(true);
 
     try {
-      const lang = localStorage.getItem("locale") || "";
-      const course = localStorage.getItem("course");
+      const lang = getCurrentLocale();
+      // e.g. /start?course=htet, if this page is ever linked from a
+      // course-specific page — mirrors the modal flow's course threading
+      // (see ContinueFreeButton's `course` prop). Read directly off the URL
+      // here (rather than a `useSearchParams()` hook) since this only runs
+      // client-side inside this handler — avoids adding a Suspense boundary
+      // requirement to this Server Component's tree just for this.
+      const course = new URLSearchParams(window.location.search).get("course");
 
       const res = await authApi.verifyOtp({ phone, otp: finalOtp });
       const { data, status } = res.data;
