@@ -28,13 +28,35 @@ export function buildPostVerifyRedirectUrl(
   const encodedLang = encodeURIComponent(lang);
   const selectedCourse = course?.split("-")[0];
 
+  // Onboarding lands directly on the matching locale route (`/hi/onboarding`
+  // for lang "hi") instead of always landing on the unprefixed default and
+  // relying on onboarding's own client-side language switch to redirect a
+  // second time — that second hop is a real `window.location.href` reload
+  // (see apps/dashboard's useLanguageSwitch), which would otherwise flash
+  // the English-locale onboarding UI before reloading into Hindi.
+  const localePrefix = lang === "hi" ? "/hi" : "";
+
   let redirectUrl = hasCourse
     ? `${baseUrl}/dashboard?token=${encodedToken}&user_type=${userType}`
-    : `${baseUrl}/onboarding?token=${encodedToken}&lang=${encodedLang}`;
+    : `${baseUrl}${localePrefix}/onboarding?token=${encodedToken}&lang=${encodedLang}`;
 
   if (!hasCourse && selectedCourse) {
     redirectUrl += `&course=${encodeURIComponent(selectedCourse)}`;
   }
 
   return redirectUrl;
+}
+
+/**
+ * Derives the current page's locale purely from the URL path — every app in
+ * this monorepo follows the same convention (see packages/i18n's routing
+ * config): "en" is the default and unprefixed, "hi" lives under "/hi/...".
+ * Reading it this way (rather than via next-intl's `useLocale()`) avoids
+ * adding next-intl as a dependency of this shared package just for one read,
+ * and works identically whether this runs inside blog or landing.
+ */
+export function getCurrentLocale(): string {
+  if (typeof window === "undefined") return "en";
+  const { pathname } = window.location;
+  return pathname === "/hi" || pathname.startsWith("/hi/") ? "hi" : "en";
 }

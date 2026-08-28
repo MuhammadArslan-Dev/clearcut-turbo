@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import StepIndicatorCard from "../indicator/StepIndicatorCard";
 import Skeleton from "@clearcut/ui/skeleton";
 import { Card } from "@clearcut/ui/card";
@@ -68,6 +68,12 @@ export default function ExamStep({
     [updateData],
   );
 
+  // The exam the user arrived with from a landing page (e.g. HTET) — kept
+  // separate from `data.exam` so that pinning it to the top of the list
+  // (below) doesn't get re-triggered/undone if the user goes on to pick a
+  // different exam manually.
+  const [pinnedCourseCode, setPinnedCourseCode] = useState<string | null>(null);
+
   // 🔹 Restore upcoming course
   useEffect(() => {
     const course = localStorage.getItem("UPCOMING_COURSE");
@@ -79,9 +85,23 @@ export default function ExamStep({
 
     if (alreadySelected) {
       selectExam(alreadySelected);
+      setPinnedCourseCode(alreadySelected.short_name?.toLowerCase() ?? null);
       localStorage.removeItem("UPCOMING_COURSE");
     }
   }, [exams, selectExam]);
+
+  // 🔹 Pin the preselected course to the top of the list
+  const orderedExams = useMemo(() => {
+    if (!pinnedCourseCode) return filteredExams2;
+    const pinnedIndex = filteredExams2.findIndex(
+      (exam) => exam.short_name?.toLowerCase() === pinnedCourseCode,
+    );
+    if (pinnedIndex <= 0) return filteredExams2;
+    const reordered = filteredExams2.slice();
+    const [pinned] = reordered.splice(pinnedIndex, 1);
+    reordered.unshift(pinned);
+    return reordered;
+  }, [filteredExams2, pinnedCourseCode]);
 
   const isLoading = loading && !error;
 
@@ -182,7 +202,7 @@ export default function ExamStep({
           ) : error ? (
             <p className="text-sm text-red-500">Failed to load exams.</p>
           ) : (
-            filteredExams2.map((exam, index) => {
+            orderedExams.map((exam, index) => {
               const selected = data?.exam?.exam_id === exam.exam_id;
 
               return (

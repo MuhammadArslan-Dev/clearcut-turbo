@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import LanguageStep from "./steps/LanguageStep";
 import ExamStep from "./steps/ExamStep";
 import LevelStep from "./steps/LevelStep";
@@ -9,6 +10,8 @@ import { useOnboardingStore } from "@/store/onboarding/useOnboardingStore";
 import MainContainer from "@/components/ui/main-container";
 import { OnboardingStep } from "@/types/onboarding/onboarding";
 import { trackEvent } from "@/lib/analytics/browser";
+import useLanguageSwitch from "@/hooks/useLanguageSwitch";
+import type { AppLocale } from "@/types/components/language";
 
 const STEPS: OnboardingStep[] = [
     {
@@ -34,6 +37,8 @@ const STEPS: OnboardingStep[] = [
     // },
 ];
 
+const EXAM_STEP_INDEX = STEPS.findIndex((s) => s.id === "exam");
+
 export default function OnboardingWizard() {
     const {
         stepIndex,
@@ -42,7 +47,45 @@ export default function OnboardingWizard() {
         prevStep,
         updateData,
         reset,
+        setStepIndex,
     } = useOnboardingStore();
+
+    const searchParams = useSearchParams();
+    const { switchLanguage } = useLanguageSwitch();
+
+    // The exam landing page (e.g. HTET) that sent the user into signup
+    // already knows both the exam and the locale the user was reading in —
+    // buildPostVerifyRedirectUrl (packages/auth) threads them here as
+    // `?course=` and `?lang=`. When `lang` is present, skip the language
+    // step entirely (it would just be asking the user to confirm something
+    // we already know) and land directly on the exam/course-list step with
+    // that language applied. `course` is stashed for ExamStep's existing
+    // "UPCOMING_COURSE" restore effect to preselect once the exams list
+    // loads (see ExamStep.tsx).
+    const landingLang = searchParams.get("lang");
+    const hasKnownLandingLang =
+        (landingLang === "en" || landingLang === "hi") && EXAM_STEP_INDEX !== -1;
+
+    const appliedLandingContextRef = useRef(false);
+    useEffect(() => {
+        if (appliedLandingContextRef.current) return;
+        appliedLandingContextRef.current = true;
+
+        const course = searchParams.get("course");
+        if (course) {
+            localStorage.setItem("UPCOMING_COURSE", course);
+        }
+
+        if (hasKnownLandingLang) {
+            updateData({ language: landingLang as AppLocale });
+            // No-op if this URL already loaded under the matching locale
+            // route (it should — redirect.ts sends /hi/onboarding for
+            // lang=hi) — only redirects as a fallback if it didn't.
+            switchLanguage(landingLang as AppLocale);
+            setStepIndex(EXAM_STEP_INDEX);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         trackEvent('Onboarding Started', {
@@ -56,8 +99,20 @@ export default function OnboardingWizard() {
 
     const [direction, setDirection] = useState(1); // ← NEW
 
-    const safeIndex =
-        stepIndex >= 0 && stepIndex < STEPS.length ? stepIndex : 0;
+    // Computed inline (not just via the effect above) so the very first
+    // render already skips straight past the language step — otherwise it
+    // would flash before the effect flips stepIndex a tick later.
+    const safeIndex = hasKnownLandingLang
+        ? EXAM_STEP_INDEX
+        : stepIndex >= 0 && stepIndex < STEPS.length ? stepIndex : 0;
+
+    // Same reasoning: ExamStep reads data.language to fetch the exam list —
+    // fall back to the landing locale for this first render so it doesn't
+    // fire one request with no language before the effect above sets it.
+    const effectiveData =
+        hasKnownLandingLang && !data.language
+            ? { ...data, language: landingLang as AppLocale }
+            : data;
 
     const step = STEPS[safeIndex];
     const isFirst = safeIndex === 0;
@@ -110,7 +165,7 @@ export default function OnboardingWizard() {
         <>
             {isFirst ? (
                 <StepComponent
-                    data={data}
+                    data={effectiveData}
                     currentStep={safeIndex}
                     steps={STEPS}
                     updateData={updateData}
@@ -132,7 +187,7 @@ export default function OnboardingWizard() {
                         className="w-full h-full"
                     >
                         <StepComponent
-                            data={data}
+                            data={effectiveData}
                             currentStep={safeIndex}
                             steps={STEPS}
                             updateData={updateData}

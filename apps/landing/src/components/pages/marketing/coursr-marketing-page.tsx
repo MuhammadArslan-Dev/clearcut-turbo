@@ -341,6 +341,7 @@ export default function CoursrMarketingPage({ data }: any) {
           <div className="flex-1 md:hidden">
             <ContinueFreeButton
               marketing="course-marketing"
+              course={data}
               fullWidth
               showShimmer
               text={t.trialButton}

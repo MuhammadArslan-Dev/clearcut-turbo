@@ -16,6 +16,7 @@ type EventType = "button" | "banner" | "card";
 export default function ContinueFreeButton({
   text,
   marketing = "",
+  course,
   showIcon = true,
   size = "lg",
   fullWidth = false,
@@ -30,6 +31,13 @@ export default function ContinueFreeButton({
 }: {
   text?: string | React.ReactNode;
   marketing?: string;
+  /**
+   * Which exam/course this button's page represents (e.g. "htet") — passed
+   * through to the login modal so a new user's post-verify redirect can
+   * preselect it in onboarding. Omit on pages with no specific course
+   * context (header/footer CTAs, generic marketing sections).
+   */
+  course?: string;
   showIcon?: boolean;
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
@@ -42,7 +50,7 @@ export default function ContinueFreeButton({
   onClick?: () => void;
   event?: { element_location?: string; element_type?: EventType };
 }) {
-  const { goToLogin, setMarketing } = useAuthStore();
+  const { goToLogin, setMarketing, setCourse } = useAuthStore();
   const t = useTranslations("common");
   const label = text ?? t("continueFree");
 
@@ -57,6 +65,7 @@ export default function ContinueFreeButton({
       });
       goToLogin();
       setMarketing(marketing || "");
+      setCourse(course || "");
     }, []);
 
   const arrowIcon = (

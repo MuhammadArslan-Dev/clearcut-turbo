@@ -12,6 +12,12 @@ export interface AuthState {
   loading: boolean;
   disabled: boolean;
   marketing: string;
+  // Which exam/course the page that opened the login modal represents (e.g.
+  // "htet") — set by that page before calling goToLogin(), read back out at
+  // verify time to build the onboarding redirect's `course` param so a new
+  // user's onboarding can preselect it. Empty when login was opened from a
+  // page with no specific course context.
+  course: string;
 
   // Auth Data
   userId: string;
@@ -33,6 +39,7 @@ export interface AuthState {
   goToOtp: () => void;
 
   setMarketing: (marketing: string) => void;
+  setCourse: (course: string) => void;
 
   verifyOtpStart: () => void;
   verifyOtpSuccess: () => void;
@@ -68,6 +75,7 @@ export function createAuthStore() {
     disabled: true,
 
     marketing: "",
+    course: "",
 
     userId: "",
     phone: "",
@@ -84,6 +92,11 @@ export function createAuthStore() {
     setMarketing: (marketing) =>
       set(() => ({
         marketing,
+      })),
+
+    setCourse: (course) =>
+      set(() => ({
+        course,
       })),
 
     setScreen: (screen) =>

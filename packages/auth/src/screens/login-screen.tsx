@@ -22,7 +22,7 @@ import {
   isFakeMobileNumber as isFakeNumber,
 } from "../validators";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl } from "../redirect";
+import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { useTruecallerLogin } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
@@ -59,6 +59,7 @@ export function createLoginScreen({
       setScreen,
       setLoading,
       marketing,
+      course,
     } = useAuthStore();
 
     const isMobile = useIsMobile();
@@ -86,8 +87,7 @@ export function createLoginScreen({
       const tcUser = result.user as { uuid?: string; phone?: string } | undefined;
       identifyClarityUser({ userId: tcUser?.uuid, phone: tcUser?.phone });
 
-      const lang = localStorage.getItem("locale") || "";
-      const course = localStorage.getItem("course");
+      const lang = getCurrentLocale();
 
       const redirectUrl = buildPostVerifyRedirectUrl({
         baseUrl: redirectBaseUrl,

@@ -12,7 +12,7 @@ import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl } from "../redirect";
+import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { trackFacebookLead } from "../facebook-pixel";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
@@ -66,6 +66,7 @@ export function createOtpScreen({
       loading,
       setScreen,
       setLoading,
+      course,
     } = useAuthStore();
 
     const [error, setError] = useState("");
@@ -135,8 +136,7 @@ export function createOtpScreen({
       verifyOtpStart();
 
       try {
-        const lang = localStorage.getItem("locale") || "";
-        const course = localStorage.getItem("course");
+        const lang = getCurrentLocale();
 
         const res = await authApi.verifyOtp({ phone, otp: finalOtp });
         const { data, status } = res.data;
