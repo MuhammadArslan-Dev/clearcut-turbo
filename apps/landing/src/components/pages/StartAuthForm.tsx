@@ -512,7 +512,9 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     handleVerify(code);
   }, step === "otp");
 
-  /* ---------------- TRUECALLER ---------------- */
+  /* ---------------- TRUECALLER — TEMPORARILY DISABLED (2026-08-28) ----------------
+     Causing a reported issue; revisit and re-enable tomorrow. The button JSX
+     further down this file is commented out too — uncomment both together.
 
   const {
     state: truecallerState,
@@ -540,6 +542,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   });
 
   const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+  */
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
@@ -562,20 +565,25 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              {/* Always shown on mobile — no pre-click detection. Probing
-                  for the app (even scoped to this input's own tap) still
-                  means a real deep-link attempt on that tap, which visibly
-                  hands off to Truecaller when it's installed; that surprise
-                  handoff on a plain input click is the exact experience that
-                  was rejected. Click is the only trigger now: startTruecallerLogin
-                  attempts the deep link and, if the OS doesn't hand off within
-                  the grace window, truecallerState flips to "unavailable" and
-                  the message below shows instead — WhatsApp login is fully
-                  wired (handleWhatsAppLogin) but not shown yet — uncomment to
-                  go live. */}
+              {/*
+              TRUECALLER — TEMPORARILY DISABLED (2026-08-28), causing a
+              reported issue; revisit and re-enable tomorrow. Left commented
+              rather than deleted on purpose.
+
+              Prior design note, kept for context: shown on mobile only, no
+              pre-click detection — probing for the app (even scoped to this
+              input's own tap) still means a real deep-link attempt on that
+              tap, which visibly hands off to Truecaller when it's installed;
+              that surprise handoff on a plain input click was rejected.
+              Click was the only trigger: startTruecallerLogin attempts the
+              deep link and, if the OS doesn't hand off within the grace
+              window, truecallerState flips to "unavailable" and a fallback
+              message shows instead — WhatsApp login is fully wired
+              (handleWhatsAppLogin) but was never shown.
+
               <div className="flex md:hidden flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    {/* <Button
+                    <Button
                       size="sm"
                       variant="outlined"
                       sx={{ borderRadius: "50px" }}
@@ -587,9 +595,9 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                       leftIcon={<TruecallerIcon />}
                     >
                       {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
-                    </Button> */}
+                    </Button>
 
-                    {/* <Button
+                    <Button
                       size="sm"
                       variant="outlined"
                       sx={{ borderRadius: "50px" }}
@@ -599,7 +607,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                       leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
                     >
                       {t.whatsappBtn}
-                    </Button> */}
+                    </Button>
                   </div>
 
                   {truecallerState === "unavailable" && (
@@ -611,14 +619,15 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     <p className="text-sm text-center text-red-600">{truecallerError}</p>
                   )}
 
-                  {/* <div className="flex items-center gap-3 py-1">
+                  <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                     <Text as="span" variant="body-small" color="gray-muted">
                       {t.orDivider}
                     </Text>
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                  </div> */}
+                  </div>
               </div>
+              */}
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
