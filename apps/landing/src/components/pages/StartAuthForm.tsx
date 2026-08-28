@@ -545,7 +545,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-center pt-10">
         <Link href="/">
-          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={250} height={57} priority />
+          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={220} height={57} priority />
         </Link>
       </div>
 
@@ -575,7 +575,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   go live. */}
               <div className="flex md:hidden flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Button
+                    {/* <Button
                       size="sm"
                       variant="outlined"
                       sx={{ borderRadius: "50px" }}
@@ -587,7 +587,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                       leftIcon={<TruecallerIcon />}
                     >
                       {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
-                    </Button>
+                    </Button> */}
 
                     {/* <Button
                       size="sm"
@@ -611,13 +611,13 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     <p className="text-sm text-center text-red-600">{truecallerError}</p>
                   )}
 
-                  <div className="flex items-center gap-3 py-1">
+                  {/* <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                     <Text as="span" variant="body-small" color="gray-muted">
                       {t.orDivider}
                     </Text>
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                  </div>
+                  </div> */}
               </div>
 
               <div className="space-y-2">
