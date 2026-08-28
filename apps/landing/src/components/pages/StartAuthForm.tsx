@@ -545,7 +545,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-center pt-10">
         <Link href="/">
-          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={220} height={57} priority />
+          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={200} height={57} priority />
         </Link>
       </div>
 
