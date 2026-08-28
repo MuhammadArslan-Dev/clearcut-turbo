@@ -549,7 +549,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
         </Link>
       </div>
 
-      <div className="flex-1 flex items-center justify-center py-4">
+      <div className="flex-1 flex pt-10 justify-center py-4">
         <div className="w-full max-w-[380px] flex flex-col gap-5">
           {step === "phone" ? (
             <div className="flex flex-col gap-5">
