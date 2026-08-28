@@ -20,7 +20,7 @@ import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
-import { recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
+import { recordCheckoutInitiated, recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { isApiError } from "@/lib/api/api-error";
@@ -162,10 +162,18 @@ export default function InitiatedPage() {
     });
     setMetaUserData();
     // Page just opened — selectVariant is still its "1month" default.
-    trackFacebookEvent(
-      "InitiateCheckout",
-      buildMetaParams(getPriceForVariant("1month", pricing, data?.short_name)),
-    );
+    const initiateCheckoutPrice = getPriceForVariant("1month", pricing, data?.short_name);
+    trackFacebookEvent("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
+
+    if (data?.id) {
+      // NOTE: data.id (numeric exams.id, the real FK) — not data.exam_id,
+      // which is a string slug ("teaching_HTET") only used for Facebook's
+      // content_id above. Fire-and-forget, same pattern as CustomizeProduct.
+      recordCheckoutInitiated(data.id, { value: initiateCheckoutPrice, currency: "INR" }).catch(
+        (err) => console.error("recordCheckoutInitiated failed", err),
+      );
+    }
+
     const sendWebhook = async () => {
       try {
         await webhookPaymentInitiate(datacourse?.group_code ?? "");
