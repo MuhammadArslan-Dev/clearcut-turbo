@@ -23,7 +23,7 @@ import {
 } from "../validators";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
-import { useTruecallerLogin, useTruecallerAvailability } from "../truecaller";
+import { useTruecallerLogin } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
 
@@ -102,7 +102,6 @@ export function createLoginScreen({
     });
 
     const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
-    const truecallerAvailability = useTruecallerAvailability(inputRef);
 
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
@@ -330,15 +329,20 @@ export function createLoginScreen({
 
                   <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
                     <div className="flex flex-col gap-5 w-full items-center">
-                      {/* Only rendered once useTruecallerAvailability's early,
-                          on-first-interaction probe confirms the app is on
-                          this device — see that hook's docblock for why
-                          "hidden until confirmed" is the point, and the
-                          unavoidable trade-off of probing before the click.
-                          WhatsApp login is fully wired (handleWhatsAppLogin)
-                          but not shown yet — uncomment to go live. */}
-                      {truecallerAvailability === "available" && (
-                        <div className="flex md:hidden flex-col gap-2 w-full">
+                      {/* Always shown on mobile — no pre-click detection.
+                          Probing for the app (even scoped to this input's
+                          own tap) still means a real deep-link attempt on
+                          that tap, which visibly hands off to Truecaller
+                          when it's installed; that surprise handoff on a
+                          plain input click is the exact experience that was
+                          rejected. Click is the only trigger now:
+                          startTruecallerLogin attempts the deep link and, if
+                          the OS doesn't hand off within the grace window,
+                          truecallerState flips to "unavailable" and the
+                          message below shows instead — WhatsApp login is
+                          fully wired (handleWhatsAppLogin) but not shown yet
+                          — uncomment to go live. */}
+                      <div className="flex md:hidden flex-col gap-2 w-full">
                           <div className="flex items-center gap-2">
                             <Button
                               size="sm"
@@ -383,8 +387,7 @@ export function createLoginScreen({
                             </Text>
                             <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                           </div>
-                        </div>
-                      )}
+                      </div>
 
                       {/* INPUT */}
                       <div className="space-y-4 w-full">
