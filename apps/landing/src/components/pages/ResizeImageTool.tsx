@@ -5,7 +5,7 @@ import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
 
-type PresetKey = "photo" | "signature" | "custom";
+type PresetKey = "photo" | "signature" | "custom" | "draw";
 
 interface Preset {
   label: string;
@@ -18,8 +18,9 @@ interface Preset {
 
 const PRESETS: Record<PresetKey, Preset> = {
   photo: { label: "Photo", sublabel: "Passport size", width: 200, height: 230, minKB: 20, maxKB: 50 },
-  signature: { label: "Signature", sublabel: "Digital sign", width: 200, height: 230, minKB: 20, maxKB: 50 },
+  signature: { label: "Add Name", sublabel: "With name & date", width: 200, height: 230, minKB: 20, maxKB: 50 },
   custom: { label: "Custom", sublabel: "Your own size", width: 200, height: 200, minKB: 20, maxKB: 100 },
+  draw: { label: "Signature", sublabel: "Draw or upload", width: 140, height: 60, minKB: 10, maxKB: 20 },
 };
 
 const MAX_UPLOAD_MB = 10;
@@ -235,6 +236,116 @@ function PresetTile({
   );
 }
 
+// Mouse-and-touch signature pad. Pointer Events cover both input types with
+// one set of handlers, unlike separate mouse/touch listeners. The canvas's
+// internal resolution is fixed and higher than its displayed CSS size so
+// strokes stay crisp regardless of how the box is laid out; getPoint()
+// converts a client coordinate into that internal space via the element's
+// actual rendered size.
+function SignaturePad({ onUse }: { onUse: (blob: Blob) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  const getPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDrawingRef.current = true;
+    lastPointRef.current = getPoint(e);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const ctx = canvasRef.current?.getContext("2d");
+    const from = lastPointRef.current;
+    if (!ctx || !from) return;
+
+    const to = getPoint(e);
+    const strokeColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--color-text-gray-normal")
+      .trim() || "black";
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    lastPointRef.current = to;
+    setIsEmpty(false);
+  };
+
+  const stopDrawing = () => {
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setIsEmpty(true);
+  };
+
+  const handleUse = () => {
+    canvasRef.current?.toBlob((blob) => {
+      if (blob) onUse(blob);
+    }, "image/png");
+  };
+
+  return (
+    <div className="flex flex-1 flex-col gap-3 min-h-[220px]">
+      <div className="relative flex-1 min-h-[180px]">
+        <canvas
+          ref={canvasRef}
+          width={500}
+          height={220}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={stopDrawing}
+          onPointerLeave={stopDrawing}
+          className="w-full h-full rounded-xl border-2 border-dashed border-[var(--color-border-gray-subtle)] bg-white touch-none cursor-crosshair"
+        />
+        {isEmpty && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Text as="p" variant="body-medium" color="gray-muted">
+              Sign here with your mouse or finger
+            </Text>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outlined" color="gray" fullWidth sx={{ borderRadius: "50px" }} onClick={handleClear}>
+          Clear
+        </Button>
+        <Button fullWidth sx={{ borderRadius: "50px" }} disabled={isEmpty} onClick={handleUse}>
+          Use this signature
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ResizeImageTool() {
   const [preset, setPreset] = useState<PresetKey>("photo");
   const [width, setWidth] = useState(PRESETS.photo.width);
@@ -242,6 +353,7 @@ export default function ResizeImageTool() {
   const [maxKB, setMaxKB] = useState(PRESETS.photo.maxKB);
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
+  const [signatureMode, setSignatureMode] = useState<"draw" | "upload">("draw");
 
   const [file, setFile] = useState<File | null>(null);
   const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string | null>(null);
@@ -284,6 +396,7 @@ export default function ResizeImageTool() {
       setStampName("");
       setStampDate("");
     }
+    if (key === "draw") setSignatureMode("draw");
   };
 
   const processFile = useCallback(
@@ -420,7 +533,7 @@ export default function ResizeImageTool() {
             </div>
           </div>
 
-          {preset === "custom" || preset === "signature" ? (
+          {preset === "custom" || preset === "signature" || preset === "draw" ? (
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Text as="label" variant="body-small" color="gray-muted">
@@ -518,27 +631,63 @@ export default function ResizeImageTool() {
           </div>
 
           {step === "configure" && (
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-10 px-4 cursor-pointer transition-colors min-h-[220px] ${
-                isDragging
-                  ? "border-brand bg-brand/5"
-                  : "border-[var(--color-border-gray-subtle)] hover:border-brand/50"
-              }`}
-            >
-              <UploadIcon />
-              <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                Click to upload or drag and drop
-              </Text>
-              <Text as="p" variant="body-small" color="gray-muted">
-                JPG, PNG, or WEBP up to {MAX_UPLOAD_MB}MB
-              </Text>
+            <>
+              {preset === "draw" && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSignatureMode("draw")}
+                    className={`flex-1 rounded-full px-4 py-1.5 body-small !font-semibold transition-colors ${
+                      signatureMode === "draw"
+                        ? "bg-brand text-white"
+                        : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
+                    }`}
+                  >
+                    Draw signature
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignatureMode("upload")}
+                    className={`flex-1 rounded-full px-4 py-1.5 body-small !font-semibold transition-colors ${
+                      signatureMode === "upload"
+                        ? "bg-brand text-white"
+                        : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
+                    }`}
+                  >
+                    Upload image
+                  </button>
+                </div>
+              )}
+
+              {preset === "draw" && signatureMode === "draw" ? (
+                <SignaturePad
+                  onUse={(blob) => processFile(new File([blob], "signature.png", { type: "image/png" }))}
+                />
+              ) : (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-10 px-4 cursor-pointer transition-colors min-h-[220px] ${
+                    isDragging
+                      ? "border-brand bg-brand/5"
+                      : "border-[var(--color-border-gray-subtle)] hover:border-brand/50"
+                  }`}
+                >
+                  <UploadIcon />
+                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                    Click to upload or drag and drop
+                  </Text>
+                  <Text as="p" variant="body-small" color="gray-muted">
+                    JPG, PNG, or WEBP up to {MAX_UPLOAD_MB}MB
+                  </Text>
+                </div>
+              )}
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -546,7 +695,7 @@ export default function ResizeImageTool() {
                 onChange={handleFileInput}
                 className="hidden"
               />
-            </div>
+            </>
           )}
 
           {step === "processing" && (
