@@ -9,10 +9,9 @@ import Image from "next/image";
 
 import { DrawerSheet } from "../ui/drawer-sheet";
 import { Modal } from "../ui/modal";
+import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
 import FireIcon from "../icons/fire-icon";
-import WhatsappIcon from "../icons/whatsapp-icon";
-import TruecallerIcon from "../icons/truecaller-icon";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -102,8 +101,6 @@ export function createLoginScreen({
 
       window.location.replace(redirectUrl);
     });
-
-    const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
 
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
@@ -334,47 +331,19 @@ export function createLoginScreen({
                       {/* Only rendered once useTruecallerAvailability confirms
                           the app is on this device (cached across every
                           clearcutoff.in property after the first-ever
-                          detection — see that hook's docblock). WhatsApp
-                          login is fully wired (handleWhatsAppLogin) but not
-                          shown yet — uncomment to go live. */}
+                          detection — see that hook's docblock). Only
+                          Truecaller is shown today — WhatsApp login exists
+                          (handleWhatsAppLogin) but isn't wired to any button.
+                          TruecallerButton is shared with StartAuthForm.tsx
+                          (packages/auth/src/ui/truecaller-button.tsx) — edit
+                          it there to change this button anywhere it's used. */}
                       {truecallerAvailability === "available" && (
                       <div className="flex md:hidden flex-col gap-2 w-full">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outlined"
-                              sx={{ borderRadius: "50px" }}
-                              className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
-                              fullWidth
-                              onClick={startTruecallerLogin}
-                              disabled={truecallerBusy}
-                              loading={truecallerBusy}
-                              leftIcon={<TruecallerIcon />}
-                            >
-                              {truecallerState === "waiting" ? "Waiting…" : "Truecaller"}
-                            </Button>
-
-                            {/* <Button
-                              size="sm"
-                              variant="outlined"
-                              sx={{ borderRadius: "50px" }}
-                              className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
-                              fullWidth
-                              onClick={handleWhatsAppLogin}
-                              leftIcon={<WhatsappIcon size={20} color="var(--color-whatsapp-brand)" />}
-                            >
-                              WhatsApp
-                            </Button> */}
-                          </div>
-
-                          {truecallerState === "unavailable" && (
-                            <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
-                              Truecaller app not found — continue below
-                            </p>
-                          )}
-                          {truecallerState === "error" && truecallerError && (
-                            <p className="text-sm text-center text-red-600">{truecallerError}</p>
-                          )}
+                          <TruecallerButton
+                            state={truecallerState}
+                            error={truecallerError}
+                            onClick={startTruecallerLogin}
+                          />
 
                           <div className="flex items-center gap-3 py-1 w-full">
                             <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />

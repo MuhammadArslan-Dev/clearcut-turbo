@@ -13,6 +13,7 @@
     "./context": "./src/context.tsx",
     "./use-web-otp-autofill": "./src/use-web-otp-autofill.ts",
     "./truecaller": "./src/truecaller.ts",
+    "./truecaller-button": "./src/ui/truecaller-button.tsx",
     "./validators": "./src/validators.ts",
     "./create-auth-feature": "./src/create-auth-feature.tsx",
     "./icons/truecaller-icon": "./src/icons/truecaller-icon.tsx",

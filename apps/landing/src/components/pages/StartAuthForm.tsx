@@ -27,8 +27,7 @@ import {
   useTruecallerLogin,
   useTruecallerAvailability,
 } from "@clearcut/auth/truecaller";
-import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
-import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
+import { TruecallerButton } from "@clearcut/auth/truecaller-button";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 
@@ -575,9 +574,6 @@ export default function StartAuthForm({
     window.location.replace(redirectUrl);
   });
 
-  const truecallerBusy =
-    truecallerState === "opening" || truecallerState === "waiting";
-
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-center pt-10">
@@ -613,45 +609,14 @@ export default function StartAuthForm({
               {(truecallerAvailability === "available" ||
                 forceShowTruecaller) && (
                 <div className="flex md:hidden flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="lg"
-                      sx={{ borderRadius: "50px" }}
-                      className="shadow-sm"
-                      fullWidth
-                      onClick={startTruecallerLogin}
-                      disabled={truecallerBusy}
-                      loading={truecallerBusy}
-                      // leftIcon={<TruecallerIcon />}
-                    >
-                      {truecallerState === "waiting"
-                        ? t.truecallerWaiting
-                        : t.truecallerBtn}
-                    </Button>
-
-                    {/* <Button
-                      size="sm"
-                      variant="outlined"
-                      sx={{ borderRadius: "50px" }}
-                      className="!bg-whatsapp-brand/5 hover:!bg-whatsapp-brand/10 !border-whatsapp-brand/30 shadow-sm"
-                      fullWidth
-                      onClick={handleWhatsAppLogin}
-                      leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
-                    >
-                      {t.whatsappBtn}
-                    </Button> */}
-                  </div>
-
-                  {truecallerState === "unavailable" && (
-                    <p className="text-sm text-center text-[var(--color-text-gray-muted)]">
-                      {t.truecallerUnavailable}
-                    </p>
-                  )}
-                  {truecallerState === "error" && truecallerError && (
-                    <p className="text-sm text-center text-red-600">
-                      {truecallerError}
-                    </p>
-                  )}
+                  <TruecallerButton
+                    state={truecallerState}
+                    error={truecallerError}
+                    onClick={startTruecallerLogin}
+                    label={t.truecallerBtn}
+                    waitingLabel={t.truecallerWaiting}
+                    unavailableMessage={t.truecallerUnavailable}
+                  />
 
                   <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
