@@ -17,10 +17,16 @@ import {
   isFakeMobileNumber as isFakeNumber,
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
-import { buildPostVerifyRedirectUrl, getCurrentLocale } from "@clearcut/auth/redirect";
+import {
+  buildPostVerifyRedirectUrl,
+  getCurrentLocale,
+} from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
-import { useTruecallerLogin, useTruecallerAvailability } from "@clearcut/auth/truecaller";
+import {
+  useTruecallerLogin,
+  useTruecallerAvailability,
+} from "@clearcut/auth/truecaller";
 import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
 import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -122,7 +128,7 @@ const CONTENT: Record<
     errServer: "Server error. Please try again.",
     errNoInternet: "No internet connection.",
     errGeneric: "Something went wrong. Please try again.",
-    truecallerBtn: "Truecaller",
+    truecallerBtn: "Start with Truecaller",
     truecallerWaiting: "Waiting…",
     truecallerUnavailable: "Truecaller app not found — continue below",
     whatsappBtn: "WhatsApp",
@@ -161,7 +167,7 @@ const CONTENT: Record<
     errServer: "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
     errNoInternet: "इंटरनेट कनेक्शन नहीं है।",
     errGeneric: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
-    truecallerBtn: "Truecaller",
+    truecallerBtn: "Start with Truecaller",
     truecallerWaiting: "प्रतीक्षा करें…",
     truecallerUnavailable: "Truecaller ऐप नहीं मिला — नीचे जारी रखें",
     whatsappBtn: "WhatsApp",
@@ -171,7 +177,13 @@ const CONTENT: Record<
 
 function ShieldCheckIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="shrink-0"
+    >
       <path
         d="M12 2l8 3v6c0 5-3.4 8.4-8 11-4.6-2.6-8-6-8-11V5l8-3z"
         fill="var(--color-brand)"
@@ -217,7 +229,11 @@ function ArrowRightIcon() {
  * on top of this page. Local state instead — same pattern already used by
  * InlineAuthFlow for exactly this reason (see its own file header).
  */
-export default function StartAuthForm({ locale = defaultLocale }: { locale?: Locale }) {
+export default function StartAuthForm({
+  locale = defaultLocale,
+}: {
+  locale?: Locale;
+}) {
   const t = CONTENT[locale];
 
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -498,7 +514,8 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
       window.location.replace(redirectUrl);
     } catch (err: unknown) {
       setLoading(false);
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
       if (status === 422 || status === 401) {
         setError(t.errOtpInvalid);
       } else if (status && status >= 500) {
@@ -530,7 +547,8 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   // need for a Suspense boundary just for this.
   const forceShowTruecaller =
     typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("showTruecaller") === "true";
+    new URLSearchParams(window.location.search).get("showTruecaller") ===
+      "true";
 
   const {
     state: truecallerState,
@@ -557,13 +575,20 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     window.location.replace(redirectUrl);
   });
 
-  const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
+  const truecallerBusy =
+    truecallerState === "opening" || truecallerState === "waiting";
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
       <div className="flex justify-center pt-10">
         <Link href="/">
-          <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={200} height={57} priority />
+          <Image
+            src={IMAGES.mainLogo}
+            alt="Clear Cutoff"
+            width={200}
+            height={57}
+            priority
+          />
         </Link>
       </div>
 
@@ -585,21 +610,23 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                   — see that hook's docblock), OR when ?showTruecaller=true
                   arrives from a /go marketing page that already confirmed it
                   on its own. */}
-              {(truecallerAvailability === "available" || forceShowTruecaller) && (
-              <div className="flex md:hidden flex-col gap-2">
+              {/* {(truecallerAvailability === "available" ||
+                forceShowTruecaller) && ( */}
+                <div className="flex md:hidden flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      variant="outlined"
+                      size="lg"
                       sx={{ borderRadius: "50px" }}
-                      className="!bg-brand/5 hover:!bg-brand/10 !border-truecaller-brand/30 shadow-sm"
+                      className="shadow-sm"
                       fullWidth
                       onClick={startTruecallerLogin}
                       disabled={truecallerBusy}
                       loading={truecallerBusy}
-                      leftIcon={<TruecallerIcon />}
+                      // leftIcon={<TruecallerIcon />}
                     >
-                      {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
+                      {truecallerState === "waiting"
+                        ? t.truecallerWaiting
+                        : t.truecallerBtn}
                     </Button>
 
                     {/* <Button
@@ -621,7 +648,9 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     </p>
                   )}
                   {truecallerState === "error" && truecallerError && (
-                    <p className="text-sm text-center text-red-600">{truecallerError}</p>
+                    <p className="text-sm text-center text-red-600">
+                      {truecallerError}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-3 py-1">
@@ -631,11 +660,16 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     </Text>
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                   </div>
-              </div>
-              )}
+                </div>
+              {/* )} */}
 
               <div className="space-y-2">
-                <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
+                <Text
+                  as="p"
+                  variant="body-small"
+                  weight="semibold"
+                  color="gray-muted"
+                >
                   {t.mobileLabel}
                 </Text>
 
@@ -699,7 +733,12 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
               </div>
 
               <div className="space-y-2">
-                <Text as="p" variant="body-small" weight="semibold" color="gray-muted">
+                <Text
+                  as="p"
+                  variant="body-small"
+                  weight="semibold"
+                  color="gray-muted"
+                >
                   {t.otpLabel}
                 </Text>
                 <OtpBoxInput
@@ -717,14 +756,19 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
 
                 <div className="text-sm">
                   {resendingOtp ? (
-                    <span className="text-[var(--color-brand)]">{t.resendingOtp}</span>
+                    <span className="text-[var(--color-brand)]">
+                      {t.resendingOtp}
+                    </span>
                   ) : (
                     <span
                       onClick={handleResendOtp}
                       className={`text-[var(--color-brand)] font-semibold ${resendTimer > 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       {resendTimer > 0
-                        ? t.resendOtpTimer.replace("{seconds}", String(resendTimer))
+                        ? t.resendOtpTimer.replace(
+                            "{seconds}",
+                            String(resendTimer),
+                          )
                         : t.resendOtp}
                     </span>
                   )}
@@ -749,7 +793,12 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
               <ShieldCheckIcon />
             </div>
             <div>
-              <Text as="p" variant="body-medium" weight="semibold" color="primary-normal">
+              <Text
+                as="p"
+                variant="body-medium"
+                weight="semibold"
+                color="primary-normal"
+              >
                 {t.trialTitle}
               </Text>
               <Text as="p" variant="body-small" color="gray-muted">
@@ -759,13 +808,24 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
           </div>
 
           <div className="pt-4 border-t border-[var(--color-border-gray-subtle)]">
-            <Text as="p" variant="body-small" color="gray-muted" className="text-center">
+            <Text
+              as="p"
+              variant="body-small"
+              color="gray-muted"
+              className="text-center"
+            >
               {t.terms}{" "}
-              <Link href="/terms-and-conditions" className="text-[var(--color-brand)] font-medium">
+              <Link
+                href="/terms-and-conditions"
+                className="text-[var(--color-brand)] font-medium"
+              >
                 Terms &amp; Conditions
               </Link>{" "}
               {t.andWord}{" "}
-              <Link href="/privacy-policy" className="text-[var(--color-brand)] font-medium">
+              <Link
+                href="/privacy-policy"
+                className="text-[var(--color-brand)] font-medium"
+              >
                 Privacy Policy
               </Link>
               .
