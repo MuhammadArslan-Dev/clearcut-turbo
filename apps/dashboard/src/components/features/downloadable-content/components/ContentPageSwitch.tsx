@@ -5,7 +5,18 @@ import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
-export default function ContentPageSwitch() {
+interface ContentPageSwitchProps {
+  // Two copies of this component can be mounted at once — Topbar's own and
+  // the bottom-fixed mirror that grows in while the top one scrolls away
+  // (see BottomContentPageSwitchReveal). Framer Motion's `layoutId` (used by
+  // TabSwitch's active-pill indicator) is shared globally by default, so two
+  // simultaneously-mounted instances with the SAME id fight over the same
+  // animated element — one of them visibly loses its content/sizing.
+  // Callers rendering a second copy must pass a distinct id.
+  layoutScopeId?: string;
+}
+
+export default function ContentPageSwitch({ layoutScopeId = "page-change" }: ContentPageSwitchProps) {
   const pathname = usePathname();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -20,7 +31,7 @@ export default function ContentPageSwitch() {
   return (
     <TabSwitch
       type="link"
-      layoutScopeId="page-change"
+      layoutScopeId={layoutScopeId}
       scrollable
       value={currentTab}
       items={[
