@@ -1,6 +1,6 @@
 // src/components/layout/DashboardShell.tsx
 "use client";
-import React, { useEffect, useMemo, useRef, type ReactNode } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
@@ -48,7 +48,27 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
   const {
     setData,
     setLoading,
+    setStickyHeaderHeight,
   } = useContentDataStore();
+
+  // Measures the combined Topbar + ContentTabsBar sticky box's ACTUAL
+  // rendered height continuously, including mid-collapse (Topbar's title row
+  // shrinks via inline style on scroll, which ResizeObserver picks up in
+  // real time). section-notes.tsx's chapter headers stick at exactly this
+  // value instead of a hardcoded offset, so they stay flush against it with
+  // no gap at every point of the scroll, not just fully open/closed.
+  const topbarWrapperRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = topbarWrapperRef.current;
+    if (!el) return;
+
+    const measure = () => setStickyHeaderHeight(el.getBoundingClientRect().height);
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [setStickyHeaderHeight]);
 
 
   React.useEffect(() => {
@@ -94,7 +114,7 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
     <div className="w-full flex justify-center bg-black/40 sm:py-6">
       <div className="max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] w-full flex flex-col overflow-hidden bg-[#f1f5fa] sm:rounded-lg">
         {/* Sidebar */}
-        <div className="sticky top-0 bg-white z-20">
+        <div ref={topbarWrapperRef} className="sticky top-0 bg-white z-20">
           <Topbar />
         </div>
 

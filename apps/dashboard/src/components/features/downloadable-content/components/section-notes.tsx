@@ -18,6 +18,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotesIndexStore } from "../store/useNotesIndexStore";
+import { useContentDataStore } from "../store/useContentDataStore";
 
 export default function SectionNotes({
     sections,
@@ -36,6 +37,7 @@ export default function SectionNotes({
     const { course } = useGetCurrentCourseStore();
     const { open: openPaywall } = usePaywallsStore();
     const { setChapters, pendingScrollToId, clearPendingScroll } = useNotesIndexStore();
+    const stickyHeaderHeight = useContentDataStore((s) => s.stickyHeaderHeight);
 
     const [selectedLang, setSelectedLang] = React.useState<"en" | "hi">("en");
     const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
@@ -130,7 +132,11 @@ export default function SectionNotes({
                     <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full" />
 
                     {/* Chapter Header */}
-                    <div className="sticky top-13 z-10 bg-white">
+                    {/* `top` tracks ContentShell's measured Topbar+ContentTabsBar
+                        height live (see stickyHeaderHeight's docblock) instead of
+                        a hardcoded offset, so this stays flush against it with no
+                        gap through the whole scroll-collapse, not just at rest. */}
+                    <div className="sticky z-10 bg-white" style={{ top: stickyHeaderHeight }}>
                         <SectionHeaderCard
                             onClick={() =>
                                 chapter?.locked &&
