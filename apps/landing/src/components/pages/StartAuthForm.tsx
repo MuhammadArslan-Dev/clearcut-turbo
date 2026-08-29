@@ -602,7 +602,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                       {truecallerState === "waiting" ? t.truecallerWaiting : t.truecallerBtn}
                     </Button>
 
-                    <Button
+                    {/* <Button
                       size="sm"
                       variant="outlined"
                       sx={{ borderRadius: "50px" }}
@@ -612,7 +612,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                       leftIcon={<WhatsAppIcon color="var(--color-whatsapp-brand)" />}
                     >
                       {t.whatsappBtn}
-                    </Button>
+                    </Button> */}
                   </div>
 
                   {truecallerState === "unavailable" && (
