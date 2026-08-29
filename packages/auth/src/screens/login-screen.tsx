@@ -328,15 +328,16 @@ export function createLoginScreen({
 
                   <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
                     <div className="flex flex-col gap-5 w-full items-center">
-                      {/* Only rendered once useTruecallerAvailability confirms
-                          the app is on this device (cached across every
-                          clearcutoff.in property after the first-ever
-                          detection — see that hook's docblock). Only
-                          Truecaller is shown today — WhatsApp login exists
-                          (handleWhatsAppLogin) but isn't wired to any button.
-                          TruecallerButton is shared with StartAuthForm.tsx
-                          (packages/auth/src/ui/truecaller-button.tsx) — edit
-                          it there to change this button anywhere it's used. */}
+                      {/*
+                      TRUECALLER BUTTON — TEMPORARILY COMMENTED OUT
+                      (2026-08-29) per request; not removed. Uncomment to
+                      restore. Only rendered once useTruecallerAvailability
+                      confirms the app is on this device (cached across every
+                      clearcutoff.in property — see that hook's docblock).
+                      TruecallerButton is shared with StartAuthForm.tsx
+                      (packages/auth/src/ui/truecaller-button.tsx) — edit it
+                      there to change this button anywhere it's used.
+
                       {truecallerAvailability === "available" && (
                       <div className="flex md:hidden flex-col gap-2 w-full">
                           <TruecallerButton
@@ -354,6 +355,7 @@ export function createLoginScreen({
                           </div>
                       </div>
                       )}
+                      */}
 
                       {/* INPUT */}
                       <div className="space-y-4 w-full">

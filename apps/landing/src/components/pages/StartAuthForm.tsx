@@ -601,11 +601,14 @@ export default function StartAuthForm({
                 </Text>
               </div>
 
-              {/* Rendered once useTruecallerAvailability confirms the app is
-                  on this device (cached across every clearcutoff.in property
-                  — see that hook's docblock), OR when ?showTruecaller=true
-                  arrives from a /go marketing page that already confirmed it
-                  on its own. */}
+              {/*
+              TRUECALLER BUTTON — TEMPORARILY COMMENTED OUT (2026-08-29) per
+              request; not removed. Uncomment to restore. Rendered once
+              useTruecallerAvailability confirms the app is on this device
+              (cached across every clearcutoff.in property — see that hook's
+              docblock), OR when ?showTruecaller=true arrives from a /go
+              marketing page that already confirmed it on its own.
+
               {(truecallerAvailability === "available" ||
                 forceShowTruecaller) && (
                 <div className="flex md:hidden flex-col gap-2">
@@ -627,6 +630,7 @@ export default function StartAuthForm({
                   </div>
                 </div>
               )}
+              */}
 
               <div className="space-y-2">
                 <Text
