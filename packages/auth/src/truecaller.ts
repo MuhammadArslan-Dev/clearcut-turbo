@@ -413,6 +413,23 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       if (hasRunRef.current) return;
       hasRunRef.current = true;
 
+      // Probed through a hidden iframe, NOT `window.location.href` on the
+      // top-level page. That assumption — "an unregistered scheme is a
+      // silent no-op" — holds in plain mobile Chrome, but Chrome Custom Tabs
+      // (what WhatsApp/many other Android apps open links in; its UA is
+      // indistinguishable from real Chrome, so isAndroidChrome() is true
+      // there too) instead replaces the whole tab with a native "This page
+      // couldn't load" interstitial for that same navigation — destroying
+      // the page out from under whatever the user was doing (observed: the
+      // "Continue Free"/"Start Free Trial" tap that triggers the co-occurring
+      // scroll below). Navigating an off-screen iframe instead means a
+      // rejected scheme only fails *inside that iframe* — the visible page
+      // never unloads either way.
+      const probeFrame = document.createElement("iframe");
+      probeFrame.style.display = "none";
+      probeFrame.setAttribute("aria-hidden", "true");
+      document.body.appendChild(probeFrame);
+
       let settled = false;
       const finish = (result: "available" | "unavailable") => {
         if (settled) return;
@@ -422,6 +439,7 @@ export function useTruecallerAvailability(): TruecallerAvailability {
         window.removeEventListener("pageshow", onSignal);
         window.removeEventListener("focus", onSignal);
         clearTimeout(timer);
+        probeFrame.remove();
         // Written synchronously so it survives even if this page's JS
         // context gets torn down immediately after (see the note below) —
         // localStorage/cookie writes commit before the handler returns,
@@ -455,19 +473,30 @@ export function useTruecallerAvailability(): TruecallerAvailability {
         finish(document.visibilityState === "hidden" ? "available" : "unavailable");
       }, AVAILABILITY_PROBE_GRACE_MS);
 
-      window.location.href = TRUECALLER_SCHEME_PROBE;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        probeFrame.contentWindow!.location.href = TRUECALLER_SCHEME_PROBE;
+      } catch {
+        // A browser that throws synchronously here (rather than just no-op
+        // ignoring the scheme) still leaves the timer above to settle
+        // "unavailable" — same outcome as an uninstalled app.
+      }
     };
 
     // Deliberately NOT pointerdown/touchstart/click: those fire on EVERY tap
     // anywhere on the page, including a tap on an unrelated button like
-    // "Continue Free" — and `window.location.href = TRUECALLER_SCHEME_PROBE`
-    // below is a real navigation attempt that some mobile WebViews (observed
-    // in Instagram's in-app browser) resolve synchronously enough to delay
-    // that SAME click's own handler, which looked like "the login modal
-    // won't open until Truecaller detection finishes." scroll/keydown never
-    // co-occur with a button click, so they can't cause that conflict — the
-    // trade-off is the probe now only fires once the user scrolls the page
-    // or starts typing into a field, not on their very first tap.
+    // "Continue Free", and firing the probe synchronously inside that same
+    // tap risked delaying the tap's own click handler (observed in
+    // Instagram's in-app browser — "the login modal won't open until
+    // Truecaller detection finishes"). scroll/keydown mostly avoid that.
+    // They're not a full guarantee: on real devices a tap can itself trigger
+    // a `scroll` (mobile Chrome collapsing its URL bar) at the same moment as
+    // "Continue Free"/"Start Free Trial" — observed via WhatsApp's Android
+    // in-app browser, which opens links in a Chrome Custom Tab reporting the
+    // exact same UA as real Chrome. The probe now tolerates that: it runs
+    // inside the hidden iframe above instead of top-level navigation, so
+    // even a probe that fires mid-tap can no longer replace the page the
+    // user is looking at with a "this page couldn't load" interstitial.
     const opts = { once: true, passive: true } as const;
     document.addEventListener("keydown", runDetection, opts);
     document.addEventListener("scroll", runDetection, opts);
