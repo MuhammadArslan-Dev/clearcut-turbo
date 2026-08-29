@@ -26,6 +26,19 @@ export default function PaywallFloatingWidget() {
   const priceRowRef = useRef<HTMLDivElement>(null);
   const [priceRowHeight, setPriceRowHeight] = useState<number | null>(null);
 
+  const hasActive = useMemo(
+    () => course?.status === "trial" || course?.status === "trial_end",
+    [course?.status],
+  );
+
+  // `hasActive` is a dependency here, not just `[]`: this
+  // component always renders `false` until course status resolves to
+  // "trial"/"trial_end", so `priceRowRef` is null on first mount whenever
+  // that data hasn't loaded yet — an empty deps array would then never
+  // re-run once the ref actually attaches, leaving `priceRowHeight` stuck at
+  // null forever and the scroll-hide permanently inert (`visibleFraction`
+  // falls back to 1 unconditionally). Observed depending on how fast course
+  // data resolves relative to mount on the page this renders from.
   useLayoutEffect(() => {
     const el = priceRowRef.current;
     if (!el) return;
@@ -36,7 +49,8 @@ export default function PaywallFloatingWidget() {
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasActive]);
 
   const clampedOffset =
     isMobile && priceRowHeight != null
@@ -56,11 +70,6 @@ export default function PaywallFloatingWidget() {
   const monthlyPrice = useMemo(
     () => getPriceForVariant("1month", null, course?.exam?.short_name),
     [course?.exam?.short_name],
-  );
-
-  const hasActive = useMemo(
-    () => course?.status === "trial" || course?.status === "trial_end",
-    [course?.status],
   );
 
   return (
