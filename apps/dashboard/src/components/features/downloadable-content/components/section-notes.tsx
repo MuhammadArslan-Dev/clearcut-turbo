@@ -18,7 +18,6 @@ import { useRouter } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotesIndexStore } from "../store/useNotesIndexStore";
-import { useContentDataStore } from "../store/useContentDataStore";
 
 export default function SectionNotes({
     sections,
@@ -37,7 +36,6 @@ export default function SectionNotes({
     const { course } = useGetCurrentCourseStore();
     const { open: openPaywall } = usePaywallsStore();
     const { setChapters, pendingScrollToId, clearPendingScroll } = useNotesIndexStore();
-    const stickyHeaderHeight = useContentDataStore((s) => s.stickyHeaderHeight);
 
     const [selectedLang, setSelectedLang] = React.useState<"en" | "hi">("en");
     const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
@@ -131,12 +129,19 @@ export default function SectionNotes({
                     {/* Divider */}
                     <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full" />
 
-                    {/* Chapter Header */}
-                    {/* `top` tracks ContentShell's measured Topbar+ContentTabsBar
-                        height live (see stickyHeaderHeight's docblock) instead of
-                        a hardcoded offset, so this stays flush against it with no
-                        gap through the whole scroll-collapse, not just at rest. */}
-                    <div className="sticky z-10 bg-white" style={{ top: stickyHeaderHeight }}>
+                    {/* Chapter Header — sticks at `top-0` because <main> (in
+                        ContentShell) is its OWN independent scrolling region
+                        whose viewport already starts exactly where the
+                        Topbar+ContentTabsBar sticky box ends; no additional
+                        offset needed (mirrors preparation's Sidebar, whose
+                        chapter headers stick at `-top-4` inside its own
+                        equally-independent scrolling <nav>, not against the
+                        Topbar's height either). A previous version of this
+                        applied Topbar's own measured height as `top` here,
+                        which double-counted that space and created exactly
+                        this gap — the fix was removing the offset entirely,
+                        not computing it more precisely. */}
+                    <div className="sticky top-0 z-10 bg-white">
                         <SectionHeaderCard
                             onClick={() =>
                                 chapter?.locked &&
