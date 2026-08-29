@@ -225,6 +225,25 @@ export function useTruecallerLogin(
   return { state, error, start, reset };
 }
 
+// Facebook's and Instagram's in-app browsers are a special case, not just
+// another mobile browser: their embedded WebView is documented to often
+// block or silently swallow custom-URL-scheme navigation entirely (the exact
+// mechanism this whole feature depends on) and to tear down the page's JS
+// context on any app handoff far more aggressively than a normal mobile
+// browser — see the multi-signal handling above and the pending-nonce
+// resume in useTruecallerLogin, both added to compensate for that and still
+// not enough to make the feature reliable there. Rather than continuing to
+// patch symptoms of a technique that may not function in this WebView at
+// all, detect it directly and skip Truecaller entirely — falling back to
+// the always-reliable OTP flow, exactly as if the app just weren't
+// installed. `FBAN`/`FBAV`/`FB_IAB`/`FBIOS`/`FB4A` are Facebook's in-app
+// browser markers; a literal "Instagram" substring is Instagram's — both are
+// the standard, widely-used way sites detect these in-app browsers.
+export function isFacebookOrInstagramInAppBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || "");
+}
+
 export type TruecallerAvailability = "checking" | "available" | "unavailable";
 
 // Persisted across page loads AND across every clearcutoff.in property
@@ -348,11 +367,15 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  */
 export function useTruecallerAvailability(): TruecallerAvailability {
   const cached = getCachedTruecallerAvailability();
-  const [state, setState] = useState<TruecallerAvailability>(cached ?? "checking");
+  const inAppBrowser = isFacebookOrInstagramInAppBrowser();
+  const [state, setState] = useState<TruecallerAvailability>(
+    inAppBrowser ? "unavailable" : (cached ?? "checking"),
+  );
   const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (inAppBrowser) return; // known-unreliable WebView — never probe here, see isFacebookOrInstagramInAppBrowser's docblock
     if (cached) return; // already resolved on a previous visit — never re-probe
 
     // Truecaller only exists as a phone app — no desktop counterpart to hand

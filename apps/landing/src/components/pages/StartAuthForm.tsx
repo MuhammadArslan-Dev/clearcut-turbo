@@ -26,6 +26,7 @@ import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import {
   useTruecallerLogin,
   useTruecallerAvailability,
+  isFacebookOrInstagramInAppBrowser,
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -544,8 +545,15 @@ export default function StartAuthForm({
   // here. Read directly off the URL (not a `useSearchParams()` hook) for the
   // same reason getCurrentLocale() does — this only runs client-side, no
   // need for a Suspense boundary just for this.
+  //
+  // Still gated on !isFacebookOrInstagramInAppBrowser(): the referring /go
+  // page's own detection ran in ITS browser tab, but this param can't know
+  // which browser the user will actually land in — if they're inside
+  // Facebook's or Instagram's in-app browser right now, Truecaller is known
+  // unreliable there regardless of what an earlier visit elsewhere found.
   const forceShowTruecaller =
     typeof window !== "undefined" &&
+    !isFacebookOrInstagramInAppBrowser() &&
     new URLSearchParams(window.location.search).get("showTruecaller") ===
       "true";
 
@@ -601,14 +609,11 @@ export default function StartAuthForm({
                 </Text>
               </div>
 
-              {/*
-              TRUECALLER BUTTON — TEMPORARILY COMMENTED OUT (2026-08-29) per
-              request; not removed. Uncomment to restore. Rendered once
-              useTruecallerAvailability confirms the app is on this device
-              (cached across every clearcutoff.in property — see that hook's
-              docblock), OR when ?showTruecaller=true arrives from a /go
-              marketing page that already confirmed it on its own.
-
+              {/* Rendered once useTruecallerAvailability confirms the app is
+                  on this device (cached across every clearcutoff.in property
+                  — see that hook's docblock), OR when ?showTruecaller=true
+                  arrives from a /go marketing page that already confirmed it
+                  on its own. */}
               {(truecallerAvailability === "available" ||
                 forceShowTruecaller) && (
                 <div className="flex md:hidden flex-col gap-2">
@@ -630,7 +635,6 @@ export default function StartAuthForm({
                   </div>
                 </div>
               )}
-              */}
 
               <div className="space-y-2">
                 <Text
