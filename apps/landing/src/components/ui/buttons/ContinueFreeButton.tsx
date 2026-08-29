@@ -87,20 +87,7 @@ export default function ContinueFreeButton({
       loading={loading}
       fullWidth={fullWidth}
       {...hoverScale}
-      rightIcon={
-        showIcon &&
-        (buttonPhase === "icon" ? (
-          <motion.span
-            className="flex items-center"
-            animate={{ x: 6 }}
-            transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          >
-            {arrowIcon}
-          </motion.span>
-        ) : (
-          arrowIcon
-        ))
-      }
+      rightIcon={showIcon && arrowIcon}
       onClick={() => { if (!linkButton) buttonClickHandler(); }}
     >
       {buttonPhase === "shimmer" && <ButtonShimmerOverlay />}

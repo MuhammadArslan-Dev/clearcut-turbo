@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-type ButtonPhase = "idle" | "icon" | "shimmer";
+// "icon" (the moving-arrow phase) removed by request — this used to
+// alternate between an icon-move phase and a shimmer phase forever; now it
+// only ever enters "shimmer", once, and stays there.
+type ButtonPhase = "idle" | "shimmer";
 
 export default function useButtonArrowAnimation({
   data,
@@ -10,7 +13,6 @@ export default function useButtonArrowAnimation({
   const [buttonPhase, setButtonPhase] = useState<ButtonPhase>("idle");
 
   const started = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const languageSelected = data;
 
@@ -23,24 +25,7 @@ export default function useButtonArrowAnimation({
     const startAnimation = () => {
       if (started.current) return;
       started.current = true;
-
-      const ICON_MS = 4500;
-      const SHIMMER_MS = 2500;
-
-      let phase: ButtonPhase = "icon";
-      setButtonPhase("icon");
-
-      const loop = () => {
-        const duration = phase === "icon" ? ICON_MS : SHIMMER_MS;
-
-        timeoutRef.current = setTimeout(() => {
-          phase = phase === "icon" ? "shimmer" : "icon";
-          setButtonPhase(phase);
-          loop();
-        }, duration);
-      };
-
-      loop();
+      setButtonPhase("shimmer");
       removeListeners();
     };
 
@@ -57,7 +42,6 @@ export default function useButtonArrowAnimation({
 
     return () => {
       removeListeners();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [languageSelected]);
 
