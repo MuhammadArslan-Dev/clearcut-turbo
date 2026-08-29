@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Button from "@clearcut/ui/button";
+import TruecallerWordmark from "../icons/truecaller-wordmark";
 import type { TruecallerLoginState } from "../truecaller";
 
 export interface TruecallerButtonProps {
@@ -28,10 +28,9 @@ export interface TruecallerButtonProps {
  * WhatsApp login (a separate, unrelated button) is intentionally not part of
  * this component — only Truecaller is shown today.
  *
- * The wordmark image is referenced by public path (/images/truecaller-
- * wordmark-white.png), matching this file's existing convention for shared
- * assets (see login-screen.tsx's /images/indian-flage.webp) — every app that
- * renders this component needs that file in its own public/images/.
+ * The wordmark is an inline SVG (packages/auth/src/icons/truecaller-
+ * wordmark.tsx) rather than a public/images/*.png file, so no per-app asset
+ * duplication is needed and it stays crisp at any size.
  */
 export function TruecallerButton({
   state,
@@ -59,12 +58,7 @@ export function TruecallerButton({
         ) : (
           <span className="inline-flex items-center gap-1.5">
             {leadingText}
-            <Image
-              src="/images/truecaller-wordmark-white.png"
-              alt="Truecaller"
-              width={64}
-              height={24}
-            />
+            <TruecallerWordmark />
           </span>
         )}
       </Button>
