@@ -27,6 +27,7 @@ import {
   useTruecallerLogin,
   useTruecallerAvailability,
   isFacebookOrInstagramInAppBrowser,
+  isAndroidChrome,
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -128,7 +129,7 @@ const CONTENT: Record<
     errServer: "Server error. Please try again.",
     errNoInternet: "No internet connection.",
     errGeneric: "Something went wrong. Please try again.",
-    truecallerBtn: "Start with Truecaller",
+    truecallerBtn: "Start with",
     truecallerWaiting: "Waiting…",
     truecallerUnavailable: "Truecaller app not found — continue below",
     whatsappBtn: "WhatsApp",
@@ -167,7 +168,7 @@ const CONTENT: Record<
     errServer: "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
     errNoInternet: "इंटरनेट कनेक्शन नहीं है।",
     errGeneric: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
-    truecallerBtn: "Start with Truecaller",
+    truecallerBtn: "Start with",
     truecallerWaiting: "प्रतीक्षा करें…",
     truecallerUnavailable: "Truecaller ऐप नहीं मिला — नीचे जारी रखें",
     whatsappBtn: "WhatsApp",
@@ -546,13 +547,13 @@ export default function StartAuthForm({
   // same reason getCurrentLocale() does — this only runs client-side, no
   // need for a Suspense boundary just for this.
   //
-  // Still gated on !isFacebookOrInstagramInAppBrowser(): the referring /go
-  // page's own detection ran in ITS browser tab, but this param can't know
-  // which browser the user will actually land in — if they're inside
-  // Facebook's or Instagram's in-app browser right now, Truecaller is known
-  // unreliable there regardless of what an earlier visit elsewhere found.
+  // Still gated on the current browser being Android Chrome and not
+  // Facebook's/Instagram's in-app browser: the referring /go page's own
+  // detection ran in ITS browser tab, but this param can't know which
+  // browser the user will actually land in on /start.
   const forceShowTruecaller =
     typeof window !== "undefined" &&
+    isAndroidChrome() &&
     !isFacebookOrInstagramInAppBrowser() &&
     new URLSearchParams(window.location.search).get("showTruecaller") ===
       "true";
@@ -621,7 +622,7 @@ export default function StartAuthForm({
                     state={truecallerState}
                     error={truecallerError}
                     onClick={startTruecallerLogin}
-                    label={t.truecallerBtn}
+                    leadingText={t.truecallerBtn}
                     waitingLabel={t.truecallerWaiting}
                     unavailableMessage={t.truecallerUnavailable}
                   />

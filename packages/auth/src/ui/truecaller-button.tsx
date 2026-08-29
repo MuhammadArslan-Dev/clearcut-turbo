@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Button from "@clearcut/ui/button";
 import type { TruecallerLoginState } from "../truecaller";
 
@@ -7,11 +8,13 @@ export interface TruecallerButtonProps {
   state: TruecallerLoginState;
   error: string | null;
   onClick: () => void;
-  /** Overridable for i18n callers (e.g. StartAuthForm's Hindi copy) — the
-   * English defaults match the design built on /start, which is the single
-   * source of truth for this button's text and look. Change the defaults
-   * here to change it everywhere this component is used. */
-  label?: string;
+  /** Overridable for i18n callers — the English defaults match the design
+   * built on /start, which is the single source of truth for this button's
+   * text and look. Change the defaults here to change it everywhere this
+   * component is used. The brand name itself is always the Truecaller
+   * wordmark logo, not text — leadingText is just what comes before it
+   * ("Start with [logo]"). */
+  leadingText?: string;
   waitingLabel?: string;
   unavailableMessage?: string;
 }
@@ -24,12 +27,17 @@ export interface TruecallerButtonProps {
  * Design matches what was built directly on /start — solid button, no icon.
  * WhatsApp login (a separate, unrelated button) is intentionally not part of
  * this component — only Truecaller is shown today.
+ *
+ * The wordmark image is referenced by public path (/images/truecaller-
+ * wordmark-white.png), matching this file's existing convention for shared
+ * assets (see login-screen.tsx's /images/indian-flage.webp) — every app that
+ * renders this component needs that file in its own public/images/.
  */
 export function TruecallerButton({
   state,
   error,
   onClick,
-  label = "Start with Truecaller",
+  leadingText = "Start with",
   waitingLabel = "Waiting…",
   unavailableMessage = "Truecaller app not found — continue below",
 }: TruecallerButtonProps) {
@@ -46,7 +54,19 @@ export function TruecallerButton({
         disabled={busy}
         loading={busy}
       >
-        {state === "waiting" ? waitingLabel : label}
+        {state === "waiting" ? (
+          waitingLabel
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            {leadingText}
+            <Image
+              src="/images/truecaller-wordmark-white.png"
+              alt="Truecaller"
+              width={64}
+              height={24}
+            />
+          </span>
+        )}
       </Button>
 
       {state === "unavailable" && (

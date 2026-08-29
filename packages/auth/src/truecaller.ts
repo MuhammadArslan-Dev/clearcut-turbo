@@ -244,6 +244,22 @@ export function isFacebookOrInstagramInAppBrowser(): boolean {
   return /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || "");
 }
 
+// Truecaller is scoped to Android + Chrome only, by request — iOS (a much
+// more restrictive custom-scheme/Universal-Link model) and any non-Chrome or
+// in-app browser (WebViews in general, not just Facebook/Instagram's) are
+// excluded outright rather than attempted and hoped to work. "Chrome" here
+// means the real app: Samsung Internet, Opera, Edge, Firefox, and Android's
+// own WebView all include other markers in their UA even when they also
+// happen to contain "Chrome/" (most Chromium-based browsers do), so those
+// are excluded explicitly rather than relying on "Chrome/" being present.
+export function isAndroidChrome(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (!/Android/i.test(ua)) return false;
+  if (!/Chrome\//i.test(ua)) return false;
+  return !/SamsungBrowser|OPR\/|Opera|EdgA\/|Firefox\/|; ?wv\)/i.test(ua);
+}
+
 export type TruecallerAvailability = "checking" | "available" | "unavailable";
 
 // Persisted across page loads AND across every clearcutoff.in property
@@ -367,19 +383,27 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  */
 export function useTruecallerAvailability(): TruecallerAvailability {
   const cached = getCachedTruecallerAvailability();
-  const inAppBrowser = isFacebookOrInstagramInAppBrowser();
+  // Scoped to Android + Chrome only (by request) — covers iOS, every other
+  // browser, and every in-app browser (Facebook/Instagram explicitly, plus
+  // WebViews generally) in one check. Not persisted to the cross-device
+  // cache below: this is a property of THIS browser/session, not the
+  // device, so switching to Chrome later on the same device/OS must still
+  // get a real check rather than inheriting a stale "unavailable".
+  const platformSupported = isAndroidChrome() && !isFacebookOrInstagramInAppBrowser();
   const [state, setState] = useState<TruecallerAvailability>(
-    inAppBrowser ? "unavailable" : (cached ?? "checking"),
+    !platformSupported ? "unavailable" : (cached ?? "checking"),
   );
   const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (inAppBrowser) return; // known-unreliable WebView — never probe here, see isFacebookOrInstagramInAppBrowser's docblock
+    if (!platformSupported) return; // wrong platform/browser — never probe here, see isAndroidChrome's docblock
     if (cached) return; // already resolved on a previous visit — never re-probe
 
     // Truecaller only exists as a phone app — no desktop counterpart to hand
     // off to. Matches the existing `md:hidden` gate on the button itself.
+    // Mostly redundant with isAndroidChrome() (desktop Chrome's UA has no
+    // "Android"), kept as defense-in-depth.
     if (window.matchMedia("(min-width: 768px)").matches) {
       setState("unavailable");
       return;
