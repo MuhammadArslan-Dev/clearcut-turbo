@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getExamInstances, getExamPYQs } from '@/lib/preparation/preparation';
 import ExamInstanceCard, { ExamInstance } from '../components/cards/ExamInstanceCard';
 import ExamInstanceModal from '../components/cards/ExamInstanceModal';
-import PaperTabs from '@/components/ui/tabs/PaperTabs';
 import { TabItem } from '@/components/ui/tabs/TabSwitch';
 import CourseContentCard, { PDFCard } from '../components/cards/CourseContentCard';
 import { useGetCurrentCourse } from '@/hooks/course/useGetCurrentCourse';
@@ -12,8 +11,6 @@ import { useGetCurrentCourseStore } from '@/store/course/useGetCurrentCourseStor
 import { handleOpenPaywall } from '../../PayWalls/PaywallFloatingWidget';
 import { useRouter } from 'next/navigation';
 import { useContentDataStore } from '../store/useContentDataStore';
-import useLanguageSwitch from '@/hooks/useLanguageSwitch';
-import { mapPapersToItems } from '@/lib/mapPapersToItems';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PYQFile {
@@ -66,16 +63,9 @@ export default function PaperPage({ examId }: { examId?: string }) {
   const [selectedLevel, setSelectedLevel] = React.useState<string>('0');
   const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
   const [selectedInstance, setSelectedInstance] = React.useState<ExamInstance | null>(null);
-  const { locale } = useLanguageSwitch();
 
   const {
     selectedPaperId,
-    sectionsMap,
-    papers,
-    selectPaper,
-    selectedSections,
-    toggleSection,
-    setData,
     isLoading: isSyllabusLoading,
   } = useContentDataStore();
 
@@ -90,8 +80,6 @@ export default function PaperPage({ examId }: { examId?: string }) {
     }
     setSelectedPDF(fileUrl);
   };
-console.log("PYQ Data:", papers);
-
 
   const levelTabs: TabItem[] = React.useMemo(() => {
     if (!data?.pyqs) return [];
@@ -100,13 +88,6 @@ console.log("PYQ Data:", papers);
       label: levelArr[0],
     }));
   }, [data?.pyqs]);
-
-  const items = React.useMemo(
-    () => {
-      return mapPapersToItems(papers, locale);
-    },
-    [papers, locale],
-  );
 
   const pyqContent = data?.examContents?.find(c => c.type === 'pyq_pdf');
 
@@ -143,26 +124,8 @@ console.log("PYQ Data:", papers);
 
   return (
     <div>
-      {/* {levelTabs.length > 1 && (
-        <div className="bg-white sm:bg-transparent -mt-1 py-1 px-4">
-          <PaperTabs
-            tabs={levelTabs}
-            selectedId={selectedLevel}
-            onChange={(id) => setSelectedLevel(id)}
-            containerBg="bg-transparent"
-          />
-        </div>
-      )} */}
-      {items?.length > 1 && (
-        <div className='px-4'>
-          <PaperTabs
-            tabs={items}
-            selectedId={selectedPaperId?.toString() ?? null}
-            onChange={(id) => selectPaper(Number(id))}
-            containerBg="bg-transparent"
-          />
-        </div>
-      )}
+      {/* Paper tabs now live in Topbar (ContentTabsBar), shared with
+          notes-page — see that component's docblock for why. */}
       {/* Exam Instances Section */}
       {(instancesLoading || (instancesData && instancesData.length > 0)) && (
         <div className="p-4">

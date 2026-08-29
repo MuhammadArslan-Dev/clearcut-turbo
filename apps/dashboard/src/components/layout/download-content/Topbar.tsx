@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import Text from "@clearcut/ui/text";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import ContentPageSwitch from "@/components/features/downloadable-content/components/ContentPageSwitch";
+import ContentTabsBar from "@/components/features/downloadable-content/components/ContentTabsBar";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -94,6 +95,13 @@ export default function Topbar() {
           </div>
         </div>
       </div>
+
+      {/* Always visible — part of the SAME sticky header box as the row
+          above (not its own independently-sticky element), so it never
+          drifts out of sync while that row is mid-collapse. Mirrors
+          preparation's Topbar, where PaperSwitch/SectionsTab live in the
+          non-collapsing half of the same header for the same reason. */}
+      <ContentTabsBar />
     </header>
   );
 }

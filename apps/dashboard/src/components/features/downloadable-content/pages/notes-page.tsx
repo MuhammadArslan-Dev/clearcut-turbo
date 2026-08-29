@@ -1,10 +1,6 @@
 'use client';
 import React from 'react'
 import { useContentDataStore } from '../store/useContentDataStore';
-import { mapPapersToItems, mapSectionsToItems } from '@/lib/mapPapersToItems';
-import PaperTabs from '@/components/ui/tabs/PaperTabs';
-import useLanguageSwitch from '@/hooks/useLanguageSwitch';
-import SectionSwitchUI from '@/components/ui/tabs/SectionSwitchUI';
 import SectionNotes from '../components/section-notes';
 import { useGetCurrentCourse } from '@/hooks/course/useGetCurrentCourse';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,29 +12,13 @@ export default function NotesPage({ examId }: { examId?: string }) {
     const {
         selectedPaperId,
         sectionsMap,
-        papers,
-        selectPaper,
         selectedSections,
-        toggleSection,
-        setData,
         isLoading,
     } = useContentDataStore();
-
-
-    const { locale } = useLanguageSwitch();
 
     const sections = (selectedPaperId != null ? sectionsMap[selectedPaperId] : undefined) ?? [];
 
     const activeSection = sections.find((section) => section.id === selectedSections);
-
-    const items = React.useMemo(
-        () => {
-            return mapPapersToItems(papers, locale);
-        },
-        [papers, locale],
-    );
-
-    const sectionItems = mapSectionsToItems(sections, locale);
 
     // Papers/sections come from ContentShell's syllabus fetch — until it
     // resolves, this tab bar has nothing to show and previously rendered as
@@ -50,36 +30,8 @@ export default function NotesPage({ examId }: { examId?: string }) {
 
     return (
         <div>
-            {/* Language/paper + section tabs — stays pinned at the top like
-                preparation's PaperSwitch/SectionsTab (which live inside its
-                Topbar's non-collapsing section), instead of scrolling away
-                with the notes list underneath it. Sits right below Topbar's
-                sticky wrapper in ContentShell, which shrinks toward 0 on
-                scroll, so this naturally rises to occupy the top spot as
-                that happens rather than overlapping it. */}
-            <div className='sticky top-0 z-10 bg-white sm:bg-transparent -mt-1 py-1'>
-                {items?.length > 1 && (
-                    <div className='px-4'>
-                        <PaperTabs
-                            tabs={items}
-                            selectedId={selectedPaperId?.toString() ?? null}
-                            onChange={(id) => selectPaper(Number(id))}
-                            containerBg="bg-transparent"
-                        />
-                    </div>
-                )}
-
-
-                <div className='w-full flex justify-center'>
-                    <SectionSwitchUI
-                        layoutId={"section-tab-preparation"}
-                        items={sectionItems}
-                        active={selectedSections?.toString() ?? null}
-                        changeSection={(id: string) => toggleSection(Number(id))}
-                    />
-                </div>
-            </div>
-
+            {/* Paper/section tabs now live in Topbar (ContentTabsBar) — see
+                that component's docblock for why they moved out of here. */}
             <SectionNotes sections={sections} sectionId={selectedSections} examId={examId} courseType={activeSection?.type} />
 
         </div>
@@ -90,17 +42,9 @@ export default function NotesPage({ examId }: { examId?: string }) {
 function NotesPageSkeleton() {
     return (
         <div>
-            {/* Subject tabs */}
-            <div className="flex gap-2 px-4 py-3 overflow-hidden">
-                {["w-24", "w-20", "w-24", "w-16", "w-32"].map((w, i) => (
-                    <Skeleton key={i} className={`h-10 shrink-0 ${w}`} rounded="rounded-t-lg" />
-                ))}
-            </div>
-
-            {/* Section switch */}
-            <div className="w-full flex justify-center py-2">
-                <Skeleton className="h-9 w-[220px]" rounded="rounded-full" />
-            </div>
+            {/* Paper/section tab skeletons moved to Topbar's ContentTabsBar
+                loading state; this page's own skeleton now starts at the
+                chapter header, matching what actually still renders here. */}
 
             {/* Chapter header */}
             <div className="px-4 py-3 space-y-2">

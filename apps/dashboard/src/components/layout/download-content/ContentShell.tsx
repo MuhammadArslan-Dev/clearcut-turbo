@@ -14,9 +14,14 @@ import { useContentDataStore } from "@/components/features/downloadable-content/
 import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import BottomContentPageSwitchReveal from "@/components/features/downloadable-content/components/BottomContentPageSwitchReveal";
+import NotesIndexModal from "@/components/features/downloadable-content/components/NotesIndexModal";
+import { useNotesIndexStore } from "@/components/features/downloadable-content/store/useNotesIndexStore";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import Text from "@clearcut/ui/text";
 
 // Same upper bound preparation's Sidebar uses for its own scroll-hide
 // offset — Topbar clamps against its own measured height, so this only
@@ -80,38 +85,64 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
   // Always show the Topbar again once we leave this screen.
   useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
 
+  const pathname = usePathname();
+  const isNotesRoute = pathname.includes("/notes");
+  const t = useTranslations();
+  const openIndex = useNotesIndexStore((s) => s.open);
+
   return (
     <div className="w-full flex justify-center bg-black/40 sm:py-6">
-      <div
-        ref={scrollContainerRef}
-        className="relative max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] overflow-y-auto w-full flex flex-col bg-[#f1f5fa] sm:rounded-lg"
-      >
+      <div className="max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] w-full flex flex-col overflow-hidden bg-[#f1f5fa] sm:rounded-lg">
         {/* Sidebar */}
         <div className="sticky top-0 bg-white z-20">
           <Topbar />
         </div>
 
-        <main className="pb-32">{children}</main>
+        {/* Static positioning context for the bottom overlay below — same
+            split preparation's Sidebar uses: THIS wrapper never scrolls,
+            only <main> inside it does, so the overlay can sit fixed over the
+            scrolling content via `absolute` instead of `sticky`. A `sticky`
+            overlay living INSIDE the scrolling element instead (the
+            previous approach here) behaved differently from preparation's
+            floating widget — this restores the same mechanism. */}
+        <div className="relative flex-1 overflow-hidden">
+          <main ref={scrollContainerRef} className="h-full overflow-y-auto pb-40">
+            {children}
+          </main>
+
+          {/* Mirrors preparation's Sidebar bottom-fixed reveal: Notes/PYQs
+              switch + payment widget, growing into view as the Topbar hides. */}
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 z-50 w-full space-y-2 px-3"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          >
+            <div className="flex justify-center items-center gap-2 w-full">
+              <BottomContentPageSwitchReveal />
+
+              {isNotesRoute && (
+                <button
+                  type="button"
+                  onClick={openIndex}
+                  className="w-[115px] h-9 shrink-0 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[var(--icon-neutral-intense)] text-white"
+                >
+                  <Text className="text-white" variant="heading-small" weight="semibold">
+                    {t("common.index")}
+                  </Text>
+                </button>
+              )}
+            </div>
+            <PaywallFloatingWidget />
+          </div>
+        </div>
 
         {isOpen && activeModal === "end-exam" && <ExamEndConfirmationSheet />}
         {isOpen && activeModal === "exam-navigation-panel" && (
           <QuestionNavigatorSheet />
         )}
-
-        {/* Mirrors preparation's Sidebar bottom-fixed reveal: Notes/PYQs
-            switch + payment widget, growing into view as the Topbar hides. */}
-        <div
-          className="sticky bottom-0 left-0 z-50 w-full space-y-2 px-3"
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        >
-          <div className="flex justify-center">
-            <BottomContentPageSwitchReveal />
-          </div>
-          <PaywallFloatingWidget />
-        </div>
       </div>
 
       <LockedContentModal />
+      <NotesIndexModal />
     </div>
   );
 }

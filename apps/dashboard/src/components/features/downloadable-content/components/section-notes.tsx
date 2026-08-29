@@ -17,6 +17,7 @@ import { LockIcon } from "@/components/ui/icons";
 import { useRouter } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNotesIndexStore } from "../store/useNotesIndexStore";
 
 export default function SectionNotes({
     sections,
@@ -34,9 +35,11 @@ export default function SectionNotes({
     const t = useTranslations();
     const { course } = useGetCurrentCourseStore();
     const { open: openPaywall } = usePaywallsStore();
+    const { setChapters, pendingScrollToId, clearPendingScroll } = useNotesIndexStore();
 
     const [selectedLang, setSelectedLang] = React.useState<"en" | "hi">("en");
     const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
+    const chapterRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
 
     /* ================= API ================= */
     const { data, isLoading } = useQuery<{
@@ -57,6 +60,27 @@ export default function SectionNotes({
     useEffect(() => {
         setSelectedLang(course?.language === "english" ? "en" : "hi");
     }, [course]);
+
+    /* ================= INDEX MODAL WIRING =================
+       Feeds the Index button's chapter list (ContentShell's bottom overlay
+       reads it via useNotesIndexStore) and, once it's mounted, scrolls to
+       whichever chapter the user tapped there. */
+    useEffect(() => {
+        setChapters(
+            (data?.chapters ?? []).map((chapter) => ({
+                id: chapter.uuid,
+                name: chapter.name,
+                locked: chapter.locked,
+            })),
+        );
+    }, [data?.chapters, setChapters]);
+
+    useEffect(() => {
+        if (!pendingScrollToId) return;
+        const el = chapterRefs.current[pendingScrollToId];
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        clearPendingScroll();
+    }, [pendingScrollToId, clearPendingScroll]);
 
     if (isLoading) return <SectionNotesSkeleton />;
     /* ================= HELPERS ================= */
@@ -96,7 +120,12 @@ export default function SectionNotes({
     return (
         <div>
             {data?.chapters.map((chapter, chapterIndex) => (
-                <div key={chapter.uuid}>
+                <div
+                    key={chapter.uuid}
+                    ref={(el) => {
+                        chapterRefs.current[chapter.uuid] = el;
+                    }}
+                >
                     {/* Divider */}
                     <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full" />
 
