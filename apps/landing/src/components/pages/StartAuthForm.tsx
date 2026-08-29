@@ -610,8 +610,8 @@ export default function StartAuthForm({
                   — see that hook's docblock), OR when ?showTruecaller=true
                   arrives from a /go marketing page that already confirmed it
                   on its own. */}
-              {/* {(truecallerAvailability === "available" ||
-                forceShowTruecaller) && ( */}
+              {(truecallerAvailability === "available" ||
+                forceShowTruecaller) && (
                 <div className="flex md:hidden flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Button
@@ -661,7 +661,7 @@ export default function StartAuthForm({
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                   </div>
                 </div>
-              {/* )} */}
+              )}
 
               <div className="space-y-2">
                 <Text
