@@ -327,23 +327,24 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  * probing again — so the one unavoidable handoff attempt happens at most
  * once per device, ever, not once per page/session.
  *
- * Listens on scroll/pointerdown/touchstart/keydown, page-wide — deliberately
- * broad (an earlier version scoped this to one input field specifically to
- * avoid triggering from a plain scroll; that's no longer necessary now that
- * a result is cached forever, so the wider net just means the one-time
- * detection resolves sooner rather than requiring the user to specifically
- * tap the phone field first). On mobile, a scroll gesture's first touch
- * fires `touchstart` before any scrolling happens, so listening for
- * `scroll` itself isn't necessary to catch it.
+ * Listens on scroll/keydown, page-wide — deliberately NOT
+ * pointerdown/touchstart/click. Those fire on every tap anywhere on the
+ * page, including a tap on an unrelated button, and the scheme-navigation
+ * below is a real navigation attempt that some mobile in-app browsers
+ * (observed in Instagram's) resolve synchronously enough to delay that SAME
+ * click's own handler — which surfaced as "the login modal won't open until
+ * Truecaller detection finishes." scroll/keydown never co-occur with a
+ * button click, so this can't happen: the probe only fires once the user
+ * scrolls the page or starts typing into a field.
  *
  * Doesn't run on mount, and can't be made to: browsers only allow navigating
  * to a custom URL scheme as the direct, synchronous result of a real user
- * gesture (click/touch/key) — a bare `useEffect` or a `setTimeout` firing
- * after page load is silently ignored in Chrome/Safari/Firefox precisely to
- * stop sites from background-probing installed apps. There is no delay or
- * "run after load" variant of this that still works; the gesture requirement
- * is what makes attaching the listener itself effectively free — it's inert
- * until first scroll/tap/keypress happens, and skipped entirely once cached.
+ * gesture — a bare `useEffect` or a `setTimeout` firing after page load is
+ * silently ignored in Chrome/Safari/Firefox precisely to stop sites from
+ * background-probing installed apps. There is no delay or "run after load"
+ * variant of this that still works; the gesture requirement is what makes
+ * attaching the listener itself effectively free — it's inert until the
+ * first scroll/keypress happens, and skipped entirely once cached.
  */
 export function useTruecallerAvailability(): TruecallerAvailability {
   const cached = getCachedTruecallerAvailability();
@@ -410,15 +411,21 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       window.location.href = TRUECALLER_SCHEME_PROBE;
     };
 
+    // Deliberately NOT pointerdown/touchstart/click: those fire on EVERY tap
+    // anywhere on the page, including a tap on an unrelated button like
+    // "Continue Free" — and `window.location.href = TRUECALLER_SCHEME_PROBE`
+    // below is a real navigation attempt that some mobile WebViews (observed
+    // in Instagram's in-app browser) resolve synchronously enough to delay
+    // that SAME click's own handler, which looked like "the login modal
+    // won't open until Truecaller detection finishes." scroll/keydown never
+    // co-occur with a button click, so they can't cause that conflict — the
+    // trade-off is the probe now only fires once the user scrolls the page
+    // or starts typing into a field, not on their very first tap.
     const opts = { once: true, passive: true } as const;
-    document.addEventListener("pointerdown", runDetection, opts);
-    document.addEventListener("touchstart", runDetection, opts);
     document.addEventListener("keydown", runDetection, opts);
     document.addEventListener("scroll", runDetection, opts);
 
     return () => {
-      document.removeEventListener("pointerdown", runDetection);
-      document.removeEventListener("touchstart", runDetection);
       document.removeEventListener("keydown", runDetection);
       document.removeEventListener("scroll", runDetection);
     };
