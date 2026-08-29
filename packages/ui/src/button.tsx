@@ -255,47 +255,15 @@ function parseSx(sx?: ButtonProps["sx"]): React.CSSProperties {
   };
 }
 
-// Sentry-style wavy loading indicator: an infinite quadratic-bezier squiggle
-// scrolling one period to the left on loop. Sized per button `size` so it
-// reads at roughly the same visual weight as the label it covers.
-const WAVE_PERIOD = 16;
-const WAVE_CYCLES = 7;
-const WAVE_HEIGHT = 16;
-const WAVE_WIDTH = WAVE_PERIOD * WAVE_CYCLES;
-
-function buildWavePath(): string {
-  let d = `M0 ${WAVE_HEIGHT / 2}`;
-  for (let i = 0; i < WAVE_CYCLES; i++) {
-    const midX = i * WAVE_PERIOD + WAVE_PERIOD / 2;
-    const endX = (i + 1) * WAVE_PERIOD;
-    const controlY = i % 2 === 0 ? -WAVE_HEIGHT * 0.5 : WAVE_HEIGHT * 1.5;
-    d += ` Q${midX} ${controlY} ${endX} ${WAVE_HEIGHT / 2}`;
-  }
-  return d;
-}
-const WAVE_PATH = buildWavePath();
-
-const WAVE_SIZE: Record<NonNullable<ButtonProps["size"]>, string> = {
-  xs: "h-3 w-10",
-  sm: "h-3 w-11",
-  md: "h-3.5 w-12",
-  lg: "h-4 w-16",
-  xl: "h-4 w-20",
-};
-
-const WaveLoader = ({ size }: { size: ButtonProps["size"] }) => (
-  <span className={cn("relative block overflow-hidden", WAVE_SIZE[size ?? "md"])} aria-hidden="true">
-    <svg
-      className="absolute left-0 top-0 h-full"
-      style={{ width: WAVE_WIDTH, animation: "cc-btn-wave 0.8s linear infinite" }}
-      viewBox={`0 0 ${WAVE_WIDTH} ${WAVE_HEIGHT}`}
-      preserveAspectRatio="none"
-      fill="none"
-    >
-      <path d={WAVE_PATH} stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-    <style>{`@keyframes cc-btn-wave{from{transform:translateX(0)}to{transform:translateX(-${WAVE_PERIOD}px)}}`}</style>
-  </span>
+const Spinner = () => (
+  // h-5/w-5 (up from h-4/w-4): every button size's own min-height (28px at
+  // the smallest) already has enough padding headroom to absorb this without
+  // growing. `ml-[3px]` is on top of the button's own `gap-1` — extra
+  // breathing room between the label and the spinner specifically, without
+  // touching the gap other icon slots (leftIcon/rightIcon) use.
+  <svg className="h-5 w-5 shrink-0 ml-[3px] animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+  </svg>
 );
 
 // Pure-CSS shimmer. Rendered only when `shimmer` is true. The gradient +
@@ -356,10 +324,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     ...(bgColor && { backgroundColor: bgColor }),
     ...sxStyles,
     ...style,
-    // `disabled:opacity-50` fires for the loading state too (loading implies
-    // disabled) — override it inline so the wave reads at full brightness
-    // instead of the dimmed-disabled look, matching the reference button.
-    ...(loading && { opacity: 1 }),
   };
 
   return (
@@ -373,22 +337,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       style={inlineStyle}
       {...rest}
     >
-      {/* `invisible` (not `hidden`/opacity) keeps this row's own box in flow,
-          so the button keeps the width its label gave it — the wave overlay
-          below is centered over that same footprint instead of causing a
-          resize when loading starts/ends. */}
-      <span className={cn("inline-flex items-center justify-center gap-1", loading && "invisible")}>
-        {startDecorator}
-        {leftIcon && <span className={cn(iconAnimationClass("left", iconAnimation))}>{leftIcon}</span>}
-        <span className="flex items-center gap-1">{children}</span>
-        {rightIcon && <span className={cn(iconAnimationClass("right", iconAnimation))}>{rightIcon}</span>}
-        {endDecorator}
-      </span>
-      {loading && (
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <WaveLoader size={size} />
-        </span>
-      )}
+      {startDecorator}
+      {leftIcon && <span className={cn(iconAnimationClass("left", iconAnimation))}>{leftIcon}</span>}
+      <span className="flex items-center gap-1">{children}</span>
+      {rightIcon && <span className={cn(iconAnimationClass("right", iconAnimation))}>{rightIcon}</span>}
+      {loading ? <Spinner /> : endDecorator}
       {shimmer && <ShimmerSweep />}
     </Comp>
   );

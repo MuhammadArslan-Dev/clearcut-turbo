@@ -10,7 +10,7 @@ import { ResumeStatePayload } from "@/types/courseresume";
 import Text from "@clearcut/ui/text";
 import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/SectionHeaderCard";
 import CounterCard from "@/components/ui/cards/CounterCard";
-import { handleOpenPaywall } from "../../PayWalls/PaywallFloatingWidget";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { useTranslations } from "next-intl";
 import { LockIcon } from "@/components/ui/icons";
@@ -33,6 +33,7 @@ export default function SectionNotes({
     const locale = useLocale();
     const t = useTranslations();
     const { course } = useGetCurrentCourseStore();
+    const { open: openPaywall } = usePaywallsStore();
 
     const [selectedLang, setSelectedLang] = React.useState<"en" | "hi">("en");
     const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
@@ -79,8 +80,9 @@ export default function SectionNotes({
 
     const handlePDFClick = (note: any, locked?: boolean) => {
         if (locked) {
-            console.log("locked");
-            handleOpenPaywall(router, "topic_card_clicked", course);
+            if (course?.exam) {
+                openPaywall("topic-locked-modal", course.exam, "topic_card_clicked", course);
+            }
             return;
         }
 
@@ -103,7 +105,8 @@ export default function SectionNotes({
                         <SectionHeaderCard
                             onClick={() =>
                                 chapter?.locked &&
-                                handleOpenPaywall(router, "topic_card_clicked", course)
+                                course?.exam &&
+                                openPaywall("topic-locked-modal", course.exam, "topic_card_clicked", course)
                             }
                             trailingIcon={
                                 chapter?.locked && (

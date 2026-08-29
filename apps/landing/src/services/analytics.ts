@@ -5,6 +5,25 @@ let initialized = false;
 
 const AMPLITUDE_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '87599b5b5616563df5517932f9d6ca84';
 
+// initAmplitude() is deliberately deferred (AnalyticsLoader waits for idle +
+// 1.5s before even starting the dynamic import) so it doesn't compete with
+// page load. That means every call below made in the meantime — most
+// notably StartAuthForm's mount-time "Authentication Options Viewed"/
+// "Authentication Method Selected" events, which fire the instant the
+// login/OTP screen renders — used to hit `amplitudeInstance === null` and
+// get silently dropped every single time, not just occasionally. Queuing
+// them here and replaying once init resolves is what actually fixes that,
+// rather than just narrowing the race window.
+const pendingOps: Array<(amp: typeof amplitude) => void> = [];
+
+function runOrQueue(op: (amp: typeof amplitude) => void): void {
+  if (amplitudeInstance) {
+    op(amplitudeInstance);
+  } else {
+    pendingOps.push(op);
+  }
+}
+
 /** Detect platform */
 const getCustomPlatform = () => {
   if (typeof window === "undefined") return "Unknown";
@@ -35,6 +54,11 @@ export const initAmplitude = async () => {
   amplitudeInstance = amp;
   initialized = true;
 
+  // Flush whatever queued up while the SDK was still loading, in the order
+  // it actually happened, before the init-time platform identify below.
+  const queued = pendingOps.splice(0);
+  queued.forEach((op) => op(amp));
+
   setUserProperties({
     custom_platform: getCustomPlatform(),
   });
@@ -44,19 +68,15 @@ export const logAmplitudeEvent = (
   eventName: string,
   properties: Record<string, any> = {},
 ) => {
-  if (!amplitudeInstance) return;
-
-  amplitudeInstance.track(eventName, properties);
+  runOrQueue((amp) => amp.track(eventName, properties));
 };
 
 /** Set User ID */
 export const setUserId = (userId: string | number) => {
-  if (!amplitudeInstance) return;
-
   const id = String(userId).trim();
   if (!id) return;
 
-  amplitudeInstance.setUserId(id);
+  runOrQueue((amp) => amp.setUserId(id));
 
   setUserProperties({
     custom_platform: getCustomPlatform(),
@@ -65,22 +85,20 @@ export const setUserId = (userId: string | number) => {
 
 /** Set User Properties */
 export const setUserProperties = (properties: Record<string, any>) => {
-  if (!amplitudeInstance) return;
+  runOrQueue((amp) => {
+    const identify = new amp.Identify();
 
-  const identify = new amplitudeInstance.Identify();
+    Object.entries(properties).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        identify.set(key, value);
+      }
+    });
 
-  Object.entries(properties).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      identify.set(key, value);
-    }
+    amp.identify(identify);
   });
-
-  amplitudeInstance.identify(identify);
 };
 
 /** Reset on logout */
 export const resetAmplitude = () => {
-  if (!amplitudeInstance) return;
-
-  amplitudeInstance.reset();
+  runOrQueue((amp) => amp.reset());
 };

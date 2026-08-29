@@ -11,6 +11,7 @@ import { ExamSyllabusData } from '@/components/features/preparation/types/types'
 import { getExamSyllabus } from '@/lib/preparation/preparation';
 import { useQuery } from '@tanstack/react-query';
 import { useContentDataStore } from "@/components/features/downloadable-content/store/useContentDataStore";
+import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 
 export default function ContentShell({ children, courseId }: { children: ReactNode; courseId: string | number | null }) {
 
@@ -66,6 +67,8 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
           <QuestionNavigatorSheet />
         )}
       </div>
+
+      <LockedContentModal />
     </div>
   );
 }
