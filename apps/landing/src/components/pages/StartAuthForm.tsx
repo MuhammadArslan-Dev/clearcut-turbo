@@ -20,7 +20,7 @@ import { setToken } from "@clearcut/auth/token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "@clearcut/auth/redirect";
 import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
-import { useTruecallerLogin } from "@clearcut/auth/truecaller";
+import { useTruecallerLogin, useTruecallerAvailability } from "@clearcut/auth/truecaller";
 import TruecallerIcon from "@clearcut/auth/icons/truecaller-icon";
 import WhatsAppIcon from "@clearcut/auth/icons/whatsapp-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -518,9 +518,19 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     handleVerify(code);
   }, step === "otp");
 
-  /* ---------------- TRUECALLER — TEMPORARILY DISABLED (2026-08-28) ----------------
-     Causing a reported issue; revisit and re-enable tomorrow. The button JSX
-     further down this file is commented out too — uncomment both together.
+  /* ---------------- TRUECALLER ---------------- */
+
+  const truecallerAvailability = useTruecallerAvailability();
+
+  // ?showTruecaller=true — set by the Astro /go marketing pages' Login/Try
+  // Free CTAs when THEIR OWN on-page detection already found Truecaller
+  // available, so the button doesn't have to wait for detection to run again
+  // here. Read directly off the URL (not a `useSearchParams()` hook) for the
+  // same reason getCurrentLocale() does — this only runs client-side, no
+  // need for a Suspense boundary just for this.
+  const forceShowTruecaller =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("showTruecaller") === "true";
 
   const {
     state: truecallerState,
@@ -532,8 +542,8 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
     const tcUser = result.user as { uuid?: string; phone?: string } | undefined;
     identifyClarityUser({ userId: tcUser?.uuid, phone: tcUser?.phone });
 
-    const lang = localStorage.getItem("locale") || "";
-    const course = localStorage.getItem("course");
+    const lang = getCurrentLocale();
+    const course = new URLSearchParams(window.location.search).get("course");
 
     const redirectUrl = buildPostVerifyRedirectUrl({
       baseUrl: REDIRECT_BASE_URL,
@@ -548,7 +558,6 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
   });
 
   const truecallerBusy = truecallerState === "opening" || truecallerState === "waiting";
-  */
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
@@ -571,22 +580,12 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                 </Text>
               </div>
 
-              {/*
-              TRUECALLER — TEMPORARILY DISABLED (2026-08-28), causing a
-              reported issue; revisit and re-enable tomorrow. Left commented
-              rather than deleted on purpose.
-
-              Prior design note, kept for context: shown on mobile only, no
-              pre-click detection — probing for the app (even scoped to this
-              input's own tap) still means a real deep-link attempt on that
-              tap, which visibly hands off to Truecaller when it's installed;
-              that surprise handoff on a plain input click was rejected.
-              Click was the only trigger: startTruecallerLogin attempts the
-              deep link and, if the OS doesn't hand off within the grace
-              window, truecallerState flips to "unavailable" and a fallback
-              message shows instead — WhatsApp login is fully wired
-              (handleWhatsAppLogin) but was never shown.
-
+              {/* Rendered once useTruecallerAvailability confirms the app is
+                  on this device (cached across every clearcutoff.in property
+                  — see that hook's docblock), OR when ?showTruecaller=true
+                  arrives from a /go marketing page that already confirmed it
+                  on its own. */}
+              {(truecallerAvailability === "available" || forceShowTruecaller) && (
               <div className="flex md:hidden flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Button
@@ -633,7 +632,7 @@ export default function StartAuthForm({ locale = defaultLocale }: { locale?: Loc
                     <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                   </div>
               </div>
-              */}
+              )}
 
               <div className="space-y-2">
                 <Text as="p" variant="body-small" weight="semibold" color="gray-muted">

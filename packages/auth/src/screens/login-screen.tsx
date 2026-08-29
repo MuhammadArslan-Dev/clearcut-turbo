@@ -23,7 +23,7 @@ import {
 } from "../validators";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
-import { useTruecallerLogin } from "../truecaller";
+import { useTruecallerLogin, useTruecallerAvailability } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
 
@@ -75,10 +75,9 @@ export function createLoginScreen({
     const hasTrackedRef = useRef(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
-    /* ---------------- TRUECALLER — TEMPORARILY DISABLED (2026-08-28) ----------------
-       Causing a reported issue; revisit and re-enable tomorrow. The button
-       JSX below (further down this file) is commented out too — uncomment
-       both together.
+    /* ---------------- TRUECALLER ---------------- */
+
+    const truecallerAvailability = useTruecallerAvailability();
 
     const {
       state: truecallerState,
@@ -109,7 +108,6 @@ export function createLoginScreen({
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
     };
-    */
 
     /* ---------------- ANALYTICS ---------------- */
 
@@ -333,25 +331,13 @@ export function createLoginScreen({
 
                   <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
                     <div className="flex flex-col gap-5 w-full items-center">
-                      {/*
-                      TRUECALLER — TEMPORARILY DISABLED (2026-08-28), causing
-                      a reported issue; revisit and re-enable tomorrow. Left
-                      commented rather than deleted on purpose.
-
-                      Prior design note, kept for context: shown on mobile
-                      only, no pre-click detection — probing for the app
-                      (even scoped to the phone input's own tap) still means
-                      a real deep-link attempt on that tap, which visibly
-                      hands off to Truecaller when it's installed; that
-                      surprise handoff on a plain input click was rejected.
-                      Click was the only trigger: startTruecallerLogin
-                      attempts the deep link and, if the OS doesn't hand off
-                      within the grace window, truecallerState flips to
-                      "unavailable" and a fallback message shows instead.
-                      WhatsApp login is fully wired (handleWhatsAppLogin) but
-                      was never shown — uncomment its Button below too if
-                      going live with it.
-
+                      {/* Only rendered once useTruecallerAvailability confirms
+                          the app is on this device (cached across every
+                          clearcutoff.in property after the first-ever
+                          detection — see that hook's docblock). WhatsApp
+                          login is fully wired (handleWhatsAppLogin) but not
+                          shown yet — uncomment to go live. */}
+                      {truecallerAvailability === "available" && (
                       <div className="flex md:hidden flex-col gap-2 w-full">
                           <div className="flex items-center gap-2">
                             <Button
@@ -368,7 +354,7 @@ export function createLoginScreen({
                               {truecallerState === "waiting" ? "Waiting…" : "Truecaller"}
                             </Button>
 
-                            <Button
+                            {/* <Button
                               size="sm"
                               variant="outlined"
                               sx={{ borderRadius: "50px" }}
@@ -378,7 +364,7 @@ export function createLoginScreen({
                               leftIcon={<WhatsappIcon size={20} color="var(--color-whatsapp-brand)" />}
                             >
                               WhatsApp
-                            </Button>
+                            </Button> */}
                           </div>
 
                           {truecallerState === "unavailable" && (
@@ -398,7 +384,7 @@ export function createLoginScreen({
                             <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                           </div>
                       </div>
-                      */}
+                      )}
 
                       {/* INPUT */}
                       <div className="space-y-4 w-full">

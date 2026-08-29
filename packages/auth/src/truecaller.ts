@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AuthApi, TruecallerStatusResponseData } from "./api";
 
 export type TruecallerLoginState =
@@ -155,6 +155,60 @@ export function useTruecallerLogin(
 
 export type TruecallerAvailability = "checking" | "available" | "unavailable";
 
+// Persisted across page loads AND across every clearcutoff.in property
+// (landing, /go marketing pages, academy.clearcutoff.in) so the detection
+// probe below — which unavoidably triggers a real, visible handoff attempt
+// the first time it runs (see that function's docblock) — only ever has to
+// run ONCE per device, ever, anywhere on the domain. localStorage is the
+// fast path for same-origin reads; the cookie is what actually makes it
+// cross-subdomain (localStorage is strictly per-origin, so
+// academy.clearcutoff.in can't see clearcutoff.in's localStorage no matter
+// what — a cookie scoped to the parent domain is the only browser mechanism
+// that spans subdomains). Every read checks localStorage first and falls
+// back to the cookie, mirroring the cookie's value into localStorage when
+// found so the *next* read on that origin is the fast path.
+const TRUECALLER_FLAG_KEY = "truecaller_available";
+const TRUECALLER_FLAG_COOKIE_DOMAIN = ".clearcutoff.in";
+const TRUECALLER_FLAG_MAX_AGE_DAYS = 180;
+
+function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeCookie(name: string, value: string, maxAgeDays: number): void {
+  const maxAge = maxAgeDays * 24 * 60 * 60;
+  // `domain=.clearcutoff.in` doesn't match a `localhost`/preview host — the
+  // browser just drops that attribute and the cookie fails to set at all, so
+  // it's only added on the real production domain. Local/preview testing
+  // still gets a same-origin cookie (no domain attribute), which is enough
+  // to verify the caching behavior itself.
+  const isProd = window.location.hostname.endsWith("clearcutoff.in");
+  const domainPart = isProd ? `; domain=${TRUECALLER_FLAG_COOKIE_DOMAIN}` : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}${domainPart}; SameSite=Lax`;
+}
+
+export function getCachedTruecallerAvailability(): "available" | "unavailable" | null {
+  if (typeof window === "undefined") return null;
+
+  const fromLocal = localStorage.getItem(TRUECALLER_FLAG_KEY);
+  if (fromLocal === "available" || fromLocal === "unavailable") return fromLocal;
+
+  const fromCookie = readCookie(TRUECALLER_FLAG_KEY);
+  if (fromCookie === "available" || fromCookie === "unavailable") {
+    localStorage.setItem(TRUECALLER_FLAG_KEY, fromCookie);
+    return fromCookie;
+  }
+
+  return null;
+}
+
+export function setCachedTruecallerAvailability(value: "available" | "unavailable"): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TRUECALLER_FLAG_KEY, value);
+  writeCookie(TRUECALLER_FLAG_KEY, value, TRUECALLER_FLAG_MAX_AGE_DAYS);
+}
+
 // The exact scheme Truecaller's own app registers on the device (see
 // AuthController::truecallerInitiate's docblock link to Truecaller's docs).
 // No nonce/partner key needed here — this is a presence probe, not a real
@@ -190,19 +244,25 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  * Because that attempt IS the detection mechanism, if Truecaller is
  * installed, triggering it will briefly switch away to it — an unavoidable
  * trade-off of checking proactively rather than only after the user taps
- * "Login with Truecaller" (flagged in the PR description, not silently
- * hidden).
+ * "Login with Truecaller".
  *
- * `triggerRef` scopes that unavoidable trade-off to a single element —
- * pass the phone-number input's ref. The probe then fires only on that
- * field's first pointerdown/touchstart/focus, i.e. the moment the user is
- * already declaring login intent, never from scrolling or interacting
- * elsewhere on the page. (An earlier version listened on `document`, so ANY
- * touch — including the touchstart that begins a scroll gesture — fired a
- * real deep-link attempt; that's what caused Truecaller's own handoff UI to
- * appear just from scrolling. Scoping the listener to one element is a pure
- * config change with no runtime cost of its own — it's still just one event
- * listener, same as before.)
+ * That trade-off is made acceptable by getCachedTruecallerAvailability /
+ * setCachedTruecallerAvailability above: the very first time this resolves
+ * on a device (anywhere on clearcutoff.in — landing, /go marketing pages, or
+ * academy.clearcutoff.in), the result is cached for 180 days across a cookie
+ * + localStorage. Every subsequent mount of this hook, on any of those
+ * properties, checks the cache FIRST and returns immediately without ever
+ * probing again — so the one unavoidable handoff attempt happens at most
+ * once per device, ever, not once per page/session.
+ *
+ * Listens on scroll/pointerdown/touchstart/keydown, page-wide — deliberately
+ * broad (an earlier version scoped this to one input field specifically to
+ * avoid triggering from a plain scroll; that's no longer necessary now that
+ * a result is cached forever, so the wider net just means the one-time
+ * detection resolves sooner rather than requiring the user to specifically
+ * tap the phone field first). On mobile, a scroll gesture's first touch
+ * fires `touchstart` before any scrolling happens, so listening for
+ * `scroll` itself isn't necessary to catch it.
  *
  * Doesn't run on mount, and can't be made to: browsers only allow navigating
  * to a custom URL scheme as the direct, synchronous result of a real user
@@ -211,16 +271,16 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  * stop sites from background-probing installed apps. There is no delay or
  * "run after load" variant of this that still works; the gesture requirement
  * is what makes attaching the listener itself effectively free — it's inert
- * until that specific tap happens.
+ * until first scroll/tap/keypress happens, and skipped entirely once cached.
  */
-export function useTruecallerAvailability(
-  triggerRef?: RefObject<HTMLElement | null>,
-): TruecallerAvailability {
-  const [state, setState] = useState<TruecallerAvailability>("checking");
+export function useTruecallerAvailability(): TruecallerAvailability {
+  const cached = getCachedTruecallerAvailability();
+  const [state, setState] = useState<TruecallerAvailability>(cached ?? "checking");
   const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (cached) return; // already resolved on a previous visit — never re-probe
 
     // Truecaller only exists as a phone app — no desktop counterpart to hand
     // off to. Matches the existing `md:hidden` gate on the button itself.
@@ -229,19 +289,17 @@ export function useTruecallerAvailability(
       return;
     }
 
-    const target: Pick<EventTarget, "addEventListener" | "removeEventListener"> =
-      triggerRef?.current ?? document;
-
     const runDetection = () => {
       if (hasRunRef.current) return;
       hasRunRef.current = true;
 
       let settled = false;
-      const finish = (result: TruecallerAvailability) => {
+      const finish = (result: "available" | "unavailable") => {
         if (settled) return;
         settled = true;
         document.removeEventListener("visibilitychange", onVisibilityChange);
         clearTimeout(timer);
+        setCachedTruecallerAvailability(result);
         setState(result);
       };
 
@@ -257,17 +315,20 @@ export function useTruecallerAvailability(
       window.location.href = TRUECALLER_SCHEME_PROBE;
     };
 
-    target.addEventListener("pointerdown", runDetection, { once: true });
-    target.addEventListener("touchstart", runDetection, { once: true, passive: true });
-    // Covers keyboard/assistive-tech focus, which doesn't fire pointerdown.
-    target.addEventListener("focus", runDetection, { once: true });
+    const opts = { once: true, passive: true } as const;
+    document.addEventListener("pointerdown", runDetection, opts);
+    document.addEventListener("touchstart", runDetection, opts);
+    document.addEventListener("keydown", runDetection, opts);
+    document.addEventListener("scroll", runDetection, opts);
 
     return () => {
-      target.removeEventListener("pointerdown", runDetection);
-      target.removeEventListener("touchstart", runDetection);
-      target.removeEventListener("focus", runDetection);
+      document.removeEventListener("pointerdown", runDetection);
+      document.removeEventListener("touchstart", runDetection);
+      document.removeEventListener("keydown", runDetection);
+      document.removeEventListener("scroll", runDetection);
     };
-  }, [triggerRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return state;
 }
