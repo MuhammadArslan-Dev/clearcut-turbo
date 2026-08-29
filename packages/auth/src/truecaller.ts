@@ -20,6 +20,50 @@ const MAX_WAIT_MS = 90_000;
 // deep-link integrations work).
 const APP_OPEN_GRACE_MS = 1500;
 
+// Facebook's and Instagram's in-app browsers routinely destroy this page's
+// entire JS context the moment `window.location.href = deep_link` hands off
+// to Truecaller, rather than just backgrounding the tab — so the poll
+// interval below, which lives only in memory, never gets to resume when the
+// user comes back (they land on a freshly-loaded page in "idle" state, even
+// though their approval may already be sitting on the backend waiting to be
+// picked up). Persisting the nonce the moment it's minted, and checking for
+// one on every mount, lets a fresh page instance pick the same poll back up
+// automatically instead of requiring the user to notice nothing happened and
+// tap the button a second time.
+const PENDING_NONCE_KEY = "truecaller_pending_nonce";
+
+interface PendingNonce {
+  nonce: string;
+  startedAt: number;
+}
+
+function readPendingNonce(): PendingNonce | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PENDING_NONCE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingNonce>;
+    if (typeof parsed.nonce !== "string" || typeof parsed.startedAt !== "number") return null;
+    // Older than the max wait window is definitely stale (that attempt would
+    // already have timed out server-side too) — treat it as nothing pending
+    // rather than resuming a poll that can only ever come back "expired".
+    if (Date.now() - parsed.startedAt > MAX_WAIT_MS) return null;
+    return parsed as PendingNonce;
+  } catch {
+    return null;
+  }
+}
+
+function writePendingNonce(nonce: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PENDING_NONCE_KEY, JSON.stringify({ nonce, startedAt: Date.now() }));
+}
+
+function clearPendingNonce(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(PENDING_NONCE_KEY);
+}
+
 export interface TruecallerLoginResult {
   token: string;
   hasCourse: boolean;
@@ -63,6 +107,7 @@ export function useTruecallerLogin(
 
   const reset = useCallback(() => {
     clearTimers();
+    clearPendingNonce();
     setState("idle");
     setError(null);
   }, [clearTimers]);
@@ -71,51 +116,26 @@ export function useTruecallerLogin(
   // user navigates away while waiting for approval).
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  const start = useCallback(async () => {
-    clearTimers();
-    setError(null);
-    setState("opening");
-
-    try {
-      const initiateRes = await authApi.truecallerInitiate();
-      const { request_nonce, deep_link } = initiateRes.data.data;
-
-      // Opening the deep link is what hands off to the Truecaller app. If
-      // it's not installed, this is a silent no-op in the browser — no
-      // error to catch — which is exactly why the grace-period check below
-      // exists as the only available signal.
-      window.location.href = deep_link;
-
-      appOpenTimerRef.current = setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          // Soften the UI to "probably not installed" WITHOUT stopping the
-          // poll/max-wait timers below. This is a heuristic, not a
-          // certainty — some browsers show an "Open in app?" interstitial
-          // before actually switching, so the page can still read as
-          // "visible" even though the user goes on to approve in Truecaller
-          // a moment later. Truecaller's server calls our backend directly,
-          // independent of this tab, so if polling had already been killed
-          // here, that later approval would complete server-side with
-          // nobody left listening for it — exactly the "record created but
-          // never redirected" symptom.
-          setState("unavailable");
-        }
-      }, APP_OPEN_GRACE_MS);
-
+  // Shared between a fresh start() and resuming a pending nonce found on
+  // mount below — both just need to poll truecallerStatus until it settles.
+  const pollForResult = useCallback(
+    (requestNonce: string, remainingMs: number) => {
       maxWaitTimerRef.current = setTimeout(() => {
         clearTimers();
+        clearPendingNonce();
         setState("error");
         setError("Truecaller login timed out. Please try again.");
-      }, MAX_WAIT_MS);
+      }, remainingMs);
 
       pollTimerRef.current = setInterval(async () => {
         try {
-          const statusRes = await authApi.truecallerStatus(request_nonce);
+          const statusRes = await authApi.truecallerStatus(requestNonce);
           const data: TruecallerStatusResponseData = statusRes.data.data;
 
           if (data.status === "pending") return;
 
           clearTimers();
+          clearPendingNonce();
 
           if (data.status === "success" && data.token) {
             setState("success");
@@ -141,14 +161,66 @@ export function useTruecallerLogin(
           // max-wait timer above is the real backstop.
         }
       }, POLL_INTERVAL_MS);
+    },
+    [authApi, clearTimers],
+  );
 
+  // On mount, pick back up a poll a PREVIOUS instance of this hook started
+  // and never got to finish — see PENDING_NONCE_KEY's comment for why this
+  // happens (Facebook/Instagram in-app browsers tearing down the JS context
+  // on handoff). Runs once; if nothing's pending this is a no-op.
+  useEffect(() => {
+    const pending = readPendingNonce();
+    if (!pending) return;
+
+    setState("waiting");
+    const remainingMs = Math.max(MAX_WAIT_MS - (Date.now() - pending.startedAt), POLL_INTERVAL_MS);
+    pollForResult(pending.nonce, remainingMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const start = useCallback(async () => {
+    clearTimers();
+    clearPendingNonce();
+    setError(null);
+    setState("opening");
+
+    try {
+      const initiateRes = await authApi.truecallerInitiate();
+      const { request_nonce, deep_link } = initiateRes.data.data;
+      writePendingNonce(request_nonce);
+
+      // Opening the deep link is what hands off to the Truecaller app. If
+      // it's not installed, this is a silent no-op in the browser — no
+      // error to catch — which is exactly why the grace-period check below
+      // exists as the only available signal.
+      window.location.href = deep_link;
+
+      appOpenTimerRef.current = setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          // Soften the UI to "probably not installed" WITHOUT stopping the
+          // poll/max-wait timers below. This is a heuristic, not a
+          // certainty — some browsers show an "Open in app?" interstitial
+          // before actually switching, so the page can still read as
+          // "visible" even though the user goes on to approve in Truecaller
+          // a moment later. Truecaller's server calls our backend directly,
+          // independent of this tab, so if polling had already been killed
+          // here, that later approval would complete server-side with
+          // nobody left listening for it — exactly the "record created but
+          // never redirected" symptom.
+          setState("unavailable");
+        }
+      }, APP_OPEN_GRACE_MS);
+
+      pollForResult(request_nonce, MAX_WAIT_MS);
       setState("waiting");
     } catch {
       clearTimers();
+      clearPendingNonce();
       setState("error");
       setError("Couldn't start Truecaller login. Please try again.");
     }
-  }, [authApi, clearTimers]);
+  }, [authApi, clearTimers, pollForResult]);
 
   return { state, error, start, reset };
 }
@@ -297,17 +369,40 @@ export function useTruecallerAvailability(): TruecallerAvailability {
       const finish = (result: "available" | "unavailable") => {
         if (settled) return;
         settled = true;
-        document.removeEventListener("visibilitychange", onVisibilityChange);
+        document.removeEventListener("visibilitychange", onSignal);
+        window.removeEventListener("pagehide", onSignal);
+        window.removeEventListener("pageshow", onSignal);
+        window.removeEventListener("focus", onSignal);
         clearTimeout(timer);
+        // Written synchronously so it survives even if this page's JS
+        // context gets torn down immediately after (see the note below) —
+        // localStorage/cookie writes commit before the handler returns,
+        // unlike React state.
         setCachedTruecallerAvailability(result);
         setState(result);
       };
 
-      const onVisibilityChange = () => {
-        if (document.visibilityState === "hidden") finish("available");
-      };
+      // Facebook's and Instagram's in-app browsers are known to suspend or
+      // fully destroy this page's JS context the moment it hands off to
+      // another app, rather than just backgrounding the tab like a normal
+      // mobile browser — sometimes without ever dispatching a
+      // "visibilitychange to hidden" event this page gets to observe before
+      // being torn down. Rather than distinguishing "went hidden" from
+      // "came back", any of these four events firing at all during an
+      // in-flight probe is itself sufficient proof some app-switch happened
+      // — an uninstalled scheme never leaves the page, so there's nothing to
+      // hide from or return from. `pagehide` catches the leaving moment most
+      // reliably; `visibilitychange`/`pageshow`/`focus` catch the return,
+      // which also covers the case where the leaving transition was missed
+      // entirely (page recreated fresh) but this same instance is still the
+      // one running when focus comes back.
+      const onSignal = () => finish("available");
 
-      document.addEventListener("visibilitychange", onVisibilityChange);
+      document.addEventListener("visibilitychange", onSignal);
+      window.addEventListener("pagehide", onSignal);
+      window.addEventListener("pageshow", onSignal);
+      window.addEventListener("focus", onSignal);
+
       const timer = setTimeout(() => {
         finish(document.visibilityState === "hidden" ? "available" : "unavailable");
       }, AVAILABILITY_PROBE_GRACE_MS);
