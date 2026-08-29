@@ -17,7 +17,8 @@
     "./validators": "./src/validators.ts",
     "./create-auth-feature": "./src/create-auth-feature.tsx",
     "./icons/truecaller-icon": "./src/icons/truecaller-icon.tsx",
-    "./icons/whatsapp-icon": "./src/icons/whatsapp-icon.tsx"
+    "./icons/whatsapp-icon": "./src/icons/whatsapp-icon.tsx",
+    "./icons/shield-check-icon": "./src/icons/shield-check-icon.tsx"
   },
   "dependencies": {
     "@clearcut/analytics": "workspace:*",

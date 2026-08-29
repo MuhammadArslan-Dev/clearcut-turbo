@@ -30,8 +30,10 @@ import {
   isAndroidChrome,
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
+import ShieldCheckIcon from "@clearcut/auth/icons/shield-check-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
+import { highlightTextUtil } from "@clearcut/utils/highlight-text";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
@@ -60,6 +62,9 @@ const CONTENT: Record<
     heading: string;
     featuresLine: string;
     otpHint: string;
+    otpDisclaimerLine1: string;
+    otpDisclaimerLine2: string;
+    trustedByLine: string;
     terms: string;
     andWord: string;
     mobileLabel: string;
@@ -100,7 +105,10 @@ const CONTENT: Record<
     heading: "Start your exam preparation",
     featuresLine: "Videos • Notes • PYQs",
     otpHint: "We will send you an OTP to verify your number",
-    terms: "By continuing, you agree to our",
+    otpDisclaimerLine1: "Used only for login & exam updates. No spam.",
+    otpDisclaimerLine2: "OTP will be sent via SMS and WhatsApp.",
+    trustedByLine: "Trusted by 10,000+ students to clear TET exams across India",
+    terms: "By Signing Up, I agree to",
     andWord: "and",
     mobileLabel: "Mobile or WhatsApp Number",
     phonePlaceholder: "10-digit number",
@@ -139,7 +147,10 @@ const CONTENT: Record<
     heading: "अपनी परीक्षा की तैयारी शुरू करें",
     featuresLine: "वीडियो • नोट्स • PYQs",
     otpHint: "आपके नंबर को वेरीफाई करने के लिए हम एक OTP भेजेंगे",
-    terms: "जारी रखकर, आप हमारी",
+    otpDisclaimerLine1: "केवल लॉगिन और परीक्षा अपडेट के लिए उपयोग किया जाता है। कोई स्पैम नहीं।",
+    otpDisclaimerLine2: "OTP SMS और WhatsApp के ज़रिए भेजा जाएगा।",
+    trustedByLine: "10,000+ छात्रों का भरोसा, पूरे भारत में TET परीक्षाओं को पास करने के लिए",
+    terms: "साइन अप करके, मैं",
     andWord: "और",
     mobileLabel: "मोबाइल या व्हाट्सएप नंबर",
     phonePlaceholder: "10-अंकों का नंबर",
@@ -176,46 +187,6 @@ const CONTENT: Record<
   },
 };
 
-function ShieldCheckIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="shrink-0"
-    >
-      <path
-        d="M12 2l8 3v6c0 5-3.4 8.4-8 11-4.6-2.6-8-6-8-11V5l8-3z"
-        fill="var(--color-brand)"
-        fillOpacity="0.1"
-        stroke="var(--color-brand)"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M8.5 12l2.3 2.3L15.5 9.5"
-        stroke="var(--color-brand)"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ArrowRightIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M5 12h14M13 6l6 6-6 6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 /**
  * Interactive left panel — the only client-rendered part of /start.
@@ -590,8 +561,8 @@ export default function StartAuthForm({
           <Image
             src={IMAGES.mainLogo}
             alt="Clear Cutoff"
-            width={200}
-            height={57}
+            width={140}
+            height={40}
             priority
           />
         </Link>
@@ -602,10 +573,10 @@ export default function StartAuthForm({
           {step === "phone" ? (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col items-center gap-1 text-center">
-                <Text as="h1" variant="heading-large" weight="bold">
+                <Text as="h1" variant="heading-medium" weight="semibold" color="gray-normal">
                   {t.heading}
                 </Text>
-                <Text as="p" variant="body-small" color="gray-muted">
+                <Text as="p" variant="body-medium" color="gray-muted">
                   {t.featuresLine}
                 </Text>
               </div>
@@ -637,43 +608,59 @@ export default function StartAuthForm({
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Text
-                  as="p"
-                  variant="body-small"
-                  weight="semibold"
-                  color="gray-muted"
-                >
-                  {t.mobileLabel}
-                </Text>
-
-                <div className="w-full h-[52px] relative">
-                  <MainInput
-                    ref={phoneInputRef}
-                    value={phone}
-                    placeholder={t.phonePlaceholder}
-                    inputType="phone"
-                    error={error}
-                    maxLength={10}
-                    className="h-full !px-4 shadow-sm"
-                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)] pl-2 ml-1 border-l border-[var(--color-border-gray-subtle)]"
-                    onChange={(e) => validatePhone(e.target.value)}
-                    inputPrefix="+91"
-                    showError={false}
+              <div className="space-y-4 w-full">
+                <div className="flex gap-3 items-center">
+                  <Image
+                    src="/images/indian-flage.webp"
+                    alt="Indian flag"
+                    width={24}
+                    height={24}
+                    priority
+                    unoptimized
                   />
+                  <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)]">
+                    {t.mobileLabel}
+                  </p>
                 </div>
 
-                <p
-                  className={`text-sm min-h-[1.25rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
-                >
-                  {error || success}
-                </p>
+                <div className="flex gap-0 flex-col w-full items-center">
+                  <div className="w-full flex items-center gap-2">
+                    <div className="w-full h-[48px] relative">
+                      <MainInput
+                        ref={phoneInputRef}
+                        value={phone}
+                        placeholder={t.phonePlaceholder}
+                        inputType="phone"
+                        error={error}
+                        maxLength={10}
+                        className="h-full"
+                        inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                        onChange={(e) => validatePhone(e.target.value)}
+                        inputPrefix="+91 -"
+                        showError={false}
+                      />
+                      {phone.length > 0 && (
+                        <span className="absolute left-1/4 -translate-x-1/2 top-0 -translate-y-1/2 text-xs text-[var(--color-gray-blue)] bg-white rounded-full border border-[var(--color-gray-blue)] px-2.5 py-0.5 pointer-events-none select-none whitespace-nowrap">
+                          {t.phonePlaceholder}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheckIcon />
-                  <Text as="span" variant="body-small" color="gray-muted">
-                    {t.otpHint}
-                  </Text>
+                  <p
+                    className={`text-sm w-full text-center min-h-[1.5rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
+                  >
+                    {error || success}
+                  </p>
+
+                  <div className="text-center mt-2 body-small !font-normal text-[var(--color-surface-gray-muted)]">
+                    <p>
+                      <em>{t.otpDisclaimerLine1}</em>
+                    </p>
+                    <p>
+                      <em>{t.otpDisclaimerLine2}</em>
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -684,7 +671,6 @@ export default function StartAuthForm({
                 onClick={() => handleLogin()}
                 disabled={!isValidPhone || loading}
                 loading={loading}
-                rightIcon={<ArrowRightIcon />}
               >
                 {t.continueBtn}
               </Button>
@@ -781,10 +767,19 @@ export default function StartAuthForm({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[var(--color-border-gray-subtle)]">
+          <Text
+            as="p"
+            variant="body-medium"
+            color="gray-muted"
+            className="text-center"
+          >
+            {highlightTextUtil(t.trustedByLine, ["10,000"])}
+          </Text>
+
+          <div className="px-4">
             <Text
               as="p"
-              variant="body-small"
+              variant="body-medium"
               color="gray-muted"
               className="text-center"
             >

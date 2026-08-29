@@ -11,7 +11,7 @@ import { DrawerSheet } from "../ui/drawer-sheet";
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
-import FireIcon from "../icons/fire-icon";
+import ShieldCheckIcon from "../icons/shield-check-icon";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -429,20 +429,22 @@ export function createLoginScreen({
                       </div>
                     </div>
 
-                    {/* TRIAL */}
+                    {/* TRIAL — same design as /start's box (StartAuthForm.tsx),
+                        so a change to either should be mirrored in the other. */}
                     {marketing === "course-marketing" ? (
                       <></>
                     ) : (
-                      <div className="flex flex-col w-full items-center gap-1">
-                        <div className="max-w-[150px] px-3 py-0.5 text-[var(--color-brand-dark-legacy)] body-medium !font-semibold border border-[var(--color-brand)] bg-[var(--color-brand)]/9 rounded-full">
-                          3-day FREE Trial
+                      <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand)]/15 bg-[var(--color-brand)]/8 px-4 py-3 w-full">
+                        <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--color-brand)]/12 flex items-center justify-center">
+                          <ShieldCheckIcon />
                         </div>
-
-                        <div className="flex items-center gap-1 text-[var(--color-surface-gray-muted)]">
-                          <FireIcon variant="outline" size={16} />
-                          <p className="body-small !font-normal text-[var(--color-text-gray-muted)]">
+                        <div>
+                          <Text as="p" variant="body-medium" weight="semibold" color="primary-normal">
+                            3-day FREE Trial
+                          </Text>
+                          <Text as="p" variant="body-small" color="gray-muted">
                             No card or payment required
-                          </p>
+                          </Text>
                         </div>
                       </div>
                     )}
@@ -458,12 +460,31 @@ export function createLoginScreen({
                 </div>
               </div>
 
-              {/* FOOTER */}
+              {/* FOOTER — absolute clearcutoff.in URLs (not relative paths):
+                  this component is shared with apps/blog, which has no
+                  /terms-and-conditions or /privacy-policy routes of its own
+                  — only apps/landing does. Opens in a new tab so it doesn't
+                  abandon this modal's in-progress phone entry. */}
               <div className="text-center px-4 body-medium !font-normal text-[var(--color-surface-gray-muted)]">
-                {highlightTextUtil(
-                  `By Signing Up, I agree to Terms & Conditions and Privacy Policy.`,
-                  ["Terms & Conditions", "Privacy Policy"],
-                )}
+                By Signing Up, I agree to{" "}
+                <a
+                  href="https://clearcutoff.in/terms-and-conditions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-brand)] font-medium"
+                >
+                  Terms &amp; Conditions
+                </a>{" "}
+                and{" "}
+                <a
+                  href="https://clearcutoff.in/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-brand)] font-medium"
+                >
+                  Privacy Policy
+                </a>
+                .
               </div>
             </div>
           </Container>
