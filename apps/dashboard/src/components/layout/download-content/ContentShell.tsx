@@ -84,7 +84,7 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
     <div className="w-full flex justify-center bg-black/40 sm:py-6">
       <div
         ref={scrollContainerRef}
-        className="relative max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] overflow-y-auto w-full flex flex-col  overflow-hidden bg-[#f1f5fa] sm:rounded-lg"
+        className="relative max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] overflow-y-auto w-full flex flex-col bg-[#f1f5fa] sm:rounded-lg"
       >
         {/* Sidebar */}
         <div className="sticky top-0 bg-white z-20">

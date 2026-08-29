@@ -50,7 +50,14 @@ export default function NotesPage({ examId }: { examId?: string }) {
 
     return (
         <div>
-            <div className='bg-white sm:bg-transparent -mt-1 py-1'>
+            {/* Language/paper + section tabs — stays pinned at the top like
+                preparation's PaperSwitch/SectionsTab (which live inside its
+                Topbar's non-collapsing section), instead of scrolling away
+                with the notes list underneath it. Sits right below Topbar's
+                sticky wrapper in ContentShell, which shrinks toward 0 on
+                scroll, so this naturally rises to occupy the top spot as
+                that happens rather than overlapping it. */}
+            <div className='sticky top-0 z-10 bg-white sm:bg-transparent -mt-1 py-1'>
                 {items?.length > 1 && (
                     <div className='px-4'>
                         <PaperTabs
