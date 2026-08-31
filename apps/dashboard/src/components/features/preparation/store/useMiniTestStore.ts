@@ -136,9 +136,18 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
 
       // find translation by locale — a partial API response can omit
       // translations/answer entirely, so never index into them blindly.
-      const translation = q?.translations?.find(
-        (t) => t.locale === locale
-      );
+      // Falls back to the first available translation when none match the
+      // course locale (e.g. a question that only has an "en" translation in
+      // a Hindi-medium course): the in-progress test screen (MiniTest.tsx's
+      // Content component) already falls back to translations[0] the same
+      // way when showing the correct/wrong highlight, so scoring must use
+      // the same translation it graded against — otherwise every such
+      // question silently drops out of the score below instead of counting,
+      // which is exactly what made the result screen show 0/N even when the
+      // user answered correctly.
+      const translation =
+        q?.translations?.find((t) => t.locale === locale) ??
+        q?.translations?.[0];
 
       if (!translation?.answer?.correct_option) return;
 

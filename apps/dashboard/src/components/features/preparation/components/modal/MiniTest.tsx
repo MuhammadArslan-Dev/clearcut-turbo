@@ -204,7 +204,7 @@ export default function MiniTest() {
               selectOption={selectOption}
               result={result}
               locale={locale}
-              selectSection={selectSection}
+              selectedSection={selectSection}
             />
           )}
 
