@@ -1,3 +1,5 @@
+import { getMetaGeoData } from "@clearcut/utils/meta-geo";
+
 // Same pixel ID hardcoded in every app's own FacebookPixel.tsx
 // (apps/blog, apps/landing, apps/dashboard all currently share one pixel).
 const FB_PIXEL_ID = "1126041265682766";
@@ -17,7 +19,7 @@ const FB_PIXEL_ID = "1126041265682766";
  * the advanced-matching data without re-firing PageView — that's a separate,
  * explicit `track('PageView')` call in each app's FacebookPixel.tsx.
  */
-export function trackFacebookLead(
+export async function trackFacebookLead(
   isNewUser: boolean,
   phone?: string,
   userId?: string,
@@ -34,9 +36,13 @@ export function trackFacebookLead(
 
   if (userId) userData.external_id = userId;
 
-  if (Object.keys(userData).length > 0) {
-    window.fbq("init", FB_PIXEL_ID, userData);
-  }
+  // Awaited before init so it's never possible for the immediately-following
+  // track('Lead') call below to fire before this init lands — geo is fetched
+  // (and cached) here rather than pre-fetched earlier because this whole
+  // function already only runs on the rare "new user" path, not every OTP
+  // verification.
+  const geo = await getMetaGeoData();
+  window.fbq("init", FB_PIXEL_ID, { ...userData, ...geo });
 
   window.fbq("track", "Lead");
 }

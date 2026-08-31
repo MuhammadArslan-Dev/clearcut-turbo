@@ -51,14 +51,13 @@ function ResumeBar({
   const router = useRouter();
   const [isResuming, setIsResuming] = useState(false);
 
-  const courseContent = (
-  ) => {
+  const courseContent = () => {
     return (
       <div className="flex flex-1 items-center justify-between gap-1 md:gap-4">
         {/* Lesson info */}
         <div className="flex items-center gap-1 md:gap-4 min-w-0">
           {/* Desktop image */}
-          {/* <div className="w-[48px] h-[48px] hidden md:block shrink-0">
+          <div className="w-[48px] h-[48px] hidden md:block shrink-0">
             <Image
               src={
                 courseLogo ||
@@ -69,7 +68,7 @@ function ResumeBar({
               height={48}
               className="rounded-full object-cover"
             />
-          </div> */}
+          </div>
 
           {/* Mobile image */}
           <div className="w-[28px] h-[28px] block md:hidden shrink-0">
@@ -86,7 +85,7 @@ function ResumeBar({
             )}
           </div>
 
-          {/* <div className="min-w-0">
+          <div className="min-w-0">
             <h5 className="body-small !font-semibold text-surface-gray-normal truncate">
               {subject && chapterNumber != null && topicNumber != null ? (
                 t("resumeBar.lessonPath", {
@@ -101,11 +100,11 @@ function ResumeBar({
             <p className="body-small text-surface-gray-muted truncate">
               {topicTitle ?? <Skeleton className="w-32 h-3" />}
             </p>
-          </div> */}
+          </div>
         </div>
 
         {/* Time (Desktop) */}
-        {/* <div className="hidden xl:flex  items-center gap-1 whitespace-nowrap">
+        <div className="hidden xl:flex  items-center gap-1 whitespace-nowrap">
           <FireIcon variant="outline" />
 
           <span className="body-small text-surface-gray-muted">
@@ -115,10 +114,10 @@ function ResumeBar({
               " body-small !font-semibold text-surface-gray-muted"
             )}
           </span>
-        </div> */}
+        </div>
 
         {/* Resume Button */}
-        {/* <div className="md:w-[160px] w-[120px] md:max-w-none max-w-[120px] -mb-8 md:mb-0">
+        <div className="md:w-[160px] w-[120px] md:max-w-none max-w-[120px] -mb-8 md:mb-0">
           <Button
             variant="outlined"
             fullWidth
@@ -150,7 +149,7 @@ function ResumeBar({
           >
             <p className="truncate">{t("resumeBar.resume")}</p>
           </Button>
-        </div> */}
+        </div>
       </div>
     );
   };
@@ -180,12 +179,12 @@ function ResumeBar({
           </div>
 
           {/* Divider */}
-          {/* <div className="hidden md:block w-[2px] h-full bg-[#90a5bb]" /> */}
+          <div className="hidden md:block w-[2px] h-full bg-[#90a5bb]" />
 
           {/* ---------------- Center Content ---------------- */}
           {courseContent()}
           {/* ---------------- Mobile Time ---------------- */}
-          {/* <div className="flex md:hidden items-center gap-2 mt-1">
+          <div className="flex md:hidden items-center gap-2 mt-1">
             <div className="w-5 h-5">
               <FireIcon
                 variant={"red"}
@@ -199,7 +198,7 @@ function ResumeBar({
                 " body-small !font-semibold text-surface-gray-muted"
               )}
             </span>
-          </div> */}
+          </div>
         </div>
       </div>
     </div>

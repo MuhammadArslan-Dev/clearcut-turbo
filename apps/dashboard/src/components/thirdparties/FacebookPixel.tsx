@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect } from "react";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
+import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 
 const FB_PIXEL_ID = "1126041265682766";
 
@@ -30,7 +31,9 @@ function getCachedUserData(): { ph?: string; external_id?: string } | null {
   return Object.keys(userData).length > 0 ? userData : null;
 }
 
-function setMetaUserData(userData: { ph?: string; external_id?: string }) {
+type MetaUserData = { ph?: string; external_id?: string } & Partial<MetaGeoData>;
+
+function setMetaUserData(userData: MetaUserData) {
   if (typeof window === "undefined" || !window.fbq) return;
   window.fbq("init", FB_PIXEL_ID, userData);
 }
@@ -71,6 +74,12 @@ export default function FacebookPixel() {
 
     fbq("track", "PageView");
 
+    // Kicked off in parallel with waitForCachedUserData below (not awaited
+    // until the Promise.all pairs below) so the geo lookup's network round
+    // trip doesn't serialize after the user-data poll — both must still
+    // resolve, and init() must still run, before the track() calls beneath.
+    const geoPromise = getMetaGeoData();
+
     // One-shot signals appended by the navigation that lands the user here.
     // Each is stripped after firing so a refresh/back-navigation to this URL
     // doesn't double-count it.
@@ -80,8 +89,9 @@ export default function FacebookPixel() {
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
-      waitForCachedUserData().then((userData) => {
-        if (userData) setMetaUserData(userData);
+      Promise.all([waitForCachedUserData(), geoPromise]).then(([userData, geo]) => {
+        const merged = { ...(userData ?? {}), ...geo };
+        if (Object.keys(merged).length > 0) setMetaUserData(merged);
         // No value/currency — registration has no monetary amount, and
         // Meta's Events Manager flagged formatting/missing-value issues on
         // this pair, so they're left out rather than sent as a placeholder.
@@ -94,8 +104,9 @@ export default function FacebookPixel() {
     // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
     // here is the "start trial" moment for that subject.
     if (params.get("subject_selected") === "1") {
-      waitForCachedUserData().then((userData) => {
-        if (userData) setMetaUserData(userData);
+      Promise.all([waitForCachedUserData(), geoPromise]).then(([userData, geo]) => {
+        const merged = { ...(userData ?? {}), ...geo };
+        if (Object.keys(merged).length > 0) setMetaUserData(merged);
         fbq("track", "StartTrial");
       });
       params.delete("subject_selected");
@@ -126,7 +137,7 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '1126041265682766');
+            fbq('init', '1126041265682766', { country: 'in' });
             fbq('track', 'PageView');
           `,
         }}

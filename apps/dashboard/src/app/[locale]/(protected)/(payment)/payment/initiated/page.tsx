@@ -20,6 +20,7 @@ import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
+import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { recordCheckoutInitiated, recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@/lib/sentry/sentry-logger";
@@ -115,12 +116,14 @@ export default function InitiatedPage() {
   // never inside a track() call's custom-data object, which Meta doesn't
   // auto-hash. Call before the first track() so subsequent events on this
   // page are matched to the user.
-  const setMetaUserData = () => {
+  const setMetaUserData = async () => {
     if (typeof window === "undefined" || !window.fbq) return;
 
-    const userData: { ph?: string; external_id?: string } = {};
+    const userData: { ph?: string; external_id?: string } & Partial<MetaGeoData> = {};
     if (userPhone) userData.ph = `91${userPhone}`;
     if (authUser?.id) userData.external_id = String(authUser.id);
+
+    Object.assign(userData, await getMetaGeoData());
 
     if (Object.keys(userData).length > 0) {
       window.fbq("init", FB_PIXEL_ID, userData);
@@ -160,19 +163,27 @@ export default function InitiatedPage() {
       entry_point: source,
       product_id: data?.short_name!,
     });
-    setMetaUserData();
-    // Page just opened — selectVariant is still its "1month" default.
-    const initiateCheckoutPrice = getPriceForVariant("1month", pricing, data?.short_name);
-    trackFacebookEvent("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
 
-    if (data?.id) {
-      // NOTE: data.id (numeric exams.id, the real FK) — not data.exam_id,
-      // which is a string slug ("teaching_HTET") only used for Facebook's
-      // content_id above. Fire-and-forget, same pattern as CustomizeProduct.
-      recordCheckoutInitiated(data.id, { value: initiateCheckoutPrice, currency: "INR" }).catch(
-        (err) => console.error("recordCheckoutInitiated failed", err),
-      );
-    }
+    // Awaited before InitiateCheckout fires below — setMetaUserData's geo
+    // lookup is async, and Meta only auto-hashes ph/external_id/ct/st/zp
+    // when they're set via init() before the track() call that should carry
+    // them, never inside track()'s own custom-data object.
+    const trackInitiateCheckout = async () => {
+      await setMetaUserData();
+      // Page just opened — selectVariant is still its "1month" default.
+      const initiateCheckoutPrice = getPriceForVariant("1month", pricing, data?.short_name);
+      trackFacebookEvent("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
+
+      if (data?.id) {
+        // NOTE: data.id (numeric exams.id, the real FK) — not data.exam_id,
+        // which is a string slug ("teaching_HTET") only used for Facebook's
+        // content_id above. Fire-and-forget, same pattern as CustomizeProduct.
+        recordCheckoutInitiated(data.id, { value: initiateCheckoutPrice, currency: "INR" }).catch(
+          (err) => console.error("recordCheckoutInitiated failed", err),
+        );
+      }
+    };
+    trackInitiateCheckout();
 
     const sendWebhook = async () => {
       try {

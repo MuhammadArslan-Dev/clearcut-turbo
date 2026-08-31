@@ -98,7 +98,7 @@ export async function downloadFromBackend(
   noteId: number,
   filename = "notes.pdf",
   onProgress?: (percent: number) => void,
-) {
+): Promise<string | null> {
   const baseUrl =
     process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND ??
     "http://clearcutoff-main-backend.test/api";
@@ -114,7 +114,7 @@ export async function downloadFromBackend(
       `${baseUrl}/v2/preparation/open-note/${noteId}?token=${encodeURIComponent(authToken)}&filename=${encodeURIComponent(filename)}`,
       "_blank",
     );
-    return;
+    return null;
   }
 
   if (!authToken) throw new Error("Not authenticated.");
@@ -168,7 +168,10 @@ export async function downloadFromBackend(
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
+    // Kept alive (not revoked) so the caller can offer a "View Notes" button
+    // that opens the same PDF without re-downloading it. Caller is
+    // responsible for revoking it once it's no longer needed.
+    return blobUrl;
   } catch (e) {
     if (intervalId) clearInterval(intervalId);
     throw e;
@@ -181,6 +184,7 @@ export async function downloadFromBackend(
 
 export function Notes({ notes }: { notes?: NoteItem[] | null }) {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const {
     selectedTopic,
@@ -192,12 +196,28 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
 
   const t = useTranslations("relatedContent.studyTabs");
 
+  // Switching topic invalidates the previously downloaded blob — drop it so
+  // the button falls back to "Download" instead of opening stale notes.
+  useEffect(() => {
+    setViewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }, [selectedTopic?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (viewUrl) URL.revokeObjectURL(viewUrl);
+    };
+  }, [viewUrl]);
+
   const handleDownload = async (note: NoteItem) => {
     if (!note) return;
     setDownloadProgress(0);
     try {
       const filename = `${selectedTopic?.name ?? "notes"}.pdf`;
-      await downloadFromBackend(note.id, filename, (p) => setDownloadProgress(p));
+      const blobUrl = await downloadFromBackend(note.id, filename, (p) => setDownloadProgress(p));
+      if (blobUrl) setViewUrl(blobUrl);
       trackEvent("Notes Downloaded", {
         content_id: "Notes",
         chapter_name: selectedChapter?.name!,
@@ -209,6 +229,10 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     } finally {
       setDownloadProgress(null);
     }
+  };
+
+  const handleView = () => {
+    if (viewUrl) window.open(viewUrl, "_blank");
   };
 
   const markVideoWatch = async () => {
@@ -343,7 +367,11 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
                       whileTap={{ scale: 0.98 }}
                     >
                       <Button
-                        onClick={() => handleDownload(filterNotes as NoteItem)}
+                        onClick={
+                          viewUrl
+                            ? handleView
+                            : () => handleDownload(filterNotes as NoteItem)
+                        }
                         disabled={downloadProgress !== null}
                         sx={{
                           padding: "2px 12px",
@@ -367,6 +395,18 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
                                 style={{ width: `${downloadProgress}%` }}
                               />
                             </div>
+                          </div>
+                        ) : viewUrl ? (
+                          <div className="flex gap-1">
+                            <Text
+                              as="p"
+                              color="primary-dark"
+                              weight="semibold"
+                              variant="body-small"
+                            >
+                              {t("notes.buttons.view")}
+                            </Text>
+                            <ArrowIcon variant="right" color="#0083ff" />
                           </div>
                         ) : (
                           <div className="flex gap-1">

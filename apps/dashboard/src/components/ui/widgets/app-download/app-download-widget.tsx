@@ -9,6 +9,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { PenIcon, TrophyIcon } from "../../icons";
 import { RotatingBadge } from "../../animation/RotatingBadge";
 import { trackEvent } from "@/lib/analytics/browser";
+import { getAuthTokenClient } from "@/lib/auth-token-client";
 
 // Real values, confirmed against the RN app's app.json / constants/config.ts
 // (scheme registered under `expo.scheme`; Android package under `expo.android.package`).
@@ -17,6 +18,14 @@ const ANDROID_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.clearcutoff.app";
 // The iOS app isn't published yet (constants/config.ts has an empty
 // IOS_APP_ID) — there's no store link to fall back to on iOS until then.
+
+// Carries the current web session into the app so a user who already has it
+// installed lands signed in instead of hitting OTP login again — see
+// AuthContext's deep-link handler on the app side (loginWithToken).
+function buildAppDeepLink(): string {
+  const token = getAuthTokenClient();
+  return token ? `${APP_SCHEME}auth?token=${encodeURIComponent(token)}` : APP_SCHEME;
+}
 
 type AppDownloadWidgetProps = {
   bgColor?: string;
@@ -80,7 +89,7 @@ export default function AppDownloadWidget({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     }, 1200);
 
-    window.location.href = APP_SCHEME;
+    window.location.href = buildAppDeepLink();
 
     return () => {
       clearTimeout(timeout);
@@ -101,7 +110,7 @@ export default function AppDownloadWidget({
     const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOSDevice) {
       // No iOS store link yet — best effort is still the app scheme.
-      window.location.href = APP_SCHEME;
+      window.location.href = buildAppDeepLink();
       return;
     }
 

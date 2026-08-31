@@ -11,7 +11,11 @@ import { useMiniTestStore } from "../store/useMiniTestStore";
 /* ----------------------------------
    QUERY KEY
 ----------------------------------- */
-const QUERY_KEY = (topicId?: string | number) => ["previous-q", topicId];
+const QUERY_KEY = (topicId?: string | number, courseId?: string | null) => [
+  "previous-q",
+  topicId,
+  courseId,
+];
 
 export function usePreviousQuestions(
   topicId?: number,
@@ -20,8 +24,8 @@ export function usePreviousQuestions(
   const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery<QuestionNew[]>({
-    queryKey: QUERY_KEY(topicId),
-    enabled: !!topicId,
+    queryKey: QUERY_KEY(topicId, courseId),
+    enabled: !!topicId && !!courseId,
 
     queryFn: async () => {
       const res = await getMiniTestQuestions(
@@ -45,7 +49,7 @@ export function usePreviousQuestions(
   const clearData = () => {
     if (!topicId) return;
     queryClient.removeQueries({
-      queryKey: QUERY_KEY(topicId),
+      queryKey: QUERY_KEY(topicId, courseId),
     });
   };
 

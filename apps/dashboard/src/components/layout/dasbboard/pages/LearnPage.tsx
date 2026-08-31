@@ -166,13 +166,9 @@ export default function LearnPage() {
             </div>
           </MainContainer>
 
-          {/* <MyCoursesWrap /> */}
-
-          {/* <MyCoursesWrap /> */}
-          {/* <div className="block md:hidden w-full mt-4 fixed bottom-14">
+          <div className="block md:hidden w-full mt-4 fixed bottom-14 left-0 z-10">
             <ResumeBarWrap />
-          </div> */}
-          {/* </div> */}
+          </div>
         </main>
         <div className="hidden md:block">
           <ResumeBarWrap />

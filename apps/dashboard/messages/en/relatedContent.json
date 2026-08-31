@@ -21,6 +21,7 @@
 
       "buttons": {
         "download": "Download PDF",
+        "view": "View Notes",
         "notify": "Notify me when available"
       },
 
