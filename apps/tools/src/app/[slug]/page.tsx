@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { RESIZER_EXAMS, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug } from "@/lib/resizerExams";
+import { RESIZER_EXAMS, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs } from "@/lib/resizerExams";
 import JsonLd from "@clearcut/ui/json-ld";
 
 // Exam pages (clearcutoff.in/tools/resizer/{examSlug}) and category pages
@@ -61,7 +61,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const faqSchema = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: exam.faqs.map((faq) => ({
+      mainEntity: getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec).map((faq) => ({
         "@type": "Question",
         name: faq.q,
         acceptedAnswer: { "@type": "Answer", text: faq.a },

@@ -22,31 +22,63 @@ export interface ResizerExamSpec {
   category: string;
   photoSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
   signatureSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
-  faqs: { q: string; a: string }[];
 }
 
-const GENERIC_PHOTO_SPEC = { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 };
-const GENERIC_SIGNATURE_SPEC = { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 };
+type Spec = { widthPx: number; heightPx: number; minKB: number; maxKB: number };
 
-function genericFaqs(
-  examShortName: string,
-  photoSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number } = GENERIC_PHOTO_SPEC,
-) {
+const GENERIC_PHOTO_SPEC: Spec = { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 };
+const GENERIC_SIGNATURE_SPEC: Spec = { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 };
+
+/**
+ * FAQ copy (and the FAQPage JSON-LD built from it in app/[slug]/page.tsx) is
+ * derived from an exam's own photoSpec/signatureSpec at render time instead
+ * of being stored per-entry — every one of the 114 RESIZER_EXAMS rows used
+ * to repeat the identical `genericFaqs(shortName, photoSpec)` call, so
+ * keeping it a function here means the FAQ set only has to change in one
+ * place, and it's guaranteed to always match the specs shown on the page.
+ *
+ * Marks/cutoff questions deliberately don't state a number: qualifying
+ * marks vary by exam and category and change every cycle, and this file's
+ * own PLACEHOLDER DATA note above already warns not to treat its specs as
+ * verified — inventing a specific cutoff here would risk misleading a real
+ * candidate the same way a wrong photo spec would.
+ */
+export function getExamFaqs(examShortName: string, photoSpec: Spec = GENERIC_PHOTO_SPEC, signatureSpec: Spec = GENERIC_SIGNATURE_SPEC) {
   const isPlaceholder = photoSpec === GENERIC_PHOTO_SPEC;
   return [
     {
       q: `What is the required photo size for ${examShortName}?`,
       a: isPlaceholder
-        ? `Check the exact dimensions and file size on the official ${examShortName} notification — this tool's default preset (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) is a common passport-photo requirement, not a confirmed ${examShortName}-specific figure yet.`
-        : `This tool is pre-configured to ${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB for ${examShortName} — always cross-check against the latest official ${examShortName} notification before submitting, since exam authorities occasionally revise these requirements.`,
+        ? `Check the exact dimensions and file size on the official ${examShortName} notification. This tool's default preset (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) is a common passport-photo requirement, not a confirmed ${examShortName}-specific figure yet.`
+        : `This tool is pre-configured to ${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB for ${examShortName}. Always cross-check against the latest official ${examShortName} notification before submitting, since exam authorities occasionally revise these requirements.`,
     },
     {
       q: `Can I use this tool for my ${examShortName} signature too?`,
-      a: "Yes — pick the Signature preset (or draw one directly) and it resizes/compresses the same way as the photo tool.",
+      a: "Yes, pick the Signature preset (or draw one directly) and it resizes/compresses the same way as the photo tool.",
     },
     {
       q: "Is my photo uploaded anywhere?",
-      a: "No. Resizing and compression happen entirely in your browser using the Canvas API — the file never leaves your device.",
+      a: "No. Resizing and compression happen entirely in your browser using the Canvas API. The file never leaves your device.",
+    },
+    {
+      q: `Where can I find notes for the ${examShortName} exam?`,
+      a: `This tool only handles photo and signature resizing for your application form. For ${examShortName} study notes, practice tests and previous year questions, visit the Clear Cutoff app at clearcutoff.in.`,
+    },
+    {
+      q: `What is the required image size for the ${examShortName} form?`,
+      a: `The ${examShortName} application form typically needs two images: a photo (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) and a signature (${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB). Use the presets above to resize and compress both automatically.`,
+    },
+    {
+      q: `What is the signature image size for ${examShortName}?`,
+      a: `The ${examShortName} signature preset in this tool is ${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB. Always confirm against the latest official ${examShortName} notification before submitting.`,
+    },
+    {
+      q: `Is there a minimum qualifying mark for ${examShortName}?`,
+      a: `Qualifying marks vary by category (General/OBC/EWS/SC/ST) and are set by the official conducting body each cycle. Always check the latest official ${examShortName} notification or result for the exact cutoff rather than relying on a fixed number.`,
+    },
+    {
+      q: `Which app or tool is best for resizing photos for ${examShortName}?`,
+      a: `Clear Cutoff's free Photo & Signature Resizer (this tool) is purpose-built for exam application forms. It applies the exact ${examShortName} dimensions and file-size limits automatically, works entirely in your browser, and needs no signup or download.`,
     },
   ];
 }
@@ -68,7 +100,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("HTET", GENERIC_PHOTO_SPEC),
   },
   {
     slug: "ctet",
@@ -77,7 +108,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 100 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 3, maxKB: 30 },
-    faqs: genericFaqs("CTET", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 100 }),
   },
   {
     slug: "reet",
@@ -86,7 +116,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("REET", GENERIC_PHOTO_SPEC),
   },
   {
     slug: "up-tet",
@@ -95,7 +124,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("UPTET", GENERIC_PHOTO_SPEC),
   },
   {
     slug: "hptet",
@@ -104,7 +132,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("HPTET", GENERIC_PHOTO_SPEC),
   },
   {
     slug: "up-pgt",
@@ -113,7 +140,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("UP PGT", GENERIC_PHOTO_SPEC),
   },
   {
     slug: "up-tgt",
@@ -122,7 +148,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: OWN_EXAMS_CATEGORY,
     photoSpec: GENERIC_PHOTO_SPEC,
     signatureSpec: GENERIC_SIGNATURE_SPEC,
-    faqs: genericFaqs("UP TGT", GENERIC_PHOTO_SPEC),
   },
 
   // ---- Central Government Exams ----
@@ -133,7 +158,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 400, heightPx: 400, minKB: 20, maxKB: 300 },
     signatureSpec: { widthPx: 400, heightPx: 400, minKB: 20, maxKB: 100 },
-    faqs: genericFaqs("UPSC (IAS, IPS)", { widthPx: 400, heightPx: 400, minKB: 20, maxKB: 300 }),
   },
   {
     slug: "ssc-cgl",
@@ -142,7 +166,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC CGL", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "ssc-chsl",
@@ -151,7 +174,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 200, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC CHSL", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "ssc-gd",
@@ -160,7 +182,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 240, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC GD", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "neet",
@@ -169,7 +190,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 10, maxKB: 200 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 4, maxKB: 30 },
-    faqs: genericFaqs("NEET UG", { widthPx: 275, heightPx: 354, minKB: 10, maxKB: 200 }),
   },
   {
     slug: "neet-pg",
@@ -178,7 +198,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 80 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 80 },
-    faqs: genericFaqs("NEET PG", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 80 }),
   },
   {
     slug: "jee",
@@ -187,7 +206,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 10, maxKB: 200 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 10, maxKB: 100 },
-    faqs: genericFaqs("JEE Main", { widthPx: 275, heightPx: 354, minKB: 10, maxKB: 200 }),
   },
   {
     slug: "india-post-gds",
@@ -196,7 +214,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 320, heightPx: 400, minKB: 30, maxKB: 100 },
     signatureSpec: { widthPx: 300, heightPx: 120, minKB: 20, maxKB: 100 },
-    faqs: genericFaqs("India Post GDS", { widthPx: 320, heightPx: 400, minKB: 30, maxKB: 100 }),
   },
   {
     slug: "ssc-mts",
@@ -205,7 +222,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 240, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC MTS", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "iocl",
@@ -214,7 +230,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("IOCL", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "nptel",
@@ -223,7 +238,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 200 },
     signatureSpec: { widthPx: 300, heightPx: 120, minKB: 4, maxKB: 30 },
-    faqs: genericFaqs("NPTEL/SWAYAM", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 200 }),
   },
   {
     slug: "nicl",
@@ -232,7 +246,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("NICL", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "dsssb",
@@ -241,7 +254,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 480, heightPx: 672, minKB: 50, maxKB: 300 },
     signatureSpec: { widthPx: 140, heightPx: 110, minKB: 10, maxKB: 40 },
-    faqs: genericFaqs("DSSSB", { widthPx: 480, heightPx: 672, minKB: 50, maxKB: 300 }),
   },
   {
     slug: "rrb-alp",
@@ -250,7 +262,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 50, maxKB: 150 },
     signatureSpec: { widthPx: 275, heightPx: 157, minKB: 30, maxKB: 49 },
-    faqs: genericFaqs("RRB ALP", { widthPx: 275, heightPx: 354, minKB: 50, maxKB: 150 }),
   },
   {
     slug: "railway-rrb",
@@ -259,7 +270,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 240, heightPx: 240, minKB: 30, maxKB: 70 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 30, maxKB: 70 },
-    faqs: genericFaqs("Railway RRB NTPC", { widthPx: 240, heightPx: 240, minKB: 30, maxKB: 70 }),
   },
   {
     slug: "rrb-group-d",
@@ -268,7 +278,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 240, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 40 },
-    faqs: genericFaqs("RRB Group D", { widthPx: 240, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "agniveer",
@@ -277,7 +286,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Agniveer", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "ssc-steno",
@@ -286,7 +294,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 236, heightPx: 79, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC Stenographer", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "ssc-selection-post",
@@ -295,7 +302,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 236, heightPx: 79, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SSC Selection Post", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "crpf",
@@ -304,7 +310,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("CRPF", { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 }),
   },
   {
     slug: "upsc-nda",
@@ -313,7 +318,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 },
     signatureSpec: { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 },
-    faqs: genericFaqs("UPSC NDA & NA", { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 }),
   },
   {
     slug: "upsc-capf",
@@ -322,7 +326,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 },
     signatureSpec: { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 },
-    faqs: genericFaqs("UPSC CAPF", { widthPx: 350, heightPx: 350, minKB: 20, maxKB: 300 }),
   },
   {
     slug: "aibe",
@@ -331,7 +334,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("AIBE", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "indian-navy",
@@ -340,7 +342,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Central Government Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Indian Navy Agniveer", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
 
   // ---- State PSCs (Public Service Commissions) ----
@@ -351,7 +352,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 138, heightPx: 177, minKB: 20, maxKB: 100 },
     signatureSpec: { widthPx: 138, heightPx: 59, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("WBCS", { widthPx: 138, heightPx: 177, minKB: 20, maxKB: 100 }),
   },
   {
     slug: "opsc",
@@ -360,7 +360,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("OPSC", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 }),
   },
   {
     slug: "apsc",
@@ -369,7 +368,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("APSC", { widthPx: 200, heightPx: 250, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "mppsc",
@@ -378,7 +376,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 25, maxKB: 200 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 25, maxKB: 200 },
-    faqs: genericFaqs("MPPSC", { widthPx: 275, heightPx: 354, minKB: 25, maxKB: 200 }),
   },
   {
     slug: "jpsc",
@@ -387,7 +384,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("JPSC", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "mpsc",
@@ -396,7 +392,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("MPSC (Maharashtra)", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "tnpsc",
@@ -405,7 +400,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("TNPSC", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "kpsc",
@@ -414,7 +408,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 30 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 20, maxKB: 30 },
-    faqs: genericFaqs("KPSC (Kerala)", { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 30 }),
   },
   {
     slug: "uppsc",
@@ -423,7 +416,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 180, heightPx: 216, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 216, heightPx: 108, minKB: 10, maxKB: 30 },
-    faqs: genericFaqs("UPPSC", { widthPx: 180, heightPx: 216, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "upsssc",
@@ -432,7 +424,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 30, maxKB: 50 },
-    faqs: genericFaqs("UPSSSC", { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 }),
   },
   {
     slug: "gpsc",
@@ -441,7 +432,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 130, heightPx: 180, minKB: 10, maxKB: 15 },
     signatureSpec: { widthPx: 275, heightPx: 90, minKB: 10, maxKB: 15 },
-    faqs: genericFaqs("GPSC", { widthPx: 130, heightPx: 180, minKB: 10, maxKB: 15 }),
   },
   {
     slug: "rpsc",
@@ -450,7 +440,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 280, heightPx: 80, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("RPSC", { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "hpsc",
@@ -459,7 +448,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 138, heightPx: 177, minKB: 10, maxKB: 100 },
     signatureSpec: { widthPx: 138, heightPx: 59, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("HPSC (Haryana)", { widthPx: 138, heightPx: 177, minKB: 10, maxKB: 100 }),
   },
   {
     slug: "bpsc",
@@ -468,7 +456,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 250, heightPx: 250, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 220, heightPx: 100, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("BPSC (Bihar)", { widthPx: 250, heightPx: 250, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "tspsc",
@@ -477,7 +464,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 10, maxKB: 30 },
-    faqs: genericFaqs("TSPSC", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "cgpsc",
@@ -486,7 +472,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 30, maxKB: 100 },
     signatureSpec: { widthPx: 275, heightPx: 118, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("CGPSC", { widthPx: 275, heightPx: 354, minKB: 30, maxKB: 100 }),
   },
   {
     slug: "ukpsc",
@@ -495,7 +480,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 30, maxKB: 50 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 20, maxKB: 30 },
-    faqs: genericFaqs("UKPSC", { widthPx: 150, heightPx: 200, minKB: 30, maxKB: 50 }),
   },
   {
     slug: "appsc",
@@ -504,7 +488,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("APPSC (Arunachal Pradesh)", { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 100 }),
   },
   {
     slug: "manipur-psc",
@@ -513,7 +496,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 140, heightPx: 177, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Manipur PSC", { widthPx: 140, heightPx: 177, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "ppsc",
@@ -522,7 +504,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 140, heightPx: 177, minKB: 10, maxKB: 40 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 40 },
-    faqs: genericFaqs("PPSC (Punjab)", { widthPx: 140, heightPx: 177, minKB: 10, maxKB: 40 }),
   },
   {
     slug: "goa-psc",
@@ -531,7 +512,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 10, maxKB: 500 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 500 },
-    faqs: genericFaqs("Goa PSC", { widthPx: 200, heightPx: 250, minKB: 10, maxKB: 500 }),
   },
   {
     slug: "kas",
@@ -540,7 +520,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 200 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 20, maxKB: 100 },
-    faqs: genericFaqs("KAS (Kerala)", { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 200 }),
   },
   {
     slug: "hppsc",
@@ -549,7 +528,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 110, heightPx: 140, minKB: 10, maxKB: 40 },
     signatureSpec: { widthPx: 110, heightPx: 140, minKB: 10, maxKB: 30 },
-    faqs: genericFaqs("HPPSC", { widthPx: 110, heightPx: 140, minKB: 10, maxKB: 40 }),
   },
   {
     slug: "mizoram-psc",
@@ -558,7 +536,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 130, heightPx: 200, minKB: 0, maxKB: 10240 },
     signatureSpec: { widthPx: 177, heightPx: 98, minKB: 0, maxKB: 75 },
-    faqs: genericFaqs("Mizoram PSC", { widthPx: 130, heightPx: 200, minKB: 0, maxKB: 10240 }),
   },
   {
     slug: "meghalaya-psc",
@@ -567,7 +544,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("Meghalaya PSC", { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "nagaland-psc",
@@ -576,7 +552,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 0, maxKB: 100 },
     signatureSpec: { widthPx: 200, heightPx: 100, minKB: 0, maxKB: 100 },
-    faqs: genericFaqs("Nagaland PSC", { widthPx: 200, heightPx: 240, minKB: 0, maxKB: 100 }),
   },
   {
     slug: "sikkim-psc",
@@ -585,7 +560,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 5, maxKB: 30 },
-    faqs: genericFaqs("Sikkim PSC", { widthPx: 150, heightPx: 200, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "tripura-psc",
@@ -594,7 +568,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 20, maxKB: 100 },
     signatureSpec: { widthPx: 200, heightPx: 100, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Tripura PSC", { widthPx: 200, heightPx: 250, minKB: 20, maxKB: 100 }),
   },
   {
     slug: "jkpsc",
@@ -603,7 +576,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 10, maxKB: 20 },
     signatureSpec: { widthPx: 200, heightPx: 100, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("JKPSC", { widthPx: 200, heightPx: 240, minKB: 10, maxKB: 20 }),
   },
   {
     slug: "jkssb",
@@ -612,7 +584,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "State PSCs (Public Service Commissions)",
     photoSpec: { widthPx: 180, heightPx: 225, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 180, heightPx: 100, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("JKSSB", { widthPx: 180, heightPx: 225, minKB: 20, maxKB: 50 }),
   },
 
   // ---- Banking Exams ----
@@ -623,7 +594,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SBI Clerk", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "sbi-po",
@@ -632,7 +602,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SBI PO", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "rbi-grade-b",
@@ -641,7 +610,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("RBI Grade B", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "sbi-cbo",
@@ -650,7 +618,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("SBI CBO", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "idbi-am",
@@ -659,7 +626,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("IDBI AM", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "boi-po",
@@ -668,7 +634,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("BOI PO", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "canara-bank",
@@ -677,7 +642,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Canara Bank", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "union-bank",
@@ -686,7 +650,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Union Bank of India", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "central-bank-india",
@@ -695,7 +658,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Central Bank of India", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "rbi-assistant",
@@ -704,7 +666,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("RBI Assistant", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "ibps",
@@ -713,7 +674,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Banking Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("IBPS", { widthPx: 200, heightPx: 230, minKB: 20, maxKB: 50 }),
   },
 
   // ---- Police Exams ----
@@ -724,7 +684,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("West Bengal Police", { widthPx: 200, heightPx: 240, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "haryana-police",
@@ -733,7 +692,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 138, heightPx: 177, minKB: 20, maxKB: 40 },
     signatureSpec: { widthPx: 138, heightPx: 59, minKB: 10, maxKB: 30 },
-    faqs: genericFaqs("Haryana Police", { widthPx: 138, heightPx: 177, minKB: 20, maxKB: 40 }),
   },
   {
     slug: "rajasthan-police",
@@ -742,7 +700,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 },
     signatureSpec: { widthPx: 400, heightPx: 200, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("Rajasthan Police", { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 }),
   },
   {
     slug: "maharashtra-police",
@@ -751,7 +708,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 160, heightPx: 200, minKB: 5, maxKB: 20 },
     signatureSpec: { widthPx: 256, heightPx: 64, minKB: 5, maxKB: 20 },
-    faqs: genericFaqs("Maharashtra Police", { widthPx: 160, heightPx: 200, minKB: 5, maxKB: 20 }),
   },
   {
     slug: "up-police",
@@ -760,7 +716,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 180, heightPx: 225, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 200, heightPx: 80, minKB: 5, maxKB: 20 },
-    faqs: genericFaqs("UP Police (OTR)", { widthPx: 180, heightPx: 225, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "tn-police",
@@ -769,7 +724,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 200, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Tamil Nadu Police", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "kerala-police",
@@ -778,7 +732,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 30 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 20, maxKB: 30 },
-    faqs: genericFaqs("Kerala Police", { widthPx: 150, heightPx: 200, minKB: 20, maxKB: 30 }),
   },
   {
     slug: "bihar-police",
@@ -787,7 +740,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 230, minKB: 30, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("Bihar Police", { widthPx: 200, heightPx: 230, minKB: 30, maxKB: 50 }),
   },
   {
     slug: "assam-police",
@@ -796,7 +748,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 280, heightPx: 350, minKB: 100, maxKB: 450 },
     signatureSpec: { widthPx: 280, heightPx: 200, minKB: 50, maxKB: 100 },
-    faqs: genericFaqs("Assam Police", { widthPx: 280, heightPx: 350, minKB: 100, maxKB: 450 }),
   },
   {
     slug: "mp-police",
@@ -805,7 +756,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 200 },
     signatureSpec: { widthPx: 300, heightPx: 100, minKB: 30, maxKB: 100 },
-    faqs: genericFaqs("Madhya Pradesh Police", { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 200 }),
   },
   {
     slug: "karnataka-police",
@@ -814,7 +764,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 30, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("Karnataka Police", { widthPx: 200, heightPx: 250, minKB: 30, maxKB: 100 }),
   },
   {
     slug: "telangana-police",
@@ -823,7 +772,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 200, heightPx: 80, minKB: 10, maxKB: 30 },
-    faqs: genericFaqs("Telangana Police", { widthPx: 275, heightPx: 354, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "gujarat-police",
@@ -832,7 +780,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 30, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Gujarat Police", { widthPx: 200, heightPx: 250, minKB: 30, maxKB: 100 }),
   },
   {
     slug: "jk-police",
@@ -841,7 +788,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 200 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 20, maxKB: 100 },
-    faqs: genericFaqs("J&K Police", { widthPx: 200, heightPx: 250, minKB: 50, maxKB: 200 }),
   },
   {
     slug: "delhi-police",
@@ -850,7 +796,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 100, heightPx: 120, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Delhi Police", { widthPx: 100, heightPx: 120, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "punjab-police",
@@ -859,7 +804,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Punjab Police", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "hp-police",
@@ -868,7 +812,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 110, heightPx: 140, minKB: 10, maxKB: 40 },
     signatureSpec: { widthPx: 140, heightPx: 110, minKB: 10, maxKB: 40 },
-    faqs: genericFaqs("Himachal Pradesh Police", { widthPx: 110, heightPx: 140, minKB: 10, maxKB: 40 }),
   },
   {
     slug: "uttarakhand-police",
@@ -877,7 +820,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 150, heightPx: 200, minKB: 10, maxKB: 20 },
     signatureSpec: { widthPx: 150, heightPx: 100, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Uttarakhand Police", { widthPx: 150, heightPx: 200, minKB: 10, maxKB: 20 }),
   },
   {
     slug: "odisha-police",
@@ -886,7 +828,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 35, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 60, minKB: 25, maxKB: 50 },
-    faqs: genericFaqs("Odisha Police", { widthPx: 200, heightPx: 240, minKB: 35, maxKB: 50 }),
   },
   {
     slug: "cg-police",
@@ -895,7 +836,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 50, maxKB: 200 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Chhattisgarh Police", { widthPx: 200, heightPx: 240, minKB: 50, maxKB: 200 }),
   },
   {
     slug: "goa-police",
@@ -904,7 +844,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 600, heightPx: 600, minKB: 20, maxKB: 500 },
     signatureSpec: { widthPx: 200, heightPx: 100, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Goa Police", { widthPx: 600, heightPx: 600, minKB: 20, maxKB: 500 }),
   },
   {
     slug: "meghalaya-police",
@@ -913,7 +852,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 140, heightPx: 178, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 178, heightPx: 140, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Meghalaya Police", { widthPx: 140, heightPx: 178, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "manipur-police",
@@ -922,7 +860,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Manipur Police", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "tripura-police",
@@ -931,7 +868,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Police Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Tripura Police", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
 
   // ---- Judiciary Exams ----
@@ -942,7 +878,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Delhi Judicial Service", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "patna-hc-stenographer",
@@ -951,7 +886,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Patna High Court Stenographer", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "bombay-hc-clerk",
@@ -960,7 +894,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 120, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Bombay High Court Clerk", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "himachal-hc-stenographer",
@@ -969,7 +902,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Himachal Pradesh High Court Stenographer", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "gauhati-hc-clerk",
@@ -978,7 +910,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 50 },
-    faqs: genericFaqs("Gauhati High Court Clerk", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 }),
   },
   {
     slug: "maharashtra-judiciary",
@@ -987,7 +918,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Maharashtra Judicial Service", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "chhattisgarh-judiciary",
@@ -996,7 +926,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 100 },
-    faqs: genericFaqs("Chhattisgarh Judicial Service", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 100 }),
   },
   {
     slug: "rajasthan-judiciary",
@@ -1005,7 +934,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 280, heightPx: 80, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("Rajasthan Judicial Service", { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "karnataka-judiciary",
@@ -1014,7 +942,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Karnataka Judicial Service", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "wb-judiciary",
@@ -1023,7 +950,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Judiciary Exams",
     photoSpec: { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 140, heightPx: 80, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("West Bengal Judicial Service", { widthPx: 200, heightPx: 240, minKB: 20, maxKB: 50 }),
   },
 
   // ---- Other / Education Exams ----
@@ -1034,7 +960,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Polytechnic Admissions", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "iti",
@@ -1043,7 +968,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("ITI Admission", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "tancet",
@@ -1052,7 +976,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 250, heightPx: 70, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("TANCET", { widthPx: 240, heightPx: 320, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "up-bed",
@@ -1061,7 +984,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 20, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 20, maxKB: 50 },
-    faqs: genericFaqs("UP B.Ed JEE", { widthPx: 350, heightPx: 450, minKB: 20, maxKB: 50 }),
   },
   {
     slug: "hp-home-guard",
@@ -1070,7 +992,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 40 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("HP Home Guard", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 40 }),
   },
   {
     slug: "up-deled",
@@ -1079,7 +1000,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 2, maxKB: 20 },
-    faqs: genericFaqs("UP D.El.Ed", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "tet",
@@ -1088,7 +1008,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("TET", { widthPx: 350, heightPx: 450, minKB: 10, maxKB: 50 }),
   },
   {
     slug: "pcc",
@@ -1097,7 +1016,6 @@ export const RESIZER_EXAMS: ResizerExamSpec[] = [
     category: "Other / Education Exams",
     photoSpec: { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 },
     signatureSpec: { widthPx: 350, heightPx: 150, minKB: 10, maxKB: 20 },
-    faqs: genericFaqs("Police Clearance Certificate", { widthPx: 350, heightPx: 450, minKB: 50, maxKB: 100 }),
   },
 ];
 

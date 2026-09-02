@@ -6,7 +6,7 @@ import ResizeImageTool from "./ResizeImageTool";
 import FAQAccordion, { AccordionItem } from "./FAQAccordion";
 import RecentExamTracker from "./RecentExamTracker";
 import { FadeIn } from "./motion";
-import { ResizerExamSpec, getCategoryForExam } from "@/lib/resizerExams";
+import { ResizerExamSpec, getCategoryForExam, getExamFaqs } from "@/lib/resizerExams";
 import Link from "next/link";
 
 function SpecTable({ exam }: { exam: ResizerExamSpec }) {
@@ -50,7 +50,7 @@ function SpecTable({ exam }: { exam: ResizerExamSpec }) {
  * exam-specific spec table and FAQ section.
  */
 export default function ResizerSpokePage({ exam }: { exam: ResizerExamSpec }) {
-  const faqItems: AccordionItem[] = exam.faqs.map((faq, i) => ({
+  const faqItems: AccordionItem[] = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec).map((faq, i) => ({
     id: `faq-${i}`,
     title: faq.q,
     content: faq.a,
