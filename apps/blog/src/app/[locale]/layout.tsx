@@ -42,7 +42,6 @@ export const metadata: Metadata = {
       "Clear Cutoff helps you crack teaching exams like CTET, HTET, UPTET with focused courses and test series.",
     ogImage: "https://www.clearcutoff.in/icons/og-image.png",
   }),
-  manifest: "/site.webmanifest",
 };
 
 export default async function LocaleLayout({

@@ -19,9 +19,6 @@ const TestimonialsSection = dynamic(
 const FAQsSection = dynamic(
   () => import("@/components/sections/FAQsSection"),
 );
-const SinglePricingSection = dynamic(
-  () => import("@/components/sections/SinglePricingSection"),
-);
 
 export type SectionType = keyof typeof sectionRegistry;
 export type Section = {
@@ -46,9 +43,10 @@ export const sectionRegistry = {
   comparison: ComparisonSection,
   faqs: FAQsSection,
 
-  // 🔥 PRICING
+  // 🔥 PRICING — one shared widget for both the homepage grid and every
+  // per-exam page; there is no longer a separate single-exam component.
   pricing: PricingSectionWrapper,
-  singlePricing: SinglePricingSection,
+  singlePricing: PricingSectionWrapper,
 
   // 🔥 EXTRA
   courseLogoCarousal: CourseLogoCarousal,

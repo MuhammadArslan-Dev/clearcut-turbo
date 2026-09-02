@@ -23,11 +23,15 @@ export function buildMetadata({
     description,
     icons: {
       icon: [
-        { url: "/icons/Logo-16x16.png", sizes: "16x16", type: "image/png" },
-        { url: "/icons/Logo-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
       ],
-      shortcut: "/icons/favicon.ico",
-      apple: "/icons/Logo-48x48.png",
+      shortcut: "/favicon.ico",
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    },
+    manifest: "/site.webmanifest",
+    appleWebApp: {
+      title: "ClearCutOff",
     },
     openGraph: {
       title: siteName,

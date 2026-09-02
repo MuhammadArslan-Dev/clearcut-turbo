@@ -16,6 +16,7 @@
     "./links-list": "./src/links-list.tsx",
     "./main-input": "./src/main-input.tsx",
     "./overlay": "./src/overlay.tsx",
+    "./page-breadcrumbs": "./src/page-breadcrumbs.tsx",
     "./page-not-found": "./src/page-not-found.tsx",
     "./select": "./src/select.tsx",
     "./separator": "./src/separator.tsx",
@@ -32,7 +33,9 @@
     "./icons/phone-icon": "./src/icons/phone-icon.tsx",
     "./icons/telegram-icon": "./src/icons/telegram-icon.tsx",
     "./icons/warning-circle-icon": "./src/icons/warning-circle-icon.tsx",
-    "./icons/youtube-icon": "./src/icons/youtube-icon.tsx"
+    "./icons/whatsapp-icon": "./src/icons/whatsapp-icon.tsx",
+    "./icons/youtube-icon": "./src/icons/youtube-icon.tsx",
+    "./site-footer": "./src/site-footer.tsx"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

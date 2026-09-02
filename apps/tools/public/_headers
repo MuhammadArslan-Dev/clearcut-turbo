@@ -1,0 +1,9 @@
+/*
+  X-Robots-Tag: noindex
+
+# Next.js content-hashes every build asset's filename — the hash changes
+# whenever the content does, so these are safe to cache forever. Without
+# this, Cloudflare Pages' default (max-age=0, must-revalidate) makes every
+# visitor re-download and re-validate every JS/CSS file on every page load.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

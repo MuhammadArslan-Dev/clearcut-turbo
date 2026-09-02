@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Workspace packages live outside this app's own src/ tree, so Tailwind
+   v4's automatic content-detection doesn't reliably see classes used only
+   inside them. Same fix every other app in this monorepo applies for
+   @clearcut/ui — see apps/landing/src/styles/globals.css. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+@import "@clearcut/design-tokens/tokens.css";
+
+/* tokens.css requires every consuming app to define --font-latin itself (see
+   its own comment at the top of that file) — this app has no Hindi content,
+   so --font-hindi is skipped. System font stack rather than next/font +
+   Google Fonts: this is a single-purpose tool page, not worth a webfont
+   network dependency. */
+:root {
+	--font-latin: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+

@@ -11,9 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `apps/blog` | Next.js 16 (App Router), Tailwind v4, next-intl | Learner-facing content app — exam question banks, practice tests, blog content |
 | `apps/dashboard` | Next.js 16 (App Router), Tailwind v4, next-intl, Amplitude, Sentry | Logged-in product — preparation, test series, exams, payments, onboarding, profile |
 | `apps/landing` | Next.js 16 (App Router), Tailwind v4 + Radix UI + CVA, next-intl | Public marketing site — exam landing pages, pricing, onboarding, comparison pages |
+| `apps/tools` | Next.js 16, static export (`output: "export"`), Tailwind v4 | Standalone, no-backend browser tools (currently a photo/signature resizer) deployed to Cloudflare Pages, fronted by a Cloudflare Worker at `clearcutoff.in/tools/*` — see "apps/tools deployment" below |
 | `packages/*` | TypeScript, no build step (consumed as source via `exports` maps) | Shared code — see table below |
 
-All three apps are Next.js 16 App Router with i18n via `next-intl` (`en` default unprefixed, `hi` under `/hi`, config in `packages/i18n`) and Tailwind v4.
+`apps/blog`, `apps/dashboard`, and `apps/landing` are Next.js 16 App Router with i18n via `next-intl` (`en` default unprefixed, `hi` under `/hi`, config in `packages/i18n`) and Tailwind v4. `apps/tools` is intentionally outside this — no `next-intl`, no auth, no CMS, no backend calls.
 
 **`apps/dashboard` is deliberately less integrated than the other two** — see "Dashboard is a partial consumer" below before assuming a shared package applies to it.
 
@@ -25,6 +26,7 @@ pnpm dev                        # start every app's dev server in parallel
 pnpm --filter blog dev          # start just one app's dev server
 pnpm --filter dashboard dev
 pnpm --filter landing dev
+pnpm --filter tools dev
 
 pnpm build                      # production build, all apps (turbo run build)
 pnpm lint                       # ESLint, all apps
@@ -54,12 +56,12 @@ Every package uses a `"./subpath": "./src/file.ts"` `exports` map (no barrel fil
 | `packages/api` | `createApiClient` (axios, client-side authenticated calls), `createFetchClient` (native `fetch`, for Server Components — Next's `fetch` cache/`revalidate` integration only works with real `fetch`, not axios), `errors` |
 | `packages/assets` | `image-registry` — shared image path/asset constants |
 | `packages/auth` | `createAuthFeature(config)` — a factory each app calls once (in its own `src/lib/auth.ts`) with app-specific `apiClient`/`apiBaseUrl`/`redirectBaseUrl`/`onEvent`, returning `AuthProvider`, `AuthModal`, `useAuthStore`, `useAuthModal`, `InlineAuthFlow`, `authApi`. Never import `@clearcut/auth` directly from app code — always through that app's `lib/auth.ts`. Used by blog + landing only. |
-| `packages/design-tokens` | `tokens.css` — the single source for colors, typography scale, spacing, radius, shadows, z-index, breakpoints. All three apps `@import` it into their own `globals.css`. |
+| `packages/design-tokens` | `tokens.css` — the single source for colors, typography scale, spacing, radius, shadows, z-index, breakpoints. All four apps `@import` it into their own `globals.css`. `tokens.css` requires each consumer to define `--font-latin` itself (and `--font-hindi` too, unless — like `apps/tools` — it has no Hindi content). |
 | `packages/hooks` | Generic React hooks: `useIsMobile`, `useLockBodyScroll`, `useBackHandler`, `useScrollShadow` |
 | `packages/i18n` | `routing.ts` (canonical `next-intl` locale config — `en`/`hi`, `localePrefix: "as-needed"`) and `navigation.ts` (locale-aware `Link`, `useRouter`, etc.) |
 | `packages/react-query` | `createQueryClient()` (SSR-tuned staleTime/gcTime/retry) and `ReactQueryProvider` (one client per component lifetime via `useState`) |
 | `packages/state` | `createStore` (Zustand + devtools naming), `createPersistedStore` (+ localStorage, always `skipHydration: true`), `useHydrateStore` |
-| `packages/ui` | Shared primitives (Radix + Tailwind + CVA): `button`, `card`, `chip`, `input`, `main-input`, `select`, `separator`, `skeleton`, `text`, `link`, `breadcrumbs`, `overlay`, `json-ld`, `links-list`, `page-not-found`, `utils`, plus `icons/*`. `chip`/`breadcrumbs`/`select`/`skeleton`/`link` exist specifically as the replacements for the MUI Joy components that were removed. |
+| `packages/ui` | Shared primitives (Radix + Tailwind + CVA): `button`, `card`, `chip`, `input`, `main-input`, `select`, `separator`, `skeleton`, `text`, `link`, `breadcrumbs`, `overlay`, `json-ld`, `links-list`, `page-not-found`, `site-footer`, `utils`, plus `icons/*`. `chip`/`breadcrumbs`/`select`/`skeleton`/`link` exist specifically as the replacements for the MUI Joy components that were removed. `site-footer` is the consolidated public-site footer (see below) used by blog, landing, and tools. |
 | `packages/utils` | Pure functions: `text-format`, `text-limit`, `build-metadata` (shared Next.js `Metadata` builder), `highlight-text` |
 | `packages/validation` | Shared Zod schemas: `common/phone`, `common/otp`, `common/pagination`, `features/auth/login`, `features/auth/otp-verify`. Used by landing only. |
 
@@ -97,7 +99,7 @@ Zustand's `persist` middleware reads `localStorage` synchronously during store i
 
 ### MUI Joy has been fully removed
 
-Historically `apps/blog` was built on `@mui/joy` + Emotion while landing was Radix + Tailwind, which blocked component sharing. **That split no longer exists** — `@mui/joy` is absent from every `package.json` and from `pnpm-lock.yaml`, and no source file imports it. All three apps are Tailwind v4. Remaining `@mui/joy` mentions are historical comments (`packages/ui/src/breadcrumbs.tsx`, `chip.tsx`, `apps/blog/src/components/badge/free-badge.tsx`) plus one stale entry in `apps/blog/next.config.ts`'s `experimental.optimizePackageImports` list, which is a no-op for an uninstalled package.
+Historically `apps/blog` was built on `@mui/joy` + Emotion while landing was Radix + Tailwind, which blocked component sharing. **That split no longer exists** — `@mui/joy` is absent from every `package.json` and from `pnpm-lock.yaml`, and no source file imports it. All apps are Tailwind v4. Remaining `@mui/joy` mentions are historical comments (`packages/ui/src/breadcrumbs.tsx`, `chip.tsx`, `apps/blog/src/components/badge/free-badge.tsx`) plus one stale entry in `apps/blog/next.config.ts`'s `experimental.optimizePackageImports` list, which is a no-op for an uninstalled package.
 
 `@emotion/react` and `@emotion/styled` are still direct dependencies of `apps/blog` and `apps/dashboard` — MUI's removal did not remove Emotion.
 
@@ -113,7 +115,25 @@ If your change legitimately raises a count, `pnpm check:colors:update` re-baseli
 
 Any shared package whose components emit Tailwind utility classes (especially arbitrary-value classes like `text-[var(--color-brand)]`) must be added to **every** app's `globals.css` via `@source "../../../../packages/X/src/**/*.{ts,tsx}";` — Tailwind v4 only scans each app's own tree by default, and a missing `@source` line means those classes silently fail to generate (no build error, just missing styles).
 
-Current state, which is **not uniform**: blog and landing list `packages/ui`, `packages/auth`, and `packages/utils`; dashboard lists only `packages/ui` (it doesn't consume auth). The files are `apps/blog/src/app/globals.css`, `apps/landing/src/styles/globals.css`, `apps/dashboard/src/styles/globals.css`.
+Current state, which is **not uniform**: blog and landing list `packages/ui`, `packages/auth`, and `packages/utils`; dashboard and tools list only `packages/ui` (neither consumes auth). The files are `apps/blog/src/app/globals.css`, `apps/landing/src/styles/globals.css`, `apps/dashboard/src/styles/globals.css`, `apps/tools/src/app/globals.css`.
+
+### Shared `SiteFooter` (`@clearcut/ui/site-footer`)
+
+Blog, landing, and tools each used to maintain their own hand-rolled footer, and they'd quietly drifted (different WhatsApp icon artwork, blog missing `variant="combined"` on page links, and — the real bug — blog never passed a `LinkComponent` into `LinksList`, so its footer links silently ignored the `/hi` locale prefix). `packages/ui/src/site-footer.tsx` is the single replacement: it owns layout/behavior only, not copy — each app still supplies its own translated strings and its own locale-aware `Link` via the `LinkComponent` prop.
+
+- Pass `LinkComponent` for any app with locale-prefixed routes (blog, landing). Omit it only for an app with no i18n routing at all (tools) — `LinksList` then falls back to plain `next/link`, which is correct there and wrong everywhere else.
+- Pass `pageLinksBaseUrl` (an absolute origin) for a standalone app that doesn't host `/privacy-policy`, `/terms-and-conditions`, `/refund-policy`, `/contact-us` itself — e.g. `apps/tools` sets it to `https://clearcutoff.in` since those pages live on the main site, not in its own static export.
+- `extraLinks` appends links after the standard four (landing uses this for its per-competitor "Alternatives" pages).
+
+### `apps/tools` deployment (Cloudflare Pages + Worker)
+
+`apps/tools` is a standalone static export (`output: "export"`, `basePath: "/tools/resizer"` in `next.config.ts`) deployed to Cloudflare Pages independently of the other apps, which stay on their own VPS deployment. A Cloudflare Worker (`apps/tools/worker/`, `wrangler.toml` routes `clearcutoff.in/tools/resizer` and `/tools/resizer/*`) sits in front of `clearcutoff.in` and proxies just that path prefix to the Pages deployment (`PAGES_ORIGIN` in `wrangler.toml`'s `[vars]`), leaving every other path on the main site untouched. Same pattern as the separate Astro repo's `/go/*` Worker (`Astro-marketing-clearcut/apps/go-marketing/worker` — see memory `reference_astro_marketing_project`).
+
+Two things worth knowing if you touch this:
+- `basePath` only prefixes the *links/assets* Next emits — it does not move the static export into a `/tools/resizer` subfolder. `out/` mirrors routes with no prefix (`/tools/resizer/htet` → file for `/htet`), so the Worker's `matchPath` strips the prefix itself before proxying upstream.
+- The Worker deletes the `X-Robots-Tag: noindex` response header before returning it. Pages sets that header via `public/_headers` so the raw `*.pages.dev` URL doesn't get indexed as duplicate content — but that same header would ride along on every proxied response and de-index the real, indexable `clearcutoff.in/tools/resizer/*` pages if left in place.
+
+`apps/tools/worker` is its own npm project (own `package.json`/`tsconfig.json`, `wrangler dev` / `wrangler deploy`) — it is not part of the pnpm workspace's `apps/*`/`packages/*` glob and has no Turborepo task.
 
 ### Design tokens: z-index, shadows, and app-level overrides
 
@@ -127,7 +147,7 @@ Each app imports the shared tokens **first** so its own later definitions win th
 
 ## Testing
 
-Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not a single root test runner. Currently only `packages/utils` and `packages/state` have tests; every other package and all three apps have none. `pnpm test` (via `turbo run test`) runs whichever packages define the script and skips the rest — this is expected, not a misconfiguration.
+Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not a single root test runner. Currently only `packages/utils` and `packages/state` have tests; every other package and all four apps have none. `pnpm test` (via `turbo run test`) runs whichever packages define the script and skips the rest — this is expected, not a misconfiguration.
 
 ## CI
 
@@ -143,11 +163,11 @@ Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not
 
 `apps/blog` and `apps/landing` have Sentry scaffolded but inert (empty DSN in their `.env.example`).
 
-Note: `@sentry/nextjs` declares peer support for Next 13–15, not Next 16 (which all three apps run). It builds and typechecks clean regardless — re-verify after any Sentry version bump.
+Note: `@sentry/nextjs` declares peer support for Next 13–15, not Next 16 (which blog, dashboard, and landing all run). It builds and typechecks clean regardless — re-verify after any Sentry version bump.
 
 ## Deployment (`nixpacks.toml`)
 
-Only `apps/dashboard` has a deployment config (`nixpacks.toml` at repo root) — blog and landing have none. Three things about it are easy to get wrong by copying a generic Nixpacks setup instead of reading it:
+Only `apps/dashboard` has a Nixpacks deployment config (`nixpacks.toml` at repo root) — blog and landing have none, and `apps/tools` uses a completely different deployment path (Cloudflare Pages + Worker — see "apps/tools deployment" above). Three things about the Nixpacks config are easy to get wrong by copying a generic Nixpacks setup instead of reading it:
 
 - The build context **must be the repo root** (where `nixpacks.toml`, `pnpm-workspace.yaml`, and `turbo.json` live), not `apps/dashboard` — the `workspace:*` `@clearcut/*` deps and the lockfile aren't reachable from inside the app subtree.
 - It builds with `pnpm turbo run build --filter=dashboard`, deliberately not a bare `pnpm build` — building all apps would also build `apps/landing`, which fails with `ECONNREFUSED` in an environment without a reachable `CMS_URL`, for reasons unrelated to dashboard.

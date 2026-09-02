@@ -28,6 +28,7 @@ export default function ContinueFreeButton({
   loading,
   event = { element_location: "header", element_type: "button" },
   onClick,
+  className,
 }: {
   text?: string | React.ReactNode;
   marketing?: string;
@@ -49,6 +50,8 @@ export default function ContinueFreeButton({
   linkButton?: boolean;
   onClick?: () => void;
   event?: { element_location?: string; element_type?: EventType };
+  /** Extra classes merged onto the underlying Button — e.g. a gradient background for a premium CTA. */
+  className?: string;
 }) {
   const { goToLogin, setMarketing, setCourse } = useAuthStore();
   const t = useTranslations("common");
@@ -86,6 +89,7 @@ export default function ContinueFreeButton({
       disabled={disabled}
       loading={loading}
       fullWidth={fullWidth}
+      className={className}
       {...hoverScale}
       rightIcon={showIcon && arrowIcon}
       onClick={() => { if (!linkButton) buttonClickHandler(); }}

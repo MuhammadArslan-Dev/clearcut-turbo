@@ -1,0 +1,32 @@
+{
+  "name": "tools",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clearcut/design-tokens": "workspace:*",
+    "@clearcut/ui": "workspace:*",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
+    "heic2any": "^0.0.4",
+    "next": "^16.1.6",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5"
+  }
+}
