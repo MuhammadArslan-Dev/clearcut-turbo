@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import Text from "@clearcut/ui/text";
+import { MainLoader } from "@/components/FullScreenLoader";
 
 // Same upper bound preparation's Sidebar uses for its own scroll-hide
 // offset — Topbar clamps against its own measured height, so this only
@@ -107,7 +108,24 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
             floating widget — this restores the same mechanism. */}
         <div className="relative flex-1 overflow-hidden">
           <main ref={scrollContainerRef} className="h-full overflow-y-auto pb-40">
-            {children}
+            {/* Hold off mounting page content (and its own loading skeleton)
+                until the syllabus query above has resolved. ContentTabsBar
+                (in Topbar, above this <main>) renders nothing until that
+                same data arrives, then pops in a paper/section tab row —
+                if page content had already painted by then, that pop-in
+                pushes it down after the user may already be looking at or
+                scrolling it. Waiting here means the tabs area reaches its
+                final size before anything below it ever paints, so there's
+                nothing left for it to push. Only gates the FIRST load of a
+                course's content — react-query serves cached syllabus data
+                instantly on later navigations between notes/pyqs. */}
+            {isLoading ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <MainLoader />
+              </div>
+            ) : (
+              children
+            )}
           </main>
 
           {/* Mirrors preparation's Sidebar bottom-fixed reveal: Notes/PYQs
