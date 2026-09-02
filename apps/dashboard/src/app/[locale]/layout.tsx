@@ -115,34 +115,6 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   return (
     <html lang={locale} className={fontClass}>
-      <head>
-        {/* MathJax config must be a synchronous inline script so it runs before the CDN loads.
-            next/script "beforeInteractive" only works in the root layout, so we use a raw <script> here. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.MathJax = {
-                tex: {
-                  inlineMath: [['$', '$']],
-                  displayMath: [['$$', '$$']],
-                  processEscapes: true,
-                  tags: 'ams',
-                  tagSide: 'right',
-                  tagIndent: '0.2em'
-                },
-                output: { font: 'mathjax-newcm' },
-                startup: {
-                  pageReady: function() {
-                    return MathJax.startup.defaultPageReady().then(function() {
-                      window.dispatchEvent(new Event('mathjax-ready'));
-                    });
-                  }
-                }
-              };
-            `,
-          }}
-        />
-      </head>
       <body suppressHydrationWarning className="antialiased">
         <Suspense fallback={null}>
           <GlobalModalReset />

@@ -1,7 +1,6 @@
 import React from "react";
 import ProtectedPage from "@/components/features/auth/ProtectedPage";
 import ContentShell from "@/components/layout/download-content/ContentShell";
-import MathJaxScript from "@/components/features/mathjax/MathJaxScript";
 
 export default async function ContentLayout({
   children,
@@ -15,7 +14,6 @@ export default async function ContentLayout({
 
   return (
     <ProtectedPage>
-      <MathJaxScript />
       <ContentShell courseId={examId}>{children}</ContentShell>
     </ProtectedPage>
   );

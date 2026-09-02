@@ -57,11 +57,6 @@ export const IGNORE_ERRORS: (string | RegExp)[] = [
   /^chrome-extension:\/\//,
   /^moz-extension:\/\//,
   "ResizeObserver is not defined",
-  // MathJax's own accessibility/speech module (tex-chtml.js) calls the Web
-  // Speech API without feature-detecting it; throws on WebViews that don't
-  // expose `speechSynthesis` (Chrome Mobile WebView, in-app browsers). Bug
-  // lives inside the MathJax bundle, not our code.
-  "speechSynthesis is not defined",
   // Android WebView host apps (Instagram/Facebook in-app browser) inject a
   // native performance-logging bridge that throws once its Java-side object
   // has been garbage collected — happens on navigation/backgrounding, not

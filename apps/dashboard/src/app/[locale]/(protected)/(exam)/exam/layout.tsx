@@ -1,7 +1,6 @@
 import React from "react";
 import ExamShell from "@/components/layout/exam/ExamShell";
 import ProtectedPage from "@/components/features/auth/ProtectedPage";
-import MathJaxScript from "@/components/features/mathjax/MathJaxScript";
 
 export default function ExamLayout({
   children,
@@ -10,7 +9,6 @@ export default function ExamLayout({
 }) {
   return (
     <ProtectedPage>
-      <MathJaxScript />
       <ExamShell>{children}</ExamShell>
     </ProtectedPage>
   );
