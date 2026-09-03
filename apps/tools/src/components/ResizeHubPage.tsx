@@ -4,7 +4,9 @@ import Text from "@clearcut/ui/text";
 import ResizeImageTool from "./ResizeImageTool";
 import BrowseByExam from "./BrowseByExam";
 import MoreTools from "./MoreTools";
+import ToolModeTabs from "./ToolModeTabs";
 import { FadeIn } from "./motion";
+import { getDict, Locale } from "@/lib/dictionary";
 
 function CheckIcon() {
   return (
@@ -60,87 +62,77 @@ function DownloadStepIcon() {
   );
 }
 
-const HOW_IT_WORKS_STEPS = [
-  {
-    Icon: SelectIcon,
-    title: "1. Choose your document type",
-    description: "Pick Photo, Signature, or Custom — we automatically load the right dimensions and file size limit.",
-  },
-  {
-    Icon: UploadStepIcon,
-    title: "2. Upload & process",
-    description: "Drop in your photo or signature. Resizing and compression happen instantly, right in your browser.",
-  },
-  {
-    Icon: DownloadStepIcon,
-    title: "3. Download",
-    description: "Preview the optimized result and download it — your file never leaves your device.",
-  },
-];
+const STEP_ICONS = [SelectIcon, UploadStepIcon, DownloadStepIcon];
 
-function HowItWorks() {
+function HowItWorks({ locale }: { locale: Locale }) {
+  const t = getDict(locale).hub;
   return (
     <div className="max-w-[880px] mx-auto text-center flex flex-col items-center gap-3 mt-16 md:mt-20">
-      <h2 className="heading-large !font-bold text-text-gray-normal">How it works</h2>
-      <p className="body-medium text-text-gray-muted mb-6">
-        Get your exam documents ready in 3 simple steps. No technical skills required.
-      </p>
+      <h2 className="heading-large !font-bold text-text-gray-normal">{t.howItWorksTitle}</h2>
+      <p className="body-medium text-text-gray-muted mb-6">{t.howItWorksLead}</p>
 
       <div className="grid md:grid-cols-3 gap-8 w-full">
-        {HOW_IT_WORKS_STEPS.map(({ Icon, title, description }) => (
-          <div key={title} className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-brand/8 flex items-center justify-center">
-              <Icon />
+        {t.steps.map(({ title, description }, i) => {
+          const Icon = STEP_ICONS[i];
+          return (
+            <div key={title} className="flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-brand/8 flex items-center justify-center">
+                <Icon />
+              </div>
+              <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
+                {title}
+              </Text>
+              <Text as="p" variant="body-small" color="gray-muted">
+                {description}
+              </Text>
             </div>
-            <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
-              {title}
-            </Text>
-            <Text as="p" variant="body-small" color="gray-muted">
-              {description}
-            </Text>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /** Hub — generic tool + copy, no exam context. Per-exam spokes: ResizerSpokePage. */
-export default function ResizeHubPage() {
+export default function ResizeHubPage({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).hub;
+
   return (
     <div>
-      <SiteHeader />
+      <SiteHeader locale={locale} />
 
       <div className="px-4 md:px-6 py-10 md:py-14">
         <FadeIn className="max-w-[620px] mx-auto text-center flex flex-col items-center gap-4 mb-10">
-          <h1 className="heading-large md:!text-[40px] md:!leading-[1.25] !font-bold text-text-gray-normal">
-            Exam-Ready Photos &amp; Signatures in Seconds
+          <h1 className="heading-xlarge !text-[32px] md:!text-[48px] md:!leading-[1.25] !font-bold text-text-gray-normal">
+            {t.h1}
           </h1>
-          <p className="body-medium text-text-gray-muted">
-            Resize and compress your photo or signature for CTET, HTET, UPTET and more —
-            processed right in your browser, nothing is ever uploaded.
-          </p>
+          <p className="body-large !text-[17px] md:!text-[19px] text-text-gray-muted">{t.lead}</p>
 
           <div className="flex flex-wrap justify-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-success/10 text-[var(--color-success-strong)]">
-              <CheckIcon /> 100% Free &amp; Private
+              <CheckIcon /> {t.badgeFree}
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-success/10 text-[var(--color-success-strong)]">
-              <LockIcon /> Privacy Certified
+              <LockIcon /> {t.badgePrivacy}
             </span>
           </div>
         </FadeIn>
 
-        <ResizeImageTool />
+        <ToolModeTabs locale={locale} activeTab="resizer" />
 
-        <HowItWorks />
+        {/* Image Resizer mode only ever offers Photo + Signature, matching
+            the reference tool exactly — Add Name & Date is its own tab
+            (ToolModeTabs above), not a tile here. */}
+        <ResizeImageTool allowedPresets={["photo", "draw"]} locale={locale} />
 
-        <MoreTools />
+        <HowItWorks locale={locale} />
 
-        <BrowseByExam />
+        <MoreTools locale={locale} />
+
+        <BrowseByExam locale={locale} />
       </div>
 
-      <SiteFooter />
+      <SiteFooter locale={locale} />
     </div>
   );
 }

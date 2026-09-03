@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Agentation } from "agentation";
 
 // Next's Metadata API does NOT auto-prefix icons/manifest URLs with
-// basePath (unlike next/image or next/link) — the same class of bug as
-// ToolBreadcrumbs' basePath fix. These files are served at
+// basePath (unlike next/image or next/link). These files are served at
 // /tools/resizer/favicon.ico etc, so the emitted <link> tags must spell
 // that prefix out explicitly or they 404.
 const BASE_PATH = "/tools/resizer";
@@ -31,7 +31,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-white text-text-gray-normal">{children}</body>
+      <body className="antialiased bg-white text-text-gray-normal">
+        {children}
+        {process.env.NODE_ENV === "development" && <Agentation />}
+      </body>
     </html>
   );
 }

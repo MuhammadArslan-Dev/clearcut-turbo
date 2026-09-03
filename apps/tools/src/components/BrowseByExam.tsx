@@ -1,9 +1,10 @@
-import Link from "next/link";
 import Text from "@clearcut/ui/text";
 import { RESIZER_EXAMS, getResizerCategories } from "@/lib/resizerExams";
 import ExamSearch from "./ExamSearch";
 import RecentExams from "./RecentExams";
+import LocaleLink from "./LocaleLink";
 import { FadeIn, StaggerGrid, StaggerItem } from "./motion";
+import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
 
 function FolderIcon() {
   return (
@@ -32,9 +33,22 @@ function ArrowIcon() {
   );
 }
 
-function CategoryCard({ slug, label, count }: { slug: string; label: string; count: number }) {
+function CategoryCard({
+  slug,
+  label,
+  count,
+  countLabel,
+  locale,
+}: {
+  slug: string;
+  label: string;
+  count: number;
+  countLabel: string;
+  locale: Locale;
+}) {
   return (
-    <Link
+    <LocaleLink
+      locale={locale}
       href={`/${slug}`}
       className="group relative flex flex-col gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:border-brand hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] hover:-translate-y-1"
     >
@@ -58,10 +72,10 @@ function CategoryCard({ slug, label, count }: { slug: string; label: string; cou
           {label}
         </Text>
         <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-gray-bg-soft)] text-text-gray-muted">
-          {count} exam{count === 1 ? "" : "s"}
+          {countLabel}
         </span>
       </div>
-    </Link>
+    </LocaleLink>
   );
 }
 
@@ -75,7 +89,8 @@ function CategoryCard({ slug, label, count }: { slug: string; label: string; cou
  * friendly URL. The search box above it bypasses both levels entirely for
  * anyone who already knows their exam's name.
  */
-export default function BrowseByExam() {
+export default function BrowseByExam({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).browse;
   const categories = getResizerCategories();
   const searchableExams = RESIZER_EXAMS.map(({ slug, shortName, fullName, photoSpec }) => ({
     slug,
@@ -86,24 +101,30 @@ export default function BrowseByExam() {
 
   return (
     <div className="mt-16 md:mt-20">
-      <RecentExams />
+      <RecentExams locale={locale} />
 
       <div className="max-w-[1080px] mx-auto px-2">
         <FadeIn className="text-center mb-2">
-          <h2 className="heading-large !font-bold text-text-gray-normal">Browse by exam</h2>
+          <h2 className="heading-large !font-bold text-text-gray-normal">{t.title}</h2>
           <Text as="p" variant="body-medium" color="gray-muted" className="mt-2">
-            Every exam has its own photo &amp; signature size — search, or pick a category, then your exam.
+            {t.lead}
           </Text>
         </FadeIn>
 
         <FadeIn delay={0.1} className="mt-6">
-          <ExamSearch exams={searchableExams} placeholder="Search your exam (e.g. UPSC, CTET, SBI PO)…" />
+          <ExamSearch exams={searchableExams} placeholder={t.searchPlaceholder} locale={locale} />
         </FadeIn>
 
         <StaggerGrid className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-8">
           {categories.map((category) => (
             <StaggerItem key={category.slug}>
-              <CategoryCard slug={category.slug} label={category.label} count={category.exams.length} />
+              <CategoryCard
+                slug={category.slug}
+                label={getCategoryLabel(category.label, locale)}
+                count={category.exams.length}
+                countLabel={t.examCount(category.exams.length)}
+                locale={locale}
+              />
             </StaggerItem>
           ))}
         </StaggerGrid>

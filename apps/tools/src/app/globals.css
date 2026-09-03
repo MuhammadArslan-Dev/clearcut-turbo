@@ -9,11 +9,24 @@
 @import "@clearcut/design-tokens/tokens.css";
 
 /* tokens.css requires every consuming app to define --font-latin itself (see
-   its own comment at the top of that file) — this app has no Hindi content,
-   so --font-hindi is skipped. System font stack rather than next/font +
-   Google Fonts: this is a single-purpose tool page, not worth a webfont
-   network dependency. */
+   its own comment at the top of that file), and --font-hindi too once an app
+   serves Hindi content (app/hi/* here). System font stacks rather than
+   next/font + Google Fonts: this is a single-purpose tool page, not worth a
+   webfont network dependency — "Nirmala UI" (Windows) / system Noto Sans
+   (Android/Chrome OS) / "ITF Devanagari" (macOS) cover the same Devanagari
+   glyphs a bundled Noto Sans Devanagari would. */
 :root {
 	--font-latin: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--font-hindi: "Nirmala UI", "Noto Sans Devanagari", "ITF Devanagari", ui-sans-serif, sans-serif;
+}
+
+/* Scoped to lang="hi" rather than assuming the whole document — app/hi/
+   layout.tsx wraps its subtree in <div lang="hi">, since a static export has
+   no middleware to make the root <html> tag itself vary by route the way
+   next-intl's [locale] layout does in the other three apps. */
+:lang(hi) {
+	font-family: var(--font-hindi);
+	line-height: calc(1em * var(--hi-line-height-ratio));
+	font-weight: calc(500 + var(--hi-weight-adjust));
 }
 

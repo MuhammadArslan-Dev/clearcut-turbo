@@ -3,8 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2026-08-11"
 
 routes = [
+	{ pattern = "clearcutoff.in/tools", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/tools/resizer", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/tools/resizer/*", zone_name = "clearcutoff.in" },
+	{ pattern = "clearcutoff.in/hi/tools/resizer", zone_name = "clearcutoff.in" },
+	{ pattern = "clearcutoff.in/hi/tools/resizer/*", zone_name = "clearcutoff.in" },
 ]
 
 [vars]

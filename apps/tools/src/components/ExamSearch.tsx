@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Text from "@clearcut/ui/text";
 import ExamCard from "./ExamCard";
 import { StaggerGrid, StaggerItem } from "./motion";
+import { getDict, Locale } from "@/lib/dictionary";
 
 // Slimmer than ResizerExamSpec on purpose: this is passed as a prop from a
 // server component into this client component, which serializes it into the
@@ -32,7 +33,16 @@ function SearchIcon() {
  * "civil service" finds UPSC even though its card only shows "UPSC (IAS,
  * IPS)".
  */
-export default function ExamSearch({ exams, placeholder }: { exams: SearchableExam[]; placeholder: string }) {
+export default function ExamSearch({
+  exams,
+  placeholder,
+  locale = "en",
+}: {
+  exams: SearchableExam[];
+  placeholder: string;
+  locale?: Locale;
+}) {
+  const t = getDict(locale).search;
   const [query, setQuery] = useState("");
   const trimmed = query.trim().toLowerCase();
 
@@ -66,13 +76,13 @@ export default function ExamSearch({ exams, placeholder }: { exams: SearchableEx
           <StaggerGrid className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
             {results.map((exam) => (
               <StaggerItem key={exam.slug}>
-                <ExamCard exam={exam} />
+                <ExamCard exam={exam} locale={locale} />
               </StaggerItem>
             ))}
           </StaggerGrid>
         ) : (
           <Text as="p" variant="body-small" color="gray-muted" className="text-center mt-6">
-            {`No exam matched "${query}" — try a different name, or browse below.`}
+            {t.noResults(query)}
           </Text>
         ))}
     </div>

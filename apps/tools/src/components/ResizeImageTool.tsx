@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
+import { getDict, Locale } from "@/lib/dictionary";
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb";
 
@@ -48,36 +49,37 @@ const PX_PER_CM = ASSUMED_DPI / 2.54;
 // exam portals ask for. "Custom" always stays generic: it's explicitly the
 // escape hatch for a size neither preset covers. "Left Thumb" is its own
 // generic default since no per-exam data exists for it yet.
-function buildPresets(photoSpec: ImageSpec = DEFAULT_PHOTO_SPEC, signatureSpec: ImageSpec = DEFAULT_SIGNATURE_SPEC): Record<PresetKey, Preset> {
+function buildPresets(
+  locale: Locale,
+  photoSpec: ImageSpec = DEFAULT_PHOTO_SPEC,
+  signatureSpec: ImageSpec = DEFAULT_SIGNATURE_SPEC,
+): Record<PresetKey, Preset> {
+  const p = getDict(locale).presets;
   return {
     photo: {
-      label: "Photo",
-      sublabel: "Passport size",
+      ...p.photo,
       width: photoSpec.widthPx,
       height: photoSpec.heightPx,
       minKB: photoSpec.minKB,
       maxKB: photoSpec.maxKB,
     },
     signature: {
-      label: "Add Name",
-      sublabel: "With name & date",
+      ...p.signature,
       width: photoSpec.widthPx,
       height: photoSpec.heightPx,
       minKB: photoSpec.minKB,
       maxKB: photoSpec.maxKB,
     },
-    custom: { label: "Custom", sublabel: "Your own size", width: 200, height: 200, minKB: 20, maxKB: 100 },
+    custom: { ...p.custom, width: 200, height: 200, minKB: 20, maxKB: 100 },
     draw: {
-      label: "Signature",
-      sublabel: "Draw or upload",
+      ...p.draw,
       width: signatureSpec.widthPx,
       height: signatureSpec.heightPx,
       minKB: signatureSpec.minKB,
       maxKB: signatureSpec.maxKB,
     },
     thumb: {
-      label: "Left Thumb",
-      sublabel: "Impression scan",
+      ...p.thumb,
       width: DEFAULT_THUMB_SPEC.widthPx,
       height: DEFAULT_THUMB_SPEC.heightPx,
       minKB: DEFAULT_THUMB_SPEC.minKB,
@@ -104,7 +106,10 @@ function isHeicFile(f: File): boolean {
 // stepping through a few status lines during that window) makes the tool
 // feel like it's actually doing work instead of jarring the user.
 const MIN_PROCESSING_MS = 1400;
-const PROCESSING_STATUS_MESSAGES = ["Analyzing image…", "Resizing…", "Compressing…"];
+function getProcessingStatusMessages(locale: Locale): string[] {
+  const t = getDict(locale).tool;
+  return [t.statusAnalyzing, t.statusResizing, t.statusCompressing];
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -129,11 +134,11 @@ interface CropRect {
   sh: number;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+function loadImage(src: string, errorMessage: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not read this image."));
+    img.onerror = () => reject(new Error(errorMessage));
     img.src = src;
   });
 }
@@ -235,18 +240,19 @@ async function resizeAndCompress(
   maxKB: number,
   crop: { sx: number; sy: number; sw: number; sh: number },
   adjust: { brightness: number; contrast: number; cleanup: number },
+  messages: { readError: string; processError: string },
   stampName?: string,
   stampDate?: string,
 ): Promise<Blob> {
   const objectUrl = URL.createObjectURL(file);
   try {
-    const img = await loadImage(objectUrl);
+    const img = await loadImage(objectUrl, messages.readError);
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not process this image.");
+    if (!ctx) throw new Error(messages.processError);
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
@@ -275,24 +281,108 @@ async function resizeAndCompress(
       attempts++;
     }
 
-    if (!blob) throw new Error("Could not process this image.");
+    if (!blob) throw new Error(messages.processError);
     return blob;
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
 }
 
-// No existing @clearcut/ui component covers a selectable preset tile (Chip
-// has no selected/interactive state, Button isn't a 2-line label+sublabel
-// layout) — built locally rather than inventing one in the shared package
-// for a single call site.
+function PhotoTypeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function NameTagTypeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M7 11.5h4M7 15h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="17" cy="10.5" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CropTypeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SignatureTypeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M15 4l5 5-9.5 9.5H5.5V14L15 4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M3 20h5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ThumbTypeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M5 13.5a7 7 0 0 1 14 0c0 2.6-.8 4.7-2.1 6.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 13.5a4 4 0 0 1 8 0c0 2.1-.6 3.7-1.6 5.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path d="M12 12.5a2 2 0 0 0-2 2c0 3-1 5.2-2.6 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// Icons are keyed by PresetKey rather than folded into buildPresets(), since
+// they're static (never vary by exam spec) while Preset's other fields do.
+const PRESET_ICONS: Record<PresetKey, React.ReactNode> = {
+  photo: <PhotoTypeIcon />,
+  signature: <NameTagTypeIcon />,
+  custom: <CropTypeIcon />,
+  draw: <SignatureTypeIcon />,
+  thumb: <ThumbTypeIcon />,
+};
+
+// No existing @clearcut/ui component covers a selectable icon+label+sublabel
+// tile (Chip has no selected/interactive state, Button isn't a 3-part
+// vertical layout) — built locally rather than inventing one in the shared
+// package for a single call site.
 function PresetTile({
   active,
+  icon,
   label,
   sublabel,
   onClick,
 }: {
   active: boolean;
+  icon: React.ReactNode;
   label: string;
   sublabel: string;
   onClick: () => void;
@@ -301,12 +391,19 @@ function PresetTile({
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-start gap-0.5 rounded-xl border-2 px-4 py-3 text-left transition-colors ${
+      className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-5 text-center transition-colors ${
         active
           ? "border-brand bg-brand/5"
           : "border-[var(--color-border-gray-subtle)] hover:border-brand/40"
       }`}
     >
+      <div
+        className={`w-11 h-11 rounded-full flex items-center justify-center ${
+          active ? "bg-brand/15 text-brand" : "bg-[var(--color-gray-bg-soft)] text-text-gray-muted"
+        }`}
+      >
+        {icon}
+      </div>
       <span className={`body-medium !font-semibold ${active ? "text-brand" : "text-text-gray-normal"}`}>
         {label}
       </span>
@@ -321,7 +418,8 @@ function PresetTile({
 // strokes stay crisp regardless of how the box is laid out; getPoint()
 // converts a client coordinate into that internal space via the element's
 // actual rendered size.
-function SignaturePad({ onUse }: { onUse: (blob: Blob) => void }) {
+function SignaturePad({ locale, onUse }: { locale: Locale; onUse: (blob: Blob) => void }) {
+  const t = getDict(locale).tool;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -408,17 +506,17 @@ function SignaturePad({ onUse }: { onUse: (blob: Blob) => void }) {
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Text as="p" variant="body-medium" color="gray-muted">
-              Sign here with your mouse or finger
+              {t.signHere}
             </Text>
           </div>
         )}
       </div>
       <div className="flex gap-2">
         <Button variant="outlined" color="gray" fullWidth sx={{ borderRadius: "50px" }} onClick={handleClear}>
-          Clear
+          {t.clear}
         </Button>
         <Button fullWidth sx={{ borderRadius: "50px" }} disabled={isEmpty} onClick={handleUse}>
-          Use this signature
+          {t.useThisSignature}
         </Button>
       </div>
     </div>
@@ -489,6 +587,7 @@ function ResetIcon() {
 // mirrors how every real photo-crop tool works: you can always see what's
 // about to be cropped away, not just what's currently inside the frame.
 function AdjustStep({
+  locale,
   imageUrl,
   targetWidth,
   targetHeight,
@@ -498,6 +597,7 @@ function AdjustStep({
   onCancel,
   onApply,
 }: {
+  locale: Locale;
   imageUrl: string;
   targetWidth: number;
   targetHeight: number;
@@ -507,6 +607,7 @@ function AdjustStep({
   onCancel: () => void;
   onApply: (crop: CropRect) => void;
 }) {
+  const t = getDict(locale).tool;
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [selection, setSelection] = useState<SelectionBox | null>(null);
   const dragRef = useRef<
@@ -544,7 +645,7 @@ function AdjustStep({
     return (
       <div className="flex flex-1 items-center justify-center min-h-[220px]">
         <Text as="p" variant="body-small" color="gray-muted">
-          Loading image…
+          {t.loadingImage}
         </Text>
       </div>
     );
@@ -707,38 +808,62 @@ function AdjustStep({
 
       <div className="flex items-center justify-between -mt-2">
         <Text as="p" variant="body-small" color="gray-muted">
-          Drag the box to reposition, corners to resize
+          {t.dragToReposition}
         </Text>
         <button
           type="button"
           onClick={handleReset}
           className="inline-flex items-center gap-1 text-xs font-semibold text-text-gray-muted hover:text-brand transition-colors"
         >
-          <ResetIcon /> Reset
+          <ResetIcon /> {t.reset}
         </button>
       </div>
 
       <div className="flex gap-2 mt-auto">
         <Button variant="outlined" color="gray" fullWidth sx={{ borderRadius: "50px" }} onClick={onCancel}>
-          Cancel
+          {t.cancel}
         </Button>
         <Button fullWidth sx={{ borderRadius: "50px" }} onClick={handleApply}>
-          Apply &amp; Optimize
+          {t.applyOptimize}
         </Button>
       </div>
     </div>
   );
 }
 
+// No "custom" here — the Custom Size tool was removed to match the
+// reference site, which has no equivalent. Left as a valid PresetKey/preset
+// definition (unused, unreachable) rather than ripped out of buildPresets/
+// isEditablePreset/downloadFilename, since nothing else in this file
+// branches on its absence.
+const ALL_PRESET_KEYS: PresetKey[] = ["photo", "signature", "draw", "thumb"];
+
 interface ResizeImageToolProps {
   photoSpec?: ImageSpec;
   signatureSpec?: ImageSpec;
-  /** Which preset tile is active on first render — lets a dedicated tool page (e.g. "/custom", "/signature-compressor") open straight into the relevant mode instead of always defaulting to Photo. */
+  /** Which preset tile is active on first render — lets a dedicated tool page (e.g. "/signature-compressor") open straight into the relevant mode instead of always defaulting to Photo. */
   defaultPreset?: PresetKey;
+  /** Restricts which document-type tiles render — e.g. an exam spoke page only lists Photo + Signature, since that's the only pair resizerExams.ts actually has verified specs for. Defaults to every preset (the general hub page). */
+  allowedPresets?: PresetKey[];
+  /** Hides the "Document type" tile grid entirely — the Add Name & Date page is its own dedicated single-purpose form in the reference, not a mode picked from a tile grid. Defaults to shown. */
+  showPresetPicker?: boolean;
+  locale?: Locale;
 }
 
-export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPreset = "photo" }: ResizeImageToolProps) {
-  const PRESETS = buildPresets(photoSpec, signatureSpec);
+export default function ResizeImageTool({
+  photoSpec,
+  signatureSpec,
+  defaultPreset = "photo",
+  allowedPresets = ALL_PRESET_KEYS,
+  showPresetPicker = true,
+  locale = "en",
+}: ResizeImageToolProps) {
+  const t = getDict(locale).tool;
+  const PRESETS = buildPresets(locale, photoSpec, signatureSpec);
+  const visiblePresetEntries = (Object.entries(PRESETS) as [PresetKey, Preset][]).filter(([key]) =>
+    allowedPresets.includes(key),
+  );
+  const processingStatusMessages = getProcessingStatusMessages(locale);
 
   const [preset, setPreset] = useState<PresetKey>(defaultPreset);
   const [width, setWidth] = useState(PRESETS[defaultPreset].width);
@@ -748,6 +873,12 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
   const [unit, setUnit] = useState<"px" | "cm">("px");
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
+  const [includeDate, setIncludeDate] = useState(false);
+  // "Add Name & Date" only (preset === "signature") — off by default, matching
+  // the reference tool: keep the photo at its original uploaded dimensions
+  // and skip the crop step entirely, rather than forcing it into a fixed
+  // size the way every other preset does.
+  const [resizeEnabled, setResizeEnabled] = useState(false);
   const [signatureMode, setSignatureMode] = useState<"draw" | "upload">("draw");
 
   // Live on Column 1 (not inside the crop screen) so they're visible — and
@@ -787,8 +918,8 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
       return;
     }
     const interval = setInterval(() => {
-      setStatusIndex((i) => Math.min(i + 1, PROCESSING_STATUS_MESSAGES.length - 1));
-    }, MIN_PROCESSING_MS / PROCESSING_STATUS_MESSAGES.length);
+      setStatusIndex((i) => Math.min(i + 1, processingStatusMessages.length - 1));
+    }, MIN_PROCESSING_MS / processingStatusMessages.length);
     return () => clearInterval(interval);
   }, [step]);
 
@@ -805,39 +936,48 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
     if (key !== "signature") {
       setStampName("");
       setStampDate("");
+      setIncludeDate(false);
+      setResizeEnabled(false);
     }
     if (key === "draw") setSignatureMode("draw");
   };
 
   const runCompress = useCallback(
-    async (targetFile: File, crop: CropRect) => {
+    // `dims` overrides width/height for this one call without waiting on a
+    // state update to flush first — used by the Add Name & Date "keep
+    // original dimensions" path, which learns the real size (the uploaded
+    // photo's own) only moments before it needs to compress with it.
+    async (targetFile: File, crop: CropRect, dims?: { width: number; height: number }) => {
+      const outWidth = dims?.width ?? width;
+      const outHeight = dims?.height ?? height;
       setStep("processing");
       setError(null);
       try {
         const [blob] = await Promise.all([
           resizeAndCompress(
             targetFile,
-            width,
-            height,
+            outWidth,
+            outHeight,
             maxKB,
             crop,
             { brightness, contrast, cleanup: preset === "draw" ? cleanup : 0 },
+            { readError: t.errorReadImage, processError: t.errorProcessImage },
             preset === "signature" ? stampName : undefined,
-            preset === "signature" ? stampDate : undefined,
+            preset === "signature" && includeDate ? stampDate : undefined,
           ),
           delay(MIN_PROCESSING_MS),
         ]);
         setResult((prev) => {
           if (prev) URL.revokeObjectURL(prev.url);
-          return { url: URL.createObjectURL(blob), blob, width, height };
+          return { url: URL.createObjectURL(blob), blob, width: outWidth, height: outHeight };
         });
         setStep("result");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+        setError(err instanceof Error ? err.message : t.errorGeneric);
         setStep("configure");
       }
     },
-    [width, height, maxKB, preset, stampName, stampDate, brightness, contrast, cleanup],
+    [width, height, maxKB, preset, stampName, stampDate, includeDate, brightness, contrast, cleanup, t],
   );
 
   const selectFile = useCallback(
@@ -854,33 +994,56 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
             type: "image/jpeg",
           });
         } catch {
-          setError("Could not convert this HEIC photo. Please try a JPG or PNG instead.");
+          setError(t.errorHeic);
           return;
         }
       } else if (!ACCEPTED_TYPES.includes(selected.type)) {
-        setError("Please choose a JPG, PNG, WEBP, or HEIC image.");
+        setError(t.errorFileType);
         return;
       }
 
       if (workingFile.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        setError(`Please choose an image under ${MAX_UPLOAD_MB}MB.`);
+        setError(t.errorFileSize(MAX_UPLOAD_MB));
         return;
       }
-      if (width < 1 || height < 1 || maxKB < 1) {
-        setError("Enter valid width, height, and size values.");
+
+      // Add Name & Date with "Resize Settings" off: no target dimensions to
+      // validate or crop to — the photo keeps whatever size it already is.
+      const skipCrop = preset === "signature" && !resizeEnabled;
+
+      if (!skipCrop && (width < 1 || height < 1 || maxKB < 1)) {
+        setError(t.errorInvalidValues);
         return;
       }
 
       if (originalPreviewUrl) URL.revokeObjectURL(originalPreviewUrl);
       setFile(workingFile);
-      setOriginalPreviewUrl(URL.createObjectURL(workingFile));
+      const previewUrl = URL.createObjectURL(workingFile);
+      setOriginalPreviewUrl(previewUrl);
       setBrightness(0);
       setContrast(0);
       setCleanup(60);
+
+      if (skipCrop) {
+        try {
+          const img = await loadImage(previewUrl, t.errorReadImage);
+          const dims = { width: img.naturalWidth, height: img.naturalHeight };
+          const crop: CropRect = { sx: 0, sy: 0, sw: dims.width, sh: dims.height };
+          setWidth(dims.width);
+          setHeight(dims.height);
+          setLastCrop(crop);
+          await runCompress(workingFile, crop, dims);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : t.errorReadImage);
+          setStep("configure");
+        }
+        return;
+      }
+
       setLastCrop(null);
       setStep("adjust");
     },
-    [width, height, maxKB, originalPreviewUrl],
+    [width, height, maxKB, originalPreviewUrl, preset, resizeEnabled, t, runCompress],
   );
 
   const handleAdjustApply = (crop: CropRect) => {
@@ -907,7 +1070,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
     }, 400);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stampName, stampDate, brightness, contrast, cleanup]);
+  }, [stampName, stampDate, includeDate, brightness, contrast, cleanup]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -965,10 +1128,14 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
 
   const originalSizeKB = file ? Math.round(file.size / 1024) : 0;
   const resultSizeKB = result ? Math.round(result.blob.size / 1024) : 0;
-  const withinTarget = result ? resultSizeKB <= maxKB && resultSizeKB >= minKB : false;
+  // Add Name & Date has no Min/Max KB fields to be "outside the range" of —
+  // there's nothing on screen for that warning to point the user back to.
+  const withinTarget = result ? (preset === "signature" || (resultSizeKB <= maxKB && resultSizeKB >= minKB)) : false;
 
-  const isEditablePreset = preset === "custom" || preset === "signature" || preset === "draw";
-  const hasStamp = preset === "signature" && Boolean(stampName.trim() || stampDate);
+  // "signature" (Add Name & Date) has its own bespoke Column 1 layout below
+  // instead of the shared editable-fields block custom/draw use.
+  const isEditablePreset = preset === "custom" || preset === "draw";
+  const hasStamp = preset === "signature" && Boolean(stampName.trim() || (includeDate && stampDate));
   const cropTargetHeight = hasStamp ? height - getStampStripHeight(height) : height;
 
   const widthDisplay = unit === "cm" ? Math.round((width / PX_PER_CM) * 100) / 100 : width;
@@ -991,33 +1158,156 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               1
             </div>
             <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
-              Configuration
+              {t.configuration}
             </Text>
           </div>
 
-          <div className="space-y-1.5">
-            <Text as="label" variant="body-small" weight="semibold" color="gray-muted">
-              Document type
-            </Text>
-            <div className="grid grid-cols-2 gap-2">
-              {(Object.entries(PRESETS) as [PresetKey, Preset][]).map(([key, p]) => (
-                <PresetTile
-                  key={key}
-                  active={preset === key}
-                  label={p.label}
-                  sublabel={p.sublabel}
-                  onClick={() => applyPreset(key)}
-                />
-              ))}
+          {showPresetPicker && (
+            <div className="space-y-1.5">
+              <Text as="label" variant="body-small" weight="semibold" color="gray-muted">
+                {t.documentType}
+              </Text>
+              <div className="grid grid-cols-2 gap-3">
+                {visiblePresetEntries.map(([key, p]) => (
+                  <PresetTile
+                    key={key}
+                    active={preset === key}
+                    icon={PRESET_ICONS[key]}
+                    label={p.label}
+                    sublabel={p.sublabel}
+                    onClick={() => applyPreset(key)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {isEditablePreset ? (
+          {preset === "signature" && (
+            <div className="rounded-xl border border-[var(--color-border-gray-subtle)] bg-brand/5 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <CheckBadgeIcon />
+                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                    {getDict(locale).modeTabs.addNameDate}
+                  </Text>
+                </div>
+                <Text as="p" variant="body-small" color="gray-muted">
+                  {t.nameOrDateRequired}
+                </Text>
+              </div>
+
+              <div className="space-y-1.5">
+                <Text as="label" variant="body-small" color="gray-muted">
+                  {t.nameBlockLettersLabel}
+                </Text>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-gray-muted pointer-events-none">
+                    <PersonFieldIcon />
+                  </span>
+                  <input
+                    type="text"
+                    value={stampName}
+                    onChange={(e) => setStampName(e.target.value)}
+                    placeholder={t.namePlaceholder}
+                    maxLength={30}
+                    style={{ textTransform: "uppercase" }}
+                    className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] bg-white pl-9 pr-3 body-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Text as="label" variant="body-small" color="gray-muted">
+                    {t.dateOfPhotoLabel}
+                  </Text>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeDate}
+                      onChange={(e) => setIncludeDate(e.target.checked)}
+                      className="accent-brand"
+                    />
+                    <Text as="span" variant="body-small" color="gray-muted">
+                      {t.includeDateLabel}
+                    </Text>
+                  </label>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-gray-muted pointer-events-none">
+                    <CalendarFieldIcon />
+                  </span>
+                  <input
+                    type="date"
+                    value={stampDate}
+                    onChange={(e) => setStampDate(e.target.value)}
+                    disabled={!includeDate}
+                    className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] bg-white pl-9 pr-3 body-medium disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {preset === "signature" && (
+            <div className="rounded-xl border border-dashed border-[var(--color-border-gray-subtle)] p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <ResizeSettingsIcon />
+                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                    {t.resizeSettingsLabel}
+                  </Text>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-[var(--color-gray-bg-soft)] text-text-gray-muted">
+                    {t.optionalBadge}
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={resizeEnabled}
+                  onChange={(e) => setResizeEnabled(e.target.checked)}
+                  className="accent-brand"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Text as="label" variant="body-small" color="gray-muted">
+                    {t.width("px")}
+                  </Text>
+                  <input
+                    type="number"
+                    value={width}
+                    disabled={!resizeEnabled}
+                    onChange={(e) => setWidth(Number(e.target.value) || 0)}
+                    placeholder={t.width("px")}
+                    className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Text as="label" variant="body-small" color="gray-muted">
+                    {t.height("px")}
+                  </Text>
+                  <input
+                    type="number"
+                    value={height}
+                    disabled={!resizeEnabled}
+                    onChange={(e) => setHeight(Number(e.target.value) || 0)}
+                    placeholder={t.height("px")}
+                    className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium disabled:opacity-50"
+                  />
+                </div>
+              </div>
+              <Text as="p" variant="body-small" color="gray-muted">
+                {t.keepOriginalDimensionsHint}
+              </Text>
+            </div>
+          )}
+
+          {preset !== "signature" && (isEditablePreset ? (
             <div className="space-y-3">
               {preset === "custom" && (
                 <div className="flex items-center gap-2">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Unit
+                    {t.unit}
                   </Text>
                   <div className="flex rounded-full border border-[var(--color-border-gray-subtle)] p-0.5">
                     {(["px", "cm"] as const).map((u) => (
@@ -1038,7 +1328,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Width ({unit})
+                    {t.width(unit)}
                   </Text>
                   <input
                     type="number"
@@ -1049,7 +1339,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 </div>
                 <div className="space-y-1.5">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Height ({unit})
+                    {t.height(unit)}
                   </Text>
                   <input
                     type="number"
@@ -1062,7 +1352,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Min size (KB)
+                    {t.minSizeKB}
                   </Text>
                   <input
                     type="number"
@@ -1073,7 +1363,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 </div>
                 <div className="space-y-1.5">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Max size (KB)
+                    {t.maxSizeKB}
                   </Text>
                   <input
                     type="number"
@@ -1097,13 +1387,13 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 <div className="flex items-center gap-1.5">
                   <InfoIcon />
                   <Text as="p" variant="body-small" weight="semibold" color="gray-normal">
-                    Image Requirements
+                    {t.imageRequirements}
                   </Text>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
                     <Text as="p" variant="body-small" color="gray-muted">
-                      Dimensions
+                      {t.dimensions}
                     </Text>
                     <Text as="p" variant="body-small" weight="semibold" color="gray-normal">
                       {width}×{height}
@@ -1111,7 +1401,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                   </div>
                   <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
                     <Text as="p" variant="body-small" color="gray-muted">
-                      Size
+                      {t.size}
                     </Text>
                     <Text as="p" variant="body-small" weight="semibold" color="gray-normal">
                       {minKB}–{maxKB}KB
@@ -1119,7 +1409,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                   </div>
                   <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
                     <Text as="p" variant="body-small" color="gray-muted">
-                      Format
+                      {t.format}
                     </Text>
                     <Text as="p" variant="body-small" weight="semibold" color="gray-normal">
                       JPG
@@ -1128,7 +1418,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 </div>
               </motion.div>
             </AnimatePresence>
-          )}
+          ))}
 
           {(step === "adjust" || step === "result") && (
             <div className="space-y-3 rounded-xl border border-[var(--color-border-gray-subtle)] p-3">
@@ -1139,12 +1429,12 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 color="gray-muted"
                 className="uppercase tracking-wide"
               >
-                Image Adjustments
+                {t.imageAdjustments}
               </Text>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Brightness
+                    {t.brightness}
                   </Text>
                   <span className="px-2 py-0.5 rounded-full text-xs bg-brand/8 text-[var(--color-primary-strong)] font-semibold">
                     {brightness}
@@ -1162,7 +1452,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Text as="label" variant="body-small" color="gray-muted">
-                    Contrast
+                    {t.contrast}
                   </Text>
                   <span className="px-2 py-0.5 rounded-full text-xs bg-brand/8 text-[var(--color-primary-strong)] font-semibold">
                     {contrast}
@@ -1181,7 +1471,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Text as="label" variant="body-small" color="gray-muted">
-                      Signature Clean Up
+                      {t.signatureCleanUp}
                     </Text>
                     <span className="px-2 py-0.5 rounded-full text-xs bg-brand/8 text-[var(--color-primary-strong)] font-semibold">
                       {cleanup}
@@ -1196,46 +1486,17 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                     className="w-full accent-brand"
                   />
                   <Text as="p" variant="body-small" color="gray-muted">
-                    Whitens paper shadows and darkens faint ink.
+                    {t.signatureCleanUpHint}
                   </Text>
                 </div>
               )}
             </div>
           )}
 
-          {preset === "signature" && (
-            <div className="space-y-1.5">
-              <Text as="label" variant="body-small" weight="semibold" color="gray-muted">
-                Add name &amp; date (optional)
-              </Text>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={stampName}
-                  onChange={(e) => setStampName(e.target.value)}
-                  placeholder="e.g. RAHUL SHARMA"
-                  maxLength={30}
-                  style={{ textTransform: "uppercase" }}
-                  className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium"
-                />
-                <input
-                  type="date"
-                  value={stampDate}
-                  onChange={(e) => setStampDate(e.target.value)}
-                  className="h-[44px] w-full rounded-lg border border-[var(--color-border-gray-subtle)] px-3 body-medium"
-                />
-              </div>
-              <Text as="p" variant="body-small" color="gray-muted">
-                Required by SSC, UPSC, NEET and other boards — printed in block letters at the bottom, inside the
-                same {width}×{height}px size.
-              </Text>
-            </div>
-          )}
-
           <div className="flex-1" />
           <hr className="border-[var(--color-border-gray-subtle)]" />
           <Text as="p" variant="body-small" color="gray-muted" className="italic">
-            Privacy First: your photos are processed locally in your browser and never uploaded.
+            {t.privacyFirst}
           </Text>
         </div>
 
@@ -1246,7 +1507,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               2
             </div>
             <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
-              {step === "adjust" ? "Crop & Adjust" : step === "result" ? "Your optimized image" : "Upload & Process"}
+              {step === "adjust" ? t.cropAdjust : step === "result" ? t.yourOptimizedImage : t.uploadProcess}
             </Text>
           </div>
 
@@ -1263,7 +1524,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                         : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
                     }`}
                   >
-                    Draw signature
+                    {t.drawSignature}
                   </button>
                   <button
                     type="button"
@@ -1274,13 +1535,14 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                         : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
                     }`}
                   >
-                    Upload image
+                    {t.uploadImage}
                   </button>
                 </div>
               )}
 
               {preset === "draw" && signatureMode === "draw" ? (
                 <SignaturePad
+                  locale={locale}
                   onUse={(blob) => selectFile(new File([blob], "signature.png", { type: "image/png" }))}
                 />
               ) : (
@@ -1305,10 +1567,10 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                     <UploadIcon />
                   </motion.div>
                   <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                    Click to upload or drag and drop
+                    {t.clickToUpload}
                   </Text>
                   <Text as="p" variant="body-small" color="gray-muted">
-                    JPG, PNG, WEBP, or HEIC up to {MAX_UPLOAD_MB}MB
+                    {t.acceptedFormats(MAX_UPLOAD_MB)}
                   </Text>
                 </div>
               )}
@@ -1325,6 +1587,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
 
           {step === "adjust" && originalPreviewUrl && (
             <AdjustStep
+              locale={locale}
               imageUrl={originalPreviewUrl}
               targetWidth={width}
               targetHeight={cropTargetHeight}
@@ -1350,7 +1613,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
               </div>
 
               <Text as="p" variant="body-medium" color="gray-muted">
-                {PROCESSING_STATUS_MESSAGES[statusIndex]}
+                {processingStatusMessages[statusIndex]}
               </Text>
 
               <style>{`
@@ -1371,7 +1634,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                 <div className="flex flex-col gap-1.5">
                   <div className="relative rounded-lg overflow-hidden border border-[var(--color-border-gray-subtle)] bg-[var(--color-gray-bg-soft)]">
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-black/60 text-white">
-                      Original
+                      {t.original}
                     </span>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -1395,7 +1658,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                         withinTarget ? "bg-[var(--color-success-strong)]" : "bg-[var(--color-warning-strong)]"
                       }`}
                     >
-                      {withinTarget ? "Ready" : "Check size"}
+                      {withinTarget ? t.ready : t.checkSize}
                     </span>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={result.url} alt="Optimized" className="w-full aspect-square object-contain" />
@@ -1413,27 +1676,25 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
                     : "bg-warning-strong/10 text-[var(--color-warning-strong)]"
                 }`}
               >
-                {withinTarget
-                  ? "✓ Perfect Match! Image meets all exam requirements."
-                  : "⚠ Outside target range — try adjusting the sliders above."}
+                {withinTarget ? t.perfectMatch : t.outsideTarget}
               </div>
 
               <Button fullWidth sx={{ borderRadius: "50px" }} onClick={handleDownload}>
-                Download Image
+                {t.downloadImage}
               </Button>
 
               <Text as="p" variant="body-small" color="gray-muted" className="text-center -mt-2">
-                Auto-renamed to{" "}
-                <span className="font-semibold text-[var(--color-success-strong)]">{downloadFilename}</span> for
-                error-free portal upload.
+                {t.autoRenamedPrefix}{" "}
+                <span className="font-semibold text-[var(--color-success-strong)]">{downloadFilename}</span>{" "}
+                {t.autoRenamedSuffix}
               </Text>
 
               <div className="flex gap-2">
                 <Button variant="outlined" color="gray" fullWidth sx={{ borderRadius: "50px" }} onClick={handleShare}>
-                  {shareCopied ? "Copied!" : "Share"}
+                  {shareCopied ? t.copied : t.share}
                 </Button>
                 <Button variant="outlined" color="gray" fullWidth sx={{ borderRadius: "50px" }} onClick={handleReset}>
-                  Process Another
+                  {t.processAnother}
                 </Button>
               </div>
             </motion.div>
@@ -1444,7 +1705,7 @@ export default function ResizeImageTool({ photoSpec, signatureSpec, defaultPrese
           <div className="flex-1" />
           <hr className="border-[var(--color-border-gray-subtle)]" />
           <Text as="p" variant="body-small" color="gray-muted" className="italic">
-            Fast &amp; Secure: image processing happens instantly on your device. No waiting, no uploads.
+            {t.fastSecure}
           </Text>
         </div>
       </Card>
@@ -1471,6 +1732,47 @@ function InfoIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 text-brand">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
       <path d="M12 11v6M12 8v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckBadgeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-brand">
+      <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity="0.15" />
+      <path d="M8 12.5l2.5 2.5L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PersonFieldIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4.5 20c1.2-4 4.2-6 7.5-6s6.3 2 7.5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CalendarFieldIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ResizeSettingsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-brand">
+      <path
+        d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M12 12v9M12 12L4 7.5M12 12l8-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

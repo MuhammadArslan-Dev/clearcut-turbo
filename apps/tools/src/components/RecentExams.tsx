@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Text from "@clearcut/ui/text";
 import ExamCard from "./ExamCard";
 import { getRecentExams, RecentExamEntry } from "@/lib/recentExams";
+import { getDict, Locale } from "@/lib/dictionary";
 
 /**
  * Reads localStorage on mount (so it renders nothing during SSR/first paint
@@ -12,7 +13,8 @@ import { getRecentExams, RecentExamEntry } from "@/lib/recentExams";
  * a Zustand store) and shows a quick-access row for a returning visitor.
  * Nothing renders if the visitor has no history yet.
  */
-export default function RecentExams() {
+export default function RecentExams({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).recentExams;
   const [entries, setEntries] = useState<RecentExamEntry[]>([]);
 
   useEffect(() => {
@@ -24,11 +26,11 @@ export default function RecentExams() {
   return (
     <div className="max-w-[1080px] mx-auto px-2 mb-10">
       <Text as="h2" variant="body-large" weight="semibold" color="gray-normal" className="mb-3">
-        Recently viewed
+        {t.title}
       </Text>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {entries.map((exam) => (
-          <ExamCard key={exam.slug} exam={exam} />
+          <ExamCard key={exam.slug} exam={exam} locale={locale} />
         ))}
       </div>
     </div>

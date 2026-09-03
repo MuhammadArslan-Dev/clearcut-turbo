@@ -1,6 +1,7 @@
-import Link from "next/link";
 import Text from "@clearcut/ui/text";
 import { ResizerExamSpec } from "@/lib/resizerExams";
+import { Locale } from "@/lib/dictionary";
+import LocaleLink from "./LocaleLink";
 
 function ExamCardIcon() {
   return (
@@ -38,9 +39,10 @@ type ExamCardData = Pick<ResizerExamSpec, "slug" | "shortName" | "photoSpec">;
 // the right card instead of using the generic hub tool. Shared by the
 // category pages, the hub's search results, and the recent-exams row, so a
 // design change here lands everywhere instead of drifting per call site.
-export default function ExamCard({ exam }: { exam: ExamCardData }) {
+export default function ExamCard({ exam, locale = "en" }: { exam: ExamCardData; locale?: Locale }) {
   return (
-    <Link
+    <LocaleLink
+      locale={locale}
       href={`/${exam.slug}`}
       className="group relative flex flex-col gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:border-brand hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] hover:-translate-y-1"
     >
@@ -67,6 +69,6 @@ export default function ExamCard({ exam }: { exam: ExamCardData }) {
           {exam.photoSpec.widthPx}×{exam.photoSpec.heightPx}px · {exam.photoSpec.minKB}–{exam.photoSpec.maxKB}KB
         </span>
       </div>
-    </Link>
+    </LocaleLink>
   );
 }

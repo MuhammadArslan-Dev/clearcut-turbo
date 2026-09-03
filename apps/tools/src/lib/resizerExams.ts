@@ -43,8 +43,53 @@ const GENERIC_SIGNATURE_SPEC: Spec = { widthPx: 140, heightPx: 60, minKB: 10, ma
  * verified — inventing a specific cutoff here would risk misleading a real
  * candidate the same way a wrong photo spec would.
  */
-export function getExamFaqs(examShortName: string, photoSpec: Spec = GENERIC_PHOTO_SPEC, signatureSpec: Spec = GENERIC_SIGNATURE_SPEC) {
+export function getExamFaqs(
+  examShortName: string,
+  photoSpec: Spec = GENERIC_PHOTO_SPEC,
+  signatureSpec: Spec = GENERIC_SIGNATURE_SPEC,
+  locale: "en" | "hi" = "en",
+) {
   const isPlaceholder = photoSpec === GENERIC_PHOTO_SPEC;
+
+  if (locale === "hi") {
+    return [
+      {
+        q: `${examShortName} के लिए आवश्यक फ़ोटो साइज़ क्या है?`,
+        a: isPlaceholder
+          ? `सटीक आयाम और फ़ाइल साइज़ के लिए आधिकारिक ${examShortName} नोटिफिकेशन देखें। इस टूल का डिफ़ॉल्ट प्रीसेट (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) एक सामान्य पासपोर्ट-फ़ोटो आवश्यकता है, अभी तक ${examShortName}-विशिष्ट पुष्ट आंकड़ा नहीं है।`
+          : `यह टूल ${examShortName} के लिए ${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB पर पहले से कॉन्फ़िगर है। सबमिट करने से पहले हमेशा नवीनतम आधिकारिक ${examShortName} नोटिफिकेशन से जांच लें, क्योंकि परीक्षा प्राधिकरण कभी-कभी ये आवश्यकताएं बदल देते हैं।`,
+      },
+      {
+        q: `क्या मैं इस टूल का उपयोग अपने ${examShortName} हस्ताक्षर के लिए भी कर सकता हूं?`,
+        a: "हां, हस्ताक्षर प्रीसेट चुनें (या सीधे एक बनाएं) और यह फ़ोटो टूल की तरह ही रिसाइज़/कंप्रेस करता है।",
+      },
+      {
+        q: "क्या मेरी फ़ोटो कहीं अपलोड होती है?",
+        a: "नहीं। रिसाइज़िंग और कंप्रेशन पूरी तरह आपके ब्राउज़र में Canvas API का उपयोग करके होता है। फ़ाइल आपकी डिवाइस से कभी बाहर नहीं जाती।",
+      },
+      {
+        q: `${examShortName} परीक्षा के लिए नोट्स कहां मिलेंगे?`,
+        a: `यह टूल केवल आपके आवेदन फॉर्म के लिए फ़ोटो और हस्ताक्षर रिसाइज़िंग संभालता है। ${examShortName} स्टडी नोट्स, प्रैक्टिस टेस्ट और पिछले वर्षों के प्रश्नों के लिए, clearcutoff.in पर Clear Cutoff ऐप देखें।`,
+      },
+      {
+        q: `${examShortName} फॉर्म के लिए आवश्यक इमेज साइज़ क्या है?`,
+        a: `${examShortName} आवेदन फॉर्म में आमतौर पर दो इमेज चाहिए होती हैं: एक फ़ोटो (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) और एक हस्ताक्षर (${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB)। दोनों को अपने आप रिसाइज़ और कंप्रेस करने के लिए ऊपर दिए प्रीसेट उपयोग करें।`,
+      },
+      {
+        q: `${examShortName} के लिए हस्ताक्षर इमेज साइज़ क्या है?`,
+        a: `इस टूल में ${examShortName} हस्ताक्षर प्रीसेट ${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB है। सबमिट करने से पहले हमेशा नवीनतम आधिकारिक ${examShortName} नोटिफिकेशन से पुष्टि करें।`,
+      },
+      {
+        q: `${examShortName} के लिए न्यूनतम क्वालिफाइंग अंक क्या हैं?`,
+        a: `क्वालिफाइंग अंक श्रेणी (General/OBC/EWS/SC/ST) के अनुसार अलग-अलग होते हैं और हर चक्र में आधिकारिक संचालन निकाय द्वारा तय किए जाते हैं। किसी निश्चित संख्या पर भरोसा करने के बजाय हमेशा नवीनतम आधिकारिक ${examShortName} नोटिफिकेशन या परिणाम में सटीक कटऑफ देखें।`,
+      },
+      {
+        q: `${examShortName} के लिए फ़ोटो रिसाइज़ करने का सबसे अच्छा ऐप या टूल कौन सा है?`,
+        a: `Clear Cutoff का मुफ़्त फ़ोटो और हस्ताक्षर रिसाइज़र (यह टूल) खासतौर पर परीक्षा आवेदन फॉर्म के लिए बनाया गया है। यह सटीक ${examShortName} आयाम और फ़ाइल-साइज़ सीमाएं अपने आप लागू करता है, पूरी तरह आपके ब्राउज़र में काम करता है, और किसी साइनअप या डाउनलोड की ज़रूरत नहीं।`,
+      },
+    ];
+  }
+
   return [
     {
       q: `What is the required photo size for ${examShortName}?`,

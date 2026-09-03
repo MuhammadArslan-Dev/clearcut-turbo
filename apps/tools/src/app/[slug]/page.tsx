@@ -26,26 +26,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const exam = getResizerExamBySlug(slug);
   if (exam) {
-    const title = `${exam.shortName} Photo & Signature Resizer — Free Tool | Clear Cutoff`;
-    const description = `Resize and compress your photo or signature to ${exam.shortName} (${exam.fullName}) application-form specs — free, private, processed entirely in your browser.`;
+    const title = `${exam.shortName} Photo & Signature Resizer - Free Tool | Clear Cutoff`;
+    const description = `Resize and compress your photo or signature to ${exam.shortName} (${exam.fullName}) application-form specs. Free, private, processed entirely in your browser.`;
     const url = `https://clearcutoff.in/tools/resizer/${exam.slug}`;
     return {
       title,
       description,
-      alternates: { canonical: url },
+      alternates: {
+        canonical: url,
+        languages: { en: url, hi: `https://clearcutoff.in/hi/tools/resizer/${exam.slug}` },
+      },
       openGraph: { title, description, url, siteName: "Clear Cutoff", type: "website" },
     };
   }
 
   const category = getResizerCategoryBySlug(slug);
   if (category) {
-    const title = `${category.label} — Photo & Signature Resizer | Clear Cutoff`;
-    const description = `Resize and compress your photo or signature for any ${category.label} exam — free, private, processed entirely in your browser.`;
+    const title = `${category.label}: Photo & Signature Resizer | Clear Cutoff`;
+    const description = `Resize and compress your photo or signature for any ${category.label} exam. Free, private, processed entirely in your browser.`;
     const url = `https://clearcutoff.in/tools/resizer/${category.slug}`;
     return {
       title,
       description,
-      alternates: { canonical: url },
+      alternates: {
+        canonical: url,
+        languages: { en: url, hi: `https://clearcutoff.in/hi/tools/resizer/${category.slug}` },
+      },
       openGraph: { title, description, url, siteName: "Clear Cutoff", type: "website" },
     };
   }
