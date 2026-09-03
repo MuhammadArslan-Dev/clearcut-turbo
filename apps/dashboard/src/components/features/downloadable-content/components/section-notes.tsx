@@ -15,7 +15,6 @@ import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStor
 import { useTranslations } from "next-intl";
 import { LockIcon } from "@/components/ui/icons";
 import { useRouter } from "@/i18n/navigation";
-import { useLocale } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotesIndexStore } from "../store/useNotesIndexStore";
 
@@ -31,7 +30,6 @@ export default function SectionNotes({
     courseType?: string;
 }) {
     const router = useRouter();
-    const locale = useLocale();
     const t = useTranslations();
     const { course } = useGetCurrentCourseStore();
     const { open: openPaywall } = usePaywallsStore();
@@ -209,7 +207,7 @@ export default function SectionNotes({
                                             text: "Start Learning",
                                             onClick: () =>
                                                 router.push(
-                                                    `/${locale}/${examId}/preparation?section=${sectionId}&chapter=${chapter.id}&topic=${targetTopicId}`,
+                                                    `/${examId}/preparation?section=${sectionId}&chapter=${chapter.id}&topic=${targetTopicId}`,
                                                 ),
                                         }}
                                         notes={
