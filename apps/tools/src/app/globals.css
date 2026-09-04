@@ -30,3 +30,14 @@
 	font-weight: calc(500 + var(--hi-weight-adjust));
 }
 
+/* Horizontally-scrollable rows (category filter chips, mobile tab bars)
+   scroll by swipe/drag/click already — the native scrollbar track under
+   them is visual noise, not a control anyone needs. */
+.hide-scrollbar {
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* legacy Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+	display: none; /* Chrome, Safari */
+}
+

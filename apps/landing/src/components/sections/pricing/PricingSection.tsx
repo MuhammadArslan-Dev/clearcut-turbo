@@ -97,7 +97,7 @@ export default async function PricingSection({ bgColor, active = true, locale = 
     <div className={clsx(bgColor)} style={{ background: bgColor }}>
       <Section padding="py-ym-section md:py-yd-section px-3 scroll-mt-16 md:scroll-mt-12" sectionId="pricing-section">
         <div className="flex flex-col gap-14">
-          <div className="w-full max-w-[1000px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-10 items-center px-2">
+          <div className="w-full max-w-[1000px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-10 md:items-stretch px-2">
             <div className="flex flex-col gap-4 order-2 md:order-1">
               <div className="flex flex-col gap-1">
                 <div className="relative inline-block w-fit pr-8 pt-2">
@@ -135,7 +135,7 @@ export default async function PricingSection({ bgColor, active = true, locale = 
               </div>
             </div>
 
-            <div className="order-1 md:order-2 flex justify-center md:justify-end">
+            <div className="order-1 md:order-2 flex justify-center md:justify-end md:items-stretch">
               <PricingCard
                 badgeText={t.badgeText}
                 priceNote={t.priceNote}

@@ -4,35 +4,43 @@ export interface Env {
 	PAGES_ORIGIN: string;
 }
 
-const PREFIX = "/tools/resizer";
-// Hindi's PUBLIC url is /hi/tools/resizer/* (locale outermost), but Next's
-// basePath (next.config.ts) is still just "/tools/resizer" for the whole
-// app — its /hi/* route tree (app/hi/...) is exported the same way any
-// other route is, under that one basePath. So this maps the public HI url
-// to the SAME upstream path the app already serves at /tools/resizer/hi/*;
-// no separate build or basePath needed. The components render plain <a>
-// tags (not next/link) for Hindi-locale navigation specifically because
-// next/link would auto-prepend the "/tools/resizer" basePath to a "/hi/..."
-// href, landing back on the old nested shape instead of this one — see
+// Covers every tool this app serves (resizer at /tools/resizer/*, the age
+// eligibility calculator at /tools/age-eligibility-calculator/*, ...) — the
+// prefix matches Next's basePath (next.config.ts), and each tool's own
+// route-folder name supplies the rest of the path, so a request like
+// "/tools/resizer/htet" strips down to upstream "/resizer/htet", which
+// mirrors that page's location in the Next app's route tree exactly.
+const PREFIX = "/tools";
+// Hindi is resizer-only right now, at public url /hi/tools/resizer/*
+// (locale outermost) — the age calculator has no Hindi copy yet. Next's
+// basePath is still just "/tools" for the whole app; its /hi/* route tree
+// (app/hi/resizer/...) is exported the same way any other route is, under
+// that one basePath. So this maps the public HI url to the upstream path
+// the app already serves the export at, "/hi/resizer/*"; no separate build
+// or basePath needed. The components render plain <a> tags (not next/link)
+// for Hindi-locale navigation specifically because next/link would
+// auto-prepend the "/tools" basePath to a "/hi/..." href, landing on
+// "/tools/hi/..." instead of the public "/hi/tools/resizer/..." shape — see
 // LocaleSwitcher.tsx.
-const HI_PREFIX = "/hi/tools/resizer";
+const HI_PREFIX = "/hi/tools";
 
-// Matches "/tools/resizer(/...)" and "/hi/tools/resizer(/...)". Returns the
-// upstream path to request from PAGES_ORIGIN, or null if this pathname
-// isn't ours.
+// Matches "/tools(/...)" and "/hi/tools(/...)". Returns the upstream path
+// to request from PAGES_ORIGIN, or null if this pathname isn't ours.
 function matchPath(pathname: string): string | null {
 	if (pathname === HI_PREFIX) return "/hi";
 	if (pathname.startsWith(HI_PREFIX + "/")) return "/hi" + pathname.slice(HI_PREFIX.length);
-	if (pathname === PREFIX) return "";
+	// Bare "/tools" (pathname === PREFIX) is intercepted by the fetch handler
+	// below before matchPath is ever called, so there's no branch for it
+	// here — every reachable path has a "/tools/<tool-name>/..." shape.
 	if (pathname.startsWith(PREFIX + "/")) return pathname.slice(PREFIX.length);
 	return null;
 }
 
 // Bare "/tools" has no app behind it — this Worker owns it directly and
 // renders a tiny index card (styled to match the resizer hub's own "More
-// tools" tiles in apps/tools/src/components/MoreTools.tsx) linking into the
-// one real tool at /tools/resizer. Add a new <a> card here if a second
-// standalone tool ever ships at its own /tools/* prefix.
+// tools" tiles in apps/tools/src/components/MoreTools.tsx) linking into
+// each real tool. Add a new <a> card here whenever another tool ships at
+// its own /tools/* route.
 const TOOLS_INDEX_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -105,6 +113,10 @@ const TOOLS_INDEX_HTML = `<!doctype html>
         <p class="card-title">Photo &amp; Signature Resizer</p>
         <p class="card-desc">Resize and compress photos or signatures to any exam's exact size &amp; KB limit.</p>
       </a>
+      <a class="card" href="/tools/age-eligibility-calculator">
+        <p class="card-title">Age Eligibility Calculator</p>
+        <p class="card-desc">Check your exact age and eligibility for CTET, HTET, UPTET, REET &amp; HPTET.</p>
+      </a>
     </div>
   </main>
 </body>
@@ -124,19 +136,19 @@ export default {
 			});
 		}
 
-		// Route is scoped to /tools, /tools/resizer(/*) and /hi/tools/resizer(/*) in
-		// wrangler.toml, so this should always match — kept as a safety net.
+		// Route is scoped to /tools, /tools/<tool>(/*) and /hi/tools/<tool>(/*)
+		// per-tool patterns in wrangler.toml, so this should always match —
+		// kept as a safety net.
 		const rest = matchPath(url.pathname);
 		if (rest === null) {
 			return fetch(request);
 		}
 
-		// next.config.ts sets basePath: '/tools/resizer', which only prefixes
-		// the *links/assets* Next emits — it does not move the static export
-		// into a /tools/resizer folder. out/ mirrors routes with no prefix at
-		// all: "/tools/resizer/htet" -> "/htet". Bare "/tools/resizer" (no
-		// trailing segment) maps to the site root.
-		const upstreamPath = rest === "" ? "/" : rest;
+		// next.config.ts sets basePath: '/tools', which only prefixes the
+		// *links/assets* Next emits — it does not move the static export into
+		// a /tools folder. out/ mirrors routes with no prefix at all:
+		// "/tools/resizer/htet" -> "/resizer/htet".
+		const upstreamPath = rest;
 
 		const upstreamUrl = new URL(env.PAGES_ORIGIN);
 		upstreamUrl.pathname = upstreamPath;
@@ -151,11 +163,21 @@ export default {
 		// Every request here is a live subrequest to the Pages origin —
 		// without this, that round-trip repeats for every visitor on every
 		// request. cacheEverything caches this subrequest's response at the
-		// edge for cacheTtl, so only the first visitor in a region pays the
-		// extra hop. Hashed /_next/static/* assets are cached for a year
-		// (safe: the filename changes whenever the content does); HTML pages
-		// get a short TTL so redeploys still show up quickly.
+		// edge, so only the first visitor in a region pays the extra hop.
+		// Hashed /_next/static/* assets are cached for a year (safe: the
+		// filename changes whenever the content does); HTML pages get a
+		// short TTL so redeploys still show up quickly.
+		//
+		// cacheTtlByStatus (not a flat cacheTtl) is deliberate: cacheEverything
+		// caches non-2xx responses too, and a flat long TTL previously cached a
+		// transient 404 (from a route added to this file before its matching
+		// wrangler.toml pattern had been deployed) for a full year — every
+		// visitor kept hitting that cached 404 long after the real fix shipped.
+		// Only successful responses get the long/short TTL now; everything
+		// else is cached for a few seconds at most, so a transient upstream
+		// error can't strand every visitor behind a stale cached failure.
 		const isHashedAsset = upstreamPath.startsWith("/_next/static/");
+		const okTtl = isHashedAsset ? 31536000 : 300;
 
 		const upstreamResponse = await fetch(upstreamUrl.toString(), {
 			method: request.method,
@@ -164,7 +186,7 @@ export default {
 			redirect: "manual",
 			cf: {
 				cacheEverything: true,
-				cacheTtl: isHashedAsset ? 31536000 : 300,
+				cacheTtlByStatus: { "200-299": okTtl, "300-599": 10 },
 			},
 		});
 

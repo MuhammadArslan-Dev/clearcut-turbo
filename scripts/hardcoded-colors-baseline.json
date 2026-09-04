@@ -1,5 +1,7 @@
 {
-  "apps/blog": 228,
-  "apps/dashboard": 516,
-  "apps/landing": 117
+  "apps/blog": 221,
+  "apps/dashboard": 524,
+  "apps/landing": 109,
+  "apps/tools": 11,
+  "packages/ui": 1
 }

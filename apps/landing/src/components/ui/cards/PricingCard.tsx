@@ -27,7 +27,7 @@ export interface PricingCardProps {
  */
 export default function PricingCard({ badgeText, priceNote, price, features, buttonText, trustText }: PricingCardProps) {
   return (
-    <div className="relative w-full max-w-[380px] rounded-3xl border border-[var(--color-border-gray-subtle)] bg-white shadow-[0_24px_48px_-20px_rgba(0,45,110,0.22)] px-6 pt-9 pb-6 flex flex-col items-center gap-6">
+    <div className="relative w-full max-w-[380px] h-full rounded-3xl border border-[var(--color-border-gray-subtle)] bg-white shadow-[0_24px_48px_-20px_rgba(0,45,110,0.22)] px-6 pt-9 pb-6 flex flex-col items-center justify-between gap-6">
       <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 body-small !font-semibold text-white shadow-sm whitespace-nowrap">
         <StarIcon />
         {badgeText}
