@@ -195,6 +195,79 @@ const COPY: Record<Locale, {
       </>
     ),
   },
+  mr: {
+    pricingEyebrow: "सोपे. पारदर्शी. परवडणारे.",
+    pricingHeading: (
+      <>
+        <span className="text-brand">एक</span> किंमत, <span className="text-brand">सर्व काही</span> समाविष्ट!
+      </>
+    ),
+    pricingDescription: "एकदाच पैसे भरा. 6 महिन्यांचा अ‍ॅक्सेस. पहिल्याच प्रयत्नात उत्तीर्ण होण्यासाठी आवश्यक सर्व काही.",
+    trialButton: "3-दिवसांची मोफत ट्रायल सुरू करा",
+    heroHeading: (courseName) => (
+      <>
+        <span className="text-brand">{courseName}</span> परीक्षेत 90+ गुण मिळवा
+      </>
+    ),
+    heroSubtitle: (courseName) =>
+      `आमच्या सर्वसमावेशक कोर्स आणि टेस्ट सिरीजसह ${courseName} च्या सर्व विषयांची तयारी करा!`,
+    heroFeatures: [
+      "परीक्षेचे सर्व विभाग समाविष्ट",
+      "व्हिडिओ, नोट्स आणि संकल्पना",
+      "टेस्ट सिरीजमध्ये 50+ पेपर",
+      "मोफत डेमो क्लासेस",
+    ],
+    heroTrustCard: (courseName, stateName) => (
+      <>
+        <span className="text-brand">{stateName}</span> मध्ये <span className="text-brand">{courseName}</span> परीक्षा उत्तीर्ण करण्यासाठी <span className="text-brand">10000+</span> विद्यार्थ्यांचा विश्वास
+      </>
+    ),
+    testimonialsHeading: (
+      <>
+        आमच्या <span className="text-brand">विद्यार्थ्यांच्या</span> <span className="text-brand">यशोगाथा</span>
+      </>
+    ),
+    reviews: [
+      {
+        reviewHighLight: ["96% गुण"],
+        role: "विद्यार्थी",
+        name: "राहुल",
+        date: "Dec 2025",
+        gender: "male",
+        review: (courseName) =>
+          `मी ${courseName} साठी Clear Cutoff जॉईन केले आणि ते खूप चांगले आहे. मी पहिल्याच प्रयत्नात माझी परीक्षा उत्तीर्ण केली! सर्व विषय इथे आहेत. माझा विषय हिंदी होता आणि आधी मला सर्व विषय एकाच ठिकाणी मिळत नव्हते.`,
+        stars: 5,
+      },
+      {
+        reviewHighLight: ["96% गुण"],
+        role: "विद्यार्थी",
+        name: "रिया",
+        date: "Feb 2026",
+        gender: "female",
+        review: (courseName) =>
+          `${courseName} च्या तयारीसाठी सर्वोत्तम ठिकाण. माझ्या कोचिंग क्लासमध्ये स्पष्ट न झालेले विषय मी इथे कव्हर केले. मी कधीही अभ्यास करू शकते, अगदी रात्री उशिरा जेव्हा इंटरनेट स्पीड चांगला असतो.`,
+        stars: 5,
+      },
+      {
+        reviewHighLight: ["96% गुण"],
+        role: "विद्यार्थी",
+        name: "दीक्षा",
+        date: "March 2026",
+        gender: "female",
+        review: (courseName) =>
+          `मागच्या वर्षी मी ${courseName} मध्ये नापास झाले होते पण आता माझा स्कोअर सुधारत आहे. नोट्स खूप उपयुक्त आहेत आणि उजळणी करणे सोपे आहे. आणि जर मी पास झाले नाही, तर पैसे परत मिळतील — त्यामुळे आता टेन्शन नाही.`,
+        stars: 5,
+      },
+    ],
+    justJoined: (name, city) => (
+      <>
+        <span className="!font-semibold">{city}</span>
+        {" मधून "}
+        <span className="!font-semibold">{name}</span>
+        {" नुकतेच जोडले गेले"}
+      </>
+    ),
+  },
 };
 
 const REVIEW_AVATARS: Record<"male" | "female", string> = {

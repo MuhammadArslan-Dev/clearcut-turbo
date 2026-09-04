@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, Link } from "@clearcut/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { PageNotFound } from "@clearcut/ui/page-not-found";
 
 export default function NotFoundContent() {

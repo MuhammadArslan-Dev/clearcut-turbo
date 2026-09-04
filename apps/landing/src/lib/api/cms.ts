@@ -1,6 +1,6 @@
 import { createFetchClient } from "@clearcut/api/fetch-client";
 
-import type { AlternativeDoc, AlternativeSummary, ComparisonDoc, MarketingProof } from "@/types/cms";
+import type { AlternativeDoc, AlternativeSummary, ComparisonDoc, FaqDoc, MarketingProof } from "@/types/cms";
 
 const CMS_URL = process.env.CMS_URL || "http://localhost:3011";
 
@@ -115,4 +115,10 @@ export async function getAlternativeBySlug(slug: string, locale: string = "en"):
 
   const data = await payloadFetch<PayloadListResponse<AlternativeDoc>>(`/api/alternatives?${query.toString()}`);
   return data?.docs?.[0] ?? null;
+}
+
+/** Categories + questions for the /faq page, editable from the CMS admin. */
+export async function getFaq(locale: string = "en"): Promise<FaqDoc | null> {
+  const query = new URLSearchParams({ locale, depth: "0" });
+  return payloadFetch<FaqDoc>(`/api/globals/faq?${query.toString()}`);
 }

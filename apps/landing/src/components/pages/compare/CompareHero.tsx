@@ -2,7 +2,7 @@ import Image from "next/image";
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
 import Button from "@clearcut/ui/button";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { IMAGES } from "@/constants/images";
 import { mediaUrl } from "@/lib/api/cms";
 import type { ComparisonDoc } from "@/types/cms";

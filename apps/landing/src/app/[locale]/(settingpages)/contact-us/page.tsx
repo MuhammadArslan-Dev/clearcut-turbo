@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 const data = `<p>We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, please don't hesitate to get in touch.</p>
                 <p>&zwj;<strong>Ways to Reach Us:</strong></p>

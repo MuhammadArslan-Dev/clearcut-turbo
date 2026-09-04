@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 const data = `<ol>
 <li style="font-weight: 400;"><span style="font-weight: 400;">⁠You, as a User, will be eligible for the refund only in the case you're not receiving the services. Such an application/ refund request has to be communicated at </span><a href="mailto:hi@clearcutoff.in"><span style="font-weight: 400;">hi@clearcutoff.in</span></a><span style="font-weight: 400;">.</span></li>

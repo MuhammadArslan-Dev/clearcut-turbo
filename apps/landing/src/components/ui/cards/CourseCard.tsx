@@ -8,7 +8,7 @@ import StarIcon from "@/components/icons/star-icon";
 import Button from "@clearcut/ui/button";
 import clsx from "clsx";
 import { Exam } from "@/types/page";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import VerificationBadgeIcon from "@/components/icons/verification-badge-icon";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
 
@@ -32,6 +32,13 @@ const CARD_COPY: Record<Locale, {
     ratingText: (rating) => `(${rating} k+ रेटिंग)`,
     startFree: "फ्री में शुरू करें",
     viewDetails: "और जानकारी देखें",
+  },
+  mr: {
+    badge: "कोर्स + टेस्ट सिरीज",
+    stateFallback: "हरियाणा",
+    ratingText: (rating) => `(${rating} k+ रेटिंग)`,
+    startFree: "मोफत सुरू करा",
+    viewDetails: "अधिक माहिती पहा",
   },
 };
 

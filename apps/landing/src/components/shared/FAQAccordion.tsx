@@ -7,19 +7,28 @@ import AccordionIcon from "../icons/accordion-icon";
 import Text from "@clearcut/ui/text";
 export type AccordionItem = {
   id: string;
-  title: string;
+  title: React.ReactNode;
   content: React.ReactNode;
 };
 
 type Props = {
   items: AccordionItem[];
   defaultOpenId?: string;
+  /** Called with the newly-opened item's id (or null when closed). Used by
+   *  callers that keep the open item in sync with the URL hash. */
+  onOpenChange?: (id: string | null) => void;
 };
 
-export default function Accordion({ items, defaultOpenId }: Props) {
+export default function Accordion({ items, defaultOpenId, onOpenChange }: Props) {
   const [openId, setOpenId] = React.useState<string | null>(
     defaultOpenId ?? null,
   );
+
+  const toggle = (id: string) => {
+    const next = openId === id ? null : id;
+    setOpenId(next);
+    onOpenChange?.(next);
+  };
 
   return (
     <div className="flex flex-col gap-3 max-w-[900px] mx-auto w-full">
@@ -29,12 +38,13 @@ export default function Accordion({ items, defaultOpenId }: Props) {
         return (
           <motion.div
             key={item.id}
+            id={item.id}
             layout
             className={clsx(
-              "rounded-xl border-2 px-5 py-4 cursor-pointer bg-white",
+              "rounded-xl border-2 px-5 py-4 cursor-pointer bg-white scroll-mt-24",
               isOpen ? "border-brand" : "border-gray-200",
             )}
-            onClick={() => setOpenId(isOpen ? null : item.id)}
+            onClick={() => toggle(item.id)}
           >
             {/* HEADER */}
             <button

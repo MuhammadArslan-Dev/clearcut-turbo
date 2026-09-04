@@ -25,6 +25,15 @@ const CONTENT: Record<Locale, { heading: React.ReactNode; description: string }>
     description:
       "असली परीक्षा स्तर के प्रश्न, सेक्शनल टेस्ट और फुल लेंथ पेपर — सब कुछ एक ही जगह पर।",
   },
+  mr: {
+    heading: (
+      <>
+        PYQ आधारित टेस्ट, नोट्स आणि व्हिडिओंसह <span className="text-brand">HTET</span> परीक्षा उत्तीर्ण करा
+      </>
+    ),
+    description:
+      "खऱ्या परीक्षेच्या स्तराचे प्रश्न, सेक्शनल टेस्ट आणि फुल लेंथ पेपर — सर्व काही एकाच ठिकाणी.",
+  },
 };
 
 export default function HomeHero({

@@ -71,12 +71,15 @@ body {
   scroll-behavior: smooth;
 }
 
-/* ================= Hindi Typography ================= */
+/* ================= Hindi/Marathi Typography ================= */
+/* Marathi shares the Devanagari font + spacing rules with Hindi — same
+   script, same font-family variable, same weight/line-height tuning. */
 
-:lang(hi) {
+:lang(hi),
+:lang(mr) {
   /* Only switch the font family — keep each element's own weight and size so
-     the Hindi page matches the English typographic hierarchy (bold headings
-     stay bold). Previously this rule force-set font-weight: 300 and
+     the Hindi/Marathi page matches the English typographic hierarchy (bold
+     headings stay bold). Previously this rule force-set font-weight: 300 and
      font-size: 0.96em on every element, which flattened Hindi to a light,
      uniform look once <html lang="hi"> started matching. */
   font-family: var(--font-hindi);
@@ -89,16 +92,24 @@ body {
   }
 }
 
-/* Better heading spacing for Hindi */
+/* Better heading spacing for Hindi/Marathi */
 
 :lang(hi) .display-xlarge,
+:lang(mr) .display-xlarge,
 :lang(hi) .display-large,
+:lang(mr) .display-large,
 :lang(hi) .display-medium,
+:lang(mr) .display-medium,
 :lang(hi) .display-small,
+:lang(mr) .display-small,
 :lang(hi) .heading-2xxlarge,
+:lang(mr) .heading-2xxlarge,
 :lang(hi) .heading-2xlarge,
+:lang(mr) .heading-2xlarge,
 :lang(hi) .heading-xlarge,
-:lang(hi) .heading-large {
+:lang(mr) .heading-xlarge,
+:lang(hi) .heading-large,
+:lang(mr) .heading-large {
   line-height: calc(1em * 1.15);
 }
 

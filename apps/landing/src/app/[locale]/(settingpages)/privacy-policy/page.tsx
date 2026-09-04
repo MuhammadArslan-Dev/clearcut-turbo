@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 const data = `<p><div>Account Deletion<br /><br />Users can request deletion of their Clear Cutoff account and associated personal data by visiting the following page:<br /><a href="https://www.clearcutoff.in/account-delete">https://www.clearcutoff.in/account-delete</a></div> <br /> <span style="font-weight: 400;">We at Clear Cutoff, under Rohit Dalal (&ldquo;the Company/Clear Cutoff/we/us&rdquo;) is committed to protecting the privacy and security of your personal information. Keeping your personal information secure and using it solely for activities related and relevant to our business is the top priority of Clear Cutoff.</span></p>
 <p><span style="font-weight: 400;">In this policy, &ldquo;personal information&rdquo; means any data about an individual who is identifiable by or in relation to such data.</span></p>

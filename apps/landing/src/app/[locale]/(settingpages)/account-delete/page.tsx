@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 const data = `How to Delete Your Clear Cutoff Account<br />Clear Cutoff allows users to permanently delete their account and associated personal data.<br />You can delete your account directly from within the Clear Cutoff mobile application or by contacting our support team as described below.<br /><br />Option 1: Delete Account from the App (Recommended)<br />If you have access to the Clear Cutoff app, you can delete your account instantly by following these steps:<br />Open the <strong>Clear Cutoff</strong> app<br />Go to <strong>Profile</strong></div>
 <ol data-list-tree="true" data-indent="0" data-border="0">

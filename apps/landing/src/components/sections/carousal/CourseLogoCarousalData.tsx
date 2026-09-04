@@ -3,7 +3,7 @@ import Section from "../../global/Section";
 import Text from "@clearcut/ui/text";
 import Button from "@clearcut/ui/button";
 import LogoCarousel from "../LogoCarousel";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { Exam } from "@/types/page";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
 

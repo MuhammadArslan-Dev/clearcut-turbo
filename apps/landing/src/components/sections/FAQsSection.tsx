@@ -9,8 +9,14 @@ import FAQAccordion, { AccordionItem } from "../shared/FAQAccordion";
 import { Exam } from "@/types/page";
 import { useScrollOnUserAction } from "@/hooks/useScrollOnUserAction";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
+import type { FaqCategory } from "@/types/cms";
 
 type FAQKey = "refund" | "general" | "courses" | "payments";
+
+// This section is a teaser embedded on the home/course pages, not the
+// exhaustive FAQ resource (that's /faq, which shows every CMS category).
+// Capped so the section stays a short skim, not a full duplicate of /faq.
+const MAX_TEASER_CATEGORIES = 5;
 
 type FAQ = { q: string; a: React.ReactNode };
 
@@ -260,6 +266,121 @@ const CONTENT: Record<Locale, FAQsContent> = {
       footer: <>👉 आप फ्री में शुरुआत कर सकते हैं और खुद तय कर सकते हैं (कोई भुगतान आवश्यक नहीं)।</>,
     },
   },
+  mr: {
+    eyebrow: "काही प्रश्न आहे? आमच्याकडे उत्तर आहे!",
+    heading: (
+      <>
+        वारंवार विचारले जाणारे <span className="text-brand">प्रश्न</span>
+      </>
+    ),
+    description: "Clear Cutoff सोबत तयारी सुरू करण्यापूर्वी जाणून घेण्यासारख्या सर्व महत्त्वाच्या गोष्टी.",
+    filters: [
+      { label: "रिफंड गॅरंटी", key: "refund" },
+      { label: "सामान्य", key: "general" },
+      { label: "कोर्स आणि टेस्ट", key: "courses" },
+      { label: "पेमेंट", key: "payments" },
+    ],
+    faqs: {
+      refund: [
+        {
+          q: "रिफंड गॅरंटी कशी काम करते?",
+          a: <>आम्हाला आमच्या प्लॅटफॉर्मवर विश्वास आहे, म्हणून जर तुम्ही परीक्षा उत्तीर्ण झाला नाहीत तर आम्ही <strong>रिफंड गॅरंटी</strong> देतो! रिफंड मिळवण्यासाठी:<br/>1. <strong>कोर्स पूर्ण करा</strong> (सर्व व्हिडिओ आणि मिनी टेस्ट)<br/>2. <strong>सर्व टेस्ट द्या</strong> (मिनी, सेक्शनल आणि फुल-लेंथ)<br/>3. <strong>तुमचा अधिकृत निकाल दाखवा</strong> (जर तुम्ही उत्तीर्ण झाला नाहीत तर)<br/>जर तुम्ही पूर्ण मेहनत केली आणि तरीही उत्तीर्ण झाला नाहीत, तर आम्ही तुमची संपूर्ण फी परत करू!</>,
+        },
+        {
+          q: "रिफंडसाठी कोर्स पूर्ण करणे का आवश्यक आहे?",
+          a: <>यशासाठी समर्पण आवश्यक आहे! आम्हाला विद्यार्थ्यांनी <strong>प्रामाणिकपणे संपूर्ण तयारी प्रक्रिया</strong> फॉलो करावी असे वाटते. जर तुम्ही कोर्स पूर्ण केला, तर उत्तीर्ण होण्याची शक्यता खूप जास्त असते. आणि तरीही तुम्ही उत्तीर्ण न झाल्यास, आम्ही आमचे वचन पाळतो — तुमचे पैसे परत केले जातात.</>,
+        },
+        {
+          q: "जर मी कोर्स पूर्ण केला नाही आणि तरीही नापास झालो तर काय होईल?",
+          a: <>रिफंड फक्त <strong>कोर्स पूर्ण करणाऱ्या</strong> विद्यार्थ्यांनाच लागू होतो. जर तुम्ही तो पूर्ण केला नाही, तर तुम्ही रिफंडसाठी पात्र राहणार नाही.</>,
+        },
+        {
+          q: "रिफंड गॅरंटीसाठी काही लपलेले शुल्क आहे का?",
+          a: <><strong>कोणतेही लपलेले शुल्क नाही</strong>! जर तुम्ही सर्व अटी पूर्ण केल्या, तर आम्ही तुमची रक्कम परत करतो.</>,
+        },
+        {
+          q: "जर मी उत्तीर्ण झालो नाही तर मला रिफंड कसा मिळेल?",
+          a: <>एकदा तुम्ही तुमचे अधिकृत <strong>अ‍ॅडमिट कार्ड PDF</strong> आणि <strong>परीक्षा निकाल</strong> सबमिट केल्यावर, रिफंड तुमच्या मूळ पेमेंट पद्धतीत <strong>24 तासांच्या आत</strong> पाठवला जातो.</>,
+        },
+      ],
+      general: [
+        {
+          q: "Clear Cutoff म्हणजे काय आणि ते मला Teaching Exams उत्तीर्ण होण्यास कशी मदत करेल?",
+          a: <>Clear Cutoff हे Teaching Exams साठी खास तयार केलेले <strong>स्मार्ट परीक्षा तयारी प्लॅटफॉर्म</strong> आहे. आम्ही पुरवतो:<br/>1. उत्तरांसह <strong>मागील वर्षांचे प्रश्न (PYQs)</strong>.<br/>2. अनेक शिक्षकांचे <strong>सविस्तर व्हिडिओ लेक्चर्स</strong>.<br/>3. जलद उजळणीसाठी <strong>रिव्हिजन नोट्स</strong>.<br/>4. प्रगती तपासण्यासाठी <strong>सेक्शनल आणि फुल-लेंथ टेस्ट</strong>.<br/>5. कोर्स पूर्ण केल्यानंतरही उत्तीर्ण न झाल्यास <strong>रिफंड गॅरंटी</strong>!</>,
+        },
+        {
+          q: "इतर प्लॅटफॉर्म असूनही Clear Cutoff का निवडावे?",
+          a: <>आम्ही फक्त परीक्षा-केंद्रित शिक्षणावर लक्ष केंद्रित करतो:<br/>1. उजळणी सायकलसह <strong>संरचित योजना</strong><br/>2. <strong>अनेक शिक्षकांचा</strong> पर्याय<br/>3. <strong>मिनी टेस्ट आणि फुल-लेंथ टेस्ट</strong> (सर्व PYQs सह)<br/>4. आमच्या टेस्ट सिरीजसह खरा <strong>परीक्षा अनुभव</strong><br/>5. तुम्ही कोर्स फॉलो करूनही उत्तीर्ण न झाल्यास <strong>रिफंड गॅरंटी</strong>!</>,
+        },
+        {
+          q: "Clear Cutoff चे कोर्स कोणासाठी उपयुक्त आहेत?",
+          a: <>Clear Cutoff यांच्यासाठी परफेक्ट आहे:<br/>1. <strong>पहिल्यांदाच टीचिंग एक्झाम देणारे उमेदवार</strong>.<br/>2. संपूर्ण तयारी हवी असलेले <strong>पुन्हा परीक्षा देणारे उमेदवार</strong>.<br/>3. जे विद्यार्थी संरचित, <strong>परीक्षा-केंद्रित पद्धत</strong> पसंत करतात.</>,
+        },
+        {
+          q: "कंटेंट हिंदी आणि इंग्रजी दोन्हीत उपलब्ध आहे का?",
+          a: <>हो! आमचे सर्व PYQs, उत्तरे आणि टेस्ट <strong>हिंदी आणि इंग्रजी</strong> दोन्हीत उपलब्ध आहेत.</>,
+        },
+        {
+          q: "मी कंटेंट कधीही अ‍ॅक्सेस करू शकतो का?",
+          a: <>हो! खरेदीच्या तारखेपासून ते <strong>परीक्षेच्या दिवसापर्यंत</strong> तुम्हाला सर्व कोर्स साहित्याचा <strong>पूर्ण अ‍ॅक्सेस</strong> मिळतो.</>,
+        },
+      ],
+      courses: [
+        {
+          q: "कोर्समध्ये काय समाविष्ट आहे?",
+          a: <>कोर्समध्ये समाविष्ट आहे:<br/>1. सविस्तर उत्तरांसह <strong>PYQs</strong><br/>2. <strong>व्हिडिओ लेक्चर्स</strong> (अनेक शिक्षक)<br/>3. जलद उजळणीसाठी टाईप केलेले <strong>नोट्स</strong> आणि <strong>फ्लॅश कार्ड्स</strong><br/>4. <strong>सेक्शनल टेस्ट</strong> आणि <strong>मिनी टेस्ट</strong><br/>5. परीक्षा पॅटर्नशी जुळणारी फुल-लेंथ टेस्ट सिरीज</>,
+        },
+        {
+          q: "टेस्ट कशा डिझाईन केल्या आहेत?",
+          a: <>टेस्ट तीन स्तरांवर येतात:<br/>1. <strong>मिनी टेस्ट</strong>: प्रकरण- आणि टॉपिक-स्तरीय सरावासाठी<br/>2. <strong>सेक्शनल टेस्ट</strong>: विभागनिहाय मजबूत तयारीसाठी<br/>3. <strong>फुल-लेंथ टेस्ट</strong>: खऱ्या परीक्षेसारखा अनुभव</>,
+        },
+        {
+          q: "पुन्हा परीक्षा देणारे उमेदवार Clear Cutoff चा फायदा घेऊ शकतात का?",
+          a: <>हो! Clear Cutoff <strong>पहिल्यांदाच आणि पुन्हा परीक्षा देणाऱ्या दोन्ही उमेदवारांसाठी</strong> योग्य आहे.</>,
+        },
+        {
+          q: "Clear Cutoff च्या टेस्ट इतरांपेक्षा कशा चांगल्या आहेत?",
+          a: <>आमच्या टेस्टमध्ये <strong>सर्व PYQs समाविष्ट असतात आणि त्या खऱ्या परीक्षा पॅटर्नशी जुळवून तयार केलेल्या असतात</strong>. टेस्ट सिरीज सविस्तर उत्तरे आणि फीडबॅक देते जेणेकरून तुम्ही सतत सुधारणा करत राहाल.</>,
+        },
+        {
+          q: "मी फक्त एका विषयाची किंवा टॉपिकची तयारी करू शकतो का?",
+          a: <>तुम्ही पेपरचे <strong>सर्व विभाग</strong> अभ्यासू शकता, किंवा फोकस्ड सरावासाठी मिनी टेस्ट आणि सेक्शनल टेस्ट देऊ शकता.</>,
+        },
+      ],
+      payments: [
+        {
+          q: "कोर्सची किंमत किती आहे?",
+          a: <>सवलतीनंतर कोर्सची किंमत <strong>₹99</strong> आहे.</>,
+        },
+        {
+          q: "कोर्स फी व्यतिरिक्त काही अतिरिक्त शुल्क आहे का?",
+          a: <>नाही, सर्वकाही कोर्स फीमध्ये समाविष्ट आहे. <strong>कोणतेही लपलेले शुल्क नाही</strong>.</>,
+        },
+        {
+          q: "मी पेमेंट कसे करू शकतो?",
+          a: <>तुम्ही UPI, डेबिट/क्रेडिट कार्ड, नेट बँकिंग किंवा वॉलेटद्वारे सुरक्षित <strong>पेमेंट गेटवे</strong>वरून ऑनलाइन पेमेंट करू शकता.</>,
+        },
+        {
+          q: "ट्रायल कालावधी उपलब्ध आहे का?",
+          a: <>हो, खरेदी करण्यापूर्वी तुम्ही कोर्सची <strong>मोफत ट्रायल</strong> अ‍ॅक्सेस करू शकता.</>,
+        },
+        {
+          q: "परीक्षा पुढे ढकलली गेली तर काय होईल?",
+          a: <>परीक्षेची तारीख पुढे ढकलली गेली तरी तुमचा कोर्स अ‍ॅक्सेस <strong>परीक्षेच्या दिवसापर्यंत वैध राहील</strong>.</>,
+        },
+      ],
+    },
+    explanation: {
+      title: "Clear Cutoff ने खरंच परीक्षा उत्तीर्ण करता येते का?",
+      intro: "हो — जर तुम्ही सराव, उजळणी आणि परीक्षेची हुशारीने तयारी केली तर.",
+      points: [
+        <>उच्च दर्जाचे <span className="text-text-gray-subtle font-semibold">मागील वर्षांचे प्रश्न (PYQs)</span> आणि परीक्षा-स्तरावरील प्रश्नांचा सराव करा</>,
+        <><span className="text-text-gray-subtle font-semibold">टेस्ट आणि विश्लेषणा</span>द्वारे तुमच्या संकल्पना मजबूत करा</>,
+        <>प्रकरणनिहाय, सेक्शनल आणि फुल-लेंथ टेस्टद्वारे <span className="text-text-gray-subtle font-semibold">तुमच्या कमकुवत जागा ओळखा</span></>,
+      ],
+      footer: <>👉 तुम्ही मोफत सुरुवात करू शकता आणि स्वतः ठरवू शकता (कोणतेही पेमेंट आवश्यक नाही).</>,
+    },
+  },
 };
 
 export default function FAQsSection({
@@ -267,14 +388,25 @@ export default function FAQsSection({
   active = true,
   data,
   locale = defaultLocale,
+  categories,
 }: {
   data?: Exam;
   bgColor?: string;
   active?: boolean;
   locale?: Locale;
+  /** CMS categories (from getFaq()). When provided, these drive the tabs/questions
+   *  instead of the hardcoded copy below — capped to MAX_TEASER_CATEGORIES. */
+  categories?: FaqCategory[];
 }) {
   const t = CONTENT[locale];
-  const [activeTab, setActiveTab] = React.useState<FAQKey>("refund");
+  const cmsCategories = (categories ?? []).slice(0, MAX_TEASER_CATEGORIES);
+  const useCms = cmsCategories.length > 0;
+
+  const tabs: { key: string; label: string }[] = useCms
+    ? cmsCategories.map((c) => ({ key: c.key, label: c.label }))
+    : t.filters;
+
+  const [activeTab, setActiveTab] = React.useState<string>(tabs[0]?.key ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -283,14 +415,20 @@ export default function FAQsSection({
     refs: tabRefs,
     containerRef: containerRef,
     enabled: true,
-    getIndex: (id) => t.filters.findIndex((i) => i.key === id),
+    getIndex: (id) => tabs.findIndex((i) => i.key === id),
   });
 
-  const items: AccordionItem[] = (t.faqs[activeTab] || []).map((faq, index) => ({
-    id: `${activeTab}-${index}`,
-    title: faq.q,
-    content: faq.a,
-  }));
+  const items: AccordionItem[] = useCms
+    ? (cmsCategories.find((c) => c.key === activeTab)?.questions ?? []).map((faq, index) => ({
+        id: `${activeTab}-${index}`,
+        title: faq.question,
+        content: faq.answer,
+      }))
+    : (t.faqs[activeTab as FAQKey] || []).map((faq, index) => ({
+        id: `${activeTab}-${index}`,
+        title: faq.q,
+        content: faq.a,
+      }));
 
   if (!active) return null;
 
@@ -312,7 +450,7 @@ export default function FAQsSection({
 
           <div className="max-w-3xl md:mx-auto md:px-2">
             <div ref={containerRef} className="flex bg-brand-dark py-1 overflow-x-auto -mx-3 px-1 md:rounded-full relative">
-              {t.filters.map((filter, index) => {
+              {tabs.map((filter, index) => {
                 const isActive = activeTab === filter.key;
                 return (
                   <button

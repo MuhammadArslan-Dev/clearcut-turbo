@@ -126,6 +126,22 @@ export type AlternativeDoc = AlternativeSummary & {
   };
 };
 
+// Mirrors src/globals/Faq.ts in the CMS repo.
+export type FaqQuestion = {
+  question: string;
+  answer: string;
+};
+
+export type FaqCategory = {
+  key: string;
+  label: string;
+  questions: FaqQuestion[];
+};
+
+export type FaqDoc = {
+  categories: FaqCategory[];
+};
+
 export type MarketingProof = {
   trustedBy?: {
     label?: string;

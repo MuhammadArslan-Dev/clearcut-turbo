@@ -1,4 +1,4 @@
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import ContinueFreeButton from "@/components/ui/buttons/ContinueFreeButton";
 import MainAppLogo from "@/components/icons/main-app-logo";
 import NavbarMenu from "@/components/ui/NavLink";

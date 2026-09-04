@@ -18,6 +18,10 @@ const BADGE_COPY: Record<Locale, { title: React.ReactNode; subtitle: string }> =
     title: <>परीक्षा पास न होने पर <span className="text-brand"> रिफंड</span> पाएं!</>,
     subtitle: "कोई जोखिम नहीं, सिर्फ परिणाम।",
   },
+  mr: {
+    title: <>परीक्षा उत्तीर्ण न झाल्यास <span className="text-brand"> रिफंड</span> मिळवा!</>,
+    subtitle: "कोणताही धोका नाही, फक्त निकाल.",
+  },
 };
 
 export default function GuaranteeBadge({ pY = "py-6" }: { pY?: string }) {

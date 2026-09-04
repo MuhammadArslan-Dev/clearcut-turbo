@@ -1,7 +1,7 @@
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
 import Button from "@clearcut/ui/button";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import type { CmsCtaBlock } from "@/types/cms";
 
 export default function CtaBanner({ cta }: { cta?: CmsCtaBlock }) {

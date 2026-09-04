@@ -29,6 +29,16 @@ const CONTENT: Record<Locale, { eyebrow: string; heading: React.ReactNode; descr
     description: "पैसे बचाएं, कभी भी पढ़ें और बिना कोचिंग जाए पूरी तैयारी करें!",
     note: "तुलना सामान्य कोचिंग सेंटर की प्रथाओं के आधार पर",
   },
+  mr: {
+    eyebrow: "Clear Cutoff वि. कोचिंग सेंटर",
+    heading: (
+      <>
+        <span className="text-brand">सर्व</span> विषय, <span className="text-brand">अमर्यादित</span> सराव!
+      </>
+    ),
+    description: "पैसे वाचवा, कधीही अभ्यास करा आणि कोचिंगला न जाता पूर्ण तयारी करा!",
+    note: "सामान्य कोचिंग सेंटर पद्धतींवर आधारित तुलना",
+  },
 };
 
 export default async function ComparisonSection({

@@ -39,6 +39,19 @@ const COPY: Record<Locale, {
       "रिफंड एश्योरेंस पॉलिसी",
     ],
   },
+  mr: {
+    heading: (examName) => (
+      <>
+        PYQ आधारित टेस्ट, नोट्स आणि व्हिडिओंसह <span className="text-brand">{examName}</span> परीक्षा उत्तीर्ण करा
+      </>
+    ),
+    description: "खऱ्या परीक्षेच्या स्तराचे प्रश्न, सेक्शनल टेस्ट आणि फुल लेंथ पेपर — सर्व काही एकाच ठिकाणी.",
+    features: (examName) => [
+      `${examName} परीक्षेची स्मार्ट तयारी`,
+      "पूर्ण कोर्स + टेस्ट सिरीज",
+      "रिफंड अ‍ॅश्युरन्स पॉलिसी",
+    ],
+  },
 };
 
 export default function CoursePageHero({ data }: { data?: Exam }) {

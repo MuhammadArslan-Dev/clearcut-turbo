@@ -3,7 +3,7 @@ import FooterWrap from "@/components/layout/FooterWrap";
 import FloatingButton from "@/components/global/FloatingButton";
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import Button from "@clearcut/ui/button";
 import { generateSeoMetadata } from "@/lib/seo/metadata";
 import { getAlternativesList, getMarketingProof } from "@/lib/api/cms";

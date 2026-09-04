@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Text from "@clearcut/ui/text";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { IMAGES } from "@/constants/images";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
 
@@ -61,6 +61,29 @@ const CONTENT: Record<
     ],
     rating: "10,000+ छात्रों की 4.9 रेटिंग",
     trust: "पूरे भारत के छात्रों का भरोसा",
+  },
+  mr: {
+    badge: "भारताचे विश्वासू परीक्षा तयारी प्लॅटफॉर्म",
+    headingLine1: "तुमची",
+    headingAccent: "परीक्षा तयारी सुरू करा",
+    subheading:
+      "CTET, HTET, UPTET सारख्या परीक्षा उत्तीर्ण होण्यासाठी आवश्यक सर्व काही इथे आहे.",
+    features: [
+      {
+        title: "प्रत्येक प्रकरणासाठी संकल्पना व्हिडिओ",
+        description: "उच्च दर्जाच्या, परीक्षा-केंद्रित व्हिडिओंसह शिका.",
+      },
+      {
+        title: "हिंदी आणि इंग्रजीत डाउनलोड करण्यायोग्य नोट्स",
+        description: "वाचायला आणि उजळणी करायला सोपे, कधीही.",
+      },
+      {
+        title: "मागील वर्षांचे प्रश्न (PYQs)",
+        description: "सविस्तर उत्तरांसह सराव करा.",
+      },
+    ],
+    rating: "10,000+ विद्यार्थ्यांची 4.9 रेटिंग",
+    trust: "संपूर्ण भारतातील विद्यार्थ्यांचा विश्वास",
   },
 };
 

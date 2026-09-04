@@ -19,6 +19,7 @@ declare const messages: {
     "terms": "Terms & Conditions",
     "refund": "Refund",
     "contact": "Contact",
+    "faq": "FAQ",
     "rights": "All rights reserved!"
   }
 };

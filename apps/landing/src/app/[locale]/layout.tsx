@@ -5,7 +5,7 @@ import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 import { ReactQueryProvider } from "@clearcut/react-query/provider";
 import AnalyticsLoader from "@/components/global/AnalyticsLoader";
 import { AuthProvider, AuthModal } from "@/lib/auth";
@@ -38,9 +38,9 @@ const notoSans = Noto_Sans({
   preload: true,
 });
 
-// Devanagari face for Hindi. Applied via the `:lang(hi)` rule in globals.css,
-// so it only renders on Hindi (`/hi`) pages. Not preloaded to keep English
-// pages lean (it still loads on demand via font-display: swap).
+// Devanagari face for Hindi and Marathi. Applied via the `:lang(hi)`/`:lang(mr)`
+// rules in globals.css, so it only renders on those pages. Not preloaded to
+// keep English pages lean (it still loads on demand via font-display: swap).
 const notoSansDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
   weight: ["400", "600", "700"],
@@ -58,7 +58,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Pre-render both locales at build time. Only `en` and `hi` are valid.
+// Pre-render every locale at build time. Only `en`, `hi` and `mr` are valid.
 export const dynamicParams = false;
 
 export function generateStaticParams() {

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const SITE_URL = "https://clearcutoff.in";
-const SITE_NAME = "Clear Cutoff";
+export const SITE_NAME = "Clear Cutoff";
 
 type SeoProps = {
   title: string;
@@ -33,6 +33,7 @@ export function generateSeoMetadata({
         // Default locale (en) has NO prefix — localePrefix: "as-needed"
         "en": canonicalUrl,
         "hi": `${SITE_URL}/hi${path}`,
+        "mr": `${SITE_URL}/mr${path}`,
         "x-default": canonicalUrl,
       },
     },

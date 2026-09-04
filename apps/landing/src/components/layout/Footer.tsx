@@ -1,6 +1,6 @@
 "use client";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
-import { Link as I18nLink } from "@clearcut/i18n/navigation";
+import { Link as I18nLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import SiteFooter from "@clearcut/ui/site-footer";
 import type { AlternativeSummary } from "@/types/cms";
@@ -26,6 +26,7 @@ export default function Footer({ alternatives }: { alternatives?: AlternativeSum
       termsLabel={t("terms")}
       refundLabel={t("refund")}
       contactLabel={t("contact")}
+      extraLinks={[{ href: "/faq", label: t("faq") }]}
     />
   );
 }

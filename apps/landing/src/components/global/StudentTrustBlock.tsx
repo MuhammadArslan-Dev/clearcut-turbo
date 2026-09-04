@@ -25,6 +25,16 @@ const CONTENT: Record<Locale, { headline: React.ReactNode; subtext: string; rati
       "हजारों सफल TET अभ्यर्थियों से जुड़ें जिन्होंने महंगी कोचिंग के बजाय स्मार्ट और किफायती तैयारी चुनी!",
     ratingSuffix: "  हमारे विद्यार्थियों द्वारा औसत रेटिंग!",
   },
+  mr: {
+    headline: (
+      <>
+        <span className="text-brand">10000+</span> विद्यार्थ्यांनी TET परीक्षा उत्तीर्ण होण्यासाठी याचा वापर केला.
+      </>
+    ),
+    subtext:
+      "महागड्या कोचिंगऐवजी स्मार्ट आणि परवडणारी तयारी निवडणाऱ्या हजारो यशस्वी TET उमेदवारांमध्ये सामील व्हा!",
+    ratingSuffix: "  आमच्या विद्यार्थ्यांकडून सरासरी रेटिंग!",
+  },
 };
 
 export default function StudentTrustBlock({ locale = defaultLocale }: { locale?: Locale }) {

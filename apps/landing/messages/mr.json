@@ -1,0 +1,22 @@
+{
+  "common": {
+    "continueFree": "मोफत तयारी सुरू ठेवा",
+    "continueFreeShort": "मोफत सुरू ठेवा",
+    "startFree": "मोफत सुरू करा"
+  },
+  "nav": {
+    "pricing": "किंमत",
+    "features": "फीचर्स",
+    "faqs": "सामान्य प्रश्न"
+  },
+  "footer": {
+    "phone": "फोन",
+    "whatsapp": "व्हॉट्सअ‍ॅप",
+    "privacy": "धोरण",
+    "terms": "नियम आणि अटी",
+    "refund": "रिफंड",
+    "contact": "संपर्क",
+    "faq": "सामान्य प्रश्न",
+    "rights": "सर्व हक्क राखीव!"
+  }
+}

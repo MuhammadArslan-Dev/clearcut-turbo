@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { mediaUrl } from "@/lib/api/cms";
 import type { MarketingProof } from "@/types/cms";
 

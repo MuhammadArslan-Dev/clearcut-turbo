@@ -51,6 +51,9 @@ const EXCEPTIONS = [
   [/logo/i, "brand logo"],
   [/chart|recharts/i, "chart palette"],
   [/sentry|amplitude|gtm|pixel|facebook|instagram|linkedin|youtube|telegram/i, "third-party"],
+  // next/og's ImageResponse renders via Satori, which has no var() support —
+  // these files must use literal colours, there's no token-based alternative.
+  [/opengraph-image|twitter-image/i, "next/og image generation"],
 ];
 
 function walk(dir, out = []) {

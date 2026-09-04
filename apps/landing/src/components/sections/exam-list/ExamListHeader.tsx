@@ -23,6 +23,15 @@ const COPY: Record<Locale, { eyebrow: string; heading: React.ReactNode; descript
     ),
     description: "सभी टीचिंग एग्ज़ाम के कम्प्लीट कोर्स और टेस्ट सीरीज़ देखें और फ्री में शुरुआत करें।",
   },
+  mr: {
+    eyebrow: "प्रत्येक टीचिंग परीक्षेची तयारी करा",
+    heading: (
+      <>
+        सर्व <span className="text-brand">टीचिंग परीक्षा</span> एकाच ठिकाणी!
+      </>
+    ),
+    description: "प्रत्येक टीचिंग परीक्षेचे संपूर्ण कोर्स आणि टेस्ट सिरीज पहा आणि मोफत सुरुवात करा.",
+  },
 };
 
 export default function ExamListHeader() {

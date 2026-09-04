@@ -6,7 +6,7 @@ import Text from "@clearcut/ui/text";
 import MainInput from "@clearcut/ui/main-input";
 import OtpBoxInput from "./OtpBoxInput";
 import Image from "next/image";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { authApi } from "@/lib/auth";
 import { logAmplitudeEvent } from "@/services/analytics";
 import { IMAGES } from "@/constants/images";
@@ -184,6 +184,48 @@ const CONTENT: Record<
     truecallerUnavailable: "Truecaller ऐप नहीं मिला — नीचे जारी रखें",
     whatsappBtn: "WhatsApp",
     orDivider: "या",
+  },
+  mr: {
+    heading: "तुमची परीक्षा तयारी सुरू करा",
+    featuresLine: "व्हिडिओ • नोट्स • PYQs",
+    otpHint: "तुमचा नंबर पडताळण्यासाठी आम्ही तुम्हाला OTP पाठवू",
+    otpDisclaimerLine1: "फक्त लॉगिन आणि परीक्षा अपडेटसाठी वापरला जातो. स्पॅम नाही.",
+    otpDisclaimerLine2: "OTP SMS आणि WhatsApp द्वारे पाठवला जाईल.",
+    trustedByLine: "संपूर्ण भारतात TET परीक्षा उत्तीर्ण करण्यासाठी 10,000+ विद्यार्थ्यांचा विश्वास",
+    terms: "साइन अप करून, मी सहमत आहे",
+    andWord: "आणि",
+    mobileLabel: "मोबाईल किंवा व्हॉट्सअ‍ॅप नंबर",
+    phonePlaceholder: "10-अंकी नंबर",
+    continueBtn: "मोफत तयारी सुरू करा",
+    verifyHeading: "तुमचा नंबर पडताळा",
+    otpSentTo: "OTP पाठवला",
+    editLabel: "संपादित करा",
+    otpLabel: "4-अंकी OTP",
+    resendingOtp: "OTP पुन्हा पाठवत आहे...",
+    resendOtpTimer: "OTP पुन्हा पाठवा ({seconds}s)",
+    resendOtp: "OTP पुन्हा पाठवा",
+    verifyOtpBtn: "OTP पडताळा",
+    trialTitle: "3-दिवसांची मोफत ट्रायल",
+    trialSubtitle: "कोणतेही कार्ड किंवा पेमेंट आवश्यक नाही",
+    errStartDigit: "फोन नंबर 6, 7, 8, किंवा 9 ने सुरू झाला पाहिजे",
+    errNo91: "नंबरमध्ये 91 समाविष्ट करू नका",
+    errValid10: "वैध 10-अंकी फोन नंबर टाका",
+    errMax10: "फोन नंबर 10 अंकांपेक्षा जास्त असू शकत नाही",
+    errFakeNumber: "फक्त खरा मोबाईल नंबर टाका",
+    successValidPhone: "वैध फोन नंबर",
+    errInvalidPhone: "अवैध फोन नंबर",
+    errEnterValidPhone: "वैध फोन नंबर टाका",
+    errLoginFailed: "लॉगिन अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.",
+    errEnterValidOtp: "वैध OTP टाका",
+    errOtpInvalid: "अवैध किंवा कालबाह्य OTP. कृपया पुन्हा प्रयत्न करा.",
+    errServer: "सर्व्हर त्रुटी. कृपया पुन्हा प्रयत्न करा.",
+    errNoInternet: "इंटरनेट कनेक्शन नाही.",
+    errGeneric: "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
+    truecallerBtn: "Start with",
+    truecallerWaiting: "प्रतीक्षा करा…",
+    truecallerUnavailable: "Truecaller अ‍ॅप सापडला नाही — खाली सुरू ठेवा",
+    whatsappBtn: "WhatsApp",
+    orDivider: "किंवा",
   },
 };
 

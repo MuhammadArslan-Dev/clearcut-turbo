@@ -1,6 +1,6 @@
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
-import { Link } from "@clearcut/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import type { AlternativeSummary } from "@/types/cms";
 
 export default function RelatedAlternatives({ items }: { items?: AlternativeSummary[] }) {

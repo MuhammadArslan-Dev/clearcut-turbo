@@ -17,6 +17,11 @@ const COPY: Record<Locale, { trial: string; noCard: string; rating: string }> = 
     noCard: "कोई कार्ड या भुगतान आवश्यक नहीं",
     rating: "हमारे विद्यार्थियों द्वारा दी गई औसत रेटिंग",
   },
+  mr: {
+    trial: "3 दिवसांची मोफत ट्रायल",
+    noCard: "कोणतेही कार्ड किंवा पेमेंट आवश्यक नाही",
+    rating: "आमच्या विद्यार्थ्यांनी दिलेले सरासरी रेटिंग",
+  },
 };
 
 export default function HeroActions() {
