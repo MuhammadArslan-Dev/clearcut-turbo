@@ -2,11 +2,10 @@ import { MetadataRoute } from "next";
 import { formatToSlug } from "@/utils/slugify";
 import { resolveExamId } from "@/lib/api/exams";
 import { getPostsByExam } from "@/lib/api/posts";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 const API = (process.env.BACKEND_URL || "").replace(/\/$/, "");
-
-const ALLOWED_EXAMS = ["ctet"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const urls: MetadataRoute.Sitemap = [];

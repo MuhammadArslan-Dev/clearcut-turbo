@@ -94,16 +94,16 @@ const ExamCourseCard = ({
             {/* </div> */}
           </div>
 
-          <div className="w-[200px] h-full">
+          <div className="flex-1 min-w-0 h-full">
             <div className="col-span-8 h-full flex flex-col justify-center gap-2">
               {points.map((point) => (
                 <div
                   key={point.id}
                   className="body-small !font-normal flex gap-1 items-center mb-0.5"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {point.icon}
-                    <p className="body-medium !font-normal surface-text-gray-muted">
+                    <p className="body-medium !font-normal surface-text-gray-muted whitespace-nowrap">
                       {point?.name} :
                     </p>
                   </div>
@@ -180,7 +180,7 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
               <div className="heading-xlarge font-semibold">
                 {highlightTextUtil("Central Teaching Exams", "Central")}
               </div>
-              <div className="mt-5 grid items-start gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+              <div className="mt-5 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
                 {centralExams.map((item) => {
                   return (
                     <ExamCourseCard
@@ -207,14 +207,7 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
                       <h3 className="heading-large  neutral-blueGrayLight">
                         {state}
                       </h3>
-                      <div
-                        className={[
-                          "mt-4 grid items-start gap-5 grid-cols-2 ",
-                          exams.length > 3
-                            ? "md:grid-cols-2 lg:grid-cols-4"
-                            : "md:grid-cols-2 lg:grid-cols-3",
-                        ].join(" ")}
-                      >
+                      <div className="mt-4 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
                         {exams.map((item) => {
                           return (
                             <ExamCourseCard

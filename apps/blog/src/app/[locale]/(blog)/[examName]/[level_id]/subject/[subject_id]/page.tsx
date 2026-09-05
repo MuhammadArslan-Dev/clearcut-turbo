@@ -7,10 +7,10 @@ import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { unFormatSlug } from "@/utils/slugify";
 import React, { Suspense } from "react";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
-import { siteConfig } from "@/lib/metadata";
 import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 export async function generateMetadata({
   params,
@@ -26,10 +26,16 @@ export async function generateMetadata({
 
   const path = `${examName}/${level_id}/subject/${subject_id}`;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+  const subjectLabel = unFormatSlug(subject_id ?? "");
+
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${subjectLabel} - ${examLabel} ${levelLabel} Questions`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
@@ -53,10 +59,8 @@ export default async function page({
     subject_id,
   } = await params;
 
-  const allowedExams = ["ctet"];
-
   // Check
-  if (!allowedExams.includes(examNameParam?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
     redirect("/");
   }
   const examName = examNameParam?.toUpperCase() ?? "";

@@ -9,8 +9,8 @@ import JsonLd from "@clearcut/ui/json-ld";
 import SubjectsList from "@/components/blog/ui/subjects-list";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
-import { siteConfig } from "@/lib/metadata";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 type Props = {
   params: {
     locale: string;
@@ -29,23 +29,28 @@ export async function generateMetadata({
 
   const path = `${examName}/${level_id}/subject`;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${examLabel} Exam ${levelLabel} - Subject Wise Questions`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
 }
 
 export default async function page({ params }: Props) {
-  const { locale, examName, level_id, subject } = await params;
-  const allowedExams = ["ctet"];
+  const { locale, examName: examNameParam, level_id, subject } = await params;
 
   // Check
-  if (!allowedExams.includes(examName?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
     redirect("/");
   }
+  const examName = examNameParam?.toUpperCase() ?? "";
 
   // ✅ Correct API fetch Subjects
   // `revalidate: 3600` rather than `no-store`: the subject list is public,
@@ -55,7 +60,7 @@ export default async function page({ params }: Props) {
   // the backend. 3600s matches the window used by the other blog content
   // routes.
   const resSubjects = await fetch(
-    `${process.env.BACKEND_URL}/blog/get-subject?exam_id=${examName}&slug=${level_id ?? ""}`,
+    `${process.env.BACKEND_URL}/blog/get-subject?exam_id=${examNameParam}&slug=${level_id ?? ""}`,
     { next: { revalidate: 3600 } },
   );
 
@@ -65,8 +70,8 @@ export default async function page({ params }: Props) {
   //   return notFound;
   // }
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const homeUrl = `${siteUrl}/${locale}`.replace(/\/+$/, "");
-  const examsUrl = `${homeUrl}/${examName}`;
+  const homeUrl = siteUrl;
+  const examsUrl = `${homeUrl}/${examNameParam}`;
   const levelUrl = `${examsUrl}/${level_id}`;
   const subjectUrl = `${levelUrl}/subject`;
 
@@ -82,12 +87,12 @@ export default async function page({ params }: Props) {
     <div>
       <JsonLd data={breadcrumbLd} />
 
-      <CustomBreadcrumbs isShow={true} items={breadcrumbItems} />
       <MainContainer
         maxWidth="max-w-[900px]"
         padding="py-4"
         bgColor="bg-[#f8fafc]"
       >
+        <CustomBreadcrumbs isShow={true} items={breadcrumbItems} />
         <div className="space-y-12">
           <CustomizableHeader
             showEyebrow={false}
@@ -124,8 +129,8 @@ export default async function page({ params }: Props) {
                   <SubjectsList
                     key={index}
                     index={index + 1}
-                    title={item?.section?.name}
-                    pathname={`subject/${formatToSlug(item?.section?.slug)}`}
+                    title={item?.name}
+                    pathname={`subject/${formatToSlug(item?.slug)}`}
                   />
                 ))}
             </div>

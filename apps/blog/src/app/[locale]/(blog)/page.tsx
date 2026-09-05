@@ -1,8 +1,8 @@
 import BlogExamCardsSection from "@/components/blog/blog-exam-cards";
 import JsonLd from "@clearcut/ui/json-ld";
-import { siteConfig } from "@/lib/metadata";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 import { Metadata } from "next";
 import React from "react";
 
@@ -16,10 +16,12 @@ export async function generateMetadata({
   // Empty path = homepage / academy root
   const path = "";
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
   return generateLocaleMetadata({
     locale,
     path,
-    title: "ClearCutoff - Academy",
+    title: "Teaching Exam Preparation - CTET, HTET & More",
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
@@ -39,11 +41,10 @@ export default async function Page({
   );
 
   const res = await resCourses.json();
-  const allowedExams = ["ctet"];
 
   const data = res?.data?.filter((item: any) => {
     const key = item?.short_name?.toLowerCase();
-    return allowedExams.includes(key);
+    return ALLOWED_EXAMS.includes(key);
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";

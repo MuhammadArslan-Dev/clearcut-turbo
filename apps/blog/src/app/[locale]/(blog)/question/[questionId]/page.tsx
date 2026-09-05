@@ -9,8 +9,9 @@ import { Metadata } from "next";
 import { siteConfig } from "@/lib/metadata";
 import { apiFetch } from "@/lib/api/api2";
 import { permanentRedirect } from "@/i18n/navigation";
-import { formatToSlug } from "@/utils/slugify";
+import { formatToSlug, formatStageLabel } from "@/utils/slugify";
 import { limitWords } from "@clearcut/utils/text-limit";
+import { capitalizeFirst } from "@clearcut/utils/text-format";
 import { AppLocale } from "@/types/components/language";
 
 export async function generateMetadata({
@@ -27,8 +28,34 @@ export async function generateMetadata({
 
   const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
 
+  // Same query the page component itself fetches — Next's request
+  // memoization collapses this into a single network call per request.
+  const numericId = (questionId ?? "").split("-").pop();
+  const metaData = await apiFetch(
+    `/blog/get-questions?id=${numericId}&limit_q=2`,
+  );
+  const selectedQuestion = metaData?.data?.find(
+    (item: any) => item.id === parseInt(numericId || ""),
+  );
+
+  // Title text comes from the URL slug, not the raw question sentence —
+  // strip the trailing "-<id>", desluggify, and sentence-case it.
+  const slugText = (questionId ?? "").replace(/-\d+$/, "").replace(/-/g, " ");
+  const questionTitleText = capitalizeFirst(slugText).slice(0, 40);
+
+  const examLabel = selectedQuestion?.stage_id_b?.split("_")[0] ?? "";
+  const paperLabel = formatStageLabel(selectedQuestion?.stage_id_b);
+  const examTitlePart = [examLabel, paperLabel].filter(Boolean).join(" ");
+
+  // No manual "| Clear Cutoff" suffix here — the root layout's title
+  // template (`%s | Clear Cutoff`) already appends it; adding it again
+  // here would duplicate it in the rendered <title>.
+  const title = examTitlePart
+    ? `${questionTitleText} - ${examTitlePart}`
+    : questionTitleText;
+
   return {
-    title: `${siteConfig.name} - ${questionId}`,
+    title,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
 

@@ -10,11 +10,11 @@ import { capitalizeFirst } from "@clearcut/utils/text-format";
 import DetailsSectionCard from "@/components/blog/assessment-question/details-section-card";
 import JsonLd from "@clearcut/ui/json-ld";
 import { Metadata } from "next";
-import { siteConfig } from "@/lib/metadata";
 import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import QuestionListByYear from "@/components/pages/QuestionListByYear";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 export async function generateMetadata({
   params,
@@ -30,10 +30,15 @@ export async function generateMetadata({
 
   const path = `/${examName}/${level_id}/year/${year_id}`;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${examLabel} Exam ${levelLabel} ${year_id ?? ""} - Questions & Answers`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
@@ -59,10 +64,8 @@ export default async function page({
   } = await params;
   const examName = examNameParam?.toUpperCase() ?? "";
 
-  const allowedExams = ["ctet"];
-
   // Check
-  if (!allowedExams.includes(examNameParam?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
     redirect("/");
   }
 

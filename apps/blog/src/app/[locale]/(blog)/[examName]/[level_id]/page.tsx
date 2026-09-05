@@ -9,8 +9,8 @@ import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
-import { siteConfig } from "@/lib/metadata";
 import { apiFetch } from "@/lib/api/api2";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 /* =========================================================
    TYPES (Next.js 15/16)
@@ -45,8 +45,13 @@ export async function generateMetadata({
 
   const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+
   return {
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${examLabel} Exam ${levelLabel}`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
 
@@ -107,9 +112,7 @@ export default async function Page({ params, searchParams }: Props) {
 
   /* ---------- Validate Exam ---------- */
 
-  const allowedExams = ["ctet"];
-
-  if (!allowedExams.includes(examSlug?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examSlug?.toLowerCase())) {
     redirect("/");
   }
 

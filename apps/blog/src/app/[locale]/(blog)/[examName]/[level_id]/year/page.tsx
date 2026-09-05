@@ -15,8 +15,8 @@ import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import SubjectsList from "@/components/blog/ui/subjects-list";
-import { siteConfig } from "@/lib/metadata";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 type Props = {
   params: {
     locale: string;
@@ -35,10 +35,15 @@ export async function generateMetadata({
 
   const path = `${examName}/${level_id}/year`;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${examLabel} Exam ${levelLabel} - Year Wise Papers`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
@@ -50,10 +55,8 @@ export default async function page({ params }: Props) {
 
   const examName = examNameParam?.toUpperCase() ?? "";
 
-  const allowedExams = ["ctet"];
-
   // Check
-  if (!allowedExams.includes(examNameParam?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
     redirect("/");
   }
   // Build query string safely
@@ -67,7 +70,7 @@ export default async function page({ params }: Props) {
 
   const dataYears = await resYears.json();
   if (dataYears?.data?.length === 0) {
-    return notFound;
+    return notFound();
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";

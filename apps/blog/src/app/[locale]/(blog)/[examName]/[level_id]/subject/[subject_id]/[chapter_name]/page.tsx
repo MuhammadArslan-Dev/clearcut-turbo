@@ -8,11 +8,11 @@ import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
-import { siteConfig } from "@/lib/metadata";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { apiFetch } from "@/lib/api/api2";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 export async function generateMetadata({
   params,
@@ -29,10 +29,17 @@ export async function generateMetadata({
 
   const path = `${examName}/${level_id}/subject/${subject_id}/${chapter_name}`;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+  const levelLabel = unFormatSlug(level_id ?? "");
+  const subjectLabel = unFormatSlug(subject_id ?? "");
+  const chapterLabel = unFormatSlug(chapter_name ?? "");
+
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${siteConfig.name} - ${examName} - ${level_id}`,
+    title: `${chapterLabel} - ${subjectLabel} ${examLabel} ${levelLabel} Questions`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
   });
@@ -53,10 +60,8 @@ export default async function page({
   const { locale, examName, level_id, subject, subject_id, chapter_name } =
     await params;
 
-  const allowedExams = ["ctet"];
-
   // Check
-  if (!allowedExams.includes(examName?.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examName?.toLowerCase())) {
     redirect("/");
   }
   const query = `slug=${chapter_name}&exam_name=${examName}`;

@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import StarBadge from "@/components/ui/badge/star-badge";
 import DetailsSectionCard from "./details-section-card";
 import QuestionCard from "../ui/question-card";
-import { formatToSlug, unFormatSlug } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, formatStageLabel } from "@/utils/slugify";
 import removeMd from "remove-markdown";
 import { Button } from "@clearcut/ui/button";
 import { Question, Translation } from "./question-list-by-subject";
@@ -43,24 +43,6 @@ interface AssessmentQuestion {
 }
 
 const options = ["", "A", "B", "C", "D"];
-
-// `stage_id_b` is a compact backend code, e.g. "CTET_P2" or "HTET_L1" — not
-// something to show a user as-is. "P"/"L" are the only stage-type prefixes
-// currently in use (Paper/Level), matching the e_stages names ("Level 1
-// (PRT)", ...) for the exams this app allows.
-function formatStageLabel(stageIdB?: string) {
-  if (!stageIdB) return "";
-  const match = stageIdB.match(/_([A-Za-z]+)(\d+)$/);
-  if (!match) return unFormatSlug(stageIdB);
-  const [, typeCode, num] = match;
-  const typeWord =
-    typeCode.toUpperCase() === "P"
-      ? "Paper"
-      : typeCode.toUpperCase() === "L"
-        ? "Level"
-        : typeCode;
-  return `${typeWord} ${num}`;
-}
 
 export default function AssessmentQuestionBlock({
   data,

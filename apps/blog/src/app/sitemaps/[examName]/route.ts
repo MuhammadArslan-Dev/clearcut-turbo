@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { formatToSlug } from "@/utils/slugify";
 import { resolveExamId } from "@/lib/api/exams";
 import { getPostsByExam } from "@/lib/api/posts";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 const PAYLOAD_API = (process.env.BACKEND_URL || "").replace(/\/$/, "");
-
-const ALLOWED_EXAMS = ["ctet"];
 
 /**
  * GET /sitemaps/[examName].xml
@@ -93,11 +92,11 @@ export async function GET(
       const subjects: any[] = (await subjectsRes.json()).data || [];
 
       for (const subject of subjects) {
-        const ss: string = subject?.section?.slug;
+        const ss: string = subject?.slug;
         if (!ss) continue;
         urls.push({
           url: `${BASE_URL}/${examSlug}/${ls}/subject/${ss}`,
-          lastModified: subject.updatedAt,
+          lastModified: subject.updated_at,
         });
       }
 

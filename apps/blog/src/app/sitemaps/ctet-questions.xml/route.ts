@@ -60,7 +60,7 @@ export async function GET() {
         // exams (HTET/UPTET/REET reuse the same subject slugs), so filtering
         // get-questions-by-section by slug silently returns another exam's
         // chapters. section_id is the only safe key here.
-        const sectionIdB: string = subject?.section?.section_id;
+        const sectionIdB: string = subject?.section_id;
         if (!sectionIdB) continue;
 
         const sectionJson = await fetchJson(

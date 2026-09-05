@@ -10,6 +10,7 @@ import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
 import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 import Link from "next/link";
 
 /* =========================================================
@@ -36,10 +37,11 @@ type Params = {
    on the SAME machine: TTFB 1449ms, DCL 2414ms for /ctet.
 
    `generateStaticParams` is safe here because the parameter space is closed —
-   the page itself rejects anything but "ctet" (`allowedExams` below) and
-   redirects, so there is exactly one valid examName per locale. Unlisted
-   params still work: `dynamicParams` defaults to true, so any other slug is
-   rendered on demand and then hits the same redirect it always did.
+   the page itself rejects anything but the exams in `ALLOWED_EXAMS` and
+   redirects, so there is exactly one valid examName per locale per allowed
+   exam. Unlisted params still work: `dynamicParams` defaults to true, so any
+   other slug is rendered on demand and then hits the same redirect it always
+   did.
 
    3600s matches the window already used by the year/[year_id] route, so the
    freshness contract across blog content routes stays consistent.
@@ -51,6 +53,8 @@ export async function generateStaticParams() {
   return [
     { locale: "en", examName: "ctet" },
     { locale: "hi", examName: "ctet" },
+    { locale: "en", examName: "htet" },
+    { locale: "hi", examName: "htet" },
   ];
 }
 
@@ -72,8 +76,12 @@ export async function generateMetadata({
 
   const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
 
+  // Root layout applies the "%s | Clear Cutoff" title template, so use a
+  // bare title here to avoid a doubled site name.
+  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
+
   return {
-    title: `${siteConfig.name} - ${examName}`,
+    title: `${examLabel} Exam`,
     description:
       "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
 
@@ -117,9 +125,7 @@ export default async function Page({ params }: Params) {
 
   /* ---------- Validate Allowed Exams ---------- */
 
-  const allowedExams = ["ctet"];
-
-  if (!allowedExams.includes(examName.toLowerCase())) {
+  if (!ALLOWED_EXAMS.includes(examName.toLowerCase())) {
     redirect("/");
   }
 
