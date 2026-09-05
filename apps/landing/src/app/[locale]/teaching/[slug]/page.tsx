@@ -28,9 +28,15 @@ export async function generateMetadata({ params }: Props) {
   const exam = getExamBySlug(slug);
 
   if (!exam) {
+    // Still a real, distinct page (see src/lib/data/courses.ts) even when
+    // this slug has no matching entry in STATIC_EXAMS — omitting `url` here
+    // made generateSeoMetadata fall back to the homepage as canonical,
+    // which told Google every such page was a duplicate of "/" and got it
+    // dropped from the index ("Alternate page with proper canonical tag").
     return generateSeoMetadata({
       title: "Teaching Exam Course | Clear Cutoff",
       description: "Explore teaching exam courses on Clear Cutoff — PYQs, notes, video lectures, and test series.",
+      url: `/teaching/${slug}`,
     });
   }
 
