@@ -26,6 +26,7 @@ export default function QuestionListByYear({
   level_id,
   examYear,
   initialQuestions,
+  examState,
 }: {
   examName: string;
   level_id: string;
@@ -35,6 +36,9 @@ export default function QuestionListByYear({
    * uncompressed response that pushed mobile LCP to 9.6s and caused 0.191 CLS
    * as the list pushed the header/footer around on arrival. */
   initialQuestions?: unknown;
+  /** From the backend `exams.state` column — nullable for national exams
+   * (e.g. CTET). Only render the "State" row when the exam actually has one. */
+  examState?: string | null;
 }) {
   // Queries
   const { data, isLoading, isError } = useQuery({
@@ -59,10 +63,7 @@ export default function QuestionListByYear({
       lable: "Level",
       value: unFormatSlug(level_id ?? "") ?? "",
     },
-    {
-      lable: "State",
-      value: "Rajasthan",
-    },
+    ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
   return (

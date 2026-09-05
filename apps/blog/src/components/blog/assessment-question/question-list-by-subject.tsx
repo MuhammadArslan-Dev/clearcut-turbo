@@ -1,12 +1,11 @@
 "use client";
 import React from "react";
 import { limitWords } from "@clearcut/utils/text-limit";
-import { formatToSlug } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug } from "@/utils/slugify";
 import QuestionCard from "../ui/question-card";
 import { Button } from "@clearcut/ui/button";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { capitalizeFirst } from "@clearcut/utils/text-format";
+import { usePathname } from "next/navigation";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { getQuestionsByLanguage } from "@/utils/getQuestionsByLanguage";
 
@@ -77,12 +76,7 @@ interface Chapter {
 
 export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
   const [loadingId, setLoadingId] = React.useState<number | null>(null);
-  const params = useParams<{ subject_id: string | string[] }>();
   const pathname = usePathname();
-  const subjectIdParam = params?.subject_id;
-  const subjectId = Array.isArray(subjectIdParam)
-    ? subjectIdParam[0]
-    : (subjectIdParam ?? "");
   const { courseLanguage } = useLanguageStore();
 
   return (
@@ -137,7 +131,7 @@ export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
                     onClick={() => setLoadingId(question.id)}
                     questionText={snippet}
                     active={loadingId === question.id}
-                    source={capitalizeFirst(subjectId)}
+                    source={unFormatSlug(question.exam_instance_id_b ?? "")}
                   />
                 );
               })}

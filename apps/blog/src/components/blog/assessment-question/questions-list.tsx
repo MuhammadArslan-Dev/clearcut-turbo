@@ -6,7 +6,7 @@ import MainContainer from "@/components/main-container";
 import StarBadge from "@/components/ui/badge/star-badge";
 import { Button } from "@clearcut/ui/button";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
-import { useParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";
 import dynamic from "next/dynamic";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -28,7 +28,6 @@ const YearListModal = dynamic(
 // bundle. Removed.
 import QuestionCard from "../ui/question-card";
 import { getQuestionsByLanguage } from "@/utils/getQuestionsByLanguage";
-import { capitalizeFirst } from "@clearcut/utils/text-format";
 
 export interface Question {
   id: number;
@@ -108,23 +107,11 @@ export default function QuestionsList({ data }: { data: Question[] }) {
     : [];
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const routeParams = useParams<{
-    locale: string;
-    examName: string;
-    level_id: string;
-    year: string;
-    year_id: string;
-    chapter_name: string;
-  }>();
-  const yearId = routeParams?.year_id;
-  const chapterId = routeParams?.chapter_name;
-
-  const sourceName = capitalizeFirst(unFormatSlug(yearId ? yearId : chapterId));
   const courseLang = courseLanguage.toLowerCase() === "en" ? "en" : "hi";
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="bg-white p-4 rounded space-y-2">
         <div className="grid grid-cols-1 gap-4">
           {shown?.map((item, index) => {
             const question = item?.translations;
@@ -155,7 +142,7 @@ export default function QuestionsList({ data }: { data: Question[] }) {
                   onClick={() => setLoadingId(item.id)}
                   questionText={snippet}
                   active={loadingId === item.id}
-                  source={sourceName}
+                  source={unFormatSlug(item.exam_instance_id_b ?? "")}
                   chapter_name={item?.chapter?.name}
                   topic_name={item?.topic?.name}
                 />

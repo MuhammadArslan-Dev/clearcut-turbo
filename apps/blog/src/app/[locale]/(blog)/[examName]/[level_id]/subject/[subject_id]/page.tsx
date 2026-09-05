@@ -6,7 +6,6 @@ import MainContainer from "@/components/main-container";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { unFormatSlug } from "@/utils/slugify";
 import React, { Suspense } from "react";
-import { capitalizeFirst } from "@clearcut/utils/text-format";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { siteConfig } from "@/lib/metadata";
 import { redirect } from "next/navigation";
@@ -64,7 +63,10 @@ export default async function page({
 
   const query = `section_id=${examNameParam}&slug=${subject_id}`;
 
-  const data = await apiFetch(`/blog/get-questions-by-section?${query}`);
+  const [data, examData] = await Promise.all([
+    apiFetch(`/blog/get-questions-by-section?${query}`),
+    apiFetch(`/blog/exam?short_name=${examNameParam}&first=true`),
+  ]);
 
   // Now group them back by chapter
   const groupedByChapter =
@@ -76,6 +78,11 @@ export default async function page({
       questions: item.chapter?.questions_new || [],
     })) || [];
 
+  // `state` is nullable on the backend (national exams like CTET have none) —
+  // only show the row when the exam actually has one, instead of hardcoding
+  // "Rajasthan" for every exam.
+  const examState = examData?.data?.state;
+
   const Labels = [
     {
       lable: "Exam",
@@ -83,12 +90,9 @@ export default async function page({
     },
     {
       lable: "Level",
-      value: level_id ?? "",
+      value: unFormatSlug(level_id ?? ""),
     },
-    {
-      lable: "State",
-      value: "Rajasthan",
-    },
+    ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
 
@@ -102,9 +106,9 @@ export default async function page({
   const breadcrumbItems = [
     { name: "Home", url: homeUrl },
     { name: examName, url: examsUrl },
-    { name: capitalizeFirst(level_id), url: levelUrl },
+    { name: unFormatSlug(level_id), url: levelUrl },
     { name: "Subject", url: subjectUrl },
-    { name: capitalizeFirst(subject_id), url: subjectIdUrl },
+    { name: unFormatSlug(subject_id), url: subjectIdUrl },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
 
@@ -123,7 +127,7 @@ export default async function page({
         <Suspense fallback={<div>Loading...</div>}>
           <div className="w-full bg-white p-4">
             <DetailsSectionCard
-              yearId={unFormatSlug(subject_id).toUpperCase()}
+              yearId={unFormatSlug(subject_id)}
               Labels={Labels}
               sourceLabel="Subject"
               totalQuestions={data?.data ?? 0}

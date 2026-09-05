@@ -7,12 +7,12 @@ import DetailsSectionCard from "@/components/blog/assessment-question/details-se
 import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
-import { capitalizeFirst } from "@clearcut/utils/text-format";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { siteConfig } from "@/lib/metadata";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
+import { apiFetch } from "@/lib/api/api2";
 
 export async function generateMetadata({
   params,
@@ -67,15 +67,23 @@ export default async function page({
   // `no-store` every crawler request re-ran this query and re-rendered the
   // page. Same window as the sibling year/[year_id] route, which already
   // used 3600.
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/blog/get-questions-by-chapter?${query}`,
-    {
-      next: { revalidate: 3600 },
-    },
-  );
+  const [res, examData] = await Promise.all([
+    fetch(
+      `${process.env.BACKEND_URL}/blog/get-questions-by-chapter?${query}`,
+      {
+        next: { revalidate: 3600 },
+      },
+    ),
+    apiFetch(`/blog/exam?short_name=${examName}&first=true`),
+  ]);
   const data = await res.json();
 
   const questions = data?.data?.questions_new;
+
+  // `state` is nullable on the backend (national exams like CTET have none) —
+  // only show the row when the exam actually has one, instead of hardcoding
+  // "Rajasthan" for every exam.
+  const examState = examData?.data?.state;
 
   const Labels = [
     {
@@ -84,12 +92,9 @@ export default async function page({
     },
     {
       lable: "Level",
-      value: level_id.toUpperCase() ?? "",
+      value: unFormatSlug(level_id ?? ""),
     },
-    {
-      lable: "State",
-      value: "Rajasthan",
-    },
+    ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -103,10 +108,10 @@ export default async function page({
   const breadcrumbItems = [
     { name: "Home", url: homeUrl },
     { name: examName, url: examsUrl },
-    { name: capitalizeFirst(level_id), url: levelUrl },
+    { name: unFormatSlug(level_id), url: levelUrl },
     { name: "Subject", url: subjectUrl },
-    { name: capitalizeFirst(subject_id), url: subjectIdUrl },
-    { name: capitalizeFirst(chapter_name), url: chapterUrl },
+    { name: unFormatSlug(subject_id), url: subjectIdUrl },
+    { name: unFormatSlug(chapter_name), url: chapterUrl },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
 

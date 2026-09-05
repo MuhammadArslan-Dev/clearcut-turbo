@@ -71,10 +71,13 @@ export default async function page({
   // Fetch the question list on the server so it ships inside the initial HTML.
   // `apiFetch` resolves to null on failure, so a backend hiccup degrades to the
   // client fetch rather than 500-ing the page.
-  const initialQuestions = await apiFetch(
-    `/blog/get-questions?year=${examYear}`,
-    { revalidate: 3600 },
-  );
+  const [initialQuestions, examData] = await Promise.all([
+    apiFetch(`/blog/get-questions?year=${examYear}`, { revalidate: 3600 }),
+    apiFetch(`/blog/exam?short_name=${examNameParam}&first=true`, {
+      revalidate: 3600,
+    }),
+  ]);
+  const examState = examData?.data?.state;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const homeUrl = siteUrl;
@@ -128,6 +131,7 @@ export default async function page({
           level_id={level_id}
           examYear={examYear}
           initialQuestions={initialQuestions}
+          examState={examState}
           // year_id={examYear}
         />
       </MainContainer>
