@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import Header from "@/components/layout/headers/Header";
 import FooterWrap from "@/components/layout/FooterWrap";
 import FloatingButton from "@/components/global/FloatingButton";
-import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import { getComparisonBySlug, getComparisonSlugs, getMarketingProof, mediaUrl } from "@/lib/api/cms";
+import JsonLd from "@clearcut/ui/json-ld";
 import CompareHero from "@/components/pages/compare/CompareHero";
 import TrustedByBar from "@/components/pages/compare/TrustedByBar";
 import ComparisonPoints from "@/components/pages/compare/ComparisonPoints";
@@ -51,8 +52,19 @@ export default async function ComparePage({ params }: { params: Promise<{ locale
 
   if (!comparison) notFound();
 
+  // No "/compare" listing page exists (it 404s), so this stays Home -> page.
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: comparison.hero.title, item: `${SITE_URL}/compare/${slug}` },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       <Header items={[]} linkShow={false} />
 
       <CompareHero comparison={comparison} />

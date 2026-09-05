@@ -7,6 +7,16 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import JsonLd from "@clearcut/ui/json-ld";
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://clearcutoff.in" },
+    { "@type": "ListItem", position: 2, name: "Contact Us", item: "https://clearcutoff.in/contact-us" },
+  ],
+};
 
 const data = `<p>We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, please don't hesitate to get in touch.</p>
                 <p>&zwj;<strong>Ways to Reach Us:</strong></p>
@@ -54,6 +64,7 @@ export default async function ContactUsPage({ params }: { params: Promise<{ loca
 
   return (
     <div>
+      <JsonLd data={breadcrumbSchema} />
       <Suspense fallback={null}>
         <Header linkShow={false} />
         {/* content section  */}

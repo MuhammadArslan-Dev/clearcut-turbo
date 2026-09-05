@@ -4,6 +4,7 @@ import FooterWrap from "@/components/layout/FooterWrap";
 import FloatingButton from "@/components/global/FloatingButton";
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
+import JsonLd from "@clearcut/ui/json-ld";
 import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import { getAlternativeBySlug, getAlternativesSlugs, getMarketingProof, mediaUrl } from "@/lib/api/cms";
 import { slugify } from "@/lib/utils/slugify";
@@ -62,8 +63,19 @@ export default async function AlternativeArticlePage({
   const tocItems = tools.map((tool) => ({ id: slugify(tool.name), text: tool.name }));
   const pageUrl = `${SITE_URL}/alternatives/${slug}`;
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Alternatives", item: `${SITE_URL}/alternatives` },
+      { "@type": "ListItem", position: 3, name: page.competitorName, item: pageUrl },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       <Header items={[]} linkShow={false} />
 
       <ArticleHero hero={page.hero} />

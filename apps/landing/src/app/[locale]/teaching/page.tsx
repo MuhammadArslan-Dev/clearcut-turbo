@@ -1,11 +1,20 @@
 import Header from "@/components/layout/headers/Header";
 import TeachingPage from "@/components/pages/TeachingPage";
 import { Suspense } from "react";
-import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import FloatingButton from "@/components/global/FloatingButton";
 import FooterWrap from "@/components/layout/FooterWrap";
 import JsonLd from "@clearcut/ui/json-ld";
 import { STATIC_EXAMS } from "@/lib/data/staticExams";
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    { "@type": "ListItem", position: 2, name: "Teaching", item: `${SITE_URL}/teaching` },
+  ],
+};
 
 // Google's Course rich result requires an ItemList of at least 3 courses on
 // a "summary page" (docs: developers.google.com/search/docs/appearance/
@@ -79,6 +88,7 @@ export default async function Teaching({
   return (
     <>
       <JsonLd data={getCourseListSchema()} />
+      <JsonLd data={breadcrumbSchema} />
       <div className="min-h-screen flex flex-col">
         <Header />
 

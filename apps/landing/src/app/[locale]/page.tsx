@@ -18,6 +18,10 @@ const organizationSchema = {
   logo: "https://www.clearcutoff.in/icons/Logo-512x512.png",
   description:
     "Clear Cutoff helps you crack teaching exams like CTET, HTET, UPTET, REET, and HPTET with focused courses, PYQs, notes, and test series.",
+  // Google's own Organization example puts telephone directly on the
+  // organization, in addition to (not instead of) a more specific
+  // contactPoint below — same number, just also exposed at this level.
+  telephone: "+91-7210708599",
   address: {
     "@type": "PostalAddress",
     streetAddress: "Merton, Omaxe North Avenue, Sector 15",
@@ -29,7 +33,9 @@ const organizationSchema = {
   contactPoint: {
     "@type": "ContactPoint",
     telephone: "+91-7210708599",
-    contactType: "customer support",
+    // schema.org's own ContactPoint examples use "customer service" — not
+    // "customer support" — as the conventional value for this field.
+    contactType: "customer service",
     availableLanguage: ["English", "Hindi"],
   },
   sameAs: [

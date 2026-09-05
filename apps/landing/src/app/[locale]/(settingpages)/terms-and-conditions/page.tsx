@@ -6,6 +6,21 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import JsonLd from "@clearcut/ui/json-ld";
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://clearcutoff.in" },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Terms & Conditions",
+      item: "https://clearcutoff.in/terms-and-conditions",
+    },
+  ],
+};
 
 const data = `<p><span style="font-weight: 400;">We at Clearcutoff.in, under Rohit Dalal (&ldquo;the Company/Clear Cutoff/we/us&rdquo;) are here to help our users prepare for competitive examinations. We provide the users with certain Services (defined below) through this website, or other affiliated services or websites and mobile applications (together, &ldquo;Platforms&rdquo;).</span></p>
 <p><span style="font-weight: 400;">These terms of use (&ldquo;Terms&rdquo;) create a legally binding agreement between the Company and the users on the Platforms, and whenever you access the Platform or any of the Services, or interact with the Platform in any manner, you are indicating that you have read and understood these Terms, and agree to be bound by these Terms. You also agree that these Terms apply to you irrespective of whether you have registered with us or not.</span></p>
@@ -186,6 +201,7 @@ export default async function ContactUsPage({ params }: { params: Promise<{ loca
   return (
     <Suspense fallback={null}>
       <div>
+        <JsonLd data={breadcrumbSchema} />
         <Header linkShow={false} />
         {/* content section  */}
         <SectionBlock

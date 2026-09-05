@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import CoursrMarketingPage from "@/components/pages/marketing/coursr-marketing-page";
-import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import JsonLd from "@clearcut/ui/json-ld";
 import { STATIC_EXAMS } from "@/lib/data/staticExams";
 
@@ -70,9 +70,21 @@ export default async function page({ params }: { params: { slug: string } }) {
     keywords: `${name}, ${full}, teaching exam preparation, Clear Cutoff`,
   };
 
+  // No intermediate "/exam" listing page exists (it 404s) — a 3-level trail
+  // through it would link to a dead page, so this stays Home -> exam page.
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: `${name} 2026 Course`, item: `${SITE_URL}/exam/${slug}` },
+    ],
+  };
+
   return (
     <>
       <JsonLd data={courseSchema} />
+      <JsonLd data={breadcrumbSchema} />
       <CoursrMarketingPage data={code} />
     </>
   );

@@ -3,7 +3,7 @@ import CoursePage from "@/components/pages/CoursePage";
 import { getCourse } from "@/lib/data/courses";
 import { getExamBySlug } from "@/lib/data/staticExams";
 import JsonLd from "@clearcut/ui/json-ld";
-import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import FloatingButton from "@/components/global/FloatingButton";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
@@ -59,6 +59,23 @@ export default async function Course({ params }: Props) {
     <>
       <div className="flex flex-col">
         <Header items={course?.navLink} />
+
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+              { "@type": "ListItem", position: 2, name: "Teaching", item: `${SITE_URL}/teaching` },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: exam?.short_name ?? slug.toUpperCase(),
+                item: `${SITE_URL}/teaching/${slug}`,
+              },
+            ],
+          }}
+        />
 
         {exam && (
           <JsonLd

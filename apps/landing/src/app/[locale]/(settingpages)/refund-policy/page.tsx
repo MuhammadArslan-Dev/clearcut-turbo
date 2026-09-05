@@ -6,6 +6,16 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import JsonLd from "@clearcut/ui/json-ld";
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://clearcutoff.in" },
+    { "@type": "ListItem", position: 2, name: "Refund Policy", item: "https://clearcutoff.in/refund-policy" },
+  ],
+};
 
 const data = `<ol>
 <li style="font-weight: 400;"><span style="font-weight: 400;">⁠You, as a User, will be eligible for the refund only in the case you're not receiving the services. Such an application/ refund request has to be communicated at </span><a href="mailto:hi@clearcutoff.in"><span style="font-weight: 400;">hi@clearcutoff.in</span></a><span style="font-weight: 400;">.</span></li>
@@ -65,6 +75,7 @@ export default async function ContactUsPage({ params }: { params: Promise<{ loca
 
   return (
     <div>
+      <JsonLd data={breadcrumbSchema} />
       <Suspense fallback={null}>
         <Header linkShow={false} />
         {/* content section  */}

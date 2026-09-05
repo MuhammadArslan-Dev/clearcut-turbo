@@ -5,12 +5,22 @@ import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
 import { Link } from "@/i18n/navigation";
 import Button from "@clearcut/ui/button";
-import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import { getAlternativesList, getMarketingProof } from "@/lib/api/cms";
 import StatsRow from "@/components/pages/compare/StatsRow";
 import CtaBanner from "@/components/pages/compare/CtaBanner";
+import JsonLd from "@clearcut/ui/json-ld";
 
 export const revalidate = 3600;
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    { "@type": "ListItem", position: 2, name: "Alternatives", item: `${SITE_URL}/alternatives` },
+  ],
+};
 
 export function generateMetadata() {
   return generateSeoMetadata({
@@ -31,6 +41,7 @@ export default async function AlternativesIndexPage({ params }: { params: Promis
 
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       <Header items={[]} linkShow={false} />
 
       <Section sectionId="alternatives-hero" padding="py-ym-section md:py-yd-section px-3">
