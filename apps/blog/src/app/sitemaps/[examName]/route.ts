@@ -66,7 +66,11 @@ export async function GET(
       fetch(`${PAYLOAD_API}/blog/get-years?exam_id=${examSlug}`),
     ]);
 
-    const levels: any[] = (await levelsRes.json()).data || [];
+    // Same fix as apps/blog/src/app/sitemap.ts: get-enavigation returns
+    // levels for every exam, so this must be filtered to the current one.
+    const levels: any[] = ((await levelsRes.json()).data || []).filter(
+      (l: any) => (l?.exam_id_b || "").toLowerCase() === `teaching_${examSlug}`,
+    );
     const years: any[] = (await yearsRes.json()).data || [];
 
     for (const level of levels) {

@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: [
       `${BASE_URL}/sitemap.xml`,
       `${BASE_URL}/sitemaps/ctet.xml`,
+      `${BASE_URL}/sitemaps/ctet-questions.xml`,
     ],
   };
 }

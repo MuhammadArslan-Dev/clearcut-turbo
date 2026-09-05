@@ -67,7 +67,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         fetch(`${API}/blog/get-years?exam_id=${examSlug}`, { next: { revalidate: 3600 } }).then((r) => r.json()),
       ]);
 
-      const levels: any[] = levelsJson?.data || [];
+      // get-enavigation returns levels for every exam, not just this one —
+      // each level carries its own exam_id_b (e.g. "teaching_CTET",
+      // "teaching_HTET"). Without this filter every exam's levels got
+      // attached to whichever exam was currently looping, producing
+      // nonsense URLs like "/ctet/up-pgt" and "/ctet/hptgt" in the sitemap.
+      const levels: any[] = (levelsJson?.data || []).filter(
+        (l: any) => (l?.exam_id_b || "").toLowerCase() === `teaching_${examSlug}`,
+      );
       const years: any[] = yearsJson?.data || [];
 
       for (const level of levels) {
