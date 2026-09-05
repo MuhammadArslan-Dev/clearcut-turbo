@@ -14,14 +14,20 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
   name: "Clear Cutoff",
+  alternateName: "ClearCutoff",
   url: "https://clearcutoff.in",
   logo: "https://www.clearcutoff.in/icons/Logo-512x512.png",
   description:
     "Clear Cutoff helps you crack teaching exams like CTET, HTET, UPTET, REET, and HPTET with focused courses, PYQs, notes, and test series.",
-  // Google's own Organization example puts telephone directly on the
+  // Google's own Organization example puts telephone/email directly on the
   // organization, in addition to (not instead of) a more specific
-  // contactPoint below — same number, just also exposed at this level.
+  // contactPoint below — same values, just also exposed at this level.
   telephone: "+91-7210708599",
+  email: "hi@clearcutoff.in",
+  foundingDate: "2025-02-13",
+  // GSTIN (Indian tax ID) — taxID, not vatID, since GST is India's tax
+  // regime rather than EU-style VAT.
+  taxID: "06BZUPD0626B1ZQ",
   address: {
     "@type": "PostalAddress",
     streetAddress: "Merton, Omaxe North Avenue, Sector 15",
@@ -33,6 +39,7 @@ const organizationSchema = {
   contactPoint: {
     "@type": "ContactPoint",
     telephone: "+91-7210708599",
+    email: "hi@clearcutoff.in",
     // schema.org's own ContactPoint examples use "customer service" — not
     // "customer support" — as the conventional value for this field.
     contactType: "customer service",
