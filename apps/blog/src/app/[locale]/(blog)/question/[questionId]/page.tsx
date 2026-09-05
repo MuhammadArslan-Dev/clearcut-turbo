@@ -102,8 +102,8 @@ export default async function page({
 
   const faqItems = [
     {
-      question: selectedQuestion?.question_text,
-      answer: selectedQuestion?.explanation,
+      question: slugTranslation?.question,
+      answer: slugTranslation?.explanation,
       questionAuthor: "ClearCutoff",
       answerAuthor: "ClearCutoff",
       dateCreated: selectedQuestion?.created_at,
