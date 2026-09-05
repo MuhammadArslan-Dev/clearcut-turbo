@@ -3,6 +3,10 @@ import "@/app/globals.css";
 
 import ErrorPage from '@/components/error-page'
 
+
+
+
+
 // This is the root-level not-found.tsx (outside [locale]), so it does not
 // inherit [locale]/layout.tsx's <body> — including the Noto_Sans font
 // variable class that lives on it. Without loading the font here too,
