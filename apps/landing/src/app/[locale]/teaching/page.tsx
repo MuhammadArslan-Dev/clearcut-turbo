@@ -4,6 +4,51 @@ import { Suspense } from "react";
 import { generateSeoMetadata } from "@/lib/seo/metadata";
 import FloatingButton from "@/components/global/FloatingButton";
 import FooterWrap from "@/components/layout/FooterWrap";
+import JsonLd from "@clearcut/ui/json-ld";
+import { STATIC_EXAMS } from "@/lib/data/staticExams";
+
+// Google's Course rich result requires an ItemList of at least 3 courses on
+// a "summary page" (docs: developers.google.com/search/docs/appearance/
+// structured-data/course) — a bare Course block on each individual
+// /teaching/[slug] page (already present there) does not qualify on its own.
+// short_name -> live page slug is a manual map because it doesn't match
+// getExamBySlug's own matching (e.g. short_name "UP PGT" has a space, the
+// route is "/teaching/uppgt"), and "ugc" has no course page yet (404).
+const COURSE_PAGE_SLUG: Record<string, string> = {
+  HTET: "htet",
+  REET: "reet",
+  CTET: "ctet",
+  UPTET: "uptet",
+  HPTET: "hptet",
+  "UP PGT": "uppgt",
+  "UP TGT": "uptgt",
+};
+
+function getCourseListSchema() {
+  const items = STATIC_EXAMS.filter((e) => e.status === "Active" && COURSE_PAGE_SLUG[e.short_name]).map(
+    (exam, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Course",
+        url: `https://clearcutoff.in/teaching/${COURSE_PAGE_SLUG[exam.short_name]}`,
+        name: exam.name,
+        description: exam.name,
+        provider: {
+          "@type": "Organization",
+          name: "Clear Cutoff",
+          sameAs: "https://clearcutoff.in",
+        },
+      },
+    }),
+  );
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: items,
+  };
+}
 
 export function generateMetadata() {
   return generateSeoMetadata({
@@ -33,6 +78,7 @@ export default async function Teaching({
   const resolvedLocale = locale === "hi" ? "hi" : "en";
   return (
     <>
+      <JsonLd data={getCourseListSchema()} />
       <div className="min-h-screen flex flex-col">
         <Header />
 

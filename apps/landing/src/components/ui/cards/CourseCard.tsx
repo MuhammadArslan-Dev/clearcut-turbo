@@ -112,7 +112,10 @@ export default function CourseCard({ course, data, badge, viewDetailsClick, prio
         </div>
         <div className="flex items-center gap-2">
           <ContinueFreeButton fullWidth size="md" showIcon={false} text={t.startFree} />
-          <Link href={`/teaching/${data?.short_name.toLocaleLowerCase()}`} className="w-full" prefetch>
+          {/* Course page slugs have no separator (e.g. "uppgt", not "up-pgt"
+              or "up pgt") — short_name values like "UP PGT" need their
+              spaces stripped, not just lowercased, or this links to a 404. */}
+          <Link href={`/teaching/${data?.short_name.toLocaleLowerCase().replace(/\s+/g, "")}`} className="w-full" prefetch>
             <Button onClick={viewDetailsClick} fullWidth size="md" variant="outlined" rounded="50px" padding="7px 4px">
               {t.viewDetails}
             </Button>
