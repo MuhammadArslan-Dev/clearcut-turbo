@@ -277,6 +277,19 @@ export default function StartAuthForm({
     if (hasTrackedRef.current) return;
     hasTrackedRef.current = true;
 
+    // Fired here (on landing, not on the referring page) so it fires no
+    // matter who links to /start — the Astro go-marketing CTAs (which now
+    // navigate straight here instead of opening a local modal, see
+    // reference_astro_marketing_project memory), the FAQ page's plain link,
+    // or any future entry point. element_location/element_type are read off
+    // the URL the same way `course`/`showTruecaller` already are elsewhere
+    // in this file — an external page can attribute the click by appending
+    // them to its own /start link; absent params just mean "unattributed".
+    const params = new URLSearchParams(window.location.search);
+    logAmplitudeEvent("Authentication Initiated", {
+      element_location: params.get("element_location") || "start_page",
+      element_type: params.get("element_type") || "link",
+    });
     logAmplitudeEvent("Authentication Options Viewed", {
       initial_intent: "login",
       options_available: "phone",
