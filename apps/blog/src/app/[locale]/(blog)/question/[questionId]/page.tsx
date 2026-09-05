@@ -8,6 +8,10 @@ import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { Metadata } from "next";
 import { siteConfig } from "@/lib/metadata";
 import { apiFetch } from "@/lib/api/api2";
+import { permanentRedirect } from "@/i18n/navigation";
+import { formatToSlug } from "@/utils/slugify";
+import { limitWords } from "@clearcut/utils/text-limit";
+import { AppLocale } from "@/types/components/language";
 
 export async function generateMetadata({
   params,
@@ -79,6 +83,23 @@ export default async function page({
   const selectedQuestion = data?.data?.find(
     (item: any) => item.id === parseInt(questionId || ""),
   );
+
+  // Enforce the canonical slug-id URL so every question resolves to exactly
+  // one address — without this, bare-id links (or any wrong slug) render
+  // successfully instead of redirecting, producing duplicate-content URLs.
+  const slugTranslation = selectedQuestion?.translations?.[0];
+  if (selectedQuestion && slugTranslation) {
+    const plainQuestion = (slugTranslation.question || "").replace(/<[^>]*>/g, "");
+    const slug = slugTranslation.ai_slug
+      ? slugTranslation.ai_slug
+      : formatToSlug(limitWords(plainQuestion, 4));
+    const canonicalParam = `${slug}-${questionId}`;
+
+    if (questionIdParam !== canonicalParam) {
+      permanentRedirect({ href: `/question/${canonicalParam}`, locale: locale as AppLocale });
+    }
+  }
+
   const faqItems = [
     {
       question: selectedQuestion?.question_text,

@@ -1,5 +1,5 @@
 import {createNavigation} from 'next-intl/navigation';
 import {routing} from '@clearcut/i18n/routing';
 
-export const {Link, getPathname, redirect, usePathname, useRouter} =
+export const {Link, getPathname, redirect, permanentRedirect, usePathname, useRouter} =
   createNavigation(routing);
