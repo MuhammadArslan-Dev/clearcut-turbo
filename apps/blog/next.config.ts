@@ -22,7 +22,12 @@ const config: NextConfig = {
   reactStrictMode: true,
   compress: true,
   experimental: {
-    optimizeCss: true, // remove unused CSS automatically
+    // optimizeCss (critters) used to run alongside this, but it assumes
+    // `.next/static/css` exists — inlineCss consumes that output instead,
+    // so the directory is never created and OpenNext's Cloudflare bundler
+    // (which unconditionally copies `static/css` whenever optimizeCss is on)
+    // fails with ENOENT. inlineCss already covers the same critical-CSS
+    // goal, so optimizeCss was dropped rather than worked around.
     inlineCss: true, // inline critical CSS
     // Measured: 241 KiB of unused JavaScript on every page, concentrated in the
     // barrel-imported icon/animation packages. `optimizePackageImports` rewrites
