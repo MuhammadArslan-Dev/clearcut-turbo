@@ -159,7 +159,7 @@ export default async function Page({ params, searchParams }: Props) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
 
   const breadcrumbItems = [
-    { name: "Home", url: siteUrl },
+    { name: "Home", url: siteUrl || "/" },
     { name: examName, url: `${siteUrl}/${examSlug}` },
     {
       name: levelName,

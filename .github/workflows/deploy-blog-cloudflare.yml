@@ -43,6 +43,11 @@ jobs:
           BACKEND_URL: ${{ secrets.BLOG_BACKEND_URL }}
           NEXT_PUBLIC_API_URL: ${{ secrets.BLOG_NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_PAYLOAD_URL: ${{ secrets.BLOG_NEXT_PUBLIC_PAYLOAD_URL }}
+          # Not a secret (it's the public site origin) — set to the eventual
+          # clearcutoff.in domain now so metadata/canonical/breadcrumb URLs
+          # baked in at build time are already correct after the DNS cutover,
+          # not just on the workers.dev test URL.
+          NEXT_PUBLIC_SITE_URL: "https://clearcutoff.in"
         run: pnpm run cf:build
 
       # BACKEND_URL is passed here too (not just at build time) because it's

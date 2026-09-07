@@ -103,7 +103,7 @@ export default async function page({
   const homeUrl = siteUrl;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl },
+    { name: "Home", url: homeUrl || "/" },
     { name: "Question", url: `${homeUrl}/question/${questionId}` },
   ];
 

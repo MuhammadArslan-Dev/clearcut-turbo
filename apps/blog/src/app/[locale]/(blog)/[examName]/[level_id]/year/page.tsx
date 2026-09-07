@@ -78,7 +78,7 @@ export default async function page({ params }: Props) {
   const examsUrl = `${homeUrl}/${examNameParam}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl },
+    { name: "Home", url: homeUrl || "/" },
     { name: examName, url: examsUrl },
     {
       name: unFormatSlug(level_id ?? ""),

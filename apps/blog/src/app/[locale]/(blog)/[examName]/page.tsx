@@ -148,7 +148,7 @@ export default async function Page({ params }: Params) {
   const examUrl = `${siteUrl}/${examSlug}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: siteUrl },
+    { name: "Home", url: siteUrl || "/" },
     { name: examName, url: examUrl },
   ];
 

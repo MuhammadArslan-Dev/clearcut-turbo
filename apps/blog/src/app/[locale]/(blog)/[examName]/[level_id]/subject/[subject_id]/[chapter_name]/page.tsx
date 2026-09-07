@@ -111,7 +111,7 @@ export default async function page({
   const chapterUrl = `${subjectIdUrl}/${chapter_name}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl },
+    { name: "Home", url: homeUrl || "/" },
     { name: examName, url: examsUrl },
     { name: unFormatSlug(level_id), url: levelUrl },
     { name: "Subject", url: subjectUrl },
