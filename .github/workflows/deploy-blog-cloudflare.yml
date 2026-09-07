@@ -15,6 +15,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # All 5 secrets were created as Environment secrets under "Production"
+    # (not Repository secrets) — a job only sees those when it declares the
+    # matching environment, otherwise `secrets.X` silently resolves to "".
+    environment: Production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
