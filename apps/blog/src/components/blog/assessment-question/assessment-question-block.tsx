@@ -176,7 +176,10 @@ export default function AssessmentQuestionBlock({
       <div className="bg-white p-3 space-y-4">
         <div className="flex justify-between item-center ">
           <div className="heading-small !font-semibold surface-text-gray-normal">
-            Similar Questions from REET Exam - Paper 1 - Year 2018
+            Similar Questions from{" "}
+            {selectedQuestion?.stage_id_b?.split("_")[0] || ""} Exam -{" "}
+            {formatStageLabel(selectedQuestion?.stage_id_b)} - Year{" "}
+            {selectedQuestion?.exam_instance_id_b?.split("_")[1] || ""}
           </div>
         </div>
 
