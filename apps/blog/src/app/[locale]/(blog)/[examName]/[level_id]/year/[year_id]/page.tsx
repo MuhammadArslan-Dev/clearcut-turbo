@@ -75,7 +75,9 @@ export default async function page({
   // `apiFetch` resolves to null on failure, so a backend hiccup degrades to the
   // client fetch rather than 500-ing the page.
   const [initialQuestions, examData] = await Promise.all([
-    apiFetch(`/blog/get-questions?year=${examYear}`, { revalidate: 3600 }),
+    apiFetch(`/blog/get-questions?year=${examYear}&level_id=${level_id}`, {
+      revalidate: 3600,
+    }),
     apiFetch(`/blog/exam?short_name=${examNameParam}&first=true`, {
       revalidate: 3600,
     }),

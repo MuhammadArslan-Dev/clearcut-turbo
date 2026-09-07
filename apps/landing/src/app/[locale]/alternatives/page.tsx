@@ -25,8 +25,9 @@ const breadcrumbSchema = {
 export function generateMetadata() {
   return generateSeoMetadata({
     title: "Clear Cutoff Alternatives & Competitors",
-    description: "Explore how Clear Cutoff compares to other teaching-exam prep platforms.",
-    keywords: ["Clear Cutoff alternatives", "teaching exam prep"],
+    description:
+      "See how Clear Cutoff compares to other CTET, HTET, and UPTET prep apps on courses, test series, pricing, and PYQ coverage — pick the right one for you.",
+    keywords: ["Clear Cutoff alternatives", "teaching exam prep", "CTET app comparison", "HTET app comparison"],
     url: "/alternatives",
   });
 }

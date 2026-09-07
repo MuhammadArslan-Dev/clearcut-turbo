@@ -7,8 +7,8 @@ import CourseCheckBadge from "../ui/badge/course-check-badge";
 import QuestionsList from "../blog/assessment-question/questions-list";
 import { useQuery } from "@tanstack/react-query";
 
-const getQuestion = async (examYear: string) => {
-  const query = `year=${examYear}`;
+const getQuestion = async (examYear: string, levelId: string) => {
+  const query = `year=${examYear}&level_id=${levelId}`;
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/blog/get-questions?${query}`,
@@ -42,8 +42,8 @@ export default function QuestionListByYear({
 }) {
   // Queries
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["questions", examYear],
-    queryFn: () => getQuestion(examYear),
+    queryKey: ["questions", examYear, level_id],
+    queryFn: () => getQuestion(examYear, level_id),
     enabled: !!examYear,
     // With initialData present React Query treats the cache as fresh, so no
     // duplicate client fetch on first paint. `?? undefined` matters: the server

@@ -195,7 +195,15 @@ export const STATIC_EXAMS: Exam[] = [
 ];
 
 export function getExamBySlug(slug: string): Exam | undefined {
+  // Normalise spaces out of both sides before comparing — course slugs are
+  // space-free ("uptgt", "uppgt") while STATIC_EXAMS short_names sometimes
+  // have a space ("UP TGT", "UP PGT"). Without this, those course pages fell
+  // through to the generic /teaching/[slug] fallback metadata (see that
+  // page's generateMetadata), which meant several distinct sitemap URLs
+  // shared one identical <title>/<meta description> — a duplicate-content
+  // signal to Google.
+  const normalized = slug.toLowerCase().replace(/\s+/g, "");
   return STATIC_EXAMS.find(
-    (e) => e.short_name.toLowerCase() === slug.toLowerCase(),
+    (e) => e.short_name.toLowerCase().replace(/\s+/g, "") === normalized,
   );
 }

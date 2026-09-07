@@ -108,7 +108,7 @@ export function generateMetadata() {
   return generateSeoMetadata({
     title: "Clear Cutoff — Crack HTET, CTET, UPTET & More",
     description:
-      "Clear Cutoff helps you crack teaching exams like CTET, HTET, UPTET with focused courses, PYQs, notes, and test series.",
+      "Clear Cutoff helps you crack CTET, HTET, UPTET, REET, and HPTET with video lectures, PYQs, revision notes, and full-length test series — plus a refund guarantee.",
     keywords: ["CTET", "HTET", "UPTET", "REET", "HPTET", "teaching exam preparation", "Clear Cutoff"],
     url: "/",
   });

@@ -155,7 +155,7 @@ function ResumeBar({
   };
 
   return (
-    <div className="md:px-3 px-2 pb-3 bg-transparent flex items-center justify-center">
+    <div className="hidden md:flex md:px-3 pb-3 bg-transparent items-center justify-center">
       <div className="bg-white border-2 border-brand w-full rounded-lg px-2 md:px-4 py-2 md:py-3 md:h-[72px] max-w-[1152px]">
         <div className="flex flex-col md:flex-row md:items-center md:gap-4 h-full">
           {/* ---------------- Left: Current Exam (Desktop only) ---------------- */}
