@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "clearcut-blog",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Lets the worker call itself, which OpenNext needs for background ISR
+  // revalidation. Must match "name" above.
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "clearcut-blog"
+    }
+  ],
+  // Persistent ISR/SSG cache — create the bucket once with
+  // `npx wrangler r2 bucket create clearcut-blog-isr-cache` before first deploy.
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "clearcut-blog-isr-cache"
+    }
+  ],
+  // Keeps next/image working the same way it does on Vercel (on-the-fly
+  // resize/format conversion) instead of shipping unoptimized images.
+  // Requires Cloudflare Images to be enabled on the account/zone.
+  "images": {
+    "binding": "IMAGES"
+  }
+  // BACKEND_URL is the only non-NEXT_PUBLIC_* var this app reads at request
+  // time (src/lib/api/api2.ts, sitemap route handlers) — everything else is
+  // NEXT_PUBLIC_* and gets inlined into the bundle at build time, so it only
+  // needs to be present in the CI build environment, not here. BACKEND_URL
+  // is injected at deploy time via `wrangler deploy --var BACKEND_URL:...`
+  // (see .github/workflows/deploy-blog-cloudflare.yml) rather than committed
+  // here, since its value differs between the workers.dev test deploy and
+  // the eventual clearcutoff.in production one.
+}

@@ -1,6 +1,11 @@
 import { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { withSentryConfig } from "@sentry/nextjs";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+// No-ops outside `next dev`; lets local dev read Cloudflare bindings
+// (R2/Images) the same way the deployed worker does.
+initOpenNextCloudflareForDev();
 
 const withNextIntl = createNextIntlPlugin({
   experimental: {
