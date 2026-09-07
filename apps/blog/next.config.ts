@@ -22,13 +22,14 @@ const config: NextConfig = {
   reactStrictMode: true,
   compress: true,
   experimental: {
-    // optimizeCss (critters) used to run alongside this, but it assumes
-    // `.next/static/css` exists — inlineCss consumes that output instead,
-    // so the directory is never created and OpenNext's Cloudflare bundler
-    // (which unconditionally copies `static/css` whenever optimizeCss is on)
-    // fails with ENOENT. inlineCss already covers the same critical-CSS
-    // goal, so optimizeCss was dropped rather than worked around.
-    inlineCss: true, // inline critical CSS
+    // inlineCss (and the optimizeCss/critters pass it forces on internally,
+    // regardless of whether optimizeCss is set here) skips writing
+    // `.next/static/css`. OpenNext's Cloudflare bundler unconditionally
+    // copies that directory whenever the *build's normalized* config
+    // reports optimizeCss on — reading Next's own manifest, not this file
+    // — so it fails with ENOENT even with optimizeCss absent from here.
+    // Disabling inlineCss is the only way to stop Next force-enabling
+    // optimizeCss internally; re-enable once OpenNext handles this case.
     // Measured: 241 KiB of unused JavaScript on every page, concentrated in the
     // barrel-imported icon/animation packages. `optimizePackageImports` rewrites
     // those to per-module imports so only what's used is bundled.
