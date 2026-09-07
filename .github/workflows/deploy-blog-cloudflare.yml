@@ -1,0 +1,54 @@
+name: Deploy blog to Cloudflare
+
+# Manual for now — this deploys to the workers.dev test URL while blog is
+# being verified on Cloudflare before the clearcutoff.in DNS cutover from
+# Vercel. Once verified, add a `push: { branches: [main], paths: ["apps/blog/**"] }`
+# trigger here for continuous deploys.
+#
+# Cloudflare's own Git-integration (Workers Builds) would avoid this file
+# entirely, but it requires the Administrator role on the Cloudflare
+# account, which this account doesn't have — hence a plain CI workflow
+# using a scoped API token instead.
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # next build inlines every NEXT_PUBLIC_* var into the bundle right now —
+      # there's no second chance to change these without rebuilding.
+      - name: Build (Next.js + OpenNext Cloudflare bundle)
+        working-directory: apps/blog
+        env:
+          BACKEND_URL: ${{ secrets.BLOG_BACKEND_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.BLOG_NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_PAYLOAD_URL: ${{ secrets.BLOG_NEXT_PUBLIC_PAYLOAD_URL }}
+        run: pnpm run cf:build
+
+      # BACKEND_URL is passed here too (not just at build time) because it's
+      # the one var this app reads from process.env per-request rather than
+      # only at build time — see the comment in wrangler.jsonc.
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/blog
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >
+          pnpm exec wrangler deploy
+          --var BACKEND_URL:${{ secrets.BLOG_BACKEND_URL }}
