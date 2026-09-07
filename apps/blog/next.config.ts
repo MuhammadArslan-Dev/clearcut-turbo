@@ -3,8 +3,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 import { withSentryConfig } from "@sentry/nextjs";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-// No-ops outside `next dev`; lets local dev read Cloudflare bindings
-// (R2/Images) the same way the deployed worker does.
+// No-ops outside `next dev`; lets local dev read Cloudflare bindings the
+// same way the deployed worker does.
 initOpenNextCloudflareForDev();
 
 const withNextIntl = createNextIntlPlugin({
@@ -38,6 +38,11 @@ const config: NextConfig = {
     ignoreBuildErrors: true, // allows build even with type errors
   },
   images: {
+    // Skips Next's on-the-fly resize/format conversion — needs either a
+    // Cloudflare Images subscription or a custom loader to work on Workers,
+    // neither set up yet. Images still render at original size/format; this
+    // can be removed once Cloudflare Images is enabled (see wrangler.jsonc).
+    unoptimized: true,
     // `images.domains` is deprecated in Next 16 (it warned on every boot); the
     // three hosts it listed are expressed as remotePatterns below instead.
     remotePatterns: [
