@@ -5,6 +5,7 @@ import ResizeImageTool from "./ResizeImageTool";
 import BrowseByExam from "./BrowseByExam";
 import MoreTools from "./MoreTools";
 import ToolModeTabs from "./ToolModeTabs";
+import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
 import { getDict, Locale } from "@/lib/dictionary";
 
@@ -126,6 +127,8 @@ export default function ResizeHubPage({ locale = "en" }: { locale?: Locale }) {
         <ResizeImageTool allowedPresets={["photo", "draw"]} locale={locale} />
 
         <HowItWorks locale={locale} />
+
+        <AppDownloadWidget locale={locale} />
 
         <MoreTools locale={locale} />
 

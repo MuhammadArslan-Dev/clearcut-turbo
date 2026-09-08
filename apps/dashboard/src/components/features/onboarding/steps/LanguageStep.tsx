@@ -10,12 +10,9 @@ import { useTranslations } from "next-intl";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { trackEvent } from "@/lib/analytics/browser";
 import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
-import ShimmerButton from "@/components/ui/button/shimmer-button";
-import { motion } from "framer-motion";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
 import { useSearchParams } from "next/navigation";
 import OptionSelectionCard from "@/components/ui/cards/option-selection-card";
-import { ChevronIcon } from "@/components/ui/icons";
 import MainButton from "@/components/ui/button/main-button";
 
 const LANGUAGES = [
@@ -85,6 +82,7 @@ export default function LanguageStep({
                   height={48}
                   alt="Main Logo"
                   className="w-[239px] h-[48px]"
+                  priority
                 />
               </div>
             </div>

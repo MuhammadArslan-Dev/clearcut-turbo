@@ -1,17 +1,30 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import LanguageStep from "./steps/LanguageStep";
 import ExamStep from "./steps/ExamStep";
 import LevelStep from "./steps/LevelStep";
 import { useOnboardingStore } from "@/store/onboarding/useOnboardingStore";
+import { preloadExams } from "@/hooks/onboarding/useExams";
 import MainContainer from "@/components/ui/main-container";
 import { OnboardingStep } from "@/types/onboarding/onboarding";
 import { trackEvent } from "@/lib/analytics/browser";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import type { AppLocale } from "@/types/components/language";
+
+// Only the step-transition (index > 0) needs framer-motion — the very first
+// screen (LanguageStep) never renders through this wrapper at all (see the
+// `isFirst` branch below). Loading it dynamically keeps it out of the JS
+// that has to be parsed before that first screen can paint, instead of
+// pulling it in as a static import every visit pays for up front.
+const AnimatePresence = dynamic(() => import("framer-motion").then((m) => ({ default: m.AnimatePresence })), {
+    ssr: false,
+});
+const MotionDiv = dynamic(() => import("framer-motion").then((m) => ({ default: m.motion.div })), {
+    ssr: false,
+});
 
 const STEPS: OnboardingStep[] = [
     {
@@ -108,6 +121,15 @@ export default function OnboardingWizard() {
         localStorage.setItem('ONBOARDING_START', 'true');
     }, [])
 
+    // Step 2 (ExamStep) needs the exams list, but it doesn't vary by
+    // language — kick the request off now, while the user is still on
+    // step 1, so it's already resolved (or resolving) by the time they get
+    // there instead of only starting on mount of ExamStep and blocking on a
+    // skeleton for it.
+    useEffect(() => {
+        preloadExams();
+    }, [])
+
 
     const [direction, setDirection] = useState(1); // ← NEW
 
@@ -195,7 +217,7 @@ export default function OnboardingWizard() {
                 />
             ) : (
                 <AnimatePresence custom={direction} mode="wait">
-                    <motion.div
+                    <MotionDiv
                         key={safeIndex}
                         custom={direction}
                         variants={variants}
@@ -215,7 +237,7 @@ export default function OnboardingWizard() {
                             isFirst={isFirst}
                             isLast={isLast}
                         />
-                    </motion.div>
+                    </MotionDiv>
                 </AnimatePresence>
 
             )}

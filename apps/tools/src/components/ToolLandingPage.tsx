@@ -2,6 +2,7 @@ import SiteHeader from "./SiteHeader";
 import SiteFooter from "./SiteFooter";
 import ResizeImageTool, { PresetKey } from "./ResizeImageTool";
 import ToolModeTabs from "./ToolModeTabs";
+import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
 import { Locale } from "@/lib/dictionary";
 
@@ -54,6 +55,8 @@ export default function ToolLandingPage({
         <ResizeImageTool defaultPreset={defaultPreset} showPresetPicker={showPresetPicker} locale={locale} />
 
         {children}
+
+        <AppDownloadWidget locale={locale} />
       </div>
 
       <SiteFooter locale={locale} />

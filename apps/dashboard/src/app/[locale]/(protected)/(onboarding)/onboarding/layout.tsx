@@ -1,4 +1,5 @@
 import ProtectedPage from "@/components/features/auth/ProtectedPage";
+import OnboardingSkeleton from "@/components/features/onboarding/OnboardingSkeleton";
 import { Metadata } from "next";
 import React from "react";
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedPage>
+    <ProtectedPage fallback={<OnboardingSkeleton />}>
       <div className="flex flex-col min-h-screen ">
         <main className="flex-1">{children}</main>
       </div>

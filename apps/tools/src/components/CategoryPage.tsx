@@ -4,6 +4,7 @@ import Text from "@clearcut/ui/text";
 import ExamCard from "./ExamCard";
 import ExamSearch from "./ExamSearch";
 import LocaleLink from "./LocaleLink";
+import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn, StaggerGrid, StaggerItem } from "./motion";
 import { ResizerCategory } from "@/lib/resizerExams";
 import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
@@ -51,6 +52,8 @@ export default function CategoryPage({ category, locale = "en" }: { category: Re
             ))}
           </StaggerGrid>
         </div>
+
+        <AppDownloadWidget locale={locale} />
 
         <div className="mt-10 text-center">
           <Text as="p" variant="body-small" color="gray-muted">

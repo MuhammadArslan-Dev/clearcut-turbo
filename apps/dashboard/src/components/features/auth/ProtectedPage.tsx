@@ -9,8 +9,13 @@ import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 
 export default function ProtectedPage({
   children,
+  fallback = <FullScreenLoader />,
 }: {
   children: React.ReactNode;
+  /** What to show while `!tokenReady`. Defaults to the shared spinner — pass
+   * a route-specific skeleton (e.g. onboarding's own wizard shape) when a
+   * generic spinner doesn't fit that page's content. */
+  fallback?: React.ReactNode;
 }) {
   const { user, loading, tokenReady } = useAuth();
   const { get, remove } = useQueryParams();
@@ -42,7 +47,7 @@ export default function ProtectedPage({
   // need the token to already be in storage (see AuthProvider), so this lets
   // the shell and any token-only query start well before the profile
   // resolves instead of sitting behind a full-screen spinner for it.
-  if (!tokenReady) return <FullScreenLoader />;
+  if (!tokenReady) return <>{fallback}</>;
 
   return <>{children}</>;
 }

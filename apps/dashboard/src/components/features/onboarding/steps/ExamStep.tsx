@@ -11,17 +11,14 @@ import { StepProps } from "@/types/onboarding/onboarding";
 import MainContainer from "@/components/ui/main-container";
 import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
-import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { RotatingBadge } from "@/components/ui/animation/RotatingBadge";
 import { enrolledToCourse } from "@/lib/api/onboarding";
 import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import { useCourseFilters } from "@/hooks/course/useCourseFilters";
 import Filters from "@/components/ui/widgets/filter/Filters";
-import { ChevronIcon } from "@/components/ui/icons";
 import MainButton from "@/components/ui/button/main-button";
 
 export default function ExamStep({
@@ -49,7 +46,7 @@ export default function ExamStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { exams: examsResponse, loading, error } = useExams(data.language);
+  const { exams: examsResponse, loading, error } = useExams();
 
   // 🔹 Normalize exams safely
   const exams: Exam[] = Array.isArray(examsResponse)
@@ -157,12 +154,16 @@ export default function ExamStep({
         <div className="bg-white p-3 flex flex-col gap-2">
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-4">
             {isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
+              // Varied widths (not one repeated size) so the placeholder row
+              // reads as "state name chips" rather than a row of identical bars.
+              [72, 96, 64, 88, 78].map((width, i) => (
                 <Skeleton
                   key={i}
                   variant="rectangular"
-                  width={80}
-                  height={32} borderRadius={"999px"}
+                  width={width}
+                  height={32}
+                  borderRadius={"999px"}
+                  className="shrink-0"
                 />
               ))
             ) : error ? (
@@ -185,15 +186,25 @@ export default function ExamStep({
         {/* 🔹 Exam Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 py-4 bg-white mb-3.5 md:mb-0">
           {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
+            // Mirrors the real card 1:1 — same padding/radius/border and the
+            // same two-line-plus-indicator shape — so nothing shifts height
+            // when the real data swaps in, and enough of them (6, a full
+            // 2-row grid on desktop) to fill the space real results would.
+            Array.from({ length: 6 }).map((_, i) => (
               <Card
                 key={i}
-                padding={"12px 20px"}
-                borderRadius={4}
+                padding={"8px 20px"}
+                borderRadius={8}
                 bgcolor="white"
                 bordercolor="#eee"
               >
-                <Skeleton variant="rectangular" width="100%" height={48} />
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex flex-col gap-1.5 py-1">
+                    <Skeleton variant="rectangular" width={110} height={20} borderRadius={4} />
+                    <Skeleton variant="rectangular" width={80} height={14} borderRadius={4} />
+                  </div>
+                  <Skeleton variant="circular" width={16} height={16} />
+                </div>
               </Card>
             ))
           ) : error ? (

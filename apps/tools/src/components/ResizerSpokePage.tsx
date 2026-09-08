@@ -4,6 +4,7 @@ import Text from "@clearcut/ui/text";
 import ResizeImageTool from "./ResizeImageTool";
 import FAQAccordion, { AccordionItem } from "./FAQAccordion";
 import RecentExamTracker from "./RecentExamTracker";
+import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
 import { ResizerExamSpec, getCategoryForExam, getExamFaqs } from "@/lib/resizerExams";
 import { OFFICIAL_REQUIREMENTS } from "@/lib/officialRequirements";
@@ -115,6 +116,8 @@ export default function ResizerSpokePage({ exam, locale = "en" }: { exam: Resize
           </h2>
           <FAQAccordion items={faqItems} defaultOpenId={faqItems[0]?.id} />
         </div>
+
+        <AppDownloadWidget locale={locale} />
 
         <div className="mt-10 text-center">
           <Text as="p" variant="body-small" color="gray-muted">

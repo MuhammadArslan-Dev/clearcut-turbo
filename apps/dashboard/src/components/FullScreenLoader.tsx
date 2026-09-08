@@ -1,17 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
 import DotsLoader from "./ui/loader/DotsLoader";
 
 // src/components/FullScreenLoader.tsx
+//
+// Deliberately no mount-gate here: every caller (ProtectedPage etc.) renders
+// this from state that starts identically on server and client (e.g.
+// `tokenReady = useState(false)`), so there's no hydration mismatch to guard
+// against — and gating the loader itself behind a client-only "mounted" flip
+// meant the one thing meant to give INSTANT feedback instead rendered
+// nothing until after hydration, showing a blank white screen on every fresh
+// load/refresh before the spinner ever appeared.
 export default function FullScreenLoader() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null; // 🔥 critical
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-6">
