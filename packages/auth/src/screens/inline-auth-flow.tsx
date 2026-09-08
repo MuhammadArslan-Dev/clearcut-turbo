@@ -156,8 +156,15 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
           localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
         }
         if (status !== "success") { setError(message); return; }
-        await onEvent?.("Verification Sent", { phone: number, source: "onboading_steps", verification_method: "Number", verification_mode: "SMS", verification_purpose: "Login" });
-        await authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" });
+
+        // Fire-and-forget — neither result is used to decide what the OTP
+        // screen shows (the success message above already came from
+        // loginUser), so there's no reason to make the user wait out 2 more
+        // sequential round trips before seeing the OTP input. Matches the
+        // same fix already applied in login-screen.tsx.
+        onEvent?.("Verification Sent", { phone: number, source: "onboading_steps", verification_method: "Number", verification_mode: "SMS", verification_purpose: "Login" });
+        authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" }).catch(() => {});
+
         setSuccess(message); setLoading(false); setDisabled(true);
         setStep("otp"); startTimer();
       } catch {
