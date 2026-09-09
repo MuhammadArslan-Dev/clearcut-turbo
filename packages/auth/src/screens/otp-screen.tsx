@@ -61,7 +61,6 @@ export function createOtpScreen({
       setOtp,
       goToLogin,
       verifyOtpStart,
-      verifyOtpSuccess,
       screen,
       loading,
       setScreen,
@@ -163,8 +162,14 @@ export function createOtpScreen({
           course,
         });
 
+        // No verifyOtpSuccess() here on purpose: it flips `loading` back to
+        // false, and window.location.replace() doesn't unload the page
+        // synchronously — React re-renders with the button back in its
+        // normal state for the moment before navigation actually happens,
+        // which reads as the "Verify OTP" button flickering right before
+        // the redirect. Leaving `loading` true keeps the spinner up
+        // continuously until the browser actually navigates away.
         window.location.replace(redirectUrl);
-        verifyOtpSuccess();
       } catch (err: unknown) {
         setLoading(false);
         const status = (err as { response?: { status?: number } })?.response?.status;
