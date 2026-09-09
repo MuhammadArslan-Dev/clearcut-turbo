@@ -42,6 +42,7 @@ import {
   VideoConcept,
 } from "../../types/topic-content-type";
 import { useMainVideoProgressTrackerStore } from "../../store/useMainVideoProgressTracker";
+import { usePreviousQuestions } from "../../hooks/usePreviousQuestions";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -518,7 +519,7 @@ export function Trends({
   onClick: () => void;
 }) {
   const trends = useTranslations("relatedContent.studyTabs.trends");
-  const { course } = usePreparationStore();
+  const { course, selectedTopic } = usePreparationStore();
 
   const examShort = course?.exam?.short_name ?? "";
   const fires = importanceToFires(trend?.topic_importance);
@@ -535,7 +536,19 @@ export function Trends({
   const avg = fmtNum(trend?.avg_questions_per_instance);
   const totalExams = trend?.total_exams ?? null;
 
-  const totalQuestions = trend?.total_questions_in_pyq ?? null;
+  // Fetched (not just gated behind the modal) so this button shows the same
+  // count the modal's header will — PreviousModal's own usePreviousQuestions
+  // call shares this query's cache key, so opening the modal reuses this
+  // fetch instead of re-requesting. trend?.total_questions_in_pyq is a
+  // separate backend stat that can drift out of sync with what the listing
+  // endpoint actually returns (that mismatch was the bug: the button once
+  // said one number and the modal opened showing a different one) — the
+  // fetched length is always the true count of what the modal will render.
+  const { questions: previousQuestions } = usePreviousQuestions(
+    selectedTopic?.id,
+    course?.group_code,
+  );
+  const totalQuestions = previousQuestions?.length ?? trend?.total_questions_in_pyq ?? null;
   const viewLabel =
     totalQuestions != null
       ? `View ${examShort} Questions (${totalQuestions})`.trim()

@@ -17,6 +17,20 @@ const QUERY_KEY = (topicId?: string | number, courseId?: string | null) => [
   courseId,
 ];
 
+/** Last 4-digit run in an exam_instance_id like "CTET_2023" -> 2023. */
+function extractYear(instanceId?: string | null): number {
+  const match = instanceId?.match(/\d{4}/g);
+  return match ? Number(match[match.length - 1]) : -Infinity;
+}
+
+function sortByYearDesc(questions: QuestionNew[]): QuestionNew[] {
+  return [...questions].sort((a, b) => {
+    const yearA = extractYear(a.exam_context_b?.exam_instance_id ?? a.exam_context_a?.exam_instance_id);
+    const yearB = extractYear(b.exam_context_b?.exam_instance_id ?? b.exam_context_a?.exam_instance_id);
+    return yearB - yearA;
+  });
+}
+
 export function usePreviousQuestions(
   topicId?: number,
   courseId?: string | null
@@ -32,7 +46,10 @@ export function usePreviousQuestions(
         topicId as number,
         `?topicId=${topicId}&random=true&limit=20&courseId=${courseId}`,
       );
-      return res.data;
+      // API returns random=true order — re-sort so the most recent exam
+      // year always shows first, matching what a "previous questions"
+      // list is expected to read like.
+      return sortByYearDesc(res.data);
     },
 
     staleTime: 2 * 60 * 1000, // optional (data fresh for 10s)
