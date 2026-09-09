@@ -13,6 +13,8 @@ import removeMd from "remove-markdown";
 import { Button } from "@clearcut/ui/button";
 import { Question, Translation } from "./question-list-by-subject";
 import { useLanguageStore } from "@/store/useLanguageStore";
+import Math from "@/components/ui/math";
+import TextMarkDown from "@/components/ui/text-markdown";
 
 interface AssessmentQuestion {
   correct_option: number;
@@ -80,10 +82,12 @@ export default function AssessmentQuestionBlock({
             Easy
           </div>
         </div>
-        <div>
-          <p className="body-large !font-normal">
-            {removeMd(selectedQuestion?.translations[0].question ?? "")}
-          </p>
+        <div className="body-large !font-normal">
+          <Math content={selectedQuestion?.translations[0]?.question}>
+            <TextMarkDown>
+              {selectedQuestion?.translations[0]?.question ?? ""}
+            </TextMarkDown>
+          </Math>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
@@ -158,15 +162,19 @@ export default function AssessmentQuestionBlock({
                   </span>
                 </p>
               ) : (
-                <p className="body-large !font-normal">
-                  {removeMd(selectedQuestion?.translations[0]?.explanation || "")}
+                <div className="body-large !font-normal">
+                  <Math content={selectedQuestion?.translations[0]?.explanation}>
+                    <TextMarkDown>
+                      {selectedQuestion?.translations[0]?.explanation ?? ""}
+                    </TextMarkDown>
+                  </Math>
                   <span
                     onClick={() => setShowDetails(!showDetails)}
                     className="ml-2 mt-5 body-medium cursor-pointer !font-normal text-brand px-3 py-0.5 bg-[#006bd1]/10 rounded-md"
                   >
                     {showDetails ? "Read Less" : "Read More"}
                   </span>
-                </p>
+                </div>
               )}
             </div>
           </div>

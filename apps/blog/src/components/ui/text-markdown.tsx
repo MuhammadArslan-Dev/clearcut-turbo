@@ -25,8 +25,8 @@ function normalizeImgTags(text: string): string {
   });
 }
 
-// Matches the same $...$/$$...$$ spans the downstream Math component (see
-// components/features/mathjax/Math.tsx) looks for once this renders to DOM text.
+// Matches the same $...$/$$...$$ spans the downstream Math component
+// (see components/ui/math.tsx) looks for once this renders to DOM text.
 const MATH_SPAN_RE = /\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$/g;
 
 function escapeMathForMarkdown(text: string): string {
@@ -38,12 +38,12 @@ function escapeMathForMarkdown(text: string): string {
   // source is left on the page instead of being KaTeX-rendered. Backslash-
   // escaping these chars only inside math spans makes CommonMark emit them
   // as literal characters (escapes are stripped, not rendered) — the DOM
-  // text node Math walks ends up with the original, unmangled LaTeX.
-  // The negative lookbehind skips characters the source already escaped
-  // (e.g. blanks authored as "\_\_\_\_") — re-escaping an already-escaped
-  // "\_" would double the backslash, which CommonMark reads as a literal
-  // "\" followed by a now-*unescaped* "_", reintroducing the exact
-  // emphasis bug this function exists to prevent.
+  // text node Math walks ends up with the original, unmangled LaTeX. The
+  // negative lookbehind skips characters the source already escaped (e.g.
+  // blanks authored as "\_\_\_\_") — re-escaping an already-escaped "\_"
+  // would double the backslash, which CommonMark reads as a literal "\"
+  // followed by a now-*unescaped* "_", reintroducing the exact emphasis
+  // bug this function exists to prevent.
   return text.replace(MATH_SPAN_RE, (span) => span.replace(/(?<!\\)[_*`]/g, "\\$&"));
 }
 

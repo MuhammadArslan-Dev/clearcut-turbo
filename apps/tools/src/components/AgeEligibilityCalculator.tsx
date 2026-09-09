@@ -317,7 +317,7 @@ function ResultPanel({
 
       <div
         className={clsx(
-          "p-6 flex flex-col items-center text-center gap-4",
+          "p-6 flex flex-col h-full items-center text-center gap-4",
           tone === "success" ? "bg-[var(--color-success-bg-soft)]" : "bg-[var(--color-danger-bg-soft)]",
         )}
       >

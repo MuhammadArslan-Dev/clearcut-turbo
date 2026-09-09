@@ -4,8 +4,7 @@ import { useLayoutEffect, useRef, ReactNode } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
-// Same delimiters the old MathJax config used: displayMath $$...$$ checked
-// first so it isn't swallowed as two inline $...$ matches.
+// displayMath $$...$$ checked first so it isn't swallowed as two inline $...$ matches.
 const MATH_RE = /\$\$([\s\S]+?)\$\$|\$([^\$\n]+?)\$/;
 
 // Fill-in-the-blank questions are commonly authored with a run of raw "_"
@@ -24,9 +23,8 @@ function renderMathHtml(expr: string, displayMode: boolean): string {
   try {
     // throwOnError: false makes KaTeX return an inline "error" span (red
     // text, not a thrown exception) for malformed LaTeX instead of crashing
-    // the question card — a real, if small, share of the content bank has
-    // pre-existing authoring typos (mismatched braces, `\time` instead of
-    // `\times`) that need to fail visibly-but-safely, not take the page down.
+    // the question card — pre-existing authoring typos (mismatched braces,
+    // `\time` instead of `\times`) need to fail visibly-but-safely.
     return katex.renderToString(safeExpr, { throwOnError: false, displayMode, strict: "ignore" });
   } catch {
     return expr;
@@ -69,25 +67,14 @@ function typesetTextNode(node: Text) {
 
 /**
  * Walks `root`'s text nodes and replaces $...$/$$...$$ runs with KaTeX
- * output, mirroring exactly what MathJax's typesetPromise used to do to
- * this same DOM (leaving react-markdown's own formatted output —
- * bold/lists/<img> — untouched, only post-processing its text nodes). The
- * one thing that changed is WHEN this runs: MathJax ran in a useEffect,
- * after the CDN script loaded and after the browser had already painted the
- * raw, un-typeset "$...$" text — that paint-then-swap was the CLS source
- * (field data: 1.8-1.9 on question-heavy pages). katex is bundled (no CDN
- * round trip) and synchronous, so doing this in useLayoutEffect means it
- * completes before the browser's first paint of this content — there is no
- * intermediate frame showing raw LaTeX to shift away from.
+ * output, leaving react-markdown's own formatted output (bold/lists/<img>)
+ * untouched — only its text nodes are post-processed.
  */
 function typeset(root: HTMLElement) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(n) {
       const parent = (n as Text).parentElement;
       if (!parent) return NodeFilter.FILTER_REJECT;
-      // Don't re-descend into a span we already rendered (defensive — normal
-      // content-change re-renders replace this subtree via react-markdown
-      // before this effect re-runs, so there's nothing stale to skip).
       if (parent.closest("[data-katex]")) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
