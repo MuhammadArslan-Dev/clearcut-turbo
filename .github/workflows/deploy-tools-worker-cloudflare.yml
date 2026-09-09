@@ -1,0 +1,56 @@
+name: Deploy tools router worker to Cloudflare
+
+# Manual for now, same reasoning as deploy-blog-cloudflare.yml: the
+# clearcut-tools-router Worker (apps/tools/worker) has never had any deploy
+# automation — it's only ever been pushed by hand via `wrangler deploy` from
+# a dev machine (confirmed from `wrangler deployments list` history: mixed
+# "Upload"/"Unknown (deployment)" sources with irregular timing, no CI
+# actor). This just gives that same manual step a repeatable, auditable
+# workflow instead of depending on someone's local wrangler login.
+#
+# Unrelated to the tools *site* (Cloudflare Pages project "clearcut-tools"),
+# which already auto-deploys via Cloudflare's own Pages Git integration on
+# push to main — that path is untouched by this file. This worker only
+# proxies clearcutoff.in/tools/* to that Pages deployment (see PAGES_ORIGIN
+# in apps/tools/worker/wrangler.toml); it does not need to run whenever the
+# site's own code changes, only when apps/tools/worker/src/index.ts or its
+# routing/wrangler.toml config changes.
+#
+# apps/tools/worker is its own npm project (own package.json/package-lock.json,
+# not part of the pnpm workspace's apps/*/packages/* glob), so this installs
+# with npm, not pnpm — matching how it's run locally.
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Same CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID Environment secrets
+    # (under "Production") that deploy-blog-cloudflare.yml already uses —
+    # this worker deploys to the same Cloudflare account.
+    environment: Production
+    defaults:
+      run:
+        working-directory: apps/tools/worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/tools/worker/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy
