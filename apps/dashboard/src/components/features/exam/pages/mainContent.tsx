@@ -23,6 +23,7 @@ import { useExamModalStore } from "../store/useExamModalStore";
 import ExamSkeleton from "./ExamSkeleton";
 import useExamTimer from "../hooks/useExamTimer";
 import Image from "next/image";
+import { toast } from "react-toastify";
 
 // ===============================
 // SLIDE ANIMATION
@@ -170,6 +171,13 @@ export default function MainContent({ examId }: { examId: string }) {
 
     submitAnswer(answerPayload).catch((err) => {
       console.error("[submit-answer] FAILED:", err);
+      // answer() above already marked this question as answered in local
+      // state regardless of whether the network call succeeds, so a failed
+      // submission was previously silent — the UI showed the question as
+      // saved while the backend never actually recorded it. Surface it so
+      // the user has a chance to go back and re-save it during the exam,
+      // rather than only discovering the loss after grading.
+      toast.error("Your answer couldn't be saved. Please check it again before submitting.");
     });
 
     setDirection(1);
@@ -211,11 +219,20 @@ export default function MainContent({ examId }: { examId: string }) {
 
     answer(draftAnswer);
 
+    // Deliberately not awaited — end-exam shouldn't wait on this network
+    // call to open the confirmation sheet. But it must still be caught:
+    // this was previously a bare fire-and-forget call, so a failure here
+    // (the exact "API unreachable POST /v2/exam/answer" case Sentry
+    // reported "Unhandled" — an uncaught promise rejection) silently lost
+    // the last answer with no diagnostic and no user-facing signal.
     submitAnswer({
       exam_id:     exam.uuid,
       question_id: question.id,
       user_option: option as any,
       time_spent:  timeSpent,
+    }).catch((err) => {
+      console.error("[submit-answer] FAILED:", err);
+      toast.error("Your last answer couldn't be saved. Please check it again before submitting.");
     });
 
     open("end-exam");

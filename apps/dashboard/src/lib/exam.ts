@@ -113,15 +113,27 @@ export async function submitAnswer(
   payload: SubmitAnswerPayload
 ): Promise<SubmitAnswerResponse> {
 
-  return apiFetch<SubmitAnswerResponse>(`/v2/exam/answer`, {
-    method: "POST",
+  return apiFetch<SubmitAnswerResponse>(
+    `/v2/exam/answer`,
+    {
+      method: "POST",
 
-    headers: {
-      "Content-Type": "application/json",
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify(payload),
     },
-
-    body: JSON.stringify(payload),
-  });
+    undefined,
+    // apiFetch/fetchWithRetry's default (1 retry, 300ms) isn't enough to
+    // survive a real mobile network blip — Sentry showed this call failing
+    // "unreachable" after an 18s hang on a live exam attempt, silently
+    // losing that answer (see mainContent.tsx callers, which mark the
+    // question answered in local state regardless of whether this network
+    // call ever actually succeeds). More attempts with a longer gap gives a
+    // flaky connection more room to recover before the answer is lost.
+    { retries: 3, delayMs: 1000 },
+  );
 }
 
 
