@@ -260,6 +260,28 @@ export function isAndroidChrome(): boolean {
   return !/SamsungBrowser|OPR\/|Opera|EdgA\/|Firefox\/|; ?wv\)/i.test(ua);
 }
 
+// Firefox for Android is Gecko-based, not Chromium — its UA never contains
+// "Chrome/" at all, so it fails isAndroidChrome()'s very first check
+// regardless of the exclusion list further down. Truecaller's own docs only
+// require "Android OS" (truecaller4developers.gitbook.io/truecaller-sdk/
+// faqs/mobile-web-sdk — "Mobile Web SDK is currently supported only for
+// browsers running on Android OS"), with no Chrome-specific requirement —
+// the Chrome-only scoping above was this app's own deliberate narrowing,
+// not a Truecaller limitation. Extended to Firefox by request; the deep
+// link mechanism this whole feature relies on (custom URL scheme handoff)
+// works the same way in Firefox for Android as in Chrome.
+export function isAndroidFirefox(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (!/Android/i.test(ua)) return false;
+  return /Firefox\//i.test(ua) && !/; ?wv\)/i.test(ua);
+}
+
+/** Any Android browser this Truecaller integration currently supports. */
+export function isTruecallerSupportedBrowser(): boolean {
+  return isAndroidChrome() || isAndroidFirefox();
+}
+
 export type TruecallerAvailability = "checking" | "available" | "unavailable";
 
 // Persisted across page loads AND across every clearcutoff.in property
@@ -383,13 +405,13 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  */
 export function useTruecallerAvailability(): TruecallerAvailability {
   const cached = getCachedTruecallerAvailability();
-  // Scoped to Android + Chrome only (by request) — covers iOS, every other
-  // browser, and every in-app browser (Facebook/Instagram explicitly, plus
-  // WebViews generally) in one check. Not persisted to the cross-device
+  // Scoped to Android + Chrome/Firefox (by request) — covers iOS, every
+  // other browser, and every in-app browser (Facebook/Instagram explicitly,
+  // plus WebViews generally) in one check. Not persisted to the cross-device
   // cache below: this is a property of THIS browser/session, not the
-  // device, so switching to Chrome later on the same device/OS must still
+  // device, so switching browsers later on the same device/OS must still
   // get a real check rather than inheriting a stale "unavailable".
-  const platformSupported = isAndroidChrome() && !isFacebookOrInstagramInAppBrowser();
+  const platformSupported = isTruecallerSupportedBrowser() && !isFacebookOrInstagramInAppBrowser();
   const [state, setState] = useState<TruecallerAvailability>(
     !platformSupported ? "unavailable" : (cached ?? "checking"),
   );
@@ -397,7 +419,7 @@ export function useTruecallerAvailability(): TruecallerAvailability {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!platformSupported) return; // wrong platform/browser — never probe here, see isAndroidChrome's docblock
+    if (!platformSupported) return; // wrong platform/browser — never probe here, see isTruecallerSupportedBrowser's docblock
     if (cached) return; // already resolved on a previous visit — never re-probe
 
     // Truecaller only exists as a phone app — no desktop counterpart to hand

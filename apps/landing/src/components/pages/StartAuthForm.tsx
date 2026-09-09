@@ -27,7 +27,7 @@ import {
   useTruecallerLogin,
   useTruecallerAvailability,
   isFacebookOrInstagramInAppBrowser,
-  isAndroidChrome,
+  isTruecallerSupportedBrowser,
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
 import ShieldCheckIcon from "@clearcut/auth/icons/shield-check-icon";
@@ -573,13 +573,13 @@ export default function StartAuthForm({
   // same reason getCurrentLocale() does — this only runs client-side, no
   // need for a Suspense boundary just for this.
   //
-  // Still gated on the current browser being Android Chrome and not
-  // Facebook's/Instagram's in-app browser: the referring /go page's own
-  // detection ran in ITS browser tab, but this param can't know which
-  // browser the user will actually land in on /start.
+  // Still gated on the current browser being an Android browser Truecaller
+  // supports and not Facebook's/Instagram's in-app browser: the referring
+  // /go page's own detection ran in ITS browser tab, but this param can't
+  // know which browser the user will actually land in on /start.
   const forceShowTruecaller =
     typeof window !== "undefined" &&
-    isAndroidChrome() &&
+    isTruecallerSupportedBrowser() &&
     !isFacebookOrInstagramInAppBrowser() &&
     new URLSearchParams(window.location.search).get("showTruecaller") ===
       "true";
