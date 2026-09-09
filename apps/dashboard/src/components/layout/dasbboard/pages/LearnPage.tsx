@@ -8,16 +8,29 @@ import MainContainer from "@/components/ui/main-container";
 import ResumeBarWrap from "@/components/features/navigation/bottom-bar/resume-bar/ResumeBarWrap";
 import MyCoursesWrapTwo from "@/components/features/dashboard/mycourse/MyCoursesWrapTwo";
 import { useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 
-import ChangeExamModal from "@/components/modals/changeExam/change-exam-modal";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { ExamMetadata } from "@/types/Exam";
-import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { useRouter } from "@/i18n/navigation";
 import QuickRevision from "@/components/ui/widgets/quick-revision/quick-revision";
 import AppDownloadWidget from "@/components/ui/widgets/app-download/app-download-widget";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
+
+// Both render nothing until their own store says they're open (see each
+// component's own `if (!isOpen) return null`), so splitting them into their
+// own chunks costs nothing behaviorally — the dashboard pageload trace
+// showed resource.script requests as the single biggest chunk of load time
+// (Sentry: 51% of pageload span time), and every component kept out of the
+// main bundle is less JS the browser has to fetch/parse/execute before the
+// page is interactive.
+const ChangeExamModal = dynamic(() => import("@/components/modals/changeExam/change-exam-modal"), {
+  ssr: false,
+});
+const ContactUsModal = dynamic(() => import("@/components/modals/contact-us/ContactUsModal"), {
+  ssr: false,
+});
 
 
 export default function LearnPage() {

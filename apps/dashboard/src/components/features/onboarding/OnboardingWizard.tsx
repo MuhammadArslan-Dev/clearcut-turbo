@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import LanguageStep from "./steps/LanguageStep";
 import ExamStep from "./steps/ExamStep";
-import LevelStep from "./steps/LevelStep";
 import { useOnboardingStore } from "@/store/onboarding/useOnboardingStore";
 import { preloadExams } from "@/hooks/onboarding/useExams";
 import MainContainer from "@/components/ui/main-container";

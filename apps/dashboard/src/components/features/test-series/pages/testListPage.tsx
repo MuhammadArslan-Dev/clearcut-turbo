@@ -8,12 +8,10 @@ import TestCard from "../components/cards/TestCard";
 import { Button } from "@clearcut/ui/button";
 import ProgressCard from "../components/cards/ProgressCard";
 import { useTestSeriesModalStore } from "../store/useTestSeriesModalStore";
-import SectionalTest from "../components/tests/SectionalTest";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
-import FullTest from "../components/tests/FullTest";
-import ChapterTest from "../components/tests/ChapterTest";
 import { getFullLengthTestList } from "@/lib/tests/getExam";
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePreparationData } from "../../preparation/hooks/usePreparationData";
 import { apiFetch } from "@/lib/api/client";
 import { useTestListDataStore } from "../store/useTestListDataStore";
@@ -23,7 +21,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useExamModalStore } from "../../exam/store/useExamModalStore";
 import { useQueryClient } from "@tanstack/react-query";
 
-
+// Only ever one of these three renders per page visit (gated on `testType`
+// just below), but all three used to be static imports — meaning every
+// visitor's bundle included all ~1350 lines of sectional/full/chapter test
+// UI regardless of which type they actually opened. Dynamic-importing keys
+// the chunk fetch to whichever one is actually needed.
+const SectionalTest = dynamic(() => import("../components/tests/SectionalTest"), { ssr: false });
+const FullTest = dynamic(() => import("../components/tests/FullTest"), { ssr: false });
+const ChapterTest = dynamic(() => import("../components/tests/ChapterTest"), { ssr: false });
 
 export default function TestListPage({ courseId }: { courseId?: string }) {
   const t = useTranslations("testListContent");

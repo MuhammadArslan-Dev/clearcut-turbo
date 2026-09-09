@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import ChapterDetailHeader from "../components/MainVideo/ChapterDetailHeader";
 import VideoWrapper from "../components/MainVideo/VideoWrapper";
@@ -10,8 +11,19 @@ import RelatedContentWrapper from "../components/RelatedContent/RelatedContentWr
 import BottomBar from "@/components/layout/preparation/BottomBar";
 
 import { usePreparationData } from "../hooks/usePreparationData";
-import GlobalTour, { TourStep } from "../../tour/GlobalTour";
+import type { TourStep } from "../../tour/GlobalTour";
 import { useUserInteractionData } from "../hooks/useUserInteractionData";
+
+// GlobalTour always renders null unless `isOpen` (its own driver.js instance
+// only ever spins up inside a `useEffect` gated on that flag), but as a
+// regular import it still pulled the driver.js library + its CSS into this
+// page's main bundle unconditionally — a real cost for a tour that, right
+// now, has no way to open (its trigger button below is commented out).
+// Dynamic-importing it changes nothing observable: same `null` render, same
+// props, just fetched as its own chunk instead of bundled eagerly.
+const GlobalTour = dynamic(() => import("../../tour/GlobalTour"), {
+  ssr: false,
+});
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { usePreparationStore } from "../store/usePreparationDataStore";
 

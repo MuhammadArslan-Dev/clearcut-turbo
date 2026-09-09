@@ -118,14 +118,23 @@ export default function RelatedContentWrapper() {
 
   const [tab, setTab] = React.useState<TabId | string | null>("concepts");
 
+  // Only fall back to the first tab when the CURRENTLY SELECTED tab is no
+  // longer in availableTabs (e.g. its content disappeared). Previously this
+  // compared `prev` only to availableTabs[0], so any reference change to
+  // `availableTabs` — which happens on every `video` update from the video
+  // player store, including ones unrelated to which tabs exist (playback
+  // progress, etc.) — snapped the tab back to the first one even though the
+  // user's selected tab (e.g. "Notes") was still perfectly valid. That
+  // showed up as rage/dead clicks on this tab bar: a tab visibly selects for
+  // a moment, then reverts on its own right after.
   React.useEffect(() => {
     if (!availableTabs.length) return;
 
     setTab((prev) => {
-      const first = availableTabs[0].id;
-      return prev === first ? prev : first;
+      const stillAvailable = availableTabs.some((t) => t.id === prev);
+      return stillAvailable ? prev : availableTabs[0].id;
     });
-  }, [video, availableTabs]);
+  }, [availableTabs]);
 
   // 1️⃣ Loading → show skeleton
   if (loading) {
