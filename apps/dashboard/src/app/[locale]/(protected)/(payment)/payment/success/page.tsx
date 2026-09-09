@@ -1,15 +1,10 @@
 "use client";
 import React, { useMemo, useCallback, useEffect } from "react";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { ArrowIcon, CheckIcon, FireIcon } from "@/components/ui/icons";
-import { AnimatePresence } from "framer-motion";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { useLocale, useTranslations } from "next-intl";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
-import { Modal } from "@/components/features/Sheets/Modal";
-import { DrawerSheet } from "@/components/features/Sheets/DrawerSheet";
-import { token } from "@/lib/auth-token-client";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { parseTranslation } from "@/utils/text/translation";
@@ -24,7 +19,6 @@ import Text from "@clearcut/ui/text";
 const FEATURES = ["featureVideos", "featureNotes", "featureTests"] as const;
 
 export default function Success() {
-  const isMobile = useIsMobile();
   const modalT = useTranslations("payment");
   const { activeCourse, allCourses } = useMyActiveCourses();
   const open = useCourseStore((s) => s.open);
@@ -52,9 +46,6 @@ export default function Success() {
     loading: levelsLoading,
     error,
   } = useLevels(data?.id);
-
-  /* ---------------------------------- container (stable) ---------------------------------- */
-  const Container = useMemo(() => (isMobile ? DrawerSheet : Modal), [isMobile]);
 
   /* ---------------------------------- derived values ---------------------------------- */
 

@@ -1,7 +1,6 @@
 "use client";
 import React, { useMemo, useCallback, useEffect } from "react";
 
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import {
   AlertCircleIcon,
@@ -9,7 +8,6 @@ import {
   ClockIcon,
   LockIcon,
 } from "@/components/ui/icons";
-import { AnimatePresence } from "framer-motion";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { TrophyIcon } from "lucide-react";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
@@ -17,8 +15,6 @@ import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useModalStore } from "@/store/modal/useModalStore";
-import { Modal } from "@/components/features/Sheets/Modal";
-import { DrawerSheet } from "@/components/features/Sheets/DrawerSheet";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
@@ -30,7 +26,6 @@ export default function FailedPage() {
   const router = useRouter();
   const openGlobalModal = useModalStore((state) => state.open);
   const modalT = useTranslations("payment");
-  const isMobile = useIsMobile();
   useDrawerBackHandler();
 
   const { get, set } = useQueryParams();
@@ -49,9 +44,6 @@ export default function FailedPage() {
 
   const course = allCourses?.find((c) => c?.group_code === courseId);
   const data = course?.exam;
-
-  /* ---------------------------------- container (stable) ---------------------------------- */
-  const Container = useMemo(() => (isMobile ? DrawerSheet : Modal), [isMobile]);
 
   /* ---------------------------------- derived values ---------------------------------- */
   const examTitle = useMemo(
