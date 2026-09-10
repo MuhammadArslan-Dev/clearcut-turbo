@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import StarBadge from "@/components/ui/badge/star-badge";
 import DetailsSectionCard from "./details-section-card";
 import QuestionCard from "../ui/question-card";
-import { formatToSlug, unFormatSlug, formatStageLabel } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, formatStageLabel, sanitizeAiSlug } from "@/utils/slugify";
 import removeMd from "remove-markdown";
 import { Button } from "@clearcut/ui/button";
 import { Question, Translation } from "./question-list-by-subject";
@@ -210,9 +210,9 @@ export default function AssessmentQuestionBlock({
                 translation?.question?.replace(/<[^>]*>/g, "") || "";
 
               const snippet = limitWords(plain, 25);
-              const slug = translation?.ai_slug
-                ? translation.ai_slug
-                : formatToSlug(limitWords(plain, 4));
+              const slug =
+                (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+                formatToSlug(limitWords(plain, 4));
 
               return (
                 <QuestionCard

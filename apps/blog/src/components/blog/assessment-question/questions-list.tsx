@@ -7,7 +7,7 @@ import StarBadge from "@/components/ui/badge/star-badge";
 import { Button } from "@clearcut/ui/button";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { usePathname } from "next/navigation";
-import { formatToSlug, unFormatSlug } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, sanitizeAiSlug } from "@/utils/slugify";
 import dynamic from "next/dynamic";
 import { useLanguageStore } from "@/store/useLanguageStore";
 
@@ -127,9 +127,9 @@ export default function QuestionsList({ data }: { data: Question[] }) {
             const plain = translation?.question?.replace(/<[^>]*>/g, "") || "";
 
             const snippet = limitWords(plain, 25);
-            const slug = translation?.ai_slug
-              ? translation.ai_slug
-              : formatToSlug(limitWords(plain, 4));
+            const slug =
+              (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+              formatToSlug(limitWords(plain, 4));
 
             return (
               <>

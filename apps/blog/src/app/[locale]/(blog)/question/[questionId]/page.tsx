@@ -9,7 +9,7 @@ import { Metadata } from "next";
 import { siteConfig } from "@/lib/metadata";
 import { apiFetch } from "@/lib/api/api2";
 import { permanentRedirect } from "@/i18n/navigation";
-import { formatToSlug, formatStageLabel } from "@/utils/slugify";
+import { formatToSlug, formatStageLabel, sanitizeAiSlug } from "@/utils/slugify";
 import { limitWords } from "@clearcut/utils/text-limit";
 import { capitalizeFirst } from "@clearcut/utils/text-format";
 import { AppLocale } from "@/types/components/language";
@@ -117,9 +117,9 @@ export default async function page({
   const slugTranslation = selectedQuestion?.translations?.[0];
   if (selectedQuestion && slugTranslation) {
     const plainQuestion = (slugTranslation.question || "").replace(/<[^>]*>/g, "");
-    const slug = slugTranslation.ai_slug
-      ? slugTranslation.ai_slug
-      : formatToSlug(limitWords(plainQuestion, 4));
+    const slug =
+      (slugTranslation.ai_slug && sanitizeAiSlug(slugTranslation.ai_slug)) ||
+      formatToSlug(limitWords(plainQuestion, 4));
     const canonicalParam = `${slug}-${questionId}`;
 
     if (questionIdParam !== canonicalParam) {

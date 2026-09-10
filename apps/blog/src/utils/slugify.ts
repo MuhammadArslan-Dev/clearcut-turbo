@@ -5,6 +5,23 @@ export function formatToSlug(str: string): string {
     .replace(/[^a-z0-9 ]/g, "")      // remove special chars except numbers
     .replace(/\s+/g, "-");           // replace spaces with underscore
 }
+
+// `ai_slug` comes back from the backend as AI-generated, already-hyphenated
+// text (e.g. "lambe-samay-tak-pad-vyakaran-ki-drishti-se-hai") — unlike
+// formatToSlug's input, it must keep existing hyphens, so it can't reuse
+// formatToSlug's regex (which strips them). Some rows have a stray HTML
+// fragment leaked into this field (e.g. a trailing "</blockquote>"), which
+// breaks both the question URL and the XML sitemap <loc> entry it feeds —
+// strip tags and any other non slug-safe character defensively.
+export function sanitizeAiSlug(aiSlug: string): string {
+  return aiSlug
+    .replace(/<[^>]*>/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 export function unFormatSlug(slug: string): string {
   return slug
     .replace(/_/g, " ")             // underscores → spaces

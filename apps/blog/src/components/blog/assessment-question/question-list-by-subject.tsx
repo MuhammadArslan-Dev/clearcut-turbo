@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { limitWords } from "@clearcut/utils/text-limit";
-import { formatToSlug, unFormatSlug } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, sanitizeAiSlug } from "@/utils/slugify";
 import QuestionCard from "../ui/question-card";
 import { Button } from "@clearcut/ui/button";
 import Link from "next/link";
@@ -116,9 +116,9 @@ export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
                   translation?.question?.replace(/<[^>]*>/g, "") || "";
 
                 const snippet = limitWords(plain, 25);
-                const slug = translation?.ai_slug
-                  ? translation.ai_slug
-                  : formatToSlug(limitWords(plain, 4));
+                const slug =
+                  (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+                  formatToSlug(limitWords(plain, 4));
                 return (
                   <QuestionCard
                     key={index}

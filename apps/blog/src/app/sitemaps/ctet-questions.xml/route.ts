@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { formatToSlug } from "@/utils/slugify";
+import { formatToSlug, sanitizeAiSlug } from "@/utils/slugify";
 import { limitWords } from "@clearcut/utils/text-limit";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
@@ -91,9 +91,9 @@ export async function GET() {
             if (!translation) continue;
 
             const plain = (translation.question || "").replace(/<[^>]*>/g, "");
-            const slug = translation.ai_slug
-              ? translation.ai_slug
-              : formatToSlug(limitWords(plain, 4));
+            const slug =
+              (translation.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+              formatToSlug(limitWords(plain, 4));
             const param = `${slug}-${q.id}`;
 
             urls.push(`${BASE_URL}/question/${param}`, `${BASE_URL}/hi/question/${param}`);
