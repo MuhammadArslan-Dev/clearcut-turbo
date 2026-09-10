@@ -16,12 +16,12 @@ const COPY: Record<Locale, {
   en: {
     heading: (examName) => (
       <>
-        Crack the <span className="text-brand">{examName}</span> exam with PYQ-based tests, notes and videos
+        Crack the <span className="text-brand">{examName}</span> exams with PYQ-based tests, notes and videos
       </>
     ),
     description: "Real exam-level questions, sectional tests and full-length papers — all in one place.",
     features: (examName) => [
-      `Smart prep for the ${examName} exam`,
+      `Smart prep for the ${examName} exams`,
       "Full course + test series",
       "Refund assurance policy",
     ],
@@ -55,7 +55,7 @@ const COPY: Record<Locale, {
 };
 
 export default function CoursePageHero({ data }: { data?: Exam }) {
-  const examName = data?.short_name ?? "HTET";
+  const examName = data?.short_name ?? "Teacher";
   const t = COPY[useLocale()];
 
   const featureItem = t.features(examName).map((heading, i) => ({
