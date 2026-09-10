@@ -4,17 +4,13 @@ import React, { useEffect, useMemo, useRef, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
-import ExamEndConfirmationSheet from "@/components/features/exam/components/modals/ExamEndConfirmationSheet";
-import QuestionNavigatorSheet from "@/components/features/exam/components/modals/QuestionNavigatorSheet";
 import { P_QUERY_KEY } from '@/components/features/preparation/hooks/usePreparationData';
 import { ExamSyllabusData } from '@/components/features/preparation/types/types';
 import { getExamSyllabus } from '@/lib/preparation/preparation';
 import { useQuery } from '@tanstack/react-query';
 import { useContentDataStore } from "@/components/features/downloadable-content/store/useContentDataStore";
-import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import BottomContentPageSwitchReveal from "@/components/features/downloadable-content/components/BottomContentPageSwitchReveal";
-import NotesIndexModal from "@/components/features/downloadable-content/components/NotesIndexModal";
 import { useNotesIndexStore } from "@/components/features/downloadable-content/store/useNotesIndexStore";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
@@ -23,6 +19,16 @@ import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import Text from "@clearcut/ui/text";
 import { MainLoader } from "@/components/FullScreenLoader";
+import dynamic from "next/dynamic";
+
+// Same split as ExamShell/TestSeriesShell/PreparationShell — all four are
+// gated behind a store flag at their render site below, so lazy-loading
+// them costs nothing behaviorally and keeps their JS out of the initial
+// content-page bundle.
+const ExamEndConfirmationSheet = dynamic(() => import("@/components/features/exam/components/modals/ExamEndConfirmationSheet"), { ssr: false });
+const QuestionNavigatorSheet = dynamic(() => import("@/components/features/exam/components/modals/QuestionNavigatorSheet"), { ssr: false });
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
+const NotesIndexModal = dynamic(() => import("@/components/features/downloadable-content/components/NotesIndexModal"), { ssr: false });
 
 // Same upper bound preparation's Sidebar uses for its own scroll-hide
 // offset — Topbar clamps against its own measured height, so this only

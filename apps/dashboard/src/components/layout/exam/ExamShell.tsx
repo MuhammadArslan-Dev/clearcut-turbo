@@ -5,9 +5,15 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
-import ExamEndConfirmationSheet from "@/components/features/exam/components/modals/ExamEndConfirmationSheet";
-import QuestionNavigatorSheet from "@/components/features/exam/components/modals/QuestionNavigatorSheet";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
+import dynamic from "next/dynamic";
+
+// Gated the same way as TestSeriesShell/PreparationShell's modals — neither
+// sheet is needed until the user opens it, and every byte kept out of the
+// initial exam-page bundle matters more here than most routes (a running
+// exam timer means load time is directly time the candidate loses).
+const ExamEndConfirmationSheet = dynamic(() => import("@/components/features/exam/components/modals/ExamEndConfirmationSheet"), { ssr: false });
+const QuestionNavigatorSheet = dynamic(() => import("@/components/features/exam/components/modals/QuestionNavigatorSheet"), { ssr: false });
 
 export default function ExamShell({ children }: { children: ReactNode }) {
   const { get, set } = useQueryParams();

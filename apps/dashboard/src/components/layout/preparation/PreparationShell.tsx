@@ -10,24 +10,29 @@ import Topbar from "./Topbar";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreparationModalStore } from "@/components/features/preparation/store/usePreparationModalStore";
-import {
-  ChapterIndexModal,
-  MiniTestModal,
-  MiniTestResultModal,
-  PreparationGuideModal,
-} from "@/components/features/preparation/components/modal";
-import PreviousModal from "@/components/features/preparation/components/modal/PreviousModal";
-import ChangePaperModal from "@/components/features/preparation/components/modal/ChangePaperModal";
-import EditCourseModal from "@/components/modals/course/edit-course-modal/edit-course-modal";
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
-import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywall";
-import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useParams } from "next/navigation";
 import { changeCourse, MyCoursesResponse } from "@/lib/dashboard/learning";
 import { useQueryClient } from "@tanstack/react-query";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import dynamic from "next/dynamic";
+
+// Same reasoning as TestSeriesShell.tsx's modal split: every one of these is
+// gated behind a store flag at its render site below (or self-gates, like
+// EditCourseModal/LockedContentModal), so a static import was bundling all
+// of them — including PreviousModal's katex/react-markdown pull — into
+// every preparation pageload whether or not the user ever opens them.
+const ChapterIndexModal = dynamic(() => import("@/components/features/preparation/components/modal/ChapterIndex"), { ssr: false });
+const MiniTestModal = dynamic(() => import("@/components/features/preparation/components/modal/MiniTest"), { ssr: false });
+const MiniTestResultModal = dynamic(() => import("@/components/features/preparation/components/modal/MiniTestResult"), { ssr: false });
+const PreparationGuideModal = dynamic(() => import("@/components/features/preparation/components/modal/GuideLine"), { ssr: false });
+const PreviousModal = dynamic(() => import("@/components/features/preparation/components/modal/PreviousModal"), { ssr: false });
+const ChangePaperModal = dynamic(() => import("@/components/features/preparation/components/modal/ChangePaperModal"), { ssr: false });
+const EditCourseModal = dynamic(() => import("@/components/modals/course/edit-course-modal/edit-course-modal"), { ssr: false });
+const PreparationPaywall = dynamic(() => import("@/components/features/PayWalls/PreparationPaywall"), { ssr: false });
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
 
 /* =========================
    Animation Config

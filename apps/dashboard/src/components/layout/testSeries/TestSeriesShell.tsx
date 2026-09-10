@@ -6,16 +6,8 @@ import Topbar from "./Topbar";
 import BottomPageSwitchReveal from "@/components/features/preparation/components/BottomPageSwitchReveal";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useTestSeriesModalStore } from "@/components/features/test-series/store/useTestSeriesModalStore";
-import AttemptHistoryModal from "@/components/features/test-series/components/modals/AttemptHistoryModal";
-import PreTestConfirmationModal from "@/components/features/test-series/components/modals/Pre-TestConfirmationModal";
-import SectionIndexModal from "@/components/features/test-series/components/modals/SectionIndexModal";
-import CountDownModal from "@/components/features/test-series/components/modals/CountDownModal";
-import ChangePaperModal from "@/components/features/test-series/components/modals/ChangePaperModal";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
-import ExamReportSheet from "@/components/features/exam-report/ExamReportSheet";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
-import PreparationPaywall from "@/components/features/PayWalls/PreparationPaywall";
-import LockedContentModal from "@/components/features/PayWalls/LockedContentModal";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
@@ -24,6 +16,25 @@ import { useTestListDataStore } from "@/components/features/test-series/store/us
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
+
+// Every one of these is gated behind a store flag at its render site below
+// (`{isOpen && activeModal === "…" && <X />}`) or checks the flag itself
+// (LockedContentModal), so most users on a given test-series page never
+// open most of them — but a static import still bundles all of them (incl.
+// ExamReportSheet's recharts/framer-motion/react-markdown/katex chunk) into
+// every test-series pageload regardless. Same fix already applied to
+// LearnPage.tsx's modals: dynamic() + ssr:false splits each into its own
+// chunk fetched only when its condition actually goes true, with zero
+// behavioral change since nothing here needs to be server-rendered.
+const AttemptHistoryModal = dynamic(() => import("@/components/features/test-series/components/modals/AttemptHistoryModal"), { ssr: false });
+const PreTestConfirmationModal = dynamic(() => import("@/components/features/test-series/components/modals/Pre-TestConfirmationModal"), { ssr: false });
+const SectionIndexModal = dynamic(() => import("@/components/features/test-series/components/modals/SectionIndexModal"), { ssr: false });
+const CountDownModal = dynamic(() => import("@/components/features/test-series/components/modals/CountDownModal"), { ssr: false });
+const ChangePaperModal = dynamic(() => import("@/components/features/test-series/components/modals/ChangePaperModal"), { ssr: false });
+const ExamReportSheet = dynamic(() => import("@/components/features/exam-report/ExamReportSheet"), { ssr: false });
+const PreparationPaywall = dynamic(() => import("@/components/features/PayWalls/PreparationPaywall"), { ssr: false });
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
 
 // Safe upper bound for the scroll-hide offset — Topbar clamps this against
 // its own measured title-row height, so this just needs to comfortably
