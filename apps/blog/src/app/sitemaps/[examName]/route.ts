@@ -3,13 +3,27 @@ import { formatToSlug } from "@/utils/slugify";
 import { resolveExamId } from "@/lib/api/exams";
 import { getPostsByExam } from "@/lib/api/posts";
 import { ALLOWED_EXAMS } from "@/lib/exams";
+import { buildQuestionsSitemapXml } from "@/lib/sitemap/build-questions-sitemap-xml";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 const PAYLOAD_API = (process.env.BACKEND_URL || "").replace(/\/$/, "");
 
+// Extends the Vercel function timeout for this route (only takes effect on
+// plans that allow it — ignored elsewhere). Needed for the "-questions"
+// branch below, which can involve dozens of backend round trips per exam,
+// same as sitemaps/ctet-questions.xml.
+export const maxDuration = 300;
+
+const QUESTIONS_SUFFIX = "-questions";
+
 /**
  * GET /sitemaps/[examName].xml
  * Generates a per-exam sitemap covering all levels, subjects, years, and locale variants.
+ *
+ * Also handles /sitemaps/[examName]-questions.xml (e.g. htet-questions.xml)
+ * for any exam other than CTET, which has its own dedicated, isolated route
+ * at sitemaps/ctet-questions.xml — a literal folder always wins over this
+ * dynamic one for an exact match, so that route is unaffected by this branch.
  */
 export async function GET(
   _request: Request,
@@ -17,6 +31,17 @@ export async function GET(
 ) {
   const { examName } = await params;
   const examSlug = examName.replace(/\.xml$/i, "").toLowerCase();
+
+  if (examSlug.endsWith(QUESTIONS_SUFFIX)) {
+    const baseExamSlug = examSlug.slice(0, -QUESTIONS_SUFFIX.length);
+    if (!ALLOWED_EXAMS.includes(baseExamSlug)) {
+      return new NextResponse(`Exam "${baseExamSlug}" not found`, { status: 404 });
+    }
+    const xml = await buildQuestionsSitemapXml(baseExamSlug, BASE_URL);
+    return new NextResponse(xml, {
+      headers: { "Content-Type": "application/xml" },
+    });
+  }
 
   if (!ALLOWED_EXAMS.includes(examSlug)) {
     return new NextResponse(`Exam "${examSlug}" not found`, { status: 404 });

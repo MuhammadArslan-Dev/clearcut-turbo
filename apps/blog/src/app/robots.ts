@@ -11,10 +11,9 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/api/"],
       },
     ],
-    sitemap: [
-      `${BASE_URL}/sitemap.xml`,
-      `${BASE_URL}/sitemaps/ctet.xml`,
-      `${BASE_URL}/sitemaps/ctet-questions.xml`,
-    ],
+    // sitemaps/index.xml lists every per-exam sitemap (built from
+    // ALLOWED_EXAMS) — a new exam needs no change here, it just needs to be
+    // added to ALLOWED_EXAMS. See sitemaps/index.xml/route.ts.
+    sitemap: [`${BASE_URL}/sitemap.xml`, `${BASE_URL}/sitemaps/index.xml`],
   };
 }
