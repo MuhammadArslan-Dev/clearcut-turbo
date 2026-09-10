@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { RESIZER_EXAMS } from "@/lib/resizerExams";
+import { getResizerExams } from "@/lib/resizerExams";
 import { AGE_ELIGIBILITY_EXAMS } from "@/lib/ageEligibility";
 
 // This app is a separate static export/deployment from apps/landing (see
@@ -24,7 +24,9 @@ function entry(path: string, priority: number, changeFrequency: MetadataRoute.Si
   return { url: `${BASE}${path}`, lastModified: BUILD_DATE, changeFrequency, priority };
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const resizerExams = await getResizerExams();
+
   const entries: MetadataRoute.Sitemap = [
     entry("/tools", 0.8, "monthly"),
     entry("/tools/resizer", 0.8, "weekly"),
@@ -40,7 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entries.push(entry(`/hi/tools/resizer/${slug}`, 0.5, "monthly"));
   }
 
-  for (const exam of RESIZER_EXAMS) {
+  for (const exam of resizerExams) {
     entries.push(entry(`/tools/resizer/${exam.slug}`, 0.7, "weekly"));
     entries.push(entry(`/hi/tools/resizer/${exam.slug}`, 0.6, "weekly"));
   }

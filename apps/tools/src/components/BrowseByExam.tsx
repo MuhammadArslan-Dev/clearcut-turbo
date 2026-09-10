@@ -1,5 +1,5 @@
 import Text from "@clearcut/ui/text";
-import { RESIZER_EXAMS, getResizerCategories } from "@/lib/resizerExams";
+import { getResizerExams, getResizerCategories } from "@/lib/resizerExams";
 import ExamSearch from "./ExamSearch";
 import RecentExams from "./RecentExams";
 import LocaleLink from "./LocaleLink";
@@ -89,10 +89,10 @@ function CategoryCard({
  * friendly URL. The search box above it bypasses both levels entirely for
  * anyone who already knows their exam's name.
  */
-export default function BrowseByExam({ locale = "en" }: { locale?: Locale }) {
+export default async function BrowseByExam({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).browse;
-  const categories = getResizerCategories();
-  const searchableExams = RESIZER_EXAMS.map(({ slug, shortName, fullName, photoSpec }) => ({
+  const [categories, exams] = await Promise.all([getResizerCategories(), getResizerExams()]);
+  const searchableExams = exams.map(({ slug, shortName, fullName, photoSpec }) => ({
     slug,
     shortName,
     fullName,

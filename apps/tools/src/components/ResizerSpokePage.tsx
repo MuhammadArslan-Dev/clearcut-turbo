@@ -6,8 +6,8 @@ import FAQAccordion, { AccordionItem } from "./FAQAccordion";
 import RecentExamTracker from "./RecentExamTracker";
 import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
-import { ResizerExamSpec, getCategoryForExam, getExamFaqs } from "@/lib/resizerExams";
-import { OFFICIAL_REQUIREMENTS } from "@/lib/officialRequirements";
+import { ResizerExamSpec, ResizerCategory, getExamFaqs } from "@/lib/resizerExams";
+import { ExamOfficialRequirements } from "@/lib/officialRequirements";
 import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
 import LocaleLink from "./LocaleLink";
 import RelatedExams from "./RelatedExams";
@@ -56,7 +56,17 @@ function SpecTable({ exam, locale }: { exam: ResizerExamSpec; locale: Locale }) 
  * hardcoded page per exam. Same tool as the hub (ResizeHubPage), plus an
  * exam-specific spec table and FAQ section.
  */
-export default function ResizerSpokePage({ exam, locale = "en" }: { exam: ResizerExamSpec; locale?: Locale }) {
+export default function ResizerSpokePage({
+  exam,
+  category,
+  officialRequirements,
+  locale = "en",
+}: {
+  exam: ResizerExamSpec;
+  category?: ResizerCategory;
+  officialRequirements?: ExamOfficialRequirements;
+  locale?: Locale;
+}) {
   const t = getDict(locale).spoke;
   const faqItems: AccordionItem[] = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, locale).map(
     (faq, i) => ({
@@ -65,8 +75,6 @@ export default function ResizerSpokePage({ exam, locale = "en" }: { exam: Resize
       content: faq.a,
     }),
   );
-  const category = getCategoryForExam(exam);
-  const officialRequirements = OFFICIAL_REQUIREMENTS[exam.slug];
   return (
     <div>
       <RecentExamTracker exam={exam} />

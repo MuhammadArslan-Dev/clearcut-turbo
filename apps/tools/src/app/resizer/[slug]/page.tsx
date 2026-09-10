@@ -2,29 +2,30 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { RESIZER_EXAMS, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs } from "@/lib/resizerExams";
+import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs } from "@/lib/resizerExams";
+import { getOfficialRequirements } from "@/lib/officialRequirements";
 import JsonLd from "@clearcut/ui/json-ld";
 
 // Exam pages (clearcutoff.in/tools/resizer/{examSlug}) and category pages
 // (clearcutoff.in/tools/resizer/{categorySlug}) share this one flat dynamic
 // segment rather than nesting categories under their own /category/ prefix
-// — resizerExams.ts asserts at module load that no exam slug and category
-// slug ever collide, which is what makes sharing the namespace safe.
+// — toolsApi.ts asserts at load that no exam slug and category slug ever
+// collide, which is what makes sharing the namespace safe.
 //
 // Static export needs the full param set up front — an unlisted slug 404s
 // rather than resolving on demand.
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  const examParams = RESIZER_EXAMS.map((exam) => ({ slug: exam.slug }));
-  const categoryParams = getResizerCategories().map((category) => ({ slug: category.slug }));
+export async function generateStaticParams() {
+  const examParams = (await getResizerExams()).map((exam) => ({ slug: exam.slug }));
+  const categoryParams = (await getResizerCategories()).map((category) => ({ slug: category.slug }));
   return [...examParams, ...categoryParams];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
 
-  const exam = getResizerExamBySlug(slug);
+  const exam = await getResizerExamBySlug(slug);
   if (exam) {
     const title = `${exam.shortName} Photo & Signature Resizer - Free Tool | Clear Cutoff`;
     const description = `Resize and compress your photo or signature to ${exam.shortName} (${exam.fullName}) application-form specs. Free, private, processed entirely in your browser.`;
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
 
-  const category = getResizerCategoryBySlug(slug);
+  const category = await getResizerCategoryBySlug(slug);
   if (category) {
     const title = `${category.label}: Photo & Signature Resizer | Clear Cutoff`;
     const description = `Resize and compress your photo or signature for any ${category.label} exam. Free, private, processed entirely in your browser.`;
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const exam = getResizerExamBySlug(slug);
+  const exam = await getResizerExamBySlug(slug);
   if (exam) {
     const faqSchema = {
       "@context": "https://schema.org",
@@ -74,15 +75,21 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       })),
     };
 
+    const [categories, officialRequirements] = await Promise.all([
+      getResizerCategories(),
+      getOfficialRequirements(exam.slug),
+    ]);
+    const category = categories.find((c) => c.label === exam.category);
+
     return (
       <>
         <JsonLd data={faqSchema} />
-        <ResizerSpokePage exam={exam} />
+        <ResizerSpokePage exam={exam} category={category} officialRequirements={officialRequirements} />
       </>
     );
   }
 
-  const category = getResizerCategoryBySlug(slug);
+  const category = await getResizerCategoryBySlug(slug);
   if (category) {
     return <CategoryPage category={category} />;
   }
