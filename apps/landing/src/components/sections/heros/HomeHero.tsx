@@ -10,7 +10,7 @@ const CONTENT: Record<Locale, { heading: React.ReactNode; description: string }>
   en: {
     heading: (
       <>
-        Crack the <span className="text-brand">HTET</span> exam with PYQ-based tests, notes and videos
+        Crack the <span className="text-brand">Teaching</span> exams with PYQ-based tests, notes and videos
       </>
     ),
     description:
@@ -19,7 +19,7 @@ const CONTENT: Record<Locale, { heading: React.ReactNode; description: string }>
   hi: {
     heading: (
       <>
-        PYQ आधारित टेस्ट, नोट्स और वीडियो के साथ <span className="text-brand">HTET</span> परीक्षा पास करें
+        PYQ आधारित टेस्ट, नोट्स और वीडियो के साथ <span className="text-brand">टीचिंग</span> परीक्षा पास करें
       </>
     ),
     description:
@@ -28,7 +28,7 @@ const CONTENT: Record<Locale, { heading: React.ReactNode; description: string }>
   mr: {
     heading: (
       <>
-        PYQ आधारित टेस्ट, नोट्स आणि व्हिडिओंसह <span className="text-brand">HTET</span> परीक्षा उत्तीर्ण करा
+        PYQ आधारित टेस्ट, नोट्स आणि व्हिडिओंसह <span className="text-brand">टीचिंग</span> परीक्षा उत्तीर्ण करा
       </>
     ),
     description:
