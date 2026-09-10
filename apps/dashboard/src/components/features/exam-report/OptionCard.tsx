@@ -90,8 +90,14 @@ const OptionCard = React.memo(function OptionCard({
         <div className="flex-1">
           <div className="flex flex-col py-2 gap-2">
             <MathRender content={value.text}>
+              {/* ReactMarkdown wraps its output in its own <p> by default —
+                  "as=p" here would nest a <p> inside a <p>, an invalid-HTML
+                  hydration error React warns about loudly. "div" carries
+                  the exact same variant/weight/color classes with no
+                  visual difference, since none of that styling comes from
+                  the tag itself. */}
               <Text
-                as="p"
+                as="div"
                 variant="body-large"
                 weight="normal"
                 color="gray-normal"

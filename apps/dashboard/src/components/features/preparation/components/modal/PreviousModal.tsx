@@ -314,8 +314,12 @@ const QuestionItem = React.memo(function QuestionItem({
               {/* Question */}
               <div className="px-3">
                 <Math content={questionText}>
+                  {/* "div" not "p" — ReactMarkdown already wraps its output
+                      in a <p>; nesting is invalid HTML (hydration
+                      mismatch). No visual change, since the tag itself
+                      carries none of this styling. */}
                   <Text
-                    as="p"
+                    as="div"
                     variant="body-large"
                     weight="normal"
                     color="gray-normal"
@@ -387,8 +391,9 @@ const QuestionItem = React.memo(function QuestionItem({
                         Explanation
                       </Text>
                       <Math content={explanation}>
+                        {/* "div" not "p" — see the questionText Text above */}
                         <Text
-                          as="p"
+                          as="div"
                           variant="body-large"
                           weight="normal"
                           color="gray-normal"
@@ -459,8 +464,9 @@ const OptionCard = React.memo(function OptionCard({
         <div className="flex-1">
           <div className="flex flex-col py-2 gap-2">
             <Math content={value.text}>
+              {/* "div" not "p" — see the questionText Text above */}
               <Text
-                as="p"
+                as="div"
                 variant="body-large"
                 weight="normal"
                 color="gray-normal"

@@ -461,7 +461,11 @@ const OptionCard = React.memo(function OptionCard({
           <div className="flex flex-col py-2 gap-2">
             {value.text && (
               <MathRender content={value.text}>
-                <Text as="p" variant="body-large" weight="normal" color="gray-normal">
+                {/* "div" not "p" — ReactMarkdown already wraps its output in
+                    a <p>; nesting is invalid HTML (hydration mismatch). No
+                    visual change either way, since the tag itself carries
+                    none of this styling. */}
+                <Text as="div" variant="body-large" weight="normal" color="gray-normal">
                   <ReactMarkdown>{value.text}</ReactMarkdown>
                 </Text>
               </MathRender>

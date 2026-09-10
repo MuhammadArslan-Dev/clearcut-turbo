@@ -243,8 +243,12 @@ export default function QuestionTesterView() {
                 Explanation
               </Text>
               <MathRender content={activeTranslation.answer.explanation ?? ""}>
+                {/* "div" not "p" — ReactMarkdown already wraps its output in
+                    a <p>; nesting is invalid HTML (hydration mismatch). No
+                    visual change either way, since the tag itself carries
+                    none of this styling. */}
                 <Text
-                  as="p"
+                  as="div"
                   variant="body-large"
                   weight="normal"
                   color="gray-normal"

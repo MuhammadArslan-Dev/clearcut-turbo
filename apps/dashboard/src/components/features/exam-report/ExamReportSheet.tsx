@@ -98,10 +98,6 @@ export default function ExamReportSheet() {
     examId: examId!,
   });
 
-  if (isError) {
-    return <div>Something went wrong</div>;
-  }
-
   const { exam, getExamContext } = useExamReportStore();
 
   const result = useMemo(() => exam?.result || {}, [exam]);
@@ -175,8 +171,17 @@ export default function ExamReportSheet() {
     ];
   }, [result]);
 
-
-
+  // Moved below every hook in this component (see git history/blame if this
+  // looks odd) — an early return here BEFORE the hooks that used to follow
+  // it violated the Rules of Hooks: if `isError` was ever true on one
+  // render and false on the next (e.g. a query retry that succeeds), this
+  // component called fewer hooks on the first render than the second,
+  // which React reports as "Rendered more hooks than during the previous
+  // render." All hooks must run unconditionally on every render; only the
+  // returned JSX may vary.
+  if (isError) {
+    return <div>Something went wrong</div>;
+  }
 
   return (
     <AnimatePresence>
@@ -689,8 +694,13 @@ const QuestionItem = React.memo(function QuestionItem({
                         Explanation
                       </Text>
                       <MathRender content={translation?.explanation}>
+                        {/* "div" not "p" — ReactMarkdown wraps its own output
+                            in a <p>; nesting it inside another <p> is invalid
+                            HTML and React warns loudly about the hydration
+                            mismatch. No visual change: none of this styling
+                            comes from the tag itself. */}
                         <Text
-                          as="p"
+                          as="div"
                           variant="body-large"
                           weight="normal"
                           color="gray-normal"
