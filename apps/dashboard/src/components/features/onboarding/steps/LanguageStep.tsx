@@ -83,6 +83,7 @@ export default function LanguageStep({
                   alt="Main Logo"
                   className="w-[239px] h-[48px]"
                   priority
+                  unoptimized
                 />
               </div>
             </div>

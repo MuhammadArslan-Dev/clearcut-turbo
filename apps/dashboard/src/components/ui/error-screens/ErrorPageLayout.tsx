@@ -29,6 +29,7 @@ export default function ErrorPageLayout({ children }: ErrorPageLayoutProps) {
             width={160}
             height={40}
             className="h-10 w-auto object-contain"
+            unoptimized
           />
         </Link>
       </header>

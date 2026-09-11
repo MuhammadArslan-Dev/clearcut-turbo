@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import MyCourseCard from "./MyCourseCard";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperClass } from "swiper";
@@ -10,10 +11,7 @@ import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 import "swiper/css";
 import "swiper/css/pagination";
 
-import EditCourseModal from "@/components/modals/course/edit-course-modal/edit-course-modal";
 import { useCourseStore } from "@/store/course/useCourseStore";
-import BuySigleCourseModal from "@/components/modals/course/buy-sigle-course/buy-sigle-course-modal";
-import FullCoursePaymentModal from "@/components/modals/payment/full-course-payment-modal";
 import {
   ExamEnrollmentWithExam,
   MyCoursesResponse,
@@ -21,16 +19,44 @@ import {
 import { MyCourseCardSkeleton } from "./MyCourseCardSkeleton";
 import { ExamMetadata } from "@/types/Exam";
 import { useRouter } from "@/i18n/navigation";
-import PaymentSuccessModal from "@/components/modals/payment/success/payment-success-modal";
-import PaymentFailedModal from "@/components/modals/payment/failed/payment-failed-modal";
-import PaymentFailedWarningModal from "@/components/modals/payment/failed-warning/payment-failed-warning-modal";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@clearcut/ui/button";
-import MainPaywall from "../../PayWalls/MainPaywall";
 import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
 import { useCourseProgressSummary } from "@/hooks/course/useCourseProgressSummary";
+
+// These modals are only ever visible after a user action (edit/buy/payment
+// result) — loading them as separate chunks instead of bundling them into
+// every /dashboard pageload trims the initial JS payload for the
+// highest-traffic page in the app.
+const EditCourseModal = dynamic(
+  () => import("@/components/modals/course/edit-course-modal/edit-course-modal"),
+  { ssr: false },
+);
+const BuySigleCourseModal = dynamic(
+  () => import("@/components/modals/course/buy-sigle-course/buy-sigle-course-modal"),
+  { ssr: false },
+);
+const FullCoursePaymentModal = dynamic(
+  () => import("@/components/modals/payment/full-course-payment-modal"),
+  { ssr: false },
+);
+const PaymentSuccessModal = dynamic(
+  () => import("@/components/modals/payment/success/payment-success-modal"),
+  { ssr: false },
+);
+const PaymentFailedModal = dynamic(
+  () => import("@/components/modals/payment/failed/payment-failed-modal"),
+  { ssr: false },
+);
+const PaymentFailedWarningModal = dynamic(
+  () => import("@/components/modals/payment/failed-warning/payment-failed-warning-modal"),
+  { ssr: false },
+);
+const MainPaywall = dynamic(() => import("../../PayWalls/MainPaywall"), {
+  ssr: false,
+});
 
 function CourseSlideCard({
   exam,
