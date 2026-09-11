@@ -32,7 +32,7 @@ export default function Accordion({ items, defaultOpenId, onOpenChange }: Props)
           key={item.id}
           id={item.id}
           name={groupName}
-          defaultOpen={item.id === defaultOpenId}
+          open={item.id === defaultOpenId}
           onToggle={(e) =>
             onOpenChange?.(e.currentTarget.open ? item.id : null)
           }
