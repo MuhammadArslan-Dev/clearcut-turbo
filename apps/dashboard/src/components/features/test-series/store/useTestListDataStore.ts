@@ -87,13 +87,49 @@ export const useTestListDataStore = create<TestListDataStore>((set) => ({
   selectedSectionId: null,
 
   setPapers: (papers) => set({ papers }),
-  setPaper: (paper) => set({ paper }),
+  // ChapterTest and SectionalTest share this single `paper` across a tab
+  // switch by design (see their own comments), but each tab's data-init
+  // effect calls this with the paper object its OWN response just returned
+  // — a fresh object every fetch even when it's the same paper by id. Since
+  // `paper.id` also feeds those effects' query-key derivation
+  // (`explicitPaperId`), a same-id-different-object write here can flip
+  // `paper`'s reference, which those effects then chase, deriving a new
+  // query key, refetching, and calling this again — the "Maximum update
+  // depth exceeded" loop on tab switch (CLEARCUTOFF-NEXTJS-APP-7A).
+  // Comparing by id (not reference) before notifying breaks that cycle.
+  setPaper: (paper) =>
+    set((state) => (state.paper?.id === paper?.id ? state : { paper })),
   setDefaultPaperId: (endpoint, paperId) =>
-    set((state) => ({
-      defaultPaperIdByEndpoint: { ...state.defaultPaperIdByEndpoint, [endpoint]: paperId },
-    })),
-  setIndexSections: (indexSections) => set({ indexSections }),
-  setSelectedSectionId: (selectedSectionId) => set({ selectedSectionId }),
+    set((state) =>
+      state.defaultPaperIdByEndpoint[endpoint] === paperId
+        ? state
+        : {
+            defaultPaperIdByEndpoint: {
+              ...state.defaultPaperIdByEndpoint,
+              [endpoint]: paperId,
+            },
+          },
+    ),
+  // Same reasoning as setPaper: ChapterTest/SectionalTest recompute
+  // `sections` (and re-call this) from a fresh React Query response object
+  // on every render where their query key derivation is unsettled. Bailing
+  // out when the section list is unchanged by id stops this from cascading
+  // into the Index modal / anything else subscribed to `indexSections`.
+  setIndexSections: (indexSections) =>
+    set((state) => {
+      const prev = state.indexSections;
+      const same =
+        prev === indexSections ||
+        (!!prev &&
+          !!indexSections &&
+          prev.length === indexSections.length &&
+          prev.every((s, i) => s.id === indexSections[i]?.id));
+      return same ? state : { indexSections };
+    }),
+  setSelectedSectionId: (selectedSectionId) =>
+    set((state) =>
+      state.selectedSectionId === selectedSectionId ? state : { selectedSectionId },
+    ),
 
   setData: (recommendedTests, progressData) =>
     set({
