@@ -110,7 +110,15 @@ const config: NextConfig = {
   },
 };
 
-export default withSentryConfig(bundleAnalyzer(withNextIntl(config)), {
+// pnpm resolves two different `next` versions across this workspace (landing
+// depends on ^16.1.6, blog on ^16.3.4), so the plugin chain below composes
+// NextConfig types from two structurally-incompatible module instances —
+// a types-only conflict (Next.js consumes this as plain JS at runtime, so
+// there is no behavior difference), worked around with an explicit `any`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above
+const composedConfig: any = bundleAnalyzer(withNextIntl(config) as any);
+
+export default withSentryConfig(composedConfig, {
   // Official Sentry tree-shaking flags (docs: configuration/tree-shaking).
   // These strip Sentry features this app does not use from ANY Sentry code
   // that does get bundled — notably the server/edge runtime, which stays fully
