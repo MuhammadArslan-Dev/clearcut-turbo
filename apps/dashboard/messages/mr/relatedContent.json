@@ -1,0 +1,58 @@
+{
+  "studyTabs": {
+    "tabs": {
+      "notes": "नोट्स",
+      "bonusVideos": "बोनस व्हिडिओ",
+      "trends": "ट्रेंड्स",
+      "concepts": "संकल्पना"
+    },
+    "notes": {
+      "detailedTitle": "सविस्तर नोट्स",
+      "detailedSubtitle": "विषय समजून घेण्यासाठी संपूर्ण स्पष्टीकरण",
+      "quickTitle": "क्विक रिव्हिजन नोट्स (लवकरच)",
+      "quickSubtitle": "शेवटच्या क्षणी उजळणीसाठी 1-पानी सारांश",
+      "meta": {
+        "pages": "पाने",
+        "updatedFor": "यासाठी अपडेटेड",
+        "language": "भाषा"
+      },
+      "buttons": {
+        "download": "PDF डाउनलोड करा",
+        "view": "नोट्स पाहा",
+        "notify": "उपलब्ध झाल्यावर कळवा"
+      },
+      "footerHint": "प्रथमच शिकण्यासाठी आणि स्पष्टतेसाठी सर्वोत्तम"
+    },
+    "bonusVideos": {
+      "title": "तोच विषय, वेगळे शिक्षक",
+      "subtitle": "मुख्य व्हिडिओ स्पष्ट नसेल तरच पाहा",
+      "startVideo": "व्हिडिओ सुरू करा"
+    },
+    "trends": {
+      "title": "मागील परीक्षांचे ट्रेंड्स",
+      "subtitle": "अलीकडील CTET परीक्षांवर आधारित",
+      "labels": {
+        "topicImportance": "विषयाचे महत्त्व",
+        "marksAsked": "विचारलेले मार्क्स",
+        "lastAppeared": "शेवटचे कधी आले",
+        "questionsPerExam": "प्रश्न (प्रति परीक्षा)"
+      },
+      "values": {
+        "marksRange": "{{min}}-{{max}} मार्क्स",
+        "questionsCount": "{{count}} प्रति परीक्षा",
+        "basedOnYears": "({{years}} वर्षांवर आधारित)"
+      },
+      "buttons": {
+        "viewQuestions": "CTET प्रश्न पाहा ({{count}})"
+      }
+    },
+    "concepts": {
+      "title": "व्हिडिओमध्ये नेमक्या संकल्पनेवर जा",
+      "subtitle": "जलद शिक्षण आणि उजळणीसाठी कोणत्याही संकल्पनेवर क्लिक करा",
+      "status": {
+        "inProgress": "सुरू आहे"
+      },
+      "hint": "कोणत्याही संकल्पनेवर क्लिक करा"
+    }
+  }
+}

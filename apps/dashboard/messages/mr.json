@@ -1,0 +1,263 @@
+{
+  "Sidebar": {
+    "exams": "परीक्षा",
+    "exam": "परीक्षा",
+    "learn": "शिका",
+    "profile": "प्रोफाइल",
+    "dashboard": "डॅशबोर्ड",
+    "myCourses": "माझे कोर्स",
+    "payments": "पेमेंट्स",
+    "settings": "सेटिंग्ज",
+    "referral": "रेफरल"
+  },
+  "DashboardPage": {
+    "metaTitle": "डॅशबोर्ड | क्लियर कटऑफ",
+    "metaDescription": "डॅशबोर्ड"
+  },
+  "Exam": {
+    "metaTitle": "परीक्षा सेटिंग्ज | क्लियर कटऑफ",
+    "metaDescription": "सेटिंग्ज"
+  },
+  "Learn": {
+    "metaTitle": "शिका | क्लियर कटऑफ",
+    "metaDescription": "सेटिंग्ज"
+  },
+  "Profile": {
+    "metaTitle": "सेटिंग्ज | क्लियर कटऑफ",
+    "metaDescription": "सेटिंग्ज"
+  },
+  "SettingsPage": {
+    "metaTitle": "सेटिंग्ज | क्लियर कटऑफ",
+    "metaDescription": "सेटिंग्ज"
+  },
+  "PaymentsPage": {
+    "metaTitle": "पेमेंट्स | क्लियर कटऑफ",
+    "metaDescription": "पेमेंट्स"
+  },
+  "MyCoursesPage": {
+    "metaTitle": "माझे कोर्स | क्लियर कटऑफ",
+    "metaDescription": "माझे कोर्स"
+  },
+  "Header": {
+    "logo": "LMS.io",
+    "features": "फीचर्स",
+    "pricing": "किंमत",
+    "contact": "संपर्क",
+    "login": "लॉगिन",
+    "signup": "साइन अप"
+  },
+  "todayGoals": {
+    "title": "आजची उद्दिष्टे",
+    "estimatedTime": "उद्दिष्टे पूर्ण करण्याचा वेळ: {min}-{max} मिनिटे",
+    "watchVideos": "{count, plural, one {# व्हिडिओ} other {# व्हिडिओ}} पाहा",
+    "studyNotes": "{count, plural, one {# नोट} other {# नोट्स}} डाउनलोड करून अभ्यास करा",
+    "attemptTests": "{count, plural, one {# मिनी-टेस्ट} other {# मिनी-टेस्ट}} द्या",
+    "progress": "{completed} / {total}",
+    "start": "आजची उद्दिष्टे सुरू करा",
+    "continue": "सुरू ठेवा",
+    "basedOnPattern": "नवीनतम परीक्षा पॅटर्नवर आधारित"
+  },
+  "quickRvision": {
+    "title": "क्विक रिव्हिजन",
+    "subtitle": "वेळ कमी आहे? नोट्स आणि PYQs वापरून महत्त्वाचे विषय उजळणी करा",
+    "viewNotes": "प्रकरण आणि विषयानुसार नोट्स पाहा",
+    "viewPreviousPapers": "मागील वर्षांचे पेपर पाहा",
+    "viewPYQs": "परीक्षा तज्ज्ञांनी तयार केलेले आणि तपासलेले",
+    "notes": "{note} नोट्स",
+    "papers": "{paper} पेपर",
+    "openNotesandPapers": "नोट्स आणि पेपर उघडा"
+  },
+  "appDownload": {
+    "titleLine1": "शिका. सराव करा. यशस्वी व्हा.",
+    "titleLine2": "सर्व काही एका अ‍ॅपमध्ये!",
+    "features": {
+      "completeCourse": {
+        "title": "संपूर्ण कोर्स",
+        "subtitle": "तज्ज्ञ कंटेंटसह सर्व प्रकरणे अभ्यासा"
+      },
+      "practiceMore": {
+        "title": "जास्त सराव करा",
+        "subtitle": "टॉपिक टेस्ट, मॉक टेस्ट आणि PYQs"
+      },
+      "clearExam": {
+        "title": "{exam} पास करा",
+        "subtitle": "प्रगती ट्रॅक करा आणि तुमचे ध्येय गाठा"
+      }
+    },
+    "continueInApp": "अ‍ॅपमध्ये सुरू ठेवा",
+    "unlockTopics": "अ‍ॅपमध्ये दररोज एक विषय मोफत अनलॉक करा —"
+  },
+  "nextMilestone": {
+    "title": "पुढील माइलस्टोन",
+    "chaptersAway": "{subject} पूर्ण करण्यासाठी {count, plural, one {# प्रकरण} other {# प्रकरणे}} बाकी",
+    "count": "{count, plural, one {# प्रकरण} other {# प्रकरणे}}",
+    "cta": "पुढील माइलस्टोन पूर्ण करा"
+  },
+  "learningStreak": {
+    "title": "लर्निंग स्ट्रीक",
+    "minutesToKeepStreak": "{streak, plural, one {#-दिवसांची} other {#-दिवसांची}} सलगता कायम ठेवण्यासाठी आज {minutes, plural, one {# मिनिट} other {# मिनिटे}} अभ्यास करा",
+    "day": "{streak, plural, one {#-दिवसाची} other {#-दिवसांची}} स्ट्रीक",
+    "minute": "{minutes, plural, =0 {# मिनिट} one {# मिनिट} other {# मिनिटे}}",
+    "longestStreak": "सर्वात मोठी स्ट्रीक: {days, plural, one {# दिवस} other {# दिवस}}"
+  },
+  "common": {
+    "continue": "सुरू ठेवा",
+    "index": "यादी",
+    "save": "सेव्ह करा",
+    "video": "व्हिडिओ",
+    "notes": "नोट्स",
+    "minitest": "टॉपिक टेस्ट",
+    "edit": "एडिट करा",
+    "today": "आज",
+    "upgrade": "अपग्रेड करा",
+    "section": "विभाग",
+    "sections": "विभाग",
+    "chapter": "प्रकरण",
+    "chapters": "प्रकरणे",
+    "course": "कोर्स",
+    "courses": "कोर्सेस",
+    "testSeries": "टेस्ट सिरीज",
+    "mark": "मार्क",
+    "marks": "मार्क्स",
+    "question": "प्रश्न",
+    "questions": "प्रश्न",
+    "to_review": "रिव्ह्यूसाठी",
+    "not_answered": "उत्तर न दिलेले",
+    "answered": "उत्तर दिलेले",
+    "not_visited": "अद्याप पाहिलेले नाही",
+    "papers": "पेपर"
+  },
+  "timeRemainingTillExam": {
+    "title": "परीक्षेपर्यंत उरलेला वेळ",
+    "countdown": {
+      "days": "{count, plural, one {दिवस} other {दिवस}}",
+      "hours": "{count, plural, one {तास} other {तास}}",
+      "minutes": "{count, plural, one {मिनिट} other {मिनिटे}}",
+      "seconds": "{count, plural, one {सेकंद} other {सेकंद}}"
+    },
+    "upgradeHint": "परीक्षेपूर्वी अभ्यासक्रम पूर्ण करण्यासाठी आत्ताच अपग्रेड करा"
+  },
+  "examCard": {
+    "date": "तारीख:",
+    "mode": "मोड:",
+    "duration": "कालावधी:",
+    "cutoff": "कटऑफ:",
+    "ctaTrial": "{days}-दिवसांची मोफत ट्रायल सुरू करा"
+  },
+  "examMode": {
+    "online": "ऑनलाइन",
+    "offline": "ऑफलाइन"
+  },
+  "languages": {
+    "english": "इंग्रजी",
+    "hindi": "हिंदी"
+  },
+  "actions": {
+    "add": "जोडा",
+    "delete": "Delete",
+    "save": "सेव्ह करा",
+    "back": "मागे",
+    "next": "पुढे",
+    "end_test": "टेस्ट एंड करा",
+    "save_and_next": "सेव्ह करून पुढे जा",
+    "clear_response": "उत्तर काढून टाका",
+    "mark_for_review_and_next": "रिव्ह्यूसाठी मार्क करा आणि पुढे जा",
+    "edit": "एडिट करा",
+    "cancel": "रद्द करा",
+    "continue": "सुरू ठेवा",
+    "confirm_language": "भाषा कन्फर्म करा",
+    "previous_topic": "मागील विषय",
+    "next_topic": "पुढील विषय",
+    "unlock": "अनलॉक करा",
+    "logout": "लॉगआउट"
+  },
+  "profile": {
+    "title": "माझी प्रोफाइल",
+    "greeting": "नमस्कार, {name}",
+    "personalDetails": {
+      "name": "नाव",
+      "gender": "लिंग",
+      "dob": "जन्मतारीख",
+      "email": "ईमेल",
+      "phone": "फोन",
+      "notAdded": "जोडलेले नाही",
+      "edit": "एडिट करा",
+      "add": "जोडा"
+    }
+  },
+  "profileMenu": {
+    "personalDetails": {
+      "title": "वैयक्तिक तपशील",
+      "subtitle": "नाव, वय, लिंग आणि इतर"
+    },
+    "payments": {
+      "title": "पेमेंट्स",
+      "subtitle": "तुम्ही खरेदी केलेले कोर्स"
+    },
+    "changeLanguage": {
+      "title": "भाषा बदला",
+      "subtitle": "English, हिंदी, मराठी"
+    },
+    "helpSupport": {
+      "title": "मदत आणि सपोर्ट",
+      "subtitle": "आम्हाला कॉल करा किंवा चॅट करा"
+    },
+    "tncAndSocial": {
+      "title": "अटी व सोशल मीडिया",
+      "subtitle": "नियम, सोशल मीडिया आणि इतर माहिती"
+    },
+    "subscriptions": {
+      "title": "सबस्क्रिप्शन्स",
+      "subtitle": "तुमच्या सक्रिय योजना व्यवस्थापित करा"
+    }
+  },
+  "course": {
+    "courseStatus": {
+      "trial": "मोफत ट्रायलचे 3 दिवस शिल्लक",
+      "trialEnd": "ट्रायल संपली",
+      "active": "सक्रिय",
+      "completed": "पूर्ण झाले",
+      "dropped": "कोर्स सोडला",
+      "expired": "कोर्स एक्सपायर झाला",
+      "cleared": "क्लियर झाले",
+      "unknown": "माहिती उपलब्ध नाही"
+    }
+  },
+  "myCourses": {
+    "title": "माझे कोर्स",
+    "freeTrialBadge": "मोफत ट्रायल",
+    "chaptersCompleted": "पूर्ण झालेली प्रकरणे",
+    "topicsCompleted": "पूर्ण झालेले विषय",
+    "testsAttempted": "दिलेल्या टेस्ट",
+    "chaptersLabel": "प्रकरणे",
+    "testSeriesLabel": "टेस्ट सिरीज",
+    "continueLearning": "मोफत शिकणे सुरू ठेवा",
+    "continueLearningActive": "शिकणे सुरू ठेवा",
+    "unlockFullAccess": "पूर्ण अ‍ॅक्सेस अनलॉक करा",
+    "buyFullCourse": "पूर्ण कोर्स खरेदी करा",
+    "priceNote": "₹{price}/महिना • सबस्क्रिप्शन प्लॅन",
+    "trialLimit": "मोफत ट्रायल फक्त {days, plural, one {# दिवस} other {# दिवस}} साठी"
+  },
+  "resumeBar": {
+    "currentExam": "सध्याची परीक्षा: {exam}",
+    "changeExam": "परीक्षा बदला",
+    "lessonPath": "{subject} > प्रकरण {chapter} • विषय {topic}",
+    "timeToComplete": "ध्येय पूर्ण करण्यासाठी {minutes, plural, one {# मिनिट} other {# मिनिटे}}",
+    "minutes": "{minutes, plural, one {# मिनिट} other {# मिनिटे}}",
+    "resume": "पुन्हा सुरू करा"
+  },
+  "footer": {
+    "terms": "नियम",
+    "privacy": "प्रायव्हसी",
+    "refund": "रिफंड",
+    "contact": "संपर्क",
+    "copyright": "© {year} {brand}. सर्व हक्क राखीव."
+  },
+  "LanguageCard": {
+    "select_language": "भाषा निवडा"
+  },
+  "ReferralPage": {
+    "metaTitle": "रेफरल प्रोग्राम | ClearCutoff",
+    "metaDescription": "मित्रांना आमंत्रित करा आणि बक्षिसे मिळवा"
+  }
+}

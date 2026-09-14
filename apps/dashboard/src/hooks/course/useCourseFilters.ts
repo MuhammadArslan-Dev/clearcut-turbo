@@ -3,6 +3,7 @@ import { Exam, ExamTranslation } from "@/types/Exam";
 import useLanguageSwitch from "../useLanguageSwitch";
 import { AppLocale } from "@/types/components/language";
 import { parseTranslation } from "@/utils/text/translation";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 export type FilterTab = {
   label: string;
@@ -33,12 +34,13 @@ export function useCourseFilters(data?: Exam[]) {
       parsed = translations;
     }
 
-    return parsed?.[locale]?.state ?? parsed?.en?.state ?? "";
+    return parsed?.[toContentLocale(locale)]?.state ?? parsed?.en?.state ?? "";
   };
 
   // memoized unique translated states
   const states = useMemo(() => {
     const unique = new Map<string, { label: string; value: string }>();
+    const contentLocale = toContentLocale(locale);
 
     (data ?? []).forEach((exam) => {
       const parsed =
@@ -46,7 +48,7 @@ export function useCourseFilters(data?: Exam[]) {
           ? JSON.parse(exam.translation)
           : exam.translation;
 
-      const label = parsed?.[locale]?.state ?? parsed?.en?.state;
+      const label = parsed?.[contentLocale]?.state ?? parsed?.en?.state;
 
       const value = parsed?.en?.state; // 👈 stable value
 
@@ -65,7 +67,7 @@ export function useCourseFilters(data?: Exam[]) {
   const stateTabs: FilterTab[] = useMemo(
     () => [
       {
-        label: locale === "hi" ? "सभी" : "All",
+        label: locale === "hi" ? "सभी" : locale === "mr" ? "सर्व" : "All",
         value: "all",
       },
       ...states.map(({ label, value }) => ({

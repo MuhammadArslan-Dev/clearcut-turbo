@@ -1,16 +1,17 @@
 import { Section } from "@/components/features/preparation/types/types";
+import type { AppLocale } from "@/types/components/language";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 type Paper = {
   id: number;
   name: string; // JSON string
 };
 
-type Locale = "en" | "hi" | string;
-
 export const mapPapersToItems = (
   papers: Paper[],
-  locale: Locale
+  locale: AppLocale | string
 ) => {
+  const contentLocale = toContentLocale(locale as AppLocale);
   return papers.map((paper) => {
     let parsedName: any = {};
 
@@ -25,10 +26,10 @@ export const mapPapersToItems = (
       label: (
         <div className="flex flex-col">
           <span className="heading-small">
-            {parsedName?.[locale]?.name || "N/A"}
+            {parsedName?.[contentLocale]?.name || "N/A"}
           </span>
           <span className="body-xsmall !font-normal">
-            {parsedName?.[locale]?.detail || ""}
+            {parsedName?.[contentLocale]?.detail || ""}
           </span>
         </div>
       ),
@@ -37,13 +38,14 @@ export const mapPapersToItems = (
 };
 
 
-export const mapSectionsToItems = (sections: Section[], locale: Locale) => {
+export const mapSectionsToItems = (sections: Section[], locale: AppLocale | string) => {
+  const contentLocale = toContentLocale(locale as AppLocale);
   return sections.map((section) => {
     const parsed = JSON.parse(section.translation);
 
     return {
       id: String(section.id),
-      label: parsed?.[locale]?.name ?? parsed?.en?.name ?? "",
+      label: parsed?.[contentLocale]?.name ?? parsed?.en?.name ?? "",
     };
   })
 };

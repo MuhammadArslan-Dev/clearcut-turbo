@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";

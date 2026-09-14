@@ -28,6 +28,7 @@ import {
   usePaywallsStore,
 } from "@/components/features/PayWalls/usePaywallsStore";
 import { trackEvent } from "@/lib/analytics/browser";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 interface FullTestProps {
   courseId?: string | number;
@@ -353,7 +354,7 @@ export const ChangePaperButton = () => {
     }
   }, [paper?.name]);
 
-  const localizedName = parsedName?.[locale]?.name ?? paper?.name ?? "";
+  const localizedName = parsedName?.[toContentLocale(locale)]?.name ?? paper?.name ?? "";
 
   // Outer white/border-brand card kept (that's the intended look) — only the
   // extra empty space around the inner pill is gone. The old middle wrapper

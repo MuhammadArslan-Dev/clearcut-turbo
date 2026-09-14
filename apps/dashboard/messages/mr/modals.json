@@ -1,0 +1,240 @@
+{
+  "editCourseModal": {
+    "title": "{exam} सेटिंग्ज",
+
+    "contentLanguage": {
+      "title": "कंटेंट भाषा",
+      "subtitle": "व्हिडिओ, नोट्स आणि टेस्ट सिरीजची भाषा"
+    },
+    "warning": "तुम्ही विषय फक्त {count} वेळा बदलू शकता. {remaining} वेळा शिल्लक आहेत.",
+    "saveChanges": "बदल सेव्ह करा",
+    "saveContinue": "सेव्ह करा आणि अभ्यास सुरू ठेवा",
+    "helperText": "तुम्ही सेटिंग्ज कधीही बदलू शकता. तुमची प्रगती सेव्ह राहील."
+  },
+
+  "unlockFullAccessModal": {
+    "title": "पूर्ण अ‍ॅक्सेस अनलॉक करा",
+    "subtitle": "{exam} पास करण्यासाठी आवश्यक असलेले सर्व काही",
+    "courseTitle": "{exam}",
+
+    "features": {
+      "latestPattern": "नवीनतम परीक्षा पॅटर्नवर आधारित सर्व काही",
+      "latestPatternHighlight": "नवीनतम परीक्षा पॅटर्न",
+      "fullCourse": "पूर्ण कोर्स = विषय व्हिडिओ + नोट्स",
+      "fullCourseHighlight": "पूर्ण कोर्स",
+      "topperTests": "टॉपर्सनी वापरलेली टेस्ट सिरीज",
+      "topperTestsHighlight": "टेस्ट सिरीज"
+    },
+
+    "price": {
+      "amount": "₹{price}",
+      "taxInfo": "(GST सह)"
+    },
+
+    "best_value_covers_next_exam": "सर्वोत्तम व्हॅल्यू • पुढील परीक्षा कव्हर करते",
+    "best_for_upcoming_exam": "येणाऱ्या परीक्षेसाठी सर्वोत्तम",
+    "most_popular": "सर्वाधिक लोकप्रिय",
+    "best_for_new_students": "नवीन विद्यार्थ्यांसाठी सर्वोत्तम",
+    "one_time_no_renewal": "एकदाच पेमेंट • ऑटो-रिन्यूअल नाही",
+    "last_minute_revision": "शेवटच्या क्षणी उजळणी हवी असलेल्या विद्यार्थ्यांसाठी",
+    "months": "{count, plural, one {# महिना} other {# महिने}}",
+    "everything_included_one_price": "एकाच किमतीत सर्व काही समाविष्ट",
+    "offline_coaching_cost": "ऑफलाइन {exam} कोचिंगची किंमत ₹{min}–{max} असते",
+
+    "validity": "परीक्षेच्या दिवसापर्यंत वैध",
+    "trustedBy": "{count, plural, =0 {# टीचिंग उमेदवार} one {#+ टीचिंग उमेदवार} other {#+ टीचिंग उमेदवार}} यांचा विश्वास",
+
+    "cta": "{exam} साठी पूर्ण अ‍ॅक्सेस अनलॉक करा",
+
+    "continueFree": "मोफत शिकणे सुरू ठेवा",
+
+    "paymentInfo": "सुरक्षित पेमेंट",
+    "paymentMethods": "UPI / कार्ड / नेट बँकिंग"
+  },
+
+  "topicLockedModal": {
+    "title": "हा विषय लॉक आहे",
+    "subtitle": "तुमची तयारी सुरू ठेवण्यासाठी अनलॉक करा",
+    "unlockAndGet": "अनलॉक करा आणि मिळवा",
+    "features": {
+      "accessTopic": "हा विषय आणि सर्व धडे अ‍ॅक्सेस करा",
+      "practiceTests": "सराव प्रश्न आणि टेस्ट",
+      "trackProgress": "तुमची प्रगती ट्रॅक करा",
+      "boostScore": "तुमचा स्कोअर वाढवा"
+    },
+    "cta": "आत्ताच अनलॉक करा",
+    "continueFree": "मोफत शिकणे सुरू ठेवा"
+  },
+
+  "testLockedModal": {
+    "title": "टेस्ट लॉक आहे",
+    "subtitle": "ही टेस्ट देण्यासाठी अनलॉक करा",
+    "unlockAndGet": "अनलॉक करा आणि मिळवा",
+    "features": {
+      "attemptTest": "ही टेस्ट द्या",
+      "detailedSolutions": "सविस्तर उत्तरे आणि विश्लेषण",
+      "compareRank": "तुमच्या रँकची तुलना करा",
+      "improveClear": "सुधारणा करा आणि {exam} पास करा"
+    },
+    "cta": "टेस्ट अनलॉक करा",
+    "continueFree": "मोफत शिकणे सुरू ठेवा"
+  },
+
+  "buySingleCourseModal": {
+    "paperSelection": {
+      "title": "पेपर निवडा",
+      "highlight_text": "पेपर",
+      "selectAnyOneOption": "कोणताही एक पर्याय निवडा",
+
+      "selectPaperTitle": "{exam} साठी पेपर निवडा",
+      "selectPaperSubtitle": "तुम्ही हे कधीही बदलू किंवा जोडू शकता",
+      "continue": "विषयांकडे सुरू ठेवा"
+    },
+
+    "subjectSelection": {
+      "title": "विषय निवडा",
+      "highlight_text": "विषय",
+
+      "startLearning": "शिकणे सुरू करा"
+    }
+  },
+
+  "changePaper": {
+    "title": "सध्याचा पेपर",
+    "subtitle": "तुम्ही \"कोर्स\" मधून कधीही पेपर बदलू शकता. तुमची प्रगती सेव्ह राहील.",
+    "paperLabel": "पेपर",
+    "change_paper": "पेपर बदला",
+    "current_paper": "सध्याचा पेपर",
+    "continueButton": "याच पेपरसह सुरू ठेवा"
+  },
+
+  "addPaper": {
+    "title": "पेपर जोडा"
+  },
+
+  "miniTest": {
+    "title": "टॉपिक टेस्ट",
+    "subtitle": "मिनी-टेस्ट तुम्ही नुकत्याच शिकलेल्या विषयावर आत्मविश्वास मिळवण्यास मदत करेल!",
+    "status": {
+      "inProgress": "सुरू आहे"
+    },
+
+    "buttons": {
+      "start_minitest": "मिनी टेस्ट सुरू करा",
+      "start_topic_test": "टॉपिक टेस्ट सुरू करा",
+      "previous": "मागील",
+      "result": "निकाल पाहा",
+      "next": "पुढील प्रश्न"
+    }
+  },
+
+  "examSubmission": {
+    "title": "तुम्हाला खरंच सबमिट करायचे आहे का?",
+    "description": "तुम्ही आत्ता सबमिट करू शकता किंवा प्रश्न रिव्ह्यू करू शकता. उत्तरे ऑटो-सेव्ह होत आहेत.",
+    "answeredProgress": "तुम्ही {total} पैकी {answered} प्रश्नांची उत्तरे दिली आहेत.",
+    "unanswered": "तुमचे {count} प्रश्न अनुत्तरित आहेत.",
+    "markedForReview": "तुम्ही {count} प्रश्न रिव्ह्यूसाठी मार्क केले आहेत.",
+    "submitButton": "माझी उत्तरे सबमिट करा",
+    "reattemptInfo": "पुन्हा प्रयत्न केल्याने तुमच्या आधीच्या स्कोअरवर परिणाम होणार नाही.",
+    "continueButton": "टेस्ट सुरू ठेवा"
+  },
+
+  "performanceReport": {
+    "title": "परफॉर्मन्स रिपोर्ट",
+    "tabs": {
+      "summary": "सारांश",
+      "summarySubtitle": "स्कोअर आणि आलेख",
+      "analysis": "विश्लेषण",
+      "analysisSubtitle": "प्रश्न-स्तरीय तपशील"
+    },
+    "stats": {
+      "score": "स्कोअर",
+      "timing": "वेळ",
+      "incorrect": "चुकीचे",
+      "correct": "बरोबर",
+      "minutes": "{time} मिनिटे"
+    },
+    "distribution": {
+      "title": "उत्तर वितरण",
+      "subtitle": "तुमच्या बरोबर, चुकीच्या आणि सोडलेल्या उत्तरांचे विश्लेषण",
+      "correct": "बरोबर: {percentage}%",
+      "incorrect": "चुकीचे: {percentage}%",
+      "skipped": "सोडलेले: {percentage}%"
+    },
+    "legend": {
+      "correct": "बरोबर",
+      "incorrect": "चुकीचे",
+      "skipped": "सोडलेले"
+    },
+    "buttons": {
+      "continueSeries": "टेस्ट सिरीज सुरू ठेवा",
+      "goBack": "मागे जा"
+    },
+    "info": {
+      "coverage": "ही टेस्ट वारंवार विचारले जाणारे {exam} PYQs कव्हर करते"
+    }
+  },
+
+  "miniTestResult": {
+    "title": "टॉपिक टेस्ट",
+    "messages": {
+      "perfect": "उत्कृष्ट! तुम्ही परीक्षेसाठी तयार आहात 🔥",
+      "almostPerfect": "खूप छान! जवळपास परफेक्ट",
+      "goodProgress": "चांगली प्रगती! उजळणीने अजून सुधारा",
+      "needsPractice": "काळजी करू नका. सरावाने सर्व परफेक्ट होईल"
+    },
+    "scoreLabel": "स्कोअर",
+    "buttons": {
+      "continueLearning": "शिकणे सुरू ठेवा",
+      "improveScore": "स्कोअर सुधारा"
+    }
+  },
+
+  "courseFirstTime": {
+    "title": "इथून तुमची {exam} तयारी सुरू करा",
+    "subtitle": "हे पान तुमचा संपूर्ण {exam} अभ्यासक्रम, प्रकरणानुसार दाखवते",
+    "features": {
+      "video": "व्हिडिओ - संकल्पनेचे स्पष्टीकरण पाहा",
+      "videoB": "व्हिडिओ",
+      "notes": "नोट्स - परीक्षा-रेडी नोट्स डाउनलोड करा",
+      "notesB": "नोट्स",
+
+      "miniTests": "टॉपिक-टेस्ट - 5 प्रश्नांनी समज तपासा",
+      "miniTestsB": "टॉपिक-टेस्ट"
+    },
+    "info": "एखादा विषय पूर्ण मानला जातो जेव्हा तुम्ही: व्हिडिओ पाहता, नोट्स वाचता आणि मिनी-टेस्ट देता.",
+
+    "buttons": {
+      "startLearning": "शिकणे सुरू करा"
+    },
+    "footerNote": "तुम्ही कोणत्याही प्रकरणापासून सुरुवात करू शकता - आम्ही प्रकरण 1 पासून सुरुवात करण्याची शिफारस करतो"
+  },
+
+  "languageSelector": {
+    "title": "भाषा निवडा",
+
+    "language": {
+      "en": "English",
+      "hi": "हिंदी",
+      "mr": "मराठी"
+    },
+
+    "confirm": "भाषा कन्फर्म करा"
+  },
+
+  "support": {
+    "title": "अडचण आहे? आमच्याशी संपर्क साधा",
+
+    "callUs": {
+      "title": "आम्हाला कॉल करा",
+      "subtitle": "सर्वात जलद मदत"
+    },
+
+    "chatUs": {
+      "title": "आमच्याशी चॅट करा",
+      "subtitle": "कॉल करू शकत नाही? आत्ताच चॅट करा!"
+    },
+
+    "close": "बंद करा"
+  }
+}

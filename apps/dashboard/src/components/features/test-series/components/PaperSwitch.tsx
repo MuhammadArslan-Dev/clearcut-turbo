@@ -3,12 +3,14 @@ import TabSwitch from "@/components/ui/tabs/TabSwitch";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { Paper } from "../../preparation/types/types";
 import { useTestListDataStore } from "../store/useTestListDataStore";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 export default React.memo(function PaperSwitch() {
 
   const { papers, paper, setPaper } = useTestListDataStore();
 
   const { locale } = useLanguageSwitch();
+  const contentLocale = toContentLocale(locale);
 
   const items = React.useMemo(
     () =>
@@ -20,16 +22,16 @@ export default React.memo(function PaperSwitch() {
           label: (
             <div className="flex flex-col">
               <span className="heading-small ">
-                {parsedName?.[locale]?.name}
+                {parsedName?.[contentLocale]?.name}
               </span>
               <span className="body-xsmall !font-normal">
-                {parsedName?.[locale].detail}
+                {parsedName?.[contentLocale]?.detail}
               </span>
             </div>
           ),
         };
       }),
-    [papers],
+    [papers, contentLocale],
   );
 
   return (

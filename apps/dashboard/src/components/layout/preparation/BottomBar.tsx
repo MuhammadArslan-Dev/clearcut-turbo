@@ -22,6 +22,7 @@ import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
 // padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
@@ -93,7 +94,7 @@ export default function BottomBar() {
     }
   }, [currentPaper?.name]);
 
-  const localizedName = parsedName[locale]?.name ?? currentPaper?.name ?? "";
+  const localizedName = parsedName[toContentLocale(locale)]?.name ?? currentPaper?.name ?? "";
 
   // 🦴 Skeleton UI instead of null
   if (loading || !currentPaper) {

@@ -1,0 +1,87 @@
+{
+  "questionsInfo": "{count} प्रश्न × {marks} मार्क्स",
+  "startTest": "टेस्ट सुरू करा",
+  "timeInfo": "{time} मिनिटे",
+  "goBack": "मागे जा",
+
+  "progress": {
+    "title": "प्रगती",
+    "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
+    "attemptMessage": "स्कोअर सुधारण्यासाठी 2+ सेक्शनल टेस्ट द्या"
+  },
+
+  "recommendedNext": {
+    "title": "पुढे शिफारस केलेले",
+    "subtitle": "(तुमच्या प्रगतीनुसार)",
+    "chapter": "प्रकरण {number} • {name}"
+  },
+
+  "testSeries": {
+    "title": "क्लियर कटऑफ टेस्ट सिरीज",
+    "preparedUsing": "PYQs वापरून तयार केलेली",
+    "basedOnPattern": "नवीनतम {course} परीक्षा पॅटर्नवर आधारित",
+    "noNegativeMarking": "निगेटिव्ह मार्किंग नाही"
+  },
+
+  "sectionalTestModal": {
+    "sectionTest": "सेक्शनल टेस्ट {number}",
+    "fullLengthTest": "फुल-लेंथ टेस्ट {number}",
+    "subject": "चाइल्ड डेव्हलपमेंट अँड पेडागॉजी",
+
+    "duration": "{hours} तास {minutes} मिनिटे",
+    "scoring": "+{positive} बरोबर, निगेटिव्ह मार्किंग नाही",
+
+    "instruction": {
+      "saveMark": "उत्तर सेव्ह करा, क्लियर करा किंवा रिव्ह्यूसाठी मार्क करा",
+      "autoSave": "तुमची उत्तरे ऑटो-सेव्ह होतात. व्यत्यय आल्यासही तुम्ही सुरक्षितपणे पुन्हा सुरू करू शकता.",
+      "submitAnytime": "वेळ संपण्यापूर्वी कधीही सबमिट करा"
+    },
+
+    "startButton": "सेक्शनल टेस्ट सुरू करा",
+    "coverageNote": "ही टेस्ट वारंवार विचारले जाणारे {course} PYQs कव्हर करते",
+    "goBack": "मागे जा"
+  },
+
+  "sectionalTestAttempts": {
+    "title": "सेक्शनल टेस्ट {number}",
+    "subject": "बाल विकास आणि अध्यापनशास्त्र",
+
+    "attempt": "प्रयत्न {number}",
+
+    "bestScore": "सर्वोत्तम स्कोअर",
+
+    "viewReport": "रिपोर्ट पाहा",
+
+    "reattemptButton": "पुन्हा प्रयत्न करा {type}",
+
+    "reattemptNote": "पुन्हा प्रयत्न केल्याने तुमच्या आधीच्या स्कोअरवर परिणाम होणार नाही"
+  },
+
+  "testInfoBanner": {
+    "basedOnPattern": "नवीनतम {course} पॅटर्नवर आधारित",
+    "preparedUsing": "PYQs वापरून तयार केलेली",
+
+    "separator": " • ",
+
+    "combined": "नवीनतम {course} पॅटर्नवर आधारित • PYQs वापरून तयार केलेली"
+  },
+
+  "testCard": {
+    "fullLengthTitle": "फुल-लेंथ पेपर {number}",
+    "sectionalTitle": "सेक्शनल टेस्ट {number}",
+    "chapterTitle": "प्रकरण टेस्ट {number}",
+
+    "questionsInfo": "{count} प्रश्न × {marks} मार्क्स",
+    "duration": "{time} मिनिटे",
+
+    "score": "स्कोअर: {score} / {total}",
+
+    "startTest": "टेस्ट सुरू करा",
+    "viewReport": "रिपोर्ट पाहा",
+
+    "mustAttempt": "आवश्यक",
+    "extraPractice": "अतिरिक्त सराव",
+
+    "nextRecommended": "पुढे शिफारस केलेली सेक्शनल टेस्ट"
+  }
+}

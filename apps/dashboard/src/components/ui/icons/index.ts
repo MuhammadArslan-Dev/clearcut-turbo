@@ -14,6 +14,7 @@ export { default as InstagramIcon } from "./instagram-icon";
 export { default as LanguageIcon } from "./language-icon";
 export { default as LinkedInIcon } from "./linked-in-icon";
 export { default as MainAppLogo } from "./main-app-logo";
+export { default as MarathiLangCircleIcon } from "./marathi-lang-circle-icon";
 export { default as PaymentCardIcon } from "./payment-card-icon";
 export { default as PhoneIcon } from "./phone-icon";
 export { default as SettingGearIcon } from "./setting-gear-icon";

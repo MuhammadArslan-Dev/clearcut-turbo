@@ -91,7 +91,7 @@ export default function SettingTopBar() {
           >
             <LanguageIcon size={32} />
             <p className="body-medium !font-semibold">
-              {locale === "en" ? "Eng" : "Hi"}
+              {locale === "en" ? "Eng" : locale === "mr" ? "Mar" : "Hi"}
             </p>
           </div>
 

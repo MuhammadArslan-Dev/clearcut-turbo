@@ -4,7 +4,7 @@
 import { useCallback, useMemo } from "react";
 import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
-import { routing } from "@clearcut/i18n/routing";
+import { routing } from "@/i18n/routing";
 import type { AppLocale } from "@/types/components/language";
 
 export type UseLanguageSwitchReturn = {

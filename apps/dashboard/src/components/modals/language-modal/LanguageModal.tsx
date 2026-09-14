@@ -21,6 +21,7 @@ import OptionSelectionCard from "@/components/ui/cards/option-selection-card";
 import {
   CrossIcon,
   HindiLangCircleIcon,
+  // MarathiLangCircleIcon, // unused while the "mr" language option below is disabled
 } from "@/components/ui/icons";
 import EnLangCirlcIcon from "@/components/ui/icons/en-lang-circle-icon";
 import type { AppLocale } from "@/types/components/language";
@@ -38,6 +39,15 @@ const LANGUAGES: { id: string; title: string; code: AppLocale; icon: React.React
     code: "en",
     icon: <EnLangCirlcIcon />,
   },
+  // Temporarily disabled — Marathi UI/content isn't ready to ship to users
+  // yet. Everything behind it (routing, messages/mr*.json, content-locale
+  // fallback) is already built; re-enable by uncommenting this entry.
+  // {
+  //   id: "मराठी",
+  //   title: "मराठी",
+  //   code: "mr",
+  //   icon: <MarathiLangCircleIcon />,
+  // },
 ];
 
 export default function LanguageModal() {

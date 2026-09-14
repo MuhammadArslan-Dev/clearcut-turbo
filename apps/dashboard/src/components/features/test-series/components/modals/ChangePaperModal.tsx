@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import { useTestListDataStore } from "../../store/useTestListDataStore";
 import { Paper } from "@/components/features/preparation/types/types";
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
+import { toContentLocale } from "@/utils/text/contentLocale";
 
 export default function ChangePaperModal() {
   const isMobile = useIsMobile();
@@ -35,17 +36,18 @@ export default function ChangePaperModal() {
     setSelected(paper?.id?.toString() ?? null);
   }, [paper]);
 
+  const contentLocale = toContentLocale(locale);
   const items = React.useMemo(
     () =>
       papers?.map((paper) => {
         const parsedName = JSON.parse(paper.name);
         return {
           id: paper.id.toString(),
-          label: parsedName?.[locale]?.name,
-          group: parsedName?.[locale]?.group,
+          label: parsedName?.[contentLocale]?.name,
+          group: parsedName?.[contentLocale]?.group,
         };
       }),
-    [papers],
+    [papers, contentLocale],
   );
 
   const handleSelect = (id: string) => {

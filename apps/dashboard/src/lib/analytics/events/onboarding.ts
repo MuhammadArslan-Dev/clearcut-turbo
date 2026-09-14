@@ -1,5 +1,5 @@
 // src/lib/analytics/events/activation.ts
-export type AppLanguageCode = 'en' | 'hi';
+export type AppLanguageCode = 'en' | 'hi' | 'mr';
 
 export type OnboardingEventName =
   | 'Onboarding Started'
