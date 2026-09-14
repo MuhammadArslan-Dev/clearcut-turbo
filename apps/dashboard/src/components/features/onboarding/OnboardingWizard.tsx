@@ -4,11 +4,11 @@ import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import LanguageStep from "./steps/LanguageStep";
-import ExamStep from "./steps/ExamStep";
 import { useOnboardingStore } from "@/store/onboarding/useOnboardingStore";
 import { preloadExams } from "@/hooks/onboarding/useExams";
 import MainContainer from "@/components/ui/main-container";
 import { OnboardingStep } from "@/types/onboarding/onboarding";
+import type { StepProps } from "@/types/onboarding/onboarding";
 import { trackEvent } from "@/lib/analytics/browser";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import type { AppLocale } from "@/types/components/language";
@@ -24,6 +24,13 @@ const AnimatePresence = dynamic(() => import("framer-motion").then((m) => ({ def
 const MotionDiv = dynamic(() => import("framer-motion").then((m) => ({ default: m.motion.div })), {
     ssr: false,
 });
+
+// Same reasoning as AnimatePresence/MotionDiv above: the very first screen a
+// visitor sees is always LanguageStep (stepIndex starts at 0), so ExamStep's
+// own code/imports (StepIndicatorCard, RotatingBadge, the exams-filter UI,
+// etc.) have no reason to be in the bundle that has to be parsed before that
+// first screen paints. It only actually renders once the user taps Continue.
+const ExamStep = dynamic(() => import("./steps/ExamStep")) as React.FC<StepProps>;
 
 const STEPS: OnboardingStep[] = [
     {

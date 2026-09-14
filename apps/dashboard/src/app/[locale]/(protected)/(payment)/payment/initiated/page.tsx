@@ -419,32 +419,46 @@ export default function InitiatedPage() {
             payment_session_id: error.metadata?.payment_id ?? "",
           });
 
-          logger.error(
-            new Error(`Subscription payment failed: ${error.description}`),
-            {
-              tags: {
-                module: "subscription-payment",
-                error_code: error.code,
-              },
-              extra: {
-                user_id: authUser?.id,
-                exam_id: data?.id,
-                exam_name: data?.short_name,
-                course_id: courseId,
-                plan: "1month",
-                price: selectedPrice,
-                error_code: error.code,
-                error_reason: error.reason,
-                error_source: error.source,
-                error_step: error.step,
-                error_description: error.description,
-                payment_id: error.metadata?.payment_id,
-                subscription_id: error.metadata?.subscription_id,
-                razorpay_subscription_id:
-                  res.subscription.razorpay_subscription_id,
-              },
+          // Razorpay's own `error.source` distinguishes an expected
+          // customer-side decline (insufficient funds, wrong OTP, card
+          // declined, user cancelled — "customer") from a genuine
+          // integration/gateway problem ("business"/"internal"/gateway
+          // faults). The former happens to some fraction of real
+          // transactions no matter what the code does — reporting every one
+          // as a Sentry error (as this used to) buried the small number of
+          // failures actually worth investigating under routine payment
+          // declines. Still tracked (as a warning, with the same context),
+          // just not alerted on as a defect.
+          const logContext = {
+            tags: {
+              module: "subscription-payment",
+              error_code: error.code,
+              error_source: error.source,
             },
-          );
+            extra: {
+              user_id: authUser?.id,
+              exam_id: data?.id,
+              exam_name: data?.short_name,
+              course_id: courseId,
+              plan: "1month",
+              price: selectedPrice,
+              error_code: error.code,
+              error_reason: error.reason,
+              error_source: error.source,
+              error_step: error.step,
+              error_description: error.description,
+              payment_id: error.metadata?.payment_id,
+              subscription_id: error.metadata?.subscription_id,
+              razorpay_subscription_id:
+                res.subscription.razorpay_subscription_id,
+            },
+          };
+
+          if (error.source === "customer") {
+            logger.warn(`Subscription payment declined: ${error.description}`, logContext);
+          } else {
+            logger.error(new Error(`Subscription payment failed: ${error.description}`), logContext);
+          }
 
           setRedirecting(true);
           router.push(

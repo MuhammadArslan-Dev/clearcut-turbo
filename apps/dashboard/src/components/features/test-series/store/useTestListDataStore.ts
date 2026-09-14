@@ -86,7 +86,27 @@ export const useTestListDataStore = create<TestListDataStore>((set) => ({
   indexSections: null,
   selectedSectionId: null,
 
-  setPapers: (papers) => set({ papers }),
+  // Same reasoning as setPaper/setIndexSections below: ChapterTest,
+  // SectionalTest and FullTest each re-derive `papers` from a fresh React
+  // Query response object in their own data-init effect (which lists this
+  // setter, and `papers`'s own reference, nowhere in its dependency array —
+  // but every OTHER unguarded field this store held used to renotify every
+  // subscriber on every call regardless of content, and those components
+  // subscribe to the whole store with no selector). Left unguarded, this was
+  // the one setter in this store still capable of re-triggering that same
+  // "Maximum update depth exceeded" cascade (CLEARCUTOFF-NEXTJS-APP-7A) even
+  // after every sibling setter below got its own bail-out.
+  setPapers: (papers) =>
+    set((state) => {
+      const prev = state.papers;
+      const same =
+        prev === papers ||
+        (!!prev &&
+          !!papers &&
+          prev.length === papers.length &&
+          prev.every((p, i) => p.id === papers[i]?.id));
+      return same ? state : { papers };
+    }),
   // ChapterTest and SectionalTest share this single `paper` across a tab
   // switch by design (see their own comments), but each tab's data-init
   // effect calls this with the paper object its OWN response just returned
