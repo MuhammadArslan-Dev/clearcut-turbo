@@ -4,6 +4,7 @@ import LandingPage from "@/components/pages/LandingPage";
 import FloatingButton from "@/components/global/FloatingButton";
 import FooterWrap from "@/components/layout/FooterWrap";
 import { generateSeoMetadata } from "@/lib/seo/metadata";
+import { toLocale } from "@/lib/i18n/config";
 import JsonLd from "@clearcut/ui/json-ld";
 
 // ── Make this page fully static + cacheable ──
@@ -43,7 +44,7 @@ const organizationSchema = {
     // schema.org's own ContactPoint examples use "customer service" — not
     // "customer support" — as the conventional value for this field.
     contactType: "customer service",
-    availableLanguage: ["English", "Hindi"],
+    availableLanguage: ["English", "Hindi", "Marathi"],
   },
   sameAs: [
     "https://www.instagram.com/clearcutoff_teaching/",
@@ -120,7 +121,7 @@ export default async function Home({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const resolvedLocale = locale === "hi" ? "hi" : "en";
+  const resolvedLocale = toLocale(locale);
 
   return (
     <>

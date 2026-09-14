@@ -6,6 +6,7 @@ import FloatingButton from "@/components/global/FloatingButton";
 import FooterWrap from "@/components/layout/FooterWrap";
 import JsonLd from "@clearcut/ui/json-ld";
 import { STATIC_EXAMS } from "@/lib/data/staticExams";
+import { toLocale } from "@/lib/i18n/config";
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -84,7 +85,7 @@ export default async function Teaching({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const resolvedLocale = locale === "hi" ? "hi" : "en";
+  const resolvedLocale = toLocale(locale);
   return (
     <>
       <JsonLd data={getCourseListSchema()} />

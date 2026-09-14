@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Locale } from "@/lib/dictionary";
 
+const LOCALE_TABS: { locale: Locale; label: string }[] = [
+  { locale: "en", label: "EN" },
+  { locale: "hi", label: "हिं" },
+  { locale: "mr", label: "मरा" },
+];
+
 /**
- * EN/HI toggle **scoped to one tool** (see LocaleLink.tsx — same
+ * EN/HI/MR toggle **scoped to one tool** (see LocaleLink.tsx — same
  * "/tools/{tool}" public-URL scoping applies here). Always plain <a> tags,
  * not next/link — see LocaleLink.tsx for why.
  *
@@ -14,11 +20,12 @@ import { Locale } from "@/lib/dictionary";
  * with it), but that leaves the tool's own route segment still attached
  * (e.g. "/resizer/htet"), which this strips back off to get the
  * tool-root-relative path ("/htet") the rest of this component expects. On
- * a Hindi page the real URL is /hi/tools/{tool}/*, which doesn't start with
- * that basePath at all, so usePathname() can't be trusted there — this
- * reads window.location directly instead, deferred to a client-only effect
- * (like RecentExams.tsx) so the server-rendered guess never has to be
- * corrected after hydration and mismatch-warn.
+ * a Hindi/Marathi page the real URL is /hi/tools/{tool}/* or
+ * /mr/tools/{tool}/*, which doesn't start with that basePath at all, so
+ * usePathname() can't be trusted there — this reads window.location
+ * directly instead, deferred to a client-only effect (like
+ * RecentExams.tsx) so the server-rendered guess never has to be corrected
+ * after hydration and mismatch-warn.
  */
 export default function LocaleSwitcher({
   locale,
@@ -26,28 +33,29 @@ export default function LocaleSwitcher({
 }: {
   locale: Locale;
   /** Which tool's route tree this switcher stays within. Defaults to "resizer" — every call site written before the age calculator existed relies on that default. */
-  tool?: "resizer" | "age-eligibility-calculator";
+  tool?: "resizer" | "age-eligibility-calculator" | "syllabus-tracker";
 }) {
   const pathname = usePathname();
-  const [hiAppPath, setHiAppPath] = useState<string | null>(null);
-  const hiPrefixPattern = new RegExp(`^/hi/tools/${tool}`);
+  const [nonEnAppPath, setNonEnAppPath] = useState<string | null>(null);
+  const nonEnPrefixPattern = new RegExp(`^/${locale}/tools/${tool}`);
   const enPrefixPattern = new RegExp(`^/${tool}`);
 
   useEffect(() => {
-    if (locale !== "hi") return;
-    setHiAppPath(window.location.pathname.replace(hiPrefixPattern, "") || "/");
-    // hiPrefixPattern is a fresh RegExp each render but always equivalent for a given `tool`/`locale` pair.
+    if (locale === "en") return;
+    setNonEnAppPath(window.location.pathname.replace(nonEnPrefixPattern, "") || "/");
+    // nonEnPrefixPattern is a fresh RegExp each render but always equivalent for a given `tool`/`locale` pair.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, tool]);
 
   const enAppPath = pathname ? pathname.replace(enPrefixPattern, "") || "/" : null;
-  const appPath = locale === "hi" ? hiAppPath : enAppPath;
+  const appPath = locale === "en" ? enAppPath : nonEnAppPath;
   if (appPath === null) return null;
 
-  const tabs = [
-    { href: `/tools/${tool}` + (appPath === "/" ? "" : appPath), label: "EN", active: locale === "en" },
-    { href: `/hi/tools/${tool}` + (appPath === "/" ? "" : appPath), label: "हिं", active: locale === "hi" },
-  ];
+  const tabs = LOCALE_TABS.map(({ locale: tabLocale, label }) => ({
+    href: (tabLocale === "en" ? `/tools/${tool}` : `/${tabLocale}/tools/${tool}`) + (appPath === "/" ? "" : appPath),
+    label,
+    active: locale === tabLocale,
+  }));
 
   return (
     <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--color-border-gray-subtle)] bg-white p-0.5">

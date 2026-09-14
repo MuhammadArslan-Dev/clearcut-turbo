@@ -5,8 +5,47 @@ import { getExamBySlug } from "@/lib/data/staticExams";
 import JsonLd from "@clearcut/ui/json-ld";
 import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
 import FloatingButton from "@/components/global/FloatingButton";
+import { toLocale, type Locale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
+
+// UI-chrome-only translation for this page's SEO metadata — exam short
+// names/full names are proper nouns and stay untranslated on every locale,
+// same convention as the sibling exam/[slug]/page.tsx.
+const META_COPY: Record<
+  Locale,
+  {
+    genericTitle: (label: string) => string;
+    genericDescription: (label: string) => string;
+    examTitle: (shortName: string) => string;
+    examDescription: (examName: string, shortName: string) => string;
+  }
+> = {
+  en: {
+    genericTitle: (label) => `${label} Course | Clear Cutoff`,
+    genericDescription: (label) =>
+      `Prepare for ${label} with Clear Cutoff — structured video lectures, previous year papers, revision notes, and full-length test series.`,
+    examTitle: (shortName) => `${shortName} Preparation Course — PYQs, Notes & Tests | Clear Cutoff`,
+    examDescription: (examName, shortName) =>
+      `Prepare for the ${examName} with Clear Cutoff — video lectures, PYQs, notes, and test series to help you crack ${shortName}.`,
+  },
+  hi: {
+    genericTitle: (label) => `${label} कोर्स | Clear Cutoff`,
+    genericDescription: (label) =>
+      `Clear Cutoff के साथ ${label} की तैयारी करें — व्यवस्थित वीडियो लेक्चर, पिछले वर्षों के पेपर, रिवीजन नोट्स, और फुल-लेंथ टेस्ट सीरीज़।`,
+    examTitle: (shortName) => `${shortName} तैयारी कोर्स — PYQs, नोट्स और टेस्ट | Clear Cutoff`,
+    examDescription: (examName, shortName) =>
+      `Clear Cutoff के साथ ${examName} की तैयारी करें — वीडियो लेक्चर, PYQs, नोट्स, और टेस्ट सीरीज़ जो आपको ${shortName} पास करने में मदद करेंगे।`,
+  },
+  mr: {
+    genericTitle: (label) => `${label} कोर्स | Clear Cutoff`,
+    genericDescription: (label) =>
+      `Clear Cutoff सोबत ${label} ची तयारी करा — सुव्यवस्थित व्हिडिओ लेक्चर्स, मागील वर्षांचे पेपर, उजळणी नोट्स, आणि फुल-लेंथ टेस्ट सीरीज.`,
+    examTitle: (shortName) => `${shortName} तयारी कोर्स — PYQs, नोट्स आणि टेस्ट | Clear Cutoff`,
+    examDescription: (examName, shortName) =>
+      `Clear Cutoff सोबत ${examName} ची तयारी करा — व्हिडिओ लेक्चर्स, PYQs, नोट्स, आणि टेस्ट सीरिज जे तुम्हाला ${shortName} पास करण्यास मदत करतील.`,
+  },
+};
 
 // Builds a readable, keyword-bearing title fragment for course slugs that
 // have no matching STATIC_EXAMS entry (e.g. "htet-level-1-prt"). Without
@@ -40,7 +79,9 @@ function humanizeSlug(slug: string): string {
 // }
 
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
+  const resolvedLocale = toLocale(locale);
+  const copy = META_COPY[resolvedLocale];
   const exam = getExamBySlug(slug);
 
   if (!exam) {
@@ -53,15 +94,15 @@ export async function generateMetadata({ params }: Props) {
     // distinct URLs like htet-level-1-prt / -2-tgt / -3-pgt don't collide.
     const label = humanizeSlug(slug);
     return generateSeoMetadata({
-      title: `${label} Course | Clear Cutoff`,
-      description: `Prepare for ${label} with Clear Cutoff — structured video lectures, previous year papers, revision notes, and full-length test series.`,
+      title: copy.genericTitle(label),
+      description: copy.genericDescription(label),
       url: `/teaching/${slug}`,
     });
   }
 
   return generateSeoMetadata({
-    title: `${exam.short_name} Preparation Course — PYQs, Notes & Tests | Clear Cutoff`,
-    description: `Prepare for the ${exam.name} with Clear Cutoff — video lectures, PYQs, notes, and test series to help you crack ${exam.short_name}.`,
+    title: copy.examTitle(exam.short_name),
+    description: copy.examDescription(exam.name, exam.short_name),
     url: `/teaching/${slug}`,
     image: exam.logo_url ?? undefined,
     keywords: [exam.short_name, exam.name, "Clear Cutoff", "Course", "Teaching", `${exam.short_name} preparation`],
@@ -70,7 +111,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function Course({ params }: Props) {
   const { slug, locale } = await params;
-  const resolvedLocale = locale === "hi" ? "hi" : "en";
+  const resolvedLocale = toLocale(locale);
   const exam = getExamBySlug(slug);
   const course = getCourse(slug);
 

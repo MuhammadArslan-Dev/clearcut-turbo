@@ -1,0 +1,18 @@
+# SPA fallback for the Syllabus Tracker's client-only deep links
+# (/syllabus-tracker/htet, /syllabus-tracker/htet/level-1-prt, ...), and the
+# same for its Hindi/Marathi mirrors (/hi/syllabus-tracker/*, /mr/syllabus-tracker/*).
+# src/app/syllabus-tracker/page.tsx (and its hi/mr mirrors) are single,
+# non-dynamic pages — those nested paths are never real Next routes (real
+# exam/level slugs come from a live backend, unknowable at build time), they
+# only ever exist via SyllabusTrackerApp pushing/replacing the URL with the
+# raw History API. A hard reload or a shared link at one of those paths has
+# no matching static file, so Cloudflare Pages would 404 without this: it
+# rewrites any of them back to the one built page for that locale with a 200
+# (not a redirect), keeping the URL bar intact, and
+# src/lib/syllabusTrackerUrl.ts then parses window.location client-side to
+# restore the right step. Paths are upstream-relative (no /tools prefix) —
+# apps/tools/worker/src/index.ts strips /tools (and /hi/tools, /mr/tools)
+# before proxying here, per CLAUDE.md's "apps/tools deployment" section.
+/syllabus-tracker/*     /syllabus-tracker     200
+/hi/syllabus-tracker/*  /hi/syllabus-tracker  200
+/mr/syllabus-tracker/*  /mr/syllabus-tracker  200

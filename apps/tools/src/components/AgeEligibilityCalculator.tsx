@@ -46,8 +46,8 @@ function maxSelectableMonth(year: number): number {
 
 export default function AgeEligibilityCalculator({ exam, locale = "en" }: { exam: AgeEligibilityExam; locale?: Locale }) {
   const t = getAgeCalcStrings(locale);
-  const months = MONTH_NAMES[locale === "hi" ? "hi" : "en"];
-  const qualificationOptions = QUALIFICATION_OPTIONS_BY_LOCALE[locale === "hi" ? "hi" : "en"];
+  const months = MONTH_NAMES[locale];
+  const qualificationOptions = QUALIFICATION_OPTIONS_BY_LOCALE[locale];
 
   const [dobDay, setDobDay] = React.useState<number | "">("");
   const [dobMonth, setDobMonth] = React.useState<number | "">("");

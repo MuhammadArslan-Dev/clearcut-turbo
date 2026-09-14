@@ -20,11 +20,15 @@
 	--font-hindi: "Nirmala UI", "Noto Sans Devanagari", "ITF Devanagari", ui-sans-serif, sans-serif;
 }
 
-/* Scoped to lang="hi" rather than assuming the whole document — app/hi/
-   layout.tsx wraps its subtree in <div lang="hi">, since a static export has
-   no middleware to make the root <html> tag itself vary by route the way
-   next-intl's [locale] layout does in the other three apps. */
-:lang(hi) {
+/* Scoped to lang="hi"/lang="mr" rather than assuming the whole document —
+   app/hi/layout.tsx and app/mr/layout.tsx each wrap their subtree in a
+   <div lang="...">, since a static export has no middleware to make the
+   root <html> tag itself vary by route the way next-intl's [locale] layout
+   does in the other three apps. Marathi reuses the same Devanagari font
+   stack and the same hi-* line-height/weight correction tokens as Hindi —
+   both scripts need the identical typographic adjustment. */
+:lang(hi),
+:lang(mr) {
 	font-family: var(--font-hindi);
 	line-height: calc(1em * var(--hi-line-height-ratio));
 	font-weight: calc(500 + var(--hi-weight-adjust));
@@ -39,5 +43,47 @@
 }
 .hide-scrollbar::-webkit-scrollbar {
 	display: none; /* Chrome, Safari */
+}
+
+/* Syllabus Tracker: staggered card entrance (exam/level grids) and a fade+
+   rise on each wizard step change — kept as plain CSS keyframes (no
+   framer-motion) since these are one-shot mount animations, not anything
+   that needs interrupt/gesture handling. `both` fill-mode holds the 0%
+   frame until each card's own animation-delay elapses, so staggered items
+   don't flash at full opacity before their turn. */
+@keyframes cc-step-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+/* `backwards`, NOT `both`/`forwards`: a fill-mode that holds past the
+   animation's end leaves a non-"none" `transform` on the element forever,
+   which creates a new containing block for any `position: fixed`
+   descendant — that descendant then positions relative to THIS element instead of the
+   viewport. `backwards` still holds the 0% frame during animation-delay
+   (needed for the stagger) but drops all animation-driven styling once the
+   animation completes, leaving the element's real computed transform (none). */
+.cc-step-in {
+	animation: cc-step-in 0.35s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cc-step-in {
+		animation: none;
+	}
+}
+
+/* Tailwind's preflight resets <button> cursor to "default" (matching native
+   OS button chrome), but every button in the Syllabus Tracker is used as a
+   clickable card/toggle/pill where a pointer cursor is the expected
+   affordance, same as a link. Scoped to this page's root (not a global
+   override) so other tools/pages keep Tailwind's default. */
+#syllabus-tracker-app button:not(:disabled) {
+	cursor: pointer;
 }
 

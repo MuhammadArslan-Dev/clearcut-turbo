@@ -11,24 +11,32 @@ export interface Env {
 // "/tools/resizer/htet" strips down to upstream "/resizer/htet", which
 // mirrors that page's location in the Next app's route tree exactly.
 const PREFIX = "/tools";
-// Hindi is resizer-only right now, at public url /hi/tools/resizer/*
-// (locale outermost) — the age calculator has no Hindi copy yet. Next's
-// basePath is still just "/tools" for the whole app; its /hi/* route tree
-// (app/hi/resizer/...) is exported the same way any other route is, under
-// that one basePath. So this maps the public HI url to the upstream path
-// the app already serves the export at, "/hi/resizer/*"; no separate build
-// or basePath needed. The components render plain <a> tags (not next/link)
-// for Hindi-locale navigation specifically because next/link would
-// auto-prepend the "/tools" basePath to a "/hi/..." href, landing on
-// "/tools/hi/..." instead of the public "/hi/tools/resizer/..." shape — see
-// LocaleSwitcher.tsx.
+// Hindi and Marathi cover both the resizer and the age eligibility
+// calculator, at public urls /hi/tools/<tool>/* and /mr/tools/<tool>/*
+// (locale outermost). Next's basePath is still just "/tools" for the whole
+// app; its /hi/* and /mr/* route trees (app/hi/resizer/..., app/mr/resizer/...)
+// are exported the same way any other route is, under that one basePath. So
+// this maps each public locale url to the upstream path the app already
+// serves the export at, "/hi/resizer/*" or "/mr/resizer/*"; no separate
+// build or basePath needed. The components render plain <a> tags (not
+// next/link) for non-English navigation specifically because next/link
+// would auto-prepend the "/tools" basePath to a "/hi/..." or "/mr/..."
+// href, landing on "/tools/hi/..." instead of the public
+// "/hi/tools/resizer/..." shape — see LocaleSwitcher.tsx.
 const HI_PREFIX = "/hi/tools";
+const MR_PREFIX = "/mr/tools";
 
-// Matches "/tools(/...)" and "/hi/tools(/...)". Returns the upstream path
-// to request from PAGES_ORIGIN, or null if this pathname isn't ours.
+// Matches "/tools(/...)", "/hi/tools(/...)" and "/mr/tools(/...)". Returns
+// the upstream path to request from PAGES_ORIGIN, or null if this pathname
+// isn't ours.
 function matchPath(pathname: string): string | null {
-	if (pathname === HI_PREFIX) return "/hi";
-	if (pathname.startsWith(HI_PREFIX + "/")) return "/hi" + pathname.slice(HI_PREFIX.length);
+	for (const [prefix, upstreamRoot] of [
+		[HI_PREFIX, "/hi"],
+		[MR_PREFIX, "/mr"],
+	] as const) {
+		if (pathname === prefix) return upstreamRoot;
+		if (pathname.startsWith(prefix + "/")) return upstreamRoot + pathname.slice(prefix.length);
+	}
 	// Bare "/tools" (pathname === PREFIX) is intercepted by the fetch handler
 	// below before matchPath is ever called, so there's no branch for it
 	// here — every reachable path has a "/tools/<tool-name>/..." shape.
@@ -50,13 +58,32 @@ const TOOLS_INDEX_HTML = `<!doctype html>
 <meta name="description" content="Free browser-based tools for exam forms — photo &amp; signature resizing and more." />
 <link rel="icon" href="https://clearcutoff.in/favicon.ico" />
 <style>
-  :root { color-scheme: light; }
+  /* Every literal colour this page uses is defined exactly once here,
+     mirroring packages/design-tokens/tokens.css's values (--color-brand,
+     --color-success, --color-gray-*, --color-background-gray-subtle, ...) —
+     this Worker runs at the edge as a plain string, with no build step to
+     @import the real tokens.css, so the values are copied rather than
+     referenced. --color-purple-* has no equivalent in the real design
+     system; it exists only for this page's third trust-badge illustration. */
+  :root {
+    color-scheme: light;
+    --color-bg: #f7f8fa;
+    --color-text: #1a1d23;
+    --color-text-muted: #5b6270;
+    --color-border: #e5e7eb;
+    --color-brand: #0083ff;
+    --color-brand-soft: #e6f0fa;
+    --color-success: #00a251;
+    --color-success-soft: #e7f6e5;
+    --color-purple: #6d5ce8;
+    --color-purple-soft: #ece9fc;
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #f7f8fa;
-    color: #1a1d23;
+    background: var(--color-bg);
+    color: var(--color-text);
   }
   header {
     display: flex;
@@ -65,38 +92,91 @@ const TOOLS_INDEX_HTML = `<!doctype html>
   }
   header img { height: 34px; }
   main {
-    max-width: 720px;
+    max-width: 1040px;
     margin: 0 auto;
     padding: 24px 16px 64px;
     text-align: center;
   }
-  h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-  p.lead { color: #5b6270; margin: 0 0 32px; font-size: 15px; }
+  h1 { font-size: clamp(32px, 5vw, 44px); font-weight: 800; margin: 0 0 12px; letter-spacing: -0.01em; }
+  p.lead { color: var(--color-text-muted); margin: 0 0 32px; font-size: 16px; }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 0 0 40px;
+  }
+  .badge { display: flex; align-items: center; gap: 10px; text-align: left; }
+  .badge-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .badge-icon.blue { background: var(--color-brand-soft); color: var(--color-brand); }
+  .badge-icon.green { background: var(--color-success-soft); color: var(--color-success); }
+  .badge-icon.purple { background: var(--color-purple-soft); color: var(--color-purple); }
+  .badge-title { font-size: 14px; font-weight: 700; margin: 0; }
+  .badge-sub { font-size: 13px; color: var(--color-text-muted); margin: 0; }
+  .badge-divider { width: 1px; height: 32px; background: var(--color-border); }
+  @media (max-width: 640px) { .badge-divider { display: none; } }
+
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
     text-align: left;
   }
   a.card {
-    display: block;
+    display: flex;
+    flex-direction: column;
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    padding: 24px;
     text-decoration: none;
     color: inherit;
     box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
   a.card:hover {
-    border-color: #0083ff;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    border-color: var(--color-brand);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.07);
     transform: translateY(-2px);
   }
-  .card-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
-  a.card:hover .card-title { color: #0083ff; }
-  .card-desc { font-size: 14px; color: #5b6270; margin: 0; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+  }
+  .card-icon.blue { background: var(--color-brand-soft); color: var(--color-brand); }
+  .card-icon.green { background: var(--color-success-soft); color: var(--color-success); }
+  .card-icon.purple { background: var(--color-purple-soft); color: var(--color-purple); }
+  .chevron { color: var(--color-text-muted); font-size: 20px; line-height: 1; margin-top: 16px; transition: transform 0.15s ease; }
+  a.card:hover .chevron { transform: translateX(3px); color: var(--color-brand); }
+  .card-title { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+  a.card:hover .card-title { color: var(--color-brand); }
+  .card-desc { font-size: 14.5px; line-height: 1.5; color: var(--color-text-muted); margin: 0 0 20px; flex-grow: 1; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .tag.blue { background: var(--color-brand-soft); color: var(--color-brand); }
+  .tag.green { background: var(--color-success-soft); color: var(--color-success); }
+  .tag.purple { background: var(--color-purple-soft); color: var(--color-purple); }
 </style>
 </head>
 <body>
@@ -108,14 +188,85 @@ const TOOLS_INDEX_HTML = `<!doctype html>
   <main>
     <h1>Free Tools</h1>
     <p class="lead">Browser-based tools for your exam forms — nothing is ever uploaded.</p>
+
+    <div class="badges">
+      <div class="badge">
+        <span class="badge-icon blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3Z"/></svg>
+        </span>
+        <div>
+          <p class="badge-title">100% Private</p>
+          <p class="badge-sub">Stays in your browser</p>
+        </div>
+      </div>
+      <span class="badge-divider"></span>
+      <div class="badge">
+        <span class="badge-icon green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
+        </span>
+        <div>
+          <p class="badge-title">Fast &amp; Easy</p>
+          <p class="badge-sub">Get results instantly</p>
+        </div>
+      </div>
+      <span class="badge-divider"></span>
+      <div class="badge">
+        <span class="badge-icon purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+        </span>
+        <div>
+          <p class="badge-title">Works on Any Device</p>
+          <p class="badge-sub">Mobile, tablet or desktop</p>
+        </div>
+      </div>
+    </div>
+
     <div class="grid">
       <a class="card" href="/tools/resizer">
+        <div class="card-top">
+          <span class="card-icon blue">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </span>
+          <span class="chevron">&rsaquo;</span>
+        </div>
         <p class="card-title">Photo &amp; Signature Resizer</p>
         <p class="card-desc">Resize and compress photos or signatures to any exam's exact size &amp; KB limit.</p>
+        <div class="tags">
+          <span class="tag blue">Resize</span>
+          <span class="tag blue">Compress</span>
+          <span class="tag blue">Exact Size</span>
+          <span class="tag blue">KB Limit</span>
+        </div>
       </a>
       <a class="card" href="/tools/age-eligibility-calculator">
+        <div class="card-top">
+          <span class="card-icon green">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          </span>
+          <span class="chevron">&rsaquo;</span>
+        </div>
         <p class="card-title">Age Eligibility Calculator</p>
         <p class="card-desc">Check your exact age and eligibility for CTET, HTET, UPTET, REET &amp; HPTET.</p>
+        <div class="tags">
+          <span class="tag green">Age Calculation</span>
+          <span class="tag green">Eligibility Check</span>
+          <span class="tag green">Multiple Exams</span>
+        </div>
+      </a>
+      <a class="card" href="/tools/syllabus-tracker">
+        <div class="card-top">
+          <span class="card-icon purple">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5c-1.5-1-4-1.5-6-1v13c2 0 4.5.5 6 1.5M12 6.5c1.5-1 4-1.5 6-1v13c-2 0-4.5.5-6 1.5M12 6.5v14"/></svg>
+          </span>
+          <span class="chevron">&rsaquo;</span>
+        </div>
+        <p class="card-title">Syllabus Tracker</p>
+        <p class="card-desc">Pick your exam and level, then check off chapters as you study them.</p>
+        <div class="tags">
+          <span class="tag purple">Chapter Checklist</span>
+          <span class="tag purple">Progress Tracking</span>
+          <span class="tag purple">Any Exam</span>
+        </div>
       </a>
     </div>
   </main>

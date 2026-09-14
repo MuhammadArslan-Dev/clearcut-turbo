@@ -31,25 +31,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry("/tools", 0.8, "monthly"),
     entry("/tools/resizer", 0.8, "weekly"),
     entry("/hi/tools/resizer", 0.7, "weekly"),
+    entry("/mr/tools/resizer", 0.7, "weekly"),
     entry("/tools/age-eligibility-calculator", 0.9, "weekly"),
     entry("/hi/tools/age-eligibility-calculator", 0.8, "weekly"),
+    entry("/mr/tools/age-eligibility-calculator", 0.8, "weekly"),
     entry("/tools/age-eligibility-calculator/all", 0.8, "weekly"),
     entry("/hi/tools/age-eligibility-calculator/all", 0.7, "weekly"),
+    entry("/mr/tools/age-eligibility-calculator/all", 0.7, "weekly"),
+    entry("/tools/syllabus-tracker", 0.8, "weekly"),
+    entry("/hi/tools/syllabus-tracker", 0.7, "weekly"),
+    entry("/mr/tools/syllabus-tracker", 0.7, "weekly"),
   ];
 
   for (const slug of RESIZER_STATIC_SLUGS) {
     entries.push(entry(`/tools/resizer/${slug}`, 0.6, "monthly"));
     entries.push(entry(`/hi/tools/resizer/${slug}`, 0.5, "monthly"));
+    entries.push(entry(`/mr/tools/resizer/${slug}`, 0.5, "monthly"));
   }
 
   for (const exam of resizerExams) {
     entries.push(entry(`/tools/resizer/${exam.slug}`, 0.7, "weekly"));
     entries.push(entry(`/hi/tools/resizer/${exam.slug}`, 0.6, "weekly"));
+    entries.push(entry(`/mr/tools/resizer/${exam.slug}`, 0.6, "weekly"));
   }
 
   for (const exam of AGE_ELIGIBILITY_EXAMS) {
     entries.push(entry(`/tools/age-eligibility-calculator/${exam.slug}`, 0.8, "weekly"));
     entries.push(entry(`/hi/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));
+    entries.push(entry(`/mr/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));
   }
 
   return entries;

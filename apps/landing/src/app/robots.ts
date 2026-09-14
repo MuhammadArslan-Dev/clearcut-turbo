@@ -38,7 +38,7 @@ export default function robots(): MetadataRoute.Robots {
           "PerplexityBot",
           "Bytespider",
         ],
-        allow: ["/tools/", "/hi/tools/"],
+        allow: ["/tools/", "/hi/tools/", "/mr/tools/"],
         disallow: "/",
       },
     ],

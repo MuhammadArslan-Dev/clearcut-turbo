@@ -18,7 +18,7 @@ export default function SiteHeader({
   /** Set false on tools with no Hindi copy — the switcher would otherwise link into pages that have nothing to do with the current tool. */
   showLocaleSwitcher?: boolean;
   /** Which tool's route tree the switcher stays within. */
-  tool?: "resizer" | "age-eligibility-calculator";
+  tool?: "resizer" | "age-eligibility-calculator" | "syllabus-tracker";
 }) {
   return (
     <header className="relative flex items-center justify-center py-4 px-4 md:px-6">

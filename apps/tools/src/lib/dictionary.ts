@@ -1,4 +1,4 @@
-export type Locale = "en" | "hi";
+export type Locale = "en" | "hi" | "mr";
 
 // Central dictionary for every static UI string in this app. Kept as one
 // flat object (not next-intl) deliberately — apps/tools is a static export
@@ -440,6 +440,220 @@ const DICTIONARY = {
       copyright: (year: number) => `© ${year} Clear Cutoff. सर्वाधिकार सुरक्षित!`,
     },
   },
+  mr: {
+    presets: {
+      photo: { label: "फोटो", sublabel: "पासपोर्ट साइज" },
+      signature: { label: "नाव जोडा", sublabel: "नाव आणि तारखेसह" },
+      custom: { label: "कस्टम", sublabel: "तुमचा स्वतःचा आकार" },
+      draw: { label: "स्वाक्षरी", sublabel: "काढा किंवा अपलोड करा" },
+      thumb: { label: "डावा अंगठा", sublabel: "ठसा स्कॅन" },
+    },
+    tool: {
+      configuration: "कॉन्फिगरेशन",
+      documentType: "कागदपत्राचा प्रकार",
+      unit: "एकक",
+      width: (unit: string) => `रुंदी (${unit})`,
+      height: (unit: string) => `उंची (${unit})`,
+      minSizeKB: "किमान आकार (KB)",
+      maxSizeKB: "कमाल आकार (KB)",
+      imageRequirements: "इमेज आवश्यकता",
+      dimensions: "परिमाणे",
+      size: "आकार",
+      format: "फॉरमॅट",
+      imageAdjustments: "इमेज ऍडजस्टमेंट",
+      brightness: "ब्राइटनेस",
+      contrast: "कॉन्ट्रास्ट",
+      signatureCleanUp: "स्वाक्षरी क्लीन अप",
+      signatureCleanUpHint: "कागदाची सावली पांढरी करते आणि फिकी शाई गडद करते.",
+      nameOrDateRequired: "नाव किंवा तारीख आवश्यक",
+      nameBlockLettersLabel: "नाव (ब्लॉक अक्षरांत)",
+      namePlaceholder: "तुमचे पूर्ण नाव टाका",
+      dateOfPhotoLabel: "फोटोची तारीख",
+      includeDateLabel: "तारीख समाविष्ट करा",
+      resizeSettingsLabel: "रिसाइज सेटिंग्ज",
+      optionalBadge: "ऐच्छिक",
+      keepOriginalDimensionsHint: "मूळ परिमाणे ठेवण्यासाठी अनचेक ठेवा.",
+      privacyFirst: "गोपनीयता प्रथम: तुमचे फोटो तुमच्या ब्राउझरमध्येच प्रोसेस होतात आणि कधीही अपलोड होत नाहीत.",
+      fastSecure: "जलद आणि सुरक्षित: इमेज प्रोसेसिंग तुमच्या डिव्हाइसवर तात्काळ होते. वाट पाहण्याची किंवा अपलोडची गरज नाही.",
+      uploadProcess: "अपलोड आणि प्रोसेस करा",
+      cropAdjust: "क्रॉप आणि ऍडजस्ट करा",
+      yourOptimizedImage: "तुमची ऑप्टिमाइझ्ड इमेज",
+      drawSignature: "स्वाक्षरी काढा",
+      uploadImage: "इमेज अपलोड करा",
+      signHere: "इथे माउस किंवा बोटाने स्वाक्षरी करा",
+      clear: "साफ करा",
+      useThisSignature: "ही स्वाक्षरी वापरा",
+      clickToUpload: "अपलोड करण्यासाठी क्लिक करा किंवा ड्रॅग-ड्रॉप करा",
+      acceptedFormats: (mb: number) => `JPG, PNG, WEBP, किंवा HEIC, ${mb}MB पर्यंत`,
+      dragToReposition: "स्थान बदलण्यासाठी बॉक्स ड्रॅग करा, आकार बदलण्यासाठी कोपरे ओढा",
+      reset: "रीसेट",
+      cancel: "रद्द करा",
+      applyOptimize: "लागू करा आणि ऑप्टिमाइझ करा",
+      statusAnalyzing: "इमेजचे विश्लेषण सुरू आहे…",
+      statusResizing: "आकार बदलत आहे…",
+      statusCompressing: "कंप्रेस करत आहे…",
+      original: "मूळ",
+      ready: "तयार",
+      checkSize: "आकार तपासा",
+      perfectMatch: "✓ अगदी बरोबर! इमेज सर्व परीक्षा आवश्यकता पूर्ण करते.",
+      outsideTarget: "⚠ लक्ष्य श्रेणीबाहेर. वरील स्लायडर्स ऍडजस्ट करून पहा.",
+      downloadImage: "इमेज डाउनलोड करा",
+      autoRenamedPrefix: "पोर्टलवर त्रुटीशिवाय अपलोडसाठी नाव आपोआप बदलून",
+      autoRenamedSuffix: "असे केले आहे.",
+      share: "शेअर करा",
+      copied: "कॉपी झाले!",
+      processAnother: "आणखी एक प्रोसेस करा",
+      errorHeic: "हा HEIC फोटो रूपांतरित करता आला नाही. कृपया JPG किंवा PNG वापरून पहा.",
+      errorFileType: "कृपया JPG, PNG, WEBP, किंवा HEIC इमेज निवडा.",
+      errorFileSize: (mb: number) => `कृपया ${mb}MB पेक्षा लहान इमेज निवडा.`,
+      errorInvalidValues: "वैध रुंदी, उंची आणि आकार मूल्ये टाका.",
+      errorReadImage: "ही इमेज वाचता आली नाही.",
+      errorProcessImage: "ही इमेज प्रोसेस करता आली नाही.",
+      errorGeneric: "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
+      loadingImage: "इमेज लोड होत आहे…",
+    },
+    hub: {
+      badgeFree: "100% मोफत आणि खाजगी",
+      badgePrivacy: "गोपनीयता प्रमाणित",
+      h1: "काही सेकंदांत परीक्षेसाठी तयार फोटो आणि स्वाक्षरी",
+      lead: "CTET, HTET, UPTET आणि इतर परीक्षांसाठी तुमचा फोटो किंवा स्वाक्षरी रिसाइज आणि कंप्रेस करा. तुमच्या ब्राउझरमध्येच प्रोसेस होते, काहीही अपलोड होत नाही.",
+      howItWorksTitle: "हे कसे काम करते",
+      howItWorksLead: "फक्त 3 सोप्या स्टेप्समध्ये तुमची परीक्षा कागदपत्रे तयार करा. कोणत्याही तांत्रिक कौशल्याची गरज नाही.",
+      steps: [
+        {
+          title: "1. तुमचा कागदपत्र प्रकार निवडा",
+          description: "फोटो किंवा स्वाक्षरी निवडा, आम्ही आपोआप योग्य परिमाणे आणि फाइल आकार मर्यादा लोड करू.",
+        },
+        {
+          title: "2. अपलोड करा आणि प्रोसेस करा",
+          description: "तुमचा फोटो किंवा स्वाक्षरी टाका. रिसाइजिंग आणि कंप्रेशन तुमच्या ब्राउझरमध्ये तात्काळ होते.",
+        },
+        {
+          title: "3. डाउनलोड करा",
+          description: "ऑप्टिमाइझ्ड निकाल पहा आणि डाउनलोड करा. तुमची फाइल तुमच्या डिव्हाइसमधून कधीही बाहेर जात नाही.",
+        },
+      ],
+    },
+    moreTools: {
+      title: "इतर टूल्स",
+      items: {
+        addNameDate: { label: "नाव आणि तारीख जोडा", sublabel: "फोटोवर नाव/तारीख स्टँप करा" },
+        imageCompressor: { label: "इमेज कंप्रेसर", sublabel: "अचूक KB श्रेणी गाठा" },
+        signatureCompressor: { label: "स्वाक्षरी कंप्रेसर", sublabel: "शाई स्वच्छ करा आणि कंप्रेस करा" },
+        faceCoverage: { label: "75% चेहरा कव्हरेज", sublabel: "पोझिशनिंग मार्गदर्शक" },
+      },
+    },
+    modeTabs: {
+      imageResizer: "इमेज रिसाइझर",
+      addNameDate: "नाव आणि तारीख जोडा",
+    },
+    spoke: {
+      h1: (shortName: string) => `${shortName} फोटो आणि स्वाक्षरी रिसाइझर`,
+      lead: (shortName: string, fullName: string) =>
+        `तुमचा फोटो किंवा स्वाक्षरी ${shortName} (${fullName}) अर्ज फॉर्मच्या आवश्यकतांनुसार रिसाइज आणि कंप्रेस करा. तुमच्या ब्राउझरमध्येच प्रोसेस होते, काहीही अपलोड होत नाही.`,
+      specsTitle: (shortName: string) => `${shortName} फोटो आणि स्वाक्षरी तपशील`,
+      specDocument: "कागदपत्र",
+      specFileSize: "फाइल आकार",
+      specPhoto: "फोटो",
+      specSignature: "स्वाक्षरी",
+      faqsTitle: (shortName: string) => `${shortName} रिसाइझर सामान्य प्रश्न`,
+      differentExamPrompt: "वेगळ्या परीक्षेची तयारी करत आहात?",
+      useGeneralResizer: "सामान्य रिसाइझर वापरा",
+      relatedToolsBadge: "संबंधित टूल्स",
+      relatedToolsTitlePrefix: "",
+      relatedToolsTitleSuffix: "परीक्षांसाठीही रिसाइज करा",
+      relatedToolsLead: (categoryLabel: string) =>
+        `अनेक परीक्षांची तयारी करत आहात? इतर ${categoryLabel} परीक्षांसाठीही तुमचा फोटो आणि स्वाक्षरी तात्काळ रिसाइज करा.`,
+      officialRequirementsPrefix: "यासाठी अधिकृत आवश्यकता",
+      administeredBy: "संचालक संस्था",
+      officialGuidelines: "अधिकृत मार्गदर्शक तत्त्वे",
+      generalRequirements: "सर्वसाधारण आवश्यकता",
+      photographLabel: "छायाचित्र",
+      thumbImpressionLabel: "अंगठ्याचा ठसा",
+    },
+    category: {
+      h1: (label: string) => `${label}: फोटो आणि स्वाक्षरी रिसाइझर`,
+      lead: "तुमच्या फोटो आणि स्वाक्षरीचे अचूक परिमाण लोड करण्यासाठी खालून तुमची परीक्षा निवडा. तुमच्या ब्राउझरमध्येच प्रोसेस होते, काहीही अपलोड होत नाही.",
+      searchWithin: (label: string) => `${label} मध्ये शोधा…`,
+      differentCategoryPrompt: "वेगळी श्रेणी शोधत आहात?",
+      browseAllExams: "सर्व परीक्षा पहा",
+    },
+    browse: {
+      title: "परीक्षेनुसार शोधा",
+      lead: "प्रत्येक परीक्षेचा स्वतःचा फोटो आणि स्वाक्षरी आकार असतो. शोधा, किंवा आधी श्रेणी निवडा मग तुमची परीक्षा.",
+      searchPlaceholder: "तुमची परीक्षा शोधा (उदा. UPSC, CTET, SBI PO)…",
+      examCount: (count: number) => `${count} परीक्षा`,
+    },
+    search: {
+      noResults: (query: string) => `"${query}" शी जुळणारी कोणतीही परीक्षा सापडली नाही. वेगळे नाव वापरून पहा, किंवा खाली पहा.`,
+    },
+    recentExams: {
+      title: "अलीकडे पाहिलेले",
+    },
+    addNameDatePage: {
+      howItWorksTitle: "हे कसे काम करते",
+      howItWorksLead: "फक्त 3 सोप्या स्टेप्समध्ये तुमचा परीक्षेसाठी तयार फोटो मिळवा. कोणत्याही तांत्रिक कौशल्याची गरज नाही.",
+      steps: [
+        {
+          title: "1. तुमचा फोटो अपलोड करा",
+          description: "ज्या पासपोर्ट-साइज फोटोवर नाव आणि तारीख स्टँप करायची आहे तो अपलोड करा. JPG, PNG, WEBP, आणि HEIC सर्व सपोर्टेड आहेत.",
+        },
+        {
+          title: "2. तुमची माहिती टाका",
+          description: "तुमचे नाव टाइप करा आणि तारीख निवडा — फक्त नाव, फक्त तारीख, किंवा दोन्ही, तुमच्या फॉर्ममध्ये जे हवे ते.",
+        },
+        {
+          title: "3. डाउनलोड करा",
+          description: "स्टँप केलेला फोटो नक्की कसा दिसेल ते पहा, मग तो तात्काळ पूर्ण क्वालिटीमध्ये डाउनलोड करा.",
+        },
+      ],
+      featuresTitle: "नाव आणि तारीख स्टँपिंग, अगदी योग्य पद्धतीने",
+      featuresLead: "काही सेकंदांत तुमचे नाव आणि तारीख छापलेले परीक्षेसाठी तयार फोटो तयार करा, एडिटिंग कौशल्याची गरज नाही.",
+      features: [
+        { title: "कस्टम मजकूर", description: "तुमचे पूर्ण नाव स्पष्ट ब्लॉक अक्षरांत छापा, हाच फॉरमॅट बहुतेक अधिकृत परीक्षा सूचनांमध्ये मागितला जातो." },
+        { title: "तारीख स्टँपिंग", description: "फोटोची तारीख आपोआप जोडा. कोणतीही तारीख निवडा, किंवा आजची तारीख वापरा." },
+        { title: "परीक्षा अनुरूप", description: "SSC, UPSC आणि इतर मंडळांना अपेक्षित असलेल्या पांढऱ्या बॅकग्राउंडवर काळ्या मजकुराच्या फॉरमॅटशी जुळते." },
+        { title: "तात्काळ प्रीव्ह्यू", description: "डाउनलोड करण्यापूर्वी तुमचा फोटो नाव आणि तारखेसह नक्की कसा दिसेल ते पहा." },
+        { title: "मोबाइलवरही चालते", description: "तुमच्या फोनवरून थेट फोटो स्टँप करा, डेस्कटॉपची गरज नाही." },
+        { title: "पूर्णपणे मोफत", description: "कोणत्याही लपलेल्या शुल्काशिवाय, हवे तितके फोटो मोफत स्टँप करा." },
+      ],
+      faqTitle: "नाव आणि तारीख जोडा सामान्य प्रश्न",
+      faqs: [
+        {
+          q: "फोटोमध्ये नाव आणि तारीख कशी जोडावी?",
+          a: "तुमचा फोटो अपलोड करा, तुमचे नाव टाइप करा आणि/किंवा तारीख निवडा, टूल दोन्ही तात्काळ इमेजवर स्टँप करेल. तुम्ही लगेच निकाल डाउनलोड करू शकता.",
+        },
+        {
+          q: "हा नाव आणि तारीख फॉरमॅट परीक्षा फॉर्मसाठी स्वीकारला जातो का?",
+          a: "नाव साध्या ब्लॉक अक्षरांत आणि तारीख DD/MM/YYYY फॉरमॅटमध्ये, फोटोच्या तळाशी असलेल्या पांढऱ्या पट्टीवर छापली जाते, हाच लेआउट बहुतेक सरकारी परीक्षा पोर्टल्सना अपेक्षित असतो. नेहमी तुमच्या परीक्षेच्या अधिकृत सूचनेशी पुन्हा तपासून पहा.",
+        },
+        {
+          q: "मी फक्त तारीख, किंवा फक्त नाव जोडू शकतो का?",
+          a: "हो. फक्त तारीख स्टँप करण्यासाठी नाव फील्ड रिकामे ठेवा, किंवा फक्त नाव स्टँप करण्यासाठी \"तारीख समाविष्ट करा\" अनचेक ठेवा.",
+        },
+        {
+          q: "यामुळे माझ्या फोटोची परिमाणे बदलतात का?",
+          a: "नाही, जोपर्यंत तुम्ही Resize Settings चालू करत नाही. डीफॉल्टनुसार, तुमचा फोटो त्याच्या मूळ आकारातच राहतो, फक्त नाव/तारीख मजकूर जोडला जातो.",
+        },
+        {
+          q: "माझा फोटो कुठेही अपलोड होतो का?",
+          a: "नाही. सर्व काही Canvas API वापरून तुमच्या ब्राउझरमध्येच स्थानिक पातळीवर होते. तुमचा फोटो तुमच्या डिव्हाइसमधून कधीही बाहेर जात नाही.",
+        },
+        {
+          q: "हे टूल वापरण्यासाठी मोफत आहे का?",
+          a: "हो, पूर्णपणे मोफत, तुम्ही किती फोटो स्टँप करता यावर कोणतीही मर्यादा नाही.",
+        },
+      ],
+    },
+    footer: {
+      policy: "धोरण",
+      terms: "अटी व शर्ती",
+      refund: "परतावा",
+      contact: "संपर्क",
+      whatsapp: "WhatsApp",
+      copyright: (year: number) => `© ${year} Clear Cutoff. सर्व हक्क राखीव!`,
+    },
+  },
 } as const;
 
 export function getDict(locale: Locale) {
@@ -460,7 +674,19 @@ const CATEGORY_LABELS_HI: Record<string, string> = {
   "Other / Education Exams": "अन्य / शिक्षा परीक्षाएं",
 };
 
+// Same rationale as CATEGORY_LABELS_HI above, for Marathi.
+const CATEGORY_LABELS_MR: Record<string, string> = {
+  "Teaching Exams (TET / TGT / PGT)": "शिक्षक परीक्षा (TET / TGT / PGT)",
+  "Central Government Exams": "केंद्र सरकारी परीक्षा",
+  "State PSCs (Public Service Commissions)": "राज्य लोकसेवा आयोग (State PSCs)",
+  "Banking Exams": "बँकिंग परीक्षा",
+  "Police Exams": "पोलीस परीक्षा",
+  "Judiciary Exams": "न्यायपालिका परीक्षा",
+  "Other / Education Exams": "इतर / शिक्षण परीक्षा",
+};
+
 export function getCategoryLabel(englishLabel: string, locale: Locale): string {
   if (locale === "en") return englishLabel;
-  return CATEGORY_LABELS_HI[englishLabel] ?? englishLabel;
+  const table = locale === "mr" ? CATEGORY_LABELS_MR : CATEGORY_LABELS_HI;
+  return table[englishLabel] ?? englishLabel;
 }

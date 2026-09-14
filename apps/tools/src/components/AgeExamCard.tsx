@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Text from "@clearcut/ui/text";
 import type { AgeEligibilityExam } from "@/lib/ageEligibility";
+import type { Locale } from "@/lib/dictionary";
 
 const FEATURED_SLUGS = new Set(["ctet", "htet", "uptet", "reet", "hptet"]);
 
@@ -21,12 +22,12 @@ export default function AgeExamCard({
   locale = "en",
 }: {
   exam: AgeEligibilityExam;
-  /** basePath-relative on "en" (e.g. "/age-eligibility-calculator/ctet" — next/link + this app's basePath produces "/tools/..."), full absolute path on "hi" (e.g. "/hi/tools/age-eligibility-calculator/ctet" — see LocaleLink.tsx for why Hindi can't go through next/link). */
+  /** basePath-relative on "en" (e.g. "/age-eligibility-calculator/ctet" — next/link + this app's basePath produces "/tools/..."), full absolute path on "hi"/"mr" (e.g. "/hi/tools/age-eligibility-calculator/ctet" — see LocaleLink.tsx for why a non-English locale can't go through next/link). */
   href: string;
   ageLimitText: string;
   ageLimitLabelText: string;
   popularLabel: string;
-  locale?: "en" | "hi";
+  locale?: Locale;
 }) {
   const className =
     "group flex flex-col gap-2 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all hover:border-brand hover:shadow-[0_4px_18px_rgba(0,0,0,0.06)] hover:-translate-y-0.5";
@@ -55,7 +56,7 @@ export default function AgeExamCard({
     </>
   );
 
-  if (locale === "hi") {
+  if (locale !== "en") {
     return (
       <a href={href} className={className}>
         {content}

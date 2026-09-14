@@ -9,6 +9,7 @@ import type { Locale } from "./dictionary";
 export const MONTH_NAMES = {
   en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
   hi: ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+  mr: ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"],
 };
 
 export const QUALIFICATION_OPTIONS_BY_LOCALE = {
@@ -29,6 +30,15 @@ export const QUALIFICATION_OPTIONS_BY_LOCALE = {
     { value: "graduate", label: "स्नातक" },
     { value: "graduate_bed", label: "स्नातक + B.Ed" },
     { value: "post_graduate", label: "स्नातकोत्तर" },
+  ],
+  mr: [
+    { value: "below_10th", label: "10 वी पेक्षा कमी" },
+    { value: "10th_pass", label: "10 वी पास" },
+    { value: "12th_pass", label: "12 वी पास" },
+    { value: "diploma", label: "D.El.Ed / प्राथमिक शिक्षण डिप्लोमा" },
+    { value: "graduate", label: "पदवीधर" },
+    { value: "graduate_bed", label: "पदवीधर + B.Ed" },
+    { value: "post_graduate", label: "पदव्युत्तर" },
   ],
 };
 
@@ -276,8 +286,130 @@ export const AGE_CALC_STRINGS = {
       },
     ],
   },
+  mr: {
+    helpBadge: "2026–2027 परीक्षांसाठी अपडेटेड",
+    hubHeadingPrefix: "तुमची ",
+    hubHeadingHighlight: "परीक्षा वयोमर्यादा पात्रता",
+    hubHeadingSuffix: " तात्काळ तपासा",
+    hubSubtitle: (otherCount: number) =>
+      `UPSC, SSC, बँकिंग, रेल्वे, टीचिंग आणि ${otherCount}+ इतर परीक्षांसाठी अधिकृत अधिसूचना तारखेनुसार तुमचे अचूक वय काढा.`,
+    searchPlaceholder: "कोणतीही परीक्षा शोधा (उदा. CTET, UPSC IAS, SSC CGL)…",
+    allExams: "सर्व परीक्षा",
+    showingOf: (shown: number, total: number) => `${total} पैकी ${shown} कॅल्क्युलेटर दाखवत आहोत`,
+    noResults: (query: string) => `"${query}" शी जुळणारी कोणतीही परीक्षा नाही. वेगळा शब्द वापरून पहा.`,
+    ageLimit: "वयोमर्यादा",
+    noLimit: "मर्यादा नाही",
+    minLabel: "किमान",
+    popular: "लोकप्रिय",
+    checkEligibility: "पात्रता तपासा",
+    enterDetails: (examShortName: string) => `${examShortName} साठी अचूक वय काढण्यासाठी तुमची माहिती टाका.`,
+    dateOfBirth: "जन्मतारीख",
+    dobDay: "दिवस",
+    dobMonth: "महिना",
+    dobYear: "वर्ष",
+    dobMinAgeNote: "तुमचे वय किमान 18 वर्षे असणे आवश्यक आहे.",
+    category: "श्रेणी",
+    qualifications: "पात्रता",
+    notificationMonth: "अधिसूचना महिना",
+    notificationYear: "अधिसूचना वर्ष",
+    calculateEligibility: "पात्रता मोजा",
+    invalidDate: "तुमची जन्मतारीख निवडा (दिवस, महिना आणि वर्ष).",
+    awaitingDetailsTitle: "माहितीची प्रतीक्षा आहे",
+    awaitingDetailsBody: "तुम्ही या परीक्षेसाठी पात्र आहात का हे पाहण्यासाठी तुमची जन्मतारीख आणि श्रेणी टाका.",
+    fullyEligible: "पूर्णपणे पात्र",
+    underAgeLimit: "वयोमर्यादेपेक्षा कमी",
+    ageLimitExceeded: "वयोमर्यादा ओलांडली",
+    exactAgeOnCutoff: "कटऑफवर तुमचे अचूक वय",
+    years: "वर्षे",
+    months: "महिने",
+    days: "दिवस",
+    yearLabel: () => "वर्षे",
+    monthLabel: () => "महिने",
+    dayLabel: () => "दिवस",
+    eligibleMessage: "तुम्ही या परीक्षेसाठी पात्र आहात!",
+    underAgeMessage: (short: string) => `तुमचे वय कमी आहे. कमतरता: ${short}.`,
+    overAgeMessage: (short: string) => `तुमचे वय ${short} ने जास्त आहे.`,
+    resultNote: (examShortName: string) =>
+      `टीप: ही गणना तुम्ही वर निवडलेल्या अधिसूचना महिना/वर्षावर आधारित आहे. अधिकृत अधिसूचना तारीख दरवर्षी थोडी बदलू शकते. नेहमी अधिकृत ${examShortName} अधिसूचना पहा.`,
+    ageLimitsTableTitle: "श्रेणीनुसार वयोमर्यादा तक्ता",
+    ageLimitsTableSubtitle: (examShortName: string) => `${examShortName} साठी अधिकृत वयोमर्यादा आणि सवलत नियम.`,
+    tableCategory: "श्रेणी",
+    tableMinAge: "किमान वय",
+    tableMaxAge: "कमाल वय",
+    eligibilityCriteriaTitle: "पात्रता निकष",
+    educationalQualification: "शैक्षणिक पात्रता",
+    categoryRelaxationTitle: "श्रेणीनुसार वयात सवलत",
+    tableRelaxation: "सवलत",
+    specialRelaxationsTitle: "विशेष / अतिरिक्त सवलती",
+    importantNotesTitle: "महत्त्वाच्या सूचना",
+    disclaimer: (conductingBody: string) =>
+      `वरील पात्रता माहिती मानक अधिकृत नियमांवर आधारित आहे. नियम बदलू शकतात — अर्ज करण्यापूर्वी नेहमी नवीनतम अधिकृत ${conductingBody} अधिसूचना पडताळून पहा.`,
+    faqTitle: "वारंवार विचारले जाणारे प्रश्न",
+    faqSubtitle: (examShortName: string) => `${examShortName} च्या वयोमर्यादा, कटऑफ तारीख आणि पात्रतेबाबत सामान्य प्रश्न.`,
+    pageTitle: (examShortName: string, year: number) => `${examShortName} वय कॅल्क्युलेटर (${year})`,
+    conductedBy: "आयोजक",
+
+    exploreCalculators: "कॅल्क्युलेटर पहा",
+    checkExampleEligibility: "UPSC पात्रता तपासा",
+    popularTitle: "लोकप्रिय कॅल्क्युलेटर",
+    popularSubtitle: "सर्वाधिक शोधल्या जाणाऱ्या स्पर्धा परीक्षांची पात्रता तात्काळ तपासा.",
+    viewAllExams: (count: number) => `सर्व ${count} परीक्षा पहा`,
+    browseByCategoryTitle: "श्रेणीनुसार शोधा",
+    browseByCategorySubtitle: "आमच्या वर्गीकृत संग्रहातून तुम्हाला हवे असलेले नेमके कॅल्क्युलेटर शोधा.",
+    examsCount: (n: number) => `${n} परीक्षा`,
+    trustTitle: "उमेदवार आमच्यावर विश्वास का ठेवतात",
+    trustSubtitle: "वयोमर्यादा पात्रता गणना शक्य तितकी अचूक आणि सोपी बनवण्यावर आमचे पूर्ण लक्ष आहे.",
+    trustItems: [
+      { title: "अत्यंत अचूक", body: "गणना अचूक कटऑफ तारखांसह अधिकृत अधिसूचना नियमांवर आधारित आहे." },
+      { title: "तात्काळ निकाल", body: "कोणतीही लोडिंग स्क्रीन किंवा प्रतीक्षा नाही. काही मिलिसेकंदांत तुमची पात्रता स्थिती मिळवा." },
+      { title: "श्रेणी सवलती", body: "OBC, SC/ST आणि माजी सैनिकांसाठी वयोमर्यादा सवलती आपोआप लागू होतात." },
+      { title: "नेहमी अपडेटेड", body: "नवीनतम अधिकृत अधिसूचना प्रतिबिंबित करण्यासाठी आम्ही आमचा डेटा वेळोवेळी तपासतो." },
+    ],
+    howItWorksTitle: "हे कसे काम करते",
+    howItWorksSubtitle: "तुमची पात्रता स्थिती स्पष्ट करण्यासाठी तीन सोप्या स्टेप्स. साइनअपची गरज नाही.",
+    howItWorksSteps: [
+      { title: "1. तुमची परीक्षा निवडा", body: "85 भारतीय स्पर्धा परीक्षांच्या आमच्या डेटाबेसमधून शोधा." },
+      { title: "2. तुमची माहिती टाका", body: "तुमची जन्मतारीख आणि श्रेणी टाका. श्रेणीनुसार वयात सवलती आम्ही हाताळू." },
+      { title: "3. तात्काळ निकाल मिळवा", body: "तुम्ही पात्र आहात का आणि कटऑफ तारखेला तुमचे अचूक वय काय आहे ते तात्काळ पहा." },
+    ],
+    suiteTitle: "अधिक मोफत टूल्स",
+    suiteSubtitle: "वय तपासण्याव्यतिरिक्त, Clear Cutoff तुम्हाला आणखी मोफत, ब्राउझर-आधारित टूल्स देते — काहीही कधीही अपलोड होत नाही.",
+    suiteResizerTitle: "फोटो आणि स्वाक्षरी रिसाइझर",
+    suiteResizerBody: "तुमचा फोटो किंवा स्वाक्षरी कोणत्याही परीक्षेच्या अचूक आकार आणि KB मर्यादेत रिसाइज आणि कंप्रेस करा.",
+    suiteResizerCta: "आता रिसाइज करा",
+    suiteComingSoon: "लवकरच येत आहे",
+    ctaTitle: "तुमची पात्रता तपासण्यासाठी तयार आहात?",
+    ctaSubtitle: "अंदाज लावणे थांबवा आणि आत्मविश्वासाने तयारी सुरू करा. तुमची परीक्षा शोधा आणि तात्काळ स्पष्टता मिळवा.",
+    ctaButton: "सर्व परीक्षा पहा",
+    homeFaqTitle: "वारंवार विचारले जाणारे प्रश्न",
+    homeFaqSubtitle: "वयोमर्यादा पात्रता आणि हे टूल कसे कार्य करते याबद्दल सामान्य प्रश्न.",
+    homeFaqs: [
+      {
+        q: "परीक्षांसाठी वयाची गणना कशी केली जाते?",
+        a: "तुम्ही निवडलेल्या अधिसूचना कटऑफ तारखेनुसार आम्ही तुमचे अचूक वय वर्षे आणि महिन्यांत काढतो, नंतर ते परीक्षेच्या श्रेणीनुसार किमान आणि कमाल वयोमर्यादेशी तुलना करतो.",
+      },
+      {
+        q: "श्रेणी सवलती आपोआप लागू होतात का?",
+        a: "हो. परीक्षेच्या पानावर एकदा तुम्ही श्रेणी (OBC, SC/ST, PwD, माजी सैनिक इ.) निवडली की, त्या श्रेणीसाठी संबंधित वय सवलत आपोआप लागू होते.",
+      },
+      {
+        q: "हे टूल वापरण्यासाठी पूर्णपणे मोफत आहे का?",
+        a: "हो, पूर्णपणे मोफत. हे पूर्णपणे तुमच्या ब्राउझरमध्ये चालते — साइनअपची गरज नाही, आणि तुमच्या जन्मतारखेबद्दल काहीही कधीही अपलोड किंवा साठवले जात नाही.",
+      },
+      {
+        q: "डेटा किती अचूक आहे?",
+        a: "वयोमर्यादा आणि श्रेणी सवलती प्रत्येक परीक्षेच्या मानक, सार्वजनिकरीत्या ज्ञात पॅटर्नचे पालन करतात. नियम दरवर्षी बदलू शकतात — अर्ज करण्यापूर्वी नेहमी नवीनतम अधिकृत अधिसूचना पडताळून पहा.",
+      },
+      {
+        q: "माझी लक्ष्य परीक्षा यादीत नसेल तर?",
+        a: "आम्ही Civil Services, Banking, Railways, Defence, SSC, Engineering, Medical, State PSC, Teaching, Insurance आणि Police मधील 85 प्रमुख भारतीय स्पर्धा परीक्षा कव्हर करतो. तुमची अजून यादीत नसेल, तर पुन्हा तपासा — आम्ही ही यादी वेळोवेळी अद्ययावत करतो.",
+      },
+    ],
+  },
 };
 
 export function getAgeCalcStrings(locale?: Locale) {
-  return locale === "hi" ? AGE_CALC_STRINGS.hi : AGE_CALC_STRINGS.en;
+  if (locale === "hi") return AGE_CALC_STRINGS.hi;
+  if (locale === "mr") return AGE_CALC_STRINGS.mr;
+  return AGE_CALC_STRINGS.en;
 }

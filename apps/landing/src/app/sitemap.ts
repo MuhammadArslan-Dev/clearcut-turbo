@@ -45,6 +45,7 @@ function entry(
       languages: {
         "en": url,
         "hi": `${BASE_URL}/hi${path}`,
+        "mr": `${BASE_URL}/mr${path}`,
         "x-default": url,       // canonical = English
       },
     },

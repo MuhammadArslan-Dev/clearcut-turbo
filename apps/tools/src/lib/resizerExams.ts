@@ -43,8 +43,45 @@ export function getExamFaqs(
   examShortName: string,
   photoSpec: Spec,
   signatureSpec: Spec,
-  locale: "en" | "hi" = "en",
+  locale: "en" | "hi" | "mr" = "en",
 ) {
+  if (locale === "mr") {
+    return [
+      {
+        q: `${examShortName} साठी आवश्यक फोटो आकार किती आहे?`,
+        a: `हे टूल ${examShortName} साठी ${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB असे आधीच सेट केलेले आहे. सबमिट करण्यापूर्वी नेहमी नवीनतम अधिकृत ${examShortName} सूचनेशी तपासा, कारण परीक्षा प्राधिकरण कधीकधी या आवश्यकता बदलतात.`,
+      },
+      {
+        q: `मी हे टूल माझ्या ${examShortName} स्वाक्षरीसाठीही वापरू शकतो का?`,
+        a: "हो, स्वाक्षरी प्रीसेट निवडा (किंवा थेट काढा) आणि ते फोटो टूलप्रमाणेच रिसाइज/कंप्रेस करते.",
+      },
+      {
+        q: "माझा फोटो कुठेही अपलोड होतो का?",
+        a: "नाही. रिसाइजिंग आणि कंप्रेशन पूर्णपणे तुमच्या ब्राउझरमध्ये Canvas API वापरून होते. फाइल तुमच्या डिव्हाइसमधून कधीही बाहेर जात नाही.",
+      },
+      {
+        q: `${examShortName} परीक्षेसाठी नोट्स कुठे मिळतील?`,
+        a: `हे टूल फक्त तुमच्या अर्ज फॉर्मसाठी फोटो आणि स्वाक्षरी रिसाइजिंग हाताळते. ${examShortName} अभ्यास नोट्स, सराव चाचण्या आणि मागील वर्षांच्या प्रश्नांसाठी, clearcutoff.in वरील Clear Cutoff ॲप पहा.`,
+      },
+      {
+        q: `${examShortName} फॉर्मसाठी आवश्यक इमेज आकार किती आहे?`,
+        a: `${examShortName} अर्ज फॉर्ममध्ये साधारणपणे दोन इमेज लागतात: एक फोटो (${photoSpec.widthPx}×${photoSpec.heightPx}px, ${photoSpec.minKB}–${photoSpec.maxKB}KB) आणि एक स्वाक्षरी (${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB). दोन्ही आपोआप रिसाइज आणि कंप्रेस करण्यासाठी वरील प्रीसेट वापरा.`,
+      },
+      {
+        q: `${examShortName} साठी स्वाक्षरी इमेज आकार किती आहे?`,
+        a: `या टूलमधील ${examShortName} स्वाक्षरी प्रीसेट ${signatureSpec.widthPx}×${signatureSpec.heightPx}px, ${signatureSpec.minKB}–${signatureSpec.maxKB}KB आहे. सबमिट करण्यापूर्वी नेहमी नवीनतम अधिकृत ${examShortName} सूचनेशी पुष्टी करा.`,
+      },
+      {
+        q: `${examShortName} साठी किमान पात्रता गुण किती आहेत?`,
+        a: `पात्रता गुण श्रेणीनुसार (General/OBC/EWS/SC/ST) वेगवेगळे असतात आणि प्रत्येक चक्रात अधिकृत संचालक संस्थेकडून ठरवले जातात. निश्चित संख्येवर अवलंबून न राहता नेहमी नवीनतम अधिकृत ${examShortName} सूचना किंवा निकालातील अचूक कटऑफ पहा.`,
+      },
+      {
+        q: `${examShortName} साठी फोटो रिसाइज करण्यासाठी कोणते ॲप किंवा टूल सर्वोत्तम आहे?`,
+        a: `Clear Cutoff चे मोफत फोटो आणि स्वाक्षरी रिसाइझर (हे टूल) खास परीक्षा अर्ज फॉर्मसाठी बनवले आहे. हे अचूक ${examShortName} परिमाणे आणि फाइल-आकार मर्यादा आपोआप लागू करते, पूर्णपणे तुमच्या ब्राउझरमध्ये चालते आणि कोणत्याही साइनअप किंवा डाउनलोडची गरज नाही.`,
+      },
+    ];
+  }
+
   if (locale === "hi") {
     return [
       {

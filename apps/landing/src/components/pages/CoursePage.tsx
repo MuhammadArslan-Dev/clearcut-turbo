@@ -1,6 +1,7 @@
 import { getCourse } from "@/lib/data/courses";
 import { notFound } from "next/navigation";
 import { Exam } from "@/types/page";
+import { toLocale } from "@/lib/i18n/config";
 
 import CoursePageHero from "@/components/sections/heros/CoursePageHero";
 
@@ -20,7 +21,7 @@ type Props = {
 
 export default async function CoursePage({ params, data }: Props) {
   const { slug, locale } = await params;
-  const resolvedLocale = locale === "hi" ? "hi" : "en";
+  const resolvedLocale = toLocale(locale);
   const course = getCourse(slug);
 
   if (!course) return notFound();

@@ -21,6 +21,25 @@ const config: NextConfig = {
   // forward requests through unchanged with no path rewriting needed.
   basePath: "/tools",
   trailingSlash: false,
+
+  // Dev-only: `next build` errors if `output: "export"` and `rewrites` are
+  // both present, so this never reaches the production static export — it
+  // only runs under `next dev`, which always has a real server regardless
+  // of `output` and ignores that restriction. Without it, a hard refresh on
+  // a Syllabus Tracker deep link (/syllabus-tracker/htet/level-1-prt, or the
+  // Hindi/Marathi equivalents) 404s locally, because that path is never a
+  // real Next route (see the comment atop src/app/syllabus-tracker/page.tsx)
+  // — only public/_redirects supplies the equivalent fallback, and
+  // Cloudflare Pages is the only thing that reads that file.
+  ...(process.env.NODE_ENV !== "production" && {
+    async rewrites() {
+      return [
+        { source: "/syllabus-tracker/:path*", destination: "/syllabus-tracker" },
+        { source: "/hi/syllabus-tracker/:path*", destination: "/hi/syllabus-tracker" },
+        { source: "/mr/syllabus-tracker/:path*", destination: "/mr/syllabus-tracker" },
+      ];
+    },
+  }),
 };
 
 export default config;

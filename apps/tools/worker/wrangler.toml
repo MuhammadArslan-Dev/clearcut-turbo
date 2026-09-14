@@ -16,6 +16,7 @@ routes = [
 	# sitemap.xml) all work with zero wrangler.toml changes going forward.
 	{ pattern = "clearcutoff.in/tools/*", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/hi/tools/*", zone_name = "clearcutoff.in" },
+	{ pattern = "clearcutoff.in/mr/tools/*", zone_name = "clearcutoff.in" },
 ]
 
 [vars]

@@ -38,26 +38,35 @@ export default async function CourseLogoCarousalData({
 
   const examName = data?.short_name || "TET";
 
-  const isEn = locale === "en";
-  const trustHeading = isEn ? (
-    <>
-      Trusted by <span className="text-brand">10,000+</span> students to pass {examName} exams across India
-    </>
-  ) : (
-    <>
-      भारत भर में कई {examName} परीक्षाएं पास करने के लिए <span className="text-brand">10,000+</span> विद्यार्थियों का भरोसा
-    </>
-  );
-  const otherExamsHeading = isEn ? (
-    <>
-      Preparing for other exams? Explore all of Clear Cutoff&apos;s <span className="text-brand">Teaching Exams</span>!
-    </>
-  ) : (
-    <>
-      क्या आप अन्य परीक्षाओं की तैयारी कर रहे हैं? Clear Cutoff के सभी <span className="text-brand">Teaching Exams</span> देखें!
-    </>
-  );
-  const allCoursesBtn = isEn ? "See all courses and test series!" : "सभी कोर्स और टेस्ट सीरीज देखें!";
+  const trustHeading =
+    locale === "en" ? (
+      <>
+        Trusted by <span className="text-brand">10,000+</span> students to pass {examName} exams across India
+      </>
+    ) : locale === "mr" ? (
+      <>
+        {examName} परीक्षा उत्तीर्ण होण्यासाठी संपूर्ण भारतातील <span className="text-brand">10,000+</span> विद्यार्थ्यांचा विश्वास
+      </>
+    ) : (
+      <>
+        भारत भर में कई {examName} परीक्षाएं पास करने के लिए <span className="text-brand">10,000+</span> विद्यार्थियों का भरोसा
+      </>
+    );
+  const otherExamsHeading =
+    locale === "en" ? (
+      <>
+        Preparing for other exams? Explore all of Clear Cutoff&apos;s <span className="text-brand">Teaching Exams</span>!
+      </>
+    ) : locale === "mr" ? (
+      <>
+        इतर परीक्षांची तयारी करत आहात? Clear Cutoff चे सर्व <span className="text-brand">Teaching Exams</span> पहा!
+      </>
+    ) : (
+      <>
+        क्या आप अन्य परीक्षाओं की तैयारी कर रहे हैं? Clear Cutoff के सभी <span className="text-brand">Teaching Exams</span> देखें!
+      </>
+    );
+  const allCoursesBtn = locale === "en" ? "See all courses and test series!" : locale === "mr" ? "सर्व कोर्स आणि टेस्ट सीरिज पहा!" : "सभी कोर्स और टेस्ट सीरीज देखें!";
 
   return (
     <Section padding="py-4" maxWidth="max-w-screen" sectionId="course-logo-carousal">

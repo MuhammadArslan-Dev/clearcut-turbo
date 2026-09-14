@@ -28,10 +28,25 @@ const STRINGS = {
     resultsFor: (count: number, query: string) =>
       count === 0 ? `“${query}” के लिए कोई परिणाम नहीं मिला` : `“${query}” के लिए ${count} परिणाम`,
   },
+  // Search/empty-state UI chrome only — the actual FAQ question/answer
+  // content comes from the CMS, which is en/hi only (see FaqPage's own
+  // mr→en fallback comment), so this local dictionary is the one genuinely
+  // fixable mr gap on this page.
+  mr: {
+    searchPlaceholder: "प्रश्न शोधा…",
+    clearSearch: "शोध साफ करा",
+    tryDifferent: "वेगळा शब्द वापरून पहा, किंवा खालील एखादी श्रेणी ब्राउझ करा.",
+    comingSoon: "प्रश्न लवकरच जोडले जातील.",
+    answersAcross: (answers: number, topics: number) => `${topics} विषयांमध्ये ${answers} उत्तरे`,
+    resultsFor: (count: number, query: string) =>
+      count === 0 ? `“${query}” साठी कोणतेही निकाल नाहीत` : `“${query}” साठी ${count} निकाल`,
+  },
 };
 
 function resolveStrings(locale?: string) {
-  return locale === "hi" ? STRINGS.hi : STRINGS.en;
+  if (locale === "hi") return STRINGS.hi;
+  if (locale === "mr") return STRINGS.mr;
+  return STRINGS.en;
 }
 
 // Deterministic, human-readable per-question anchor. Not stored in the CMS —
