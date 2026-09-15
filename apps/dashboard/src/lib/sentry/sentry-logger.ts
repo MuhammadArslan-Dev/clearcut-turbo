@@ -45,4 +45,23 @@ export const logger = {
       ...options,
     });
   },
+
+  /**
+   * For expected, non-disruptive conditions worth keeping visible for
+   * debugging (e.g. as context on some later, unrelated error) but that
+   * should never page anyone or clutter the issue stream on their own — a
+   * dead-end 404, a duplicate-subscribe click already handled gracefully, a
+   * declined card. Mirrors the backend's `sentry` log channel, which only
+   * forwards `error` and above to Sentry for the exact same reason (see
+   * config/logging.php there). Use `warn`/`error` instead for anything that
+   * actually needs a human to look at it.
+   */
+  breadcrumb(message: string, options?: LogOptions) {
+    Sentry.addBreadcrumb({
+      message,
+      level: "warning",
+      category: options?.tags?.module ?? "app",
+      data: options?.extra,
+    });
+  },
 };

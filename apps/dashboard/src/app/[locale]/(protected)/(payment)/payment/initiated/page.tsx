@@ -308,7 +308,11 @@ export default function InitiatedPage() {
           }
 
           if (existingSubscription?.status === "active") {
-            logger.warn("Subscribe attempted for an already-active subscription", {
+            // Breadcrumb only, not warn(): handled gracefully right below
+            // (redirect + alert telling the user why) — not a defect, so it
+            // shouldn't page anyone as its own Sentry issue
+            // (CLEARCUTOFF-NEXTJS-APP-7J).
+            logger.breadcrumb("Subscribe attempted for an already-active subscription", {
               tags: { module: "subscription-payment" },
               extra: { course_id: courseId, user_id: authUser?.id },
             });
@@ -455,7 +459,12 @@ export default function InitiatedPage() {
           };
 
           if (error.source === "customer") {
-            logger.warn(`Subscription payment declined: ${error.description}`, logContext);
+            // Breadcrumb only, not warn(): a customer declining their own
+            // payment (insufficient funds, wrong OTP, cancelled) happens to
+            // some fraction of real transactions regardless of the code —
+            // reporting it as a Sentry issue (CLEARCUTOFF-NEXTJS-APP-85)
+            // just paged on-call for routine declines with nothing to fix.
+            logger.breadcrumb(`Subscription payment declined: ${error.description}`, logContext);
           } else {
             logger.error(new Error(`Subscription payment failed: ${error.description}`), logContext);
           }

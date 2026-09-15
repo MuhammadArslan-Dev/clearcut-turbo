@@ -7,7 +7,9 @@ import { Error404Screen } from "@/components/ui/error-screens";
 
 export default function NotFound() {
   useEffect(() => {
-    logger.warn("404 - Page Not Found", {
+    // Breadcrumb only — see [locale]/not-found.tsx for why (expected
+    // dead-end navigation, not a defect worth its own Sentry issue).
+    logger.breadcrumb("404 - Page Not Found", {
       tags: { type: "not_found" },
       extra: { url: window.location.href },
     });
