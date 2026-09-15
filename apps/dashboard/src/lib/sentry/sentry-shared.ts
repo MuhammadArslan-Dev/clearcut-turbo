@@ -79,6 +79,15 @@ export const DENY_URLS: RegExp[] = [
   /^moz-extension:\/\//i,
   /googletagmanager\.com/i,
   /connect\.facebook\.net/i,
+  // Facebook/Instagram's in-app browser injects its own internal WebView
+  // frame (breadcrumbs alongside it show its own "hxp-chat-suppression" /
+  // "FBNavLargestContentfulPaint" instrumentation, not our code) — its
+  // errors surface as `app://iab_inner_frame_ota` in the stack, on the same
+  // global error handler as real app errors, with none of our code on the
+  // stack at all. Scoped to that exact frame name, not the whole `app://`
+  // scheme, since that's also how OUR OWN real bundle paths are reported
+  // (`app:///_next/static/chunks/...`) — those must keep reporting normally.
+  /iab_inner_frame/i,
 ];
 
 /**

@@ -93,27 +93,34 @@ export default function ErrorPageLayout({ children }: ErrorPageLayoutProps) {
           <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-blue-400 text-xs text-blue-100">
             <span>© 2025 Clear Cutoff. All rights reserved.</span>
             <div className="flex items-center gap-4">
-              <Link href="/terms" className="hover:text-white transition-colors">
+              {/* Dashboard doesn't host these pages itself (see CLAUDE.md's
+                  SiteFooter pageLinksBaseUrl note) — they live on the
+                  marketing site. Relative next/link hrefs here 404'd on
+                  every click (Sentry CLEARCUTOFF-NEXTJS-APP-2X, 97 events),
+                  since no /terms, /privacy, /refund, or /contact route
+                  exists under apps/dashboard. Plain <a> tags to the real
+                  absolute paths instead of a same-origin Link. */}
+              <a href="https://clearcutoff.in/terms-and-conditions" className="hover:text-white transition-colors">
                 Terms
-              </Link>
-              <Link
-                href="/privacy"
+              </a>
+              <a
+                href="https://clearcutoff.in/privacy-policy"
                 className="hover:text-white transition-colors"
               >
                 Privacy
-              </Link>
-              <Link
-                href="/refund"
+              </a>
+              <a
+                href="https://clearcutoff.in/refund-policy"
                 className="hover:text-white transition-colors"
               >
                 Refund
-              </Link>
-              <Link
-                href="/contact"
+              </a>
+              <a
+                href="https://clearcutoff.in/contact-us"
                 className="hover:text-white transition-colors"
               >
                 Contact
-              </Link>
+              </a>
             </div>
           </div>
         </div>

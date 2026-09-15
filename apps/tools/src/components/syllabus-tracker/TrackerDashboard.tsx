@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
-import { getOverallProgress, SyllabusTrackerState } from "@/lib/syllabusTracker";
+import { getOverallProgress, TrackedExamEntry } from "@/lib/syllabusTracker";
 import type { Locale } from "@/lib/dictionary";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 import ProgressRing from "./ProgressRing";
@@ -49,7 +49,7 @@ export default function TrackerDashboard({
   onTrackDifferentExam,
   locale = "en",
 }: {
-  state: SyllabusTrackerState;
+  state: TrackedExamEntry;
   onToggleChapter: (subject: string, chapterId: number) => void;
   onReset: () => void;
   onTrackDifferentExam: () => void;
@@ -69,10 +69,24 @@ export default function TrackerDashboard({
     return { name, total: chapters.length, completed: chapters.filter((c) => c.completed).length };
   });
 
+  // A subject only ever displays its "completed already in X" credit while
+  // it's CURRENTLY fully complete — crossCompletions itself is never
+  // cleared once set (see propagateSubjectCompletion's own comment), so
+  // gating the badge here means unchecking a chapter naturally hides a
+  // stale credit instead of needing a separate cleanup pass.
+  const crossCompletedFrom: Record<string, string> = {};
+  for (const s of subjectSummaries) {
+    const sourceExam = state.crossCompletions?.[s.name];
+    if (sourceExam && s.total > 0 && s.completed === s.total) {
+      crossCompletedFrom[s.name] = sourceExam;
+    }
+  }
+
   const currentSubject = subjectNames.includes(activeSubject) ? activeSubject : subjectNames[0];
   const chapters = state.subjects[currentSubject] ?? [];
   const subjectCompleted = chapters.filter((c) => c.completed).length;
   const subjectPercent = chapters.length === 0 ? 0 : Math.round((subjectCompleted / chapters.length) * 100);
+  const currentSubjectCrossCompletedFrom = crossCompletedFrom[currentSubject];
 
   const filtered = useMemo(
     () => chapters.filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase())),
@@ -92,7 +106,8 @@ export default function TrackerDashboard({
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Text as="h1" variant="heading-medium" weight="semibold" color="gray-normal">
-            {state.exam?.shortName} — {state.level?.name}
+            {state.exam?.shortName}
+            {state.paper ? ` — ${state.paper.name}` : ""} — {state.level?.name}
           </Text>
           <Text as="p" variant="body-small" color="gray-muted">
             {isComplete ? t.allChaptersMastered : t.chaptersMastered(overall.completed, overall.total)}
@@ -114,7 +129,13 @@ export default function TrackerDashboard({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
-        <SubjectSidebar subjects={subjectSummaries} active={currentSubject} onSelect={setActiveSubject} locale={locale} />
+        <SubjectSidebar
+          subjects={subjectSummaries}
+          active={currentSubject}
+          onSelect={setActiveSubject}
+          crossCompletedFrom={crossCompletedFrom}
+          locale={locale}
+        />
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-[var(--color-primary-subtle)]/40 p-4">
@@ -126,6 +147,11 @@ export default function TrackerDashboard({
               <Text as="p" variant="body-small" color="gray-muted">
                 {t.chaptersMastered(subjectCompleted, chapters.length)}
               </Text>
+              {currentSubjectCrossCompletedFrom && (
+                <Text as="p" variant="body-xsmall" weight="medium" className="mt-0.5 !text-[var(--color-success-strong)]">
+                  {t.completedElsewhere(currentSubjectCrossCompletedFrom)}
+                </Text>
+              )}
               <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/70 overflow-hidden">
                 <div className="h-full rounded-full bg-brand transition-all duration-300" style={{ width: `${subjectPercent}%` }} />
               </div>

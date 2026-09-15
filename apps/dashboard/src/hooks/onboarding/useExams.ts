@@ -19,7 +19,15 @@ const LARAVEL_API_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND || "http://
 export const EXAMS_URL = `${LARAVEL_API_URL}/blog/exam?status=active`;
 
 export function preloadExams() {
-    preload(EXAMS_URL, fetcher);
+    // Fire-and-forget by design (see the comment above) — nothing awaits or
+    // reads this call's own return value, so a rejected fetch here (flaky
+    // network, an in-app browser like Instagram's WebView with restricted
+    // networking) was an unhandled promise rejection reaching Sentry as an
+    // uncaught crash (CLEARCUTOFF-NEXTJS-APP-86), even though it changes
+    // nothing about the actual onboarding flow: useExams() below still
+    // fetches (and can retry/error normally through SWR's own lifecycle)
+    // whenever a component actually asks for this data, cache-warm or not.
+    preload(EXAMS_URL, fetcher).catch(() => {});
 }
 
 export function useExams() {

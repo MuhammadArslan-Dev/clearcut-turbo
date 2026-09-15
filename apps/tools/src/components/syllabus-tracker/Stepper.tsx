@@ -31,20 +31,39 @@ const CheckIcon = () => (
   </svg>
 );
 
-const STEP_KEYS = ["exam", "level", "dashboard"] as const;
+const LayersIcon = ({ color }: { color: string }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3 2 8l10 5 10-5-10-5Z" />
+    <path d="M2 13l10 5 10-5" />
+  </svg>
+);
 
-/** Orientation stepper for the 3-step wizard (exam -> level -> dashboard —
- * every chapter is tracked by default, so there's no separate "customize
- * subjects" step). Purely presentational — SyllabusTrackerApp owns the
- * actual step state; this just reflects it. */
-export default function Stepper({ step, locale = "en" }: { step: (typeof STEP_KEYS)[number] | "loading"; locale?: Locale }) {
+export type StepperKey = "exam" | "paper" | "level" | "dashboard";
+
+/** Orientation stepper for the wizard: exam -> level -> dashboard for most
+ * exams (every chapter is tracked by default, so there's no separate
+ * "customize subjects" step), or exam -> paper -> level -> dashboard for an
+ * exam with an explicit Paper tier (e.g. CTET's Paper 1/Paper 2 — see
+ * PaperPickerStep). Purely presentational — SyllabusTrackerApp owns the
+ * actual step state and tells this component which key is active; the
+ * `hasPaper` flag only controls whether the "Paper" entry renders at all. */
+export default function Stepper({
+  activeKey,
+  hasPaper = false,
+  locale = "en",
+}: {
+  activeKey: StepperKey | "loading";
+  hasPaper?: boolean;
+  locale?: Locale;
+}) {
   const t = getSyllabusStrings(locale);
   const STEPS = [
-    { key: "exam", label: t.stepExamLabel, sub: t.stepExamSub, Icon: DocumentIcon },
-    { key: "level", label: t.stepLevelLabel, sub: t.stepLevelSub, Icon: BarChartIcon },
-    { key: "dashboard", label: t.stepTrackLabel, sub: t.stepTrackSub, Icon: TargetIcon },
-  ] as const;
-  const currentIndex = STEPS.findIndex((s) => s.key === step);
+    { key: "exam" as const, label: t.stepExamLabel, sub: t.stepExamSub, Icon: DocumentIcon },
+    ...(hasPaper ? [{ key: "paper" as const, label: t.stepPaperLabel, sub: t.stepPaperSub, Icon: LayersIcon }] : []),
+    { key: "level" as const, label: t.stepLevelLabel, sub: t.stepLevelSub, Icon: BarChartIcon },
+    { key: "dashboard" as const, label: t.stepTrackLabel, sub: t.stepTrackSub, Icon: TargetIcon },
+  ];
+  const currentIndex = STEPS.findIndex((s) => s.key === activeKey);
   if (currentIndex === -1) return null;
 
   return (

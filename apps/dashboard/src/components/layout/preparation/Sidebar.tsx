@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { ApiError } from "@/lib/api/api-error";
 
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
 import TopicListCardSkeleton from "@/components/ui/cards/preparation/topic-card/topic-list-card-skeleton";
@@ -258,7 +259,11 @@ export default function Sidebar() {
 
         logger.error(err, {
           tags: { type: "background_sync", module: "preparation-sidebar" },
-          extra: { action: "setResumeState", courseId: course?.group_code },
+          extra: {
+            action: "setResumeState",
+            courseId: course?.group_code,
+            ...(err instanceof ApiError ? err.toContext() : {}),
+          },
         });
       });
     }, 500);

@@ -122,6 +122,7 @@ export default function ExamPickerStep({
   onSelect,
   autoSelectSlug,
   onInvalidSlug,
+  excludeExamIds,
   locale = "en",
 }: {
   onSelect: (exam: SyllabusExam) => void;
@@ -131,6 +132,9 @@ export default function ExamPickerStep({
   /** Called once if autoSelectSlug didn't match any loaded exam, so the
    * caller can drop the bad slug from the URL and fall back to the picker. */
   onInvalidSlug?: () => void;
+  /** Exam ids to hide from the grid — used by the "Add More Exam" flow so
+   * exams the user already tracks don't show up as selectable again. */
+  excludeExamIds?: number[];
   locale?: Locale;
 }) {
   const t = getSyllabusStrings(locale);
@@ -178,11 +182,12 @@ export default function ExamPickerStep({
     if (!exams) return [];
     const q = search.trim().toLowerCase();
     return exams.filter((e) => {
+      if (excludeExamIds?.includes(e.id)) return false;
       const matchesSearch = !q || e.short_name.toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
       const matchesState = stateFilter === ALL_STATES || e.state === stateFilter;
       return matchesSearch && matchesState;
     });
-  }, [exams, search, stateFilter]);
+  }, [exams, search, stateFilter, excludeExamIds]);
 
   return (
     <div className="cc-step-in flex flex-col gap-5">

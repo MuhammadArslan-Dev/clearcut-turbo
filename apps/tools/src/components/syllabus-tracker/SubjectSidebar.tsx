@@ -15,11 +15,15 @@ export default function SubjectSidebar({
   subjects,
   active,
   onSelect,
+  crossCompletedFrom,
   locale = "en",
 }: {
   subjects: { name: string; completed: number; total: number }[];
   active: string;
   onSelect: (subject: string) => void;
+  /** subject name -> shortName of the OTHER tracked exam it was already
+   * completed in, for subjects currently at 100% via cross-exam credit. */
+  crossCompletedFrom?: Record<string, string>;
   locale?: Locale;
 }) {
   const t = getSyllabusStrings(locale);
@@ -37,6 +41,7 @@ export default function SubjectSidebar({
       <div className="flex flex-col gap-1">
         {subjects.map((s, i) => {
           const isActive = s.name === active;
+          const crossSource = crossCompletedFrom?.[s.name];
           return (
             <button
               key={s.name}
@@ -53,9 +58,15 @@ export default function SubjectSidebar({
                 <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="truncate">
                   {s.name}
                 </Text>
-                <Text as="p" variant="body-small" color="gray-muted">
-                  {t.chaptersCount(s.completed, s.total)}
-                </Text>
+                {crossSource ? (
+                  <Text as="p" variant="body-xsmall" weight="medium" className="!text-[var(--color-success-strong)]">
+                    {t.completedElsewhere(crossSource)}
+                  </Text>
+                ) : (
+                  <Text as="p" variant="body-small" color="gray-muted">
+                    {t.chaptersCount(s.completed, s.total)}
+                  </Text>
+                )}
               </div>
               <span className={isActive ? "text-brand" : "text-text-gray-muted"}>
                 <ChevronRightIcon />

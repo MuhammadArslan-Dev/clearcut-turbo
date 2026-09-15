@@ -1,41 +1,87 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Text from "@clearcut/ui/text";
 import Skeleton from "@clearcut/ui/skeleton";
 import type { Locale } from "@/lib/dictionary";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 import {
-  getTrackerState,
-  saveTrackerState,
-  resetTrackerState,
-  SyllabusTrackerState,
+  getAllTrackedExams,
+  getTrackedExamsByExamId,
+  upsertTrackedExam,
+  removeTrackedExam,
+  updateTrackedExamSubjects,
+  replaceAllTrackedExams,
+  findCrossExamCompletion,
+  propagateSubjectCompletion,
+  TrackedExamEntry,
+  TrackedPaper,
 } from "@/lib/syllabusTracker";
-import { fetchSyllabusTree, SyllabusExam, SyllabusLevel } from "@/lib/api/syllabusApi";
+import { fetchSyllabusLevels, fetchSyllabusTree, SyllabusExam, SyllabusLevel } from "@/lib/api/syllabusApi";
 import { slugify, levelSlug, readSlugFromLocation, pushSyllabusUrl, replaceSyllabusUrl } from "@/lib/syllabusTrackerUrl";
 import ExamPickerStep from "./ExamPickerStep";
+import PaperPickerStep from "./PaperPickerStep";
 import LevelPickerStep, { SelectedLevel } from "./LevelPickerStep";
 import TrackerDashboard from "./TrackerDashboard";
+import TrackedExamsList from "./TrackedExamsList";
 import Stepper from "./Stepper";
 import ConfirmDialog from "./ConfirmDialog";
 
-type Step = "loading" | "exam" | "level" | "dashboard";
+type Step = "loading" | "list" | "exam" | "level" | "dashboard";
+// A minimal exam shape good enough for the wizard steps below (id + display
+// name) — the "Add Paper" flow re-enters the wizard for an exam that's
+// already tracked, where all we have on hand is a TrackedExam, not the full
+// SyllabusExam the picker grid returns. Every full SyllabusExam still
+// satisfies this structurally, so no conversion is needed at the other call
+// sites.
+type WizardExam = Pick<SyllabusExam, "id" | "short_name" | "name">;
 
 export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale }) {
   const t = getSyllabusStrings(locale);
   const [step, setStep] = useState<Step>("loading");
-  const [exam, setExam] = useState<SyllabusExam | null>(null);
+  const [exam, setExam] = useState<WizardExam | null>(null);
+  // The exam's full level tree, fetched once right after an exam is picked —
+  // both to decide whether to show the Paper step (root nodes with
+  // group==="Paper", confirmed against CTET's real API response) and to
+  // hand to PaperPickerStep/LevelPickerStep so neither re-fetches it.
+  // null = fetch in flight, undefined = fetch failed (LevelPickerStep falls
+  // back to fetching it itself, including its own error/retry UI).
+  const [examLevels, setExamLevels] = useState<SyllabusLevel[] | null | undefined>(null);
+  // The paper chosen this wizard run, once past the Paper step — stays null
+  // for exams with no Paper tier. Cleared (not the step) when going "back"
+  // from the level step to the paper step, since both live under the same
+  // internal `step === "level"` phase — see the render block below.
+  const [paper, setPaper] = useState<TrackedPaper | null>(null);
   const [level, setLevel] = useState<SelectedLevel | null>(null);
-  const [state, setState] = useState<SyllabusTrackerState | null>(null);
+  // Set only for the "Add Paper" flow — the paper ids this exam already
+  // tracks, hidden from PaperPickerStep so the user can't re-pick one.
+  const [addPaperExcludeIds, setAddPaperExcludeIds] = useState<number[] | undefined>(undefined);
+  // The tracked exam entry currently open on the dashboard — set either
+  // right after a fresh wizard run (loadFullTracker) or by opening an
+  // already-tracked exam/paper from the list/a deep link.
+  const [state, setState] = useState<TrackedExamEntry | null>(null);
+  // Every exam/paper the user currently tracks — drives the "list" step and
+  // the exam picker's excludeExamIds (Add More Exam). Re-read from storage
+  // whenever it can change (mount, popstate, upsert/remove/toggle).
+  const [trackedExams, setTrackedExams] = useState<TrackedExamEntry[]>([]);
 
-  // Slugs pulled from the URL on mount, handed to the exam/level pickers as
-  // "auto-select this once you've loaded" — see src/lib/syllabusTrackerUrl.ts
-  // for why this is parsed from window.location rather than Next's router.
+  const hasPaperTier = useMemo(
+    () => (examLevels ?? []).some((l) => l.parent_id === null && l.group === "Paper"),
+    [examLevels],
+  );
+
+  // Slugs pulled from the URL on mount, handed to the exam/paper/level
+  // pickers as "auto-select this once you've loaded" — see
+  // src/lib/syllabusTrackerUrl.ts for why this is parsed from
+  // window.location rather than Next's router.
   const [pendingExamSlug, setPendingExamSlug] = useState<string | undefined>();
-  // Every URL segment after the exam — REET-style exams nest a level inside
-  // a level (Paper -> language-subject choice -> optional-subject choice),
-  // so this can be more than one slug; LevelPickerStep walks it one depth
-  // at a time. See its own module comment for the drill-down mechanics.
+  // Every URL segment after the exam — for a Paper-tier exam the FIRST of
+  // these is the paper slug (e.g. ["paper-1", "english-and-hindi"]); for
+  // everything else it's handed to LevelPickerStep as-is. REET-style exams
+  // also nest a level inside a level (language-subject -> optional-subject),
+  // so this can be more than one slug either way — each picker walks it one
+  // depth at a time. See LevelPickerStep's own module comment for the
+  // drill-down mechanics.
   const [pendingLevelPath, setPendingLevelPath] = useState<string[] | undefined>();
 
   const [resetOpen, setResetOpen] = useState(false);
@@ -54,49 +100,58 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   // Next route (see the comment atop app/syllabus-tracker/page.tsx).
   const restoreFromLocation = () => {
     const slugArr = readSlugFromLocation(locale);
-    const saved = getTrackerState();
-    const hasSaved = Boolean(saved.exam && saved.level && Object.keys(saved.subjects).length > 0);
+    const allTracked = getAllTrackedExams();
+    setTrackedExams(allTracked);
+
+    const resetWizardState = () => {
+      setExam(null);
+      setExamLevels(null);
+      setPaper(null);
+      setLevel(null);
+      setAddPaperExcludeIds(undefined);
+    };
 
     if (slugArr.length === 0) {
-      setExam(null);
-      setLevel(null);
+      resetWizardState();
       setPendingExamSlug(undefined);
       setPendingLevelPath(undefined);
-      if (hasSaved && saved.exam && saved.level) {
-        setState(saved);
-        setStep("dashboard");
-        replaceSyllabusUrl(locale, slugify(saved.exam.shortName), levelSlug(saved.level));
-      } else {
-        setState(null);
-        setStep("exam");
-      }
+      setState(null);
+      // Returning user (>=1 tracked exam/paper): show the tracked-exams list
+      // instead of dropping straight into a wizard or a single dashboard.
+      setStep(allTracked.length > 0 ? "list" : "exam");
       return;
     }
 
     const [examSlugFromUrl, ...levelPathFromUrl] = slugArr;
-    // Only the LEAF of a nested drill (Paper -> subject -> optional-subject)
-    // is ever saved as `saved.level`, so a URL matches saved state when its
-    // last segment is that leaf — the intermediate segments aren't
-    // independently re-validated here.
-    if (
-      hasSaved &&
-      saved.exam &&
-      saved.level &&
-      slugify(saved.exam.shortName) === examSlugFromUrl &&
-      (levelPathFromUrl.length === 0 || levelPathFromUrl[levelPathFromUrl.length - 1] === levelSlug(saved.level))
-    ) {
-      setState(saved);
+    // A Paper-tracking exam can have more than one tracked entry sharing the
+    // same exam slug, so matching also has to account for the paper slug
+    // (the URL's first level-path segment) before falling back to the
+    // leaf-level check every entry already needs.
+    const matched = allTracked.find((e) => {
+      if (slugify(e.exam.shortName) !== examSlugFromUrl) return false;
+      if (e.paper) {
+        return (
+          levelPathFromUrl[0] === levelSlug(e.paper) &&
+          (levelPathFromUrl.length <= 1 || levelPathFromUrl[levelPathFromUrl.length - 1] === levelSlug(e.level))
+        );
+      }
+      return levelPathFromUrl.length === 0 || levelPathFromUrl[levelPathFromUrl.length - 1] === levelSlug(e.level);
+    });
+    if (matched) {
+      resetWizardState();
+      setState(matched);
       setStep("dashboard");
-      replaceSyllabusUrl(locale, examSlugFromUrl, levelSlug(saved.level));
+      const segments = matched.paper ? [levelSlug(matched.paper), levelSlug(matched.level)] : [levelSlug(matched.level)];
+      replaceSyllabusUrl(locale, examSlugFromUrl, ...segments);
       return;
     }
 
-    // URL points at an exam/level combo that doesn't match what's saved (or
-    // nothing is saved yet) — drive the picker steps and let them
-    // auto-select as soon as their own data loads.
+    // URL points at an exam/paper/level combo that isn't already tracked (or
+    // a different level than the one already tracked for that exam) — drive
+    // the picker steps and let them auto-select as soon as their own data
+    // loads.
     setState(null);
-    setExam(null);
-    setLevel(null);
+    resetWizardState();
     setPendingExamSlug(examSlugFromUrl);
     setPendingLevelPath(levelPathFromUrl.length ? levelPathFromUrl : undefined);
     setStep("exam");
@@ -118,10 +173,27 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetches one exam's level tree once, right after it's picked (or right
+  // before re-entering the wizard for Add Paper) — both PaperPickerStep and
+  // LevelPickerStep are handed the result instead of fetching their own
+  // copy. A failure just leaves examLevels undefined; LevelPickerStep falls
+  // back to fetching (and error/retry-ing) the same data itself, so this
+  // never hard-fails the flow, it just skips the Paper-tier detection for
+  // that attempt.
+  const loadExamLevels = (examId: number) => {
+    setExamLevels(null);
+    fetchSyllabusLevels(examId)
+      .then((levels) => setExamLevels(levels))
+      .catch(() => setExamLevels(undefined));
+  };
+
   const handleExamSelect = (selectedExam: SyllabusExam) => {
     setExam(selectedExam);
+    setPaper(null);
+    setAddPaperExcludeIds(undefined);
     setStep("level");
     pushSyllabusUrl(locale, slugify(selectedExam.short_name));
+    loadExamLevels(selectedExam.id);
   };
 
   const handleExamInvalidSlug = () => {
@@ -130,14 +202,46 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
     replaceSyllabusUrl(locale);
   };
 
+  // Selecting a paper (or the synthetic "track everything" shortcut, exactly
+  // like LevelPickerStep's own full-exam option) from PaperPickerStep.
+  const handlePaperSelect = (selected: SyllabusLevel | "full-exam") => {
+    if (!exam) return;
+    if (selected === "full-exam") {
+      handleLevelSelect({ id: "full-exam", name: t.fullExamTitle(exam.short_name) }, []);
+      return;
+    }
+    setPaper({ id: selected.id, name: selected.name, group: selected.group ?? null });
+    pushSyllabusUrl(locale, slugify(exam.short_name), levelSlug(selected));
+  };
+
   const handleLevelSelect = (selectedLevel: SelectedLevel, path: SyllabusLevel[]) => {
     if (!exam) return;
     setLevel(selectedLevel);
     setStep("dashboard");
+    // `path` already includes the seeded paper node (LevelPickerStep's own
+    // `path` state starts as [rootLevel]) when one was picked, so this
+    // naturally produces .../{examSlug}/{paperSlug}/{levelSlug} without any
+    // special-casing here.
     const levelSegments = selectedLevel.id === "full-exam" ? ["full-exam"] : path.map(levelSlug);
     pushSyllabusUrl(locale, slugify(exam.short_name), ...levelSegments);
     setPendingLevelPath(undefined);
-    loadFullTracker(exam, selectedLevel);
+    // The root of `path` is this entry's identity beyond just the exam —
+    // whatever the user picked at the TOP of the tree, whether that came
+    // from an explicit Paper step (CTET) or straight from LevelPickerStep's
+    // own root tier (HTET's Level 1/2/3, no separate step at all). An exam
+    // whose root has only one option never branches, so `path` stays empty
+    // and this is null — matching today's single-entry-per-exam behavior.
+    const rootNode = path.length > 0 ? path[0] : null;
+    const rootSelection: TrackedPaper | null = rootNode
+      ? { id: rootNode.id, name: rootNode.name, group: rootNode.group ?? null }
+      : null;
+    // Also mirrored into `paper` state (harmless at this point — the Paper
+    // step, if any, is already behind us and about to unmount) so the
+    // dashboard's "Try again" retry button, which reads `paper` directly,
+    // stays correct for exams with no explicit Paper step too (HTET's
+    // Level 1/2/3 never otherwise set this state at all).
+    setPaper(rootSelection);
+    loadFullTracker(exam, rootSelection, selectedLevel);
   };
 
   const handleLevelInvalidSlug = () => {
@@ -146,100 +250,218 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   };
 
   // Every chapter in the fetched tree is tracked by default — there's no
-  // customize/deselect step anymore — so this just reshapes the syllabus
-  // API's response into tracker state and saves it.
-  const loadFullTracker = (forExam: SyllabusExam, forLevel: SelectedLevel) => {
+  // customize/deselect step anymore — so this mostly just reshapes the
+  // syllabus API's response into tracker state. It also bakes in cross-exam
+  // completion: if a subject here has the same name as an already-100%
+  // subject in another tracked exam/paper, it starts pre-completed with a
+  // "Completed already in X" credit rather than as a fresh incomplete
+  // section (see findCrossExamCompletion in syllabusTracker.ts).
+  const loadFullTracker = (forExam: WizardExam, forPaper: TrackedPaper | null, forLevel: SelectedLevel) => {
     setLoadingTracker(true);
     setTrackerLoadError(false);
     fetchSyllabusTree(forExam.id, forLevel.id)
       .then((tree) => {
-        const subjects: SyllabusTrackerState["subjects"] = {};
+        const subjects: TrackedExamEntry["subjects"] = {};
         for (const [subject, chapters] of Object.entries(tree)) {
           if (chapters.length === 0) continue;
           subjects[subject] = chapters.map((c) => ({ id: c.id, name: c.name, completed: false, revisedAt: null }));
         }
 
-        const next: SyllabusTrackerState = {
-          version: 1,
+        const existingExams = getAllTrackedExams();
+        const crossCompletions: Record<string, string> = {};
+        for (const subjectName of Object.keys(subjects)) {
+          const creditFrom = findCrossExamCompletion(existingExams, forExam.id, forPaper?.id ?? null, subjectName);
+          if (creditFrom) {
+            subjects[subjectName] = subjects[subjectName].map((c) => ({ ...c, completed: true }));
+            crossCompletions[subjectName] = creditFrom;
+          }
+        }
+
+        const next: TrackedExamEntry = {
           exam: { id: forExam.id, shortName: forExam.short_name, name: forExam.name },
+          paper: forPaper,
           level: { id: forLevel.id, name: forLevel.name },
           subjects,
+          ...(Object.keys(crossCompletions).length ? { crossCompletions } : {}),
+          trackedAt: new Date().toISOString(),
         };
 
-        saveTrackerState(next);
+        upsertTrackedExam(next);
+        setTrackedExams(getAllTrackedExams());
         setState(next);
       })
       .catch(() => setTrackerLoadError(true))
       .finally(() => setLoadingTracker(false));
   };
 
-  const updateState = (updater: (prev: SyllabusTrackerState) => SyllabusTrackerState) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = updater(prev);
-      saveTrackerState(next);
-      return next;
-    });
-  };
-
   const handleToggleChapter = (subject: string, chapterId: number) => {
-    updateState((prev) => ({
-      ...prev,
-      subjects: {
-        ...prev.subjects,
-        [subject]: prev.subjects[subject].map((c) =>
-          c.id === chapterId ? { ...c, completed: !c.completed } : c,
-        ),
-      },
+    if (!state) return;
+    const examId = state.exam.id;
+    const paperId = state.paper?.id ?? null;
+
+    let allExams = updateTrackedExamSubjects(examId, paperId, (subjects) => ({
+      ...subjects,
+      [subject]: subjects[subject].map((c) => (c.id === chapterId ? { ...c, completed: !c.completed } : c)),
     }));
+
+    // If that toggle just made this subject fully complete, credit the same
+    // subject wherever else it's tracked and not yet complete.
+    const updatedChapters = allExams.find((e) => e.exam.id === examId && (e.paper?.id ?? null) === paperId)?.subjects[subject] ?? [];
+    const justCompleted = updatedChapters.length > 0 && updatedChapters.every((c) => c.completed);
+    if (justCompleted) {
+      allExams = propagateSubjectCompletion(allExams, examId, paperId, subject);
+      replaceAllTrackedExams(allExams);
+    }
+
+    setTrackedExams(allExams);
+    setState(allExams.find((e) => e.exam.id === examId && (e.paper?.id ?? null) === paperId) ?? null);
   };
 
   const handleReset = () => {
-    resetTrackerState();
+    if (state) removeTrackedExam(state.exam.id, state.paper?.id ?? null);
+    const remaining = getAllTrackedExams();
+    setTrackedExams(remaining);
     setState(null);
     setExam(null);
+    setPaper(null);
     setLevel(null);
-    setStep("exam");
-    replaceSyllabusUrl(locale);
     setResetOpen(false);
+    setStep(remaining.length > 0 ? "list" : "exam");
+    replaceSyllabusUrl(locale);
   };
 
-  const handleBackToExam = () => {
+  const handleOpenTrackedExam = (entry: TrackedExamEntry) => {
+    setExam(null);
+    setPaper(null);
+    setLevel(null);
+    setState(entry);
+    setStep("dashboard");
+    const segments = entry.paper ? [levelSlug(entry.paper), levelSlug(entry.level)] : [levelSlug(entry.level)];
+    pushSyllabusUrl(locale, slugify(entry.exam.shortName), ...segments);
+  };
+
+  const handleAddMoreExam = () => {
+    setPendingExamSlug(undefined);
+    setPendingLevelPath(undefined);
+    setAddPaperExcludeIds(undefined);
+    setPaper(null);
     setStep("exam");
     replaceSyllabusUrl(locale);
   };
 
+  // Re-enters the wizard for an exam the user already tracks at least one
+  // root-tier selection of (a paper, a level, whatever that exam calls it),
+  // going straight past the Exam step with the already-tracked options
+  // hidden — either at an explicit Paper step (CTET) or directly inside
+  // LevelPickerStep's own root tier (HTET's Level 1/2/3, no separate step).
+  // Distinct from "Add More Exam", which is for a completely different exam
+  // and always starts at the Exam step.
+  const handleAddPaper = (examId: number) => {
+    const examEntries = getTrackedExamsByExamId(examId);
+    if (examEntries.length === 0) return;
+    const { id, shortName, name } = examEntries[0].exam;
+    setPendingExamSlug(undefined);
+    setPendingLevelPath(undefined);
+    setPaper(null);
+    setAddPaperExcludeIds(
+      examEntries.map((e) => e.paper?.id).filter((paperId): paperId is number => paperId != null),
+    );
+    setExam({ id, short_name: shortName, name });
+    setStep("level");
+    pushSyllabusUrl(locale, slugify(shortName));
+    loadExamLevels(id);
+  };
+
+  // "Track a different exam" from within a dashboard — returns to the
+  // tracked-exams list when other exams exist to pick from, otherwise
+  // starts the first-time wizard (matches restoreFromLocation's own rule).
   const handleTrackDifferentExam = () => {
     setExam(null);
+    setPaper(null);
     setLevel(null);
-    setStep("exam");
+    setState(null);
+    setAddPaperExcludeIds(undefined);
+    const current = getAllTrackedExams();
+    setTrackedExams(current);
+    setStep(current.length > 0 ? "list" : "exam");
     replaceSyllabusUrl(locale);
   };
 
   if (step === "loading") return null;
 
+  const activeStepperKey = step === "exam" || step === "dashboard" ? step : step === "level" ? (hasPaperTier && !paper ? "paper" : "level") : "exam";
+
   return (
     <div id="syllabus-tracker-app" className="max-w-[1080px] mx-auto px-3 pt-6 sm:py-6">
-      <Stepper step={step} locale={locale} />
+      {(step === "exam" || step === "level") && <Stepper activeKey={activeStepperKey} hasPaper={hasPaperTier} locale={locale} />}
+
+      {step === "list" && (
+        <TrackedExamsList
+          exams={trackedExams}
+          onOpen={handleOpenTrackedExam}
+          onAddMore={handleAddMoreExam}
+          onAddPaper={handleAddPaper}
+          locale={locale}
+        />
+      )}
 
       {step === "exam" && (
         <ExamPickerStep
           onSelect={handleExamSelect}
           autoSelectSlug={pendingExamSlug}
           onInvalidSlug={handleExamInvalidSlug}
+          excludeExamIds={trackedExams.map((e) => e.exam.id)}
           locale={locale}
         />
       )}
 
       {step === "level" && exam && (
-        <LevelPickerStep
-          exam={exam}
-          onSelect={handleLevelSelect}
-          onBack={handleBackToExam}
-          autoSelectPath={pendingLevelPath}
-          onInvalidSlug={handleLevelInvalidSlug}
-          locale={locale}
-        />
+        examLevels === null ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} variant="rectangular" width="100%" height={190} borderRadius={16} />
+            ))}
+          </div>
+        ) : hasPaperTier && !paper ? (
+          <PaperPickerStep
+            exam={exam}
+            levels={examLevels ?? []}
+            onSelect={handlePaperSelect}
+            onBack={() => {
+              setStep("exam");
+              replaceSyllabusUrl(locale);
+            }}
+            autoSelectSlug={pendingLevelPath?.[0]}
+            onInvalidSlug={() => {
+              setPendingLevelPath(undefined);
+              replaceSyllabusUrl(locale, slugify(exam.short_name));
+            }}
+            excludePaperIds={addPaperExcludeIds}
+            locale={locale}
+          />
+        ) : (
+          <LevelPickerStep
+            exam={exam}
+            onSelect={handleLevelSelect}
+            onBack={() => {
+              if (paper) {
+                setPaper(null);
+                replaceSyllabusUrl(locale, slugify(exam.short_name));
+              } else {
+                setStep("exam");
+                replaceSyllabusUrl(locale);
+              }
+            }}
+            rootLevel={paper ?? undefined}
+            preloadedLevels={examLevels ?? undefined}
+            excludeRootIds={addPaperExcludeIds}
+            autoSelectPath={paper ? pendingLevelPath?.slice(1) : pendingLevelPath}
+            onInvalidSlug={handleLevelInvalidSlug}
+            stepNumber={hasPaperTier ? 3 : 2}
+            stepTotal={hasPaperTier ? 4 : 3}
+            locale={locale}
+          />
+        )
       )}
 
       {step === "dashboard" && (
@@ -260,7 +482,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
               </Text>
               <button
                 type="button"
-                onClick={() => exam && level && loadFullTracker(exam, level)}
+                onClick={() => exam && level && loadFullTracker(exam, paper, level)}
                 className="text-sm font-medium text-brand hover:underline"
               >
                 {t.tryAgain}

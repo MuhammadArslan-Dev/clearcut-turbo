@@ -9,13 +9,20 @@ export default function TipCard({
   icon,
   title,
   description,
+  tone = "subtle",
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  /** "subtle" (default) matches every wizard step's tip card. "soft" is a
+   * touch darker/more saturated — used where a paler background read as too
+   * washed out next to the rest of that screen (e.g. the tracked-exams
+   * list). */
+  tone?: "subtle" | "soft";
 }) {
+  const bg = tone === "soft" ? "var(--color-primary-soft)" : "var(--color-primary-subtle)";
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-primary-subtle)] p-4 sm:max-w-xs">
+    <div className="flex items-start gap-3 rounded-2xl p-4 sm:max-w-xs" style={{ background: bg }}>
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-brand">{icon}</span>
       <div>
         <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">

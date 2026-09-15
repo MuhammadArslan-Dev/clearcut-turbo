@@ -174,9 +174,14 @@ export default function LevelPickerStep({
   onBack,
   autoSelectPath,
   onInvalidSlug,
+  rootLevel,
+  preloadedLevels,
+  excludeRootIds,
+  stepNumber = 2,
+  stepTotal = 3,
   locale = "en",
 }: {
-  exam: SyllabusExam;
+  exam: Pick<SyllabusExam, "id" | "short_name">;
   onSelect: (level: SelectedLevel, path: SyllabusLevel[]) => void;
   onBack: () => void;
   /** Remaining URL slug segments after the exam (e.g. ["paper-1", "english-and-hindi"]) —
@@ -185,21 +190,48 @@ export default function LevelPickerStep({
   /** Called once if autoSelectPath's next segment didn't match anything at
    * the depth reached so far. */
   onInvalidSlug?: () => void;
+  /** When the caller (SyllabusTrackerApp) already drove an explicit Paper
+   * step, this is the paper the user picked — seeds `path` so this step
+   * starts showing THAT paper's children instead of the exam's own root
+   * options, and "Back" from the first screen returns to the Paper step
+   * instead of the exam picker. Omitted entirely for exams with no Paper
+   * tier, which behave exactly as before. */
+  rootLevel?: { id: number; name: string; group?: string | null };
+  /** Skips this component's own fetchSyllabusLevels call when the caller
+   * already fetched the same exam's levels (e.g. to detect a Paper tier
+   * before deciding which step to show). Omitted = self-fetch, unchanged
+   * from today's behavior. */
+  preloadedLevels?: SyllabusLevel[];
+  /** Root-tier option ids to hide — the "Add Level" flow for an exam with no
+   * explicit Paper step (e.g. HTET's Level 1/2/3): the caller drives
+   * straight into this component with no `rootLevel` seeded, so already-
+   * tracked root options need filtering out here instead. Has no effect
+   * once `path` has drilled past the root tier. */
+  excludeRootIds?: number[];
+  /** "STEP X OF Y" eyebrow — defaults to 2 of 3 (today's behavior). An exam
+   * with an explicit Paper step before this one is 3 of 4. */
+  stepNumber?: number;
+  stepTotal?: number;
   locale?: Locale;
 }) {
   const t = getSyllabusStrings(locale);
-  const [levels, setLevels] = useState<SyllabusLevel[] | null>(null);
+  const [levels, setLevels] = useState<SyllabusLevel[] | null>(preloadedLevels ?? null);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [path, setPath] = useState<SyllabusLevel[]>([]);
+  const [path, setPath] = useState<SyllabusLevel[]>(
+    rootLevel ? [{ ...rootLevel, parent_id: null, group: rootLevel.group ?? null }] : [],
+  );
   const [autoWalked, setAutoWalked] = useState(0);
   const [pending, setPending] = useState<SyllabusLevel | "full-exam" | null>(null);
+  // Back from the first screen after a seeded rootLevel returns to the
+  // caller's Paper step rather than popping past it into nothing.
+  const baseDepth = rootLevel ? 1 : 0;
 
   useEffect(() => {
+    if (preloadedLevels) return;
     let cancelled = false;
     setLevels(null);
     setError(false);
-    setPath([]);
     setAutoWalked(0);
     setPending(null);
     fetchSyllabusLevels(exam.id)
@@ -212,13 +244,25 @@ export default function LevelPickerStep({
     return () => {
       cancelled = true;
     };
-  }, [exam.id, retryCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exam.id, retryCount, preloadedLevels]);
 
   const parentId = path.length ? path[path.length - 1].id : null;
   const childrenAt = (id: number | null) => (levels ?? []).filter((l) => l.parent_id === id);
-  const currentOptions = useMemo(() => childrenAt(parentId), [levels, parentId]);
+  // Already-tracked root options (Add Level/Add Paper flow) are only ever
+  // hidden at the very top of the tree — once the user has drilled past the
+  // root tier, excludeRootIds has nothing left to say about the remaining,
+  // unrelated nested options.
+  const currentOptions = useMemo(() => {
+    const opts = childrenAt(parentId);
+    if (path.length === 0 && excludeRootIds?.length) {
+      return opts.filter((o) => !excludeRootIds.includes(o.id));
+    }
+    return opts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levels, parentId, path.length, excludeRootIds]);
 
-  const showFullExamOption = path.length === 0 && childrenAt(null).length > 1;
+  const showFullExamOption = path.length === 0 && currentOptions.length > 1;
 
   // Immediate drill/select — used only by the URL auto-walk, which is
   // restoring a choice already made, not staging a new one.
@@ -260,7 +304,7 @@ export default function LevelPickerStep({
   const handleBack = () => {
     if (pending !== null) {
       setPending(null);
-    } else if (path.length === 0) {
+    } else if (path.length <= baseDepth) {
       onBack();
     } else {
       setPath((prev) => prev.slice(0, -1));
@@ -292,15 +336,22 @@ export default function LevelPickerStep({
   const continueAction =
     !levels || isAutoWalking || error
       ? null
-      : currentOptions.length === 0 && path.length === 0
-        ? { label: t.continueLabel, onClick: () => onSelect({ id: "full-exam", name: exam.short_name }, []), disabled: false }
+      : currentOptions.length === 0 && path.length === baseDepth
+        ? {
+            label: t.continueLabel,
+            onClick: () =>
+              rootLevel
+                ? onSelect({ id: rootLevel.id, name: rootLevel.name }, path)
+                : onSelect({ id: "full-exam", name: exam.short_name }, []),
+            disabled: false,
+          }
         : { label: t.continueLabel, onClick: handleContinue, disabled: pending === null };
 
   return (
     <div className="cc-step-in flex flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <StepEyebrow step={2} locale={locale} />
+          <StepEyebrow step={stepNumber} total={stepTotal} locale={locale} />
           {path.length > 0 && (
             <div className="mb-1.5 flex flex-wrap items-center gap-1">
               {breadcrumb.map((crumb, i) => (
@@ -346,7 +397,7 @@ export default function LevelPickerStep({
             <Skeleton key={i} variant="rectangular" width="100%" height={190} borderRadius={16} />
           ))}
         </div>
-      ) : currentOptions.length === 0 && path.length === 0 ? (
+      ) : currentOptions.length === 0 && path.length === baseDepth ? (
         <Text as="p" variant="body-medium" color="gray-muted">
           {t.noSeparateLevels}
         </Text>

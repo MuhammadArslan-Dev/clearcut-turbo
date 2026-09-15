@@ -119,7 +119,17 @@ export async function setResumeState(
     // this endpoint are a single dropped mobile network blip that a second
     // retry recovers from, not a dead backend. A dead backend still fails
     // the same way after these, just slower.
-    { retries: 3, delayMs: 400 },
+    //
+    // Every /api/* request (this one included) passes through the backend's
+    // RetryOnDeadlock middleware, which retries the WHOLE request pipeline
+    // up to 5 times when the shared rate-limiter's own cache-table writes
+    // deadlock under load (see that middleware's doc comment and Sentry
+    // issue LARAVEL-BACKEND-F5) — that's the same load spike this endpoint's
+    // "unreachable" reports cluster around (CLEARCUTOFF-NEXTJS-APP-74). One
+    // more retry step here (400/800/1600/3200ms ≈ 6s of backoff, vs. ~2.8s
+    // before) gives a real load spike closer to the time the backend's own
+    // retries need to clear it, instead of the client giving up first.
+    { retries: 4, delayMs: 400 },
   );
 }
 

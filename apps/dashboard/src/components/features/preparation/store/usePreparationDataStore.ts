@@ -508,11 +508,18 @@ export const usePreparationStore = create<PreparationState>((set) => ({
         };
       }
 
-      /* 2️⃣ Next chapter */
+      /* 2️⃣ Next chapter — a chapter can legitimately have zero topics (its
+         content sync hasn't landed yet, or it's a placeholder), so this
+         walks forward until it finds one that has any, instead of assuming
+         the very next chapter does and crashing on `firstTopic.name` when
+         it doesn't (CLEARCUTOFF-NEXTJS-APP-87). Falls through to "Next
+         section" below when every remaining chapter in this section is empty. */
       const chapterIndex = getIndex(chapters, selectedChapter);
-      if (chapterIndex + 1 < chapters.length) {
-        const nextChapter = chapters[chapterIndex + 1];
+      for (let i = chapterIndex + 1; i < chapters.length; i++) {
+        const nextChapter = chapters[i];
         const firstTopic = nextChapter.topics[0];
+
+        if (!firstTopic) continue;
 
         trackEvent("Topic Viewed", {
           entry_point: "next",
@@ -645,12 +652,19 @@ goToPrevTopic: () =>
       };
     }
 
-    /* 2️⃣ Previous chapter */
+    /* 2️⃣ Previous chapter — mirrors goToNextTopic's own fix: a chapter can
+       legitimately have zero topics, so this walks backward until it finds
+       one that has any instead of assuming the immediately-preceding
+       chapter does and crashing on `lastTopic.name` when it doesn't
+       (CLEARCUTOFF-NEXTJS-APP-87). Falls through to "Previous section"
+       below when every earlier chapter in this section is empty. */
     const chapterIndex = getIndex(chapters, selectedChapter);
-    if (chapterIndex > 0) {
-      const prevChapter = chapters[chapterIndex - 1];
+    for (let i = chapterIndex - 1; i >= 0; i--) {
+      const prevChapter = chapters[i];
       const flatPrev = flattenTopics(prevChapter.topics);
       const lastTopic = flatPrev[flatPrev.length - 1];
+
+      if (!lastTopic) continue;
 
       trackEvent("Topic Viewed", {
         entry_point: "prev",
