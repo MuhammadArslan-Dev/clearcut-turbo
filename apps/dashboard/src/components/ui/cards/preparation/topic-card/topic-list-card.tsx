@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/icons";
 import StatusChip from "../chapter-list/StatusChip";
 import CounterCard from "../../CounterCard";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import RewardBadgeLottie from "@/components/ui/RewardBadgeLottie";
 
 type CounterVariant = "filled" | "warning" | "simple" | "progress";
 type CounterColorKey = "success" | "error" | "info" | "custom";
@@ -104,12 +104,7 @@ const TopicListCard: React.FC<Props> = ({
       {/* Free-trial reward nudge — corner badge, kept clear of the counter and title/badge row. */}
       {showReward && (
         <div className="absolute -top-3 -right-1 pointer-events-none">
-          <DotLottieReact
-            style={{ width: 26, height: 26 }}
-            src="/lotifiles/current-chapter.lottie"
-            loop
-            autoplay
-          />
+          <RewardBadgeLottie size={26} />
         </div>
       )}
 

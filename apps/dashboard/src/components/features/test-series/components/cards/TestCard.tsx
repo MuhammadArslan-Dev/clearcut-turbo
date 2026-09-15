@@ -15,7 +15,7 @@ import Text from "@clearcut/ui/text";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import { Button } from "@clearcut/ui/button";
 import CounterCard from "@/components/ui/cards/CounterCard";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import RewardBadgeLottie from "@/components/ui/RewardBadgeLottie";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 /* -------------------------------------------------------------------------- */
@@ -159,12 +159,7 @@ export default function TestCard({
           title/chip row, and the desktop actions column below it. */}
       {showReward && (
         <div className="absolute -top-3 -right-2 pointer-events-none">
-          <DotLottieReact
-            style={{ width: 32, height: 32 }}
-            src="/lotifiles/current-chapter.lottie"
-            loop
-            autoplay
-          />
+          <RewardBadgeLottie size={32} />
         </div>
       )}
 
