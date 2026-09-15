@@ -118,7 +118,7 @@ export default function TrackerDashboard({
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-[var(--color-primary-subtle)]/40 p-4">
-            <SubjectIcon name={currentSubject ?? ""} index={subjectNames.indexOf(currentSubject)} size={40} />
+            <SubjectIcon name={currentSubject ?? ""} index={subjectNames.indexOf(currentSubject)} size={40} background="white" iconScale={1.4} />
             <div className="flex-1">
               <Text as="h2" variant="body-large" weight="semibold" color="gray-normal">
                 {currentSubject}

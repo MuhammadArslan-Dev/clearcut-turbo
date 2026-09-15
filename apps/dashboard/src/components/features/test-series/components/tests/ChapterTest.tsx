@@ -90,9 +90,19 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   useEffect(() => {
     if (!data?.papers?.length) return;
     setPapers(data.papers);
-    setDefaultPaperId("chapter-test", data.paper?.id ?? null);
+    // Only record this response's paper as "the endpoint's default" when
+    // the request itself didn't already override the paper — otherwise,
+    // once the user picks paper 2, this fetch (made WITH paper_id=2)
+    // reports back paper.id=2, which gets stored as the new default,
+    // which flips explicitPaperId to undefined next render, which fetches
+    // the REAL default (paper 1) and stores THAT as the default instead,
+    // flipping explicitPaperId back to 2 — an unbounded ping-pong between
+    // two query keys ("Maximum update depth exceeded", CLEARCUTOFF-NEXTJS-APP-7A).
+    if (explicitPaperId === undefined) {
+      setDefaultPaperId("chapter-test", data.paper?.id ?? null);
+    }
     if (!paper) setPaper(data.paper);
-  }, [data, paper, setPaper, setPapers, setDefaultPaperId]);
+  }, [data, paper, setPaper, setPapers, setDefaultPaperId, explicitPaperId]);
 
   // Reset to null when paper changes; auto-select below will pick first section
   useEffect(() => {

@@ -62,9 +62,16 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   useEffect(() => {
     if (!data?.papers?.length) return;
     setPapers(data.papers);
-    setDefaultPaperId("sectional-test", data.paper?.id ?? null);
+    // Only record this response's paper as "the endpoint's default" when
+    // the request itself didn't already override the paper — see the same
+    // guard (and full explanation) in ChapterTest.tsx's DATA INIT effect;
+    // this is the exact same ping-pong (CLEARCUTOFF-NEXTJS-APP-7A) on the
+    // sectional-test endpoint.
+    if (explicitPaperId === undefined) {
+      setDefaultPaperId("sectional-test", data.paper?.id ?? null);
+    }
     if (!paper) setPaper(data.paper);
-  }, [data, paper, setPaper, setPapers, setDefaultPaperId]);
+  }, [data, paper, setPaper, setPapers, setDefaultPaperId, explicitPaperId]);
 
   /* ================= DERIVED DATA ================= */
 

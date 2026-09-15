@@ -192,30 +192,29 @@ export function subjectIcon(subjectName: string): React.ReactNode {
   return match ? match[1]() : <BookIcon />;
 }
 
-/** Chapter-row icon+tone. Each glyph carries its OWN fixed tone (mostly
- * primary blue, with lightbulb/star/edit-square breaking the rhythm) rather
- * than icon and tone cycling independently — a glyph always reads the same
- * "temperature" wherever it shows up. There's no purple in the design-token
- * palette, so gray stands in for it rather than inventing a new colour.
- * Which glyph shows at a given position is still purely decorative, cycling
- * by index — there's no reliable way to categorize an arbitrary chapter
- * title. The one exception is "Pedagogy of X", an extremely common,
- * unambiguous chapter-naming convention across these teacher-eligibility
- * exams (matches the graduation cap already used for pedagogy elsewhere in
- * this app) — not a guess at arbitrary content. */
-const CHAPTER_ICON_TONES: [() => React.ReactNode, (typeof TONES)[number]][] = [
-  [() => <BookIcon />, TONES[0]],
-  [() => <DocumentIcon />, TONES[0]],
-  [() => <EditSquareIcon />, TONES[4]],
-  [() => <LayersIcon />, TONES[0]],
-  [() => <ChatIcon />, TONES[0]],
-  [() => <LightbulbIcon />, TONES[1]],
-  [() => <StarIcon />, TONES[4]],
-  [() => <LinkIcon />, TONES[0]],
+/** Chapter-row icon. Every chapter card uses the same tone (TONES[0],
+ * primary blue) regardless of which glyph shows — a mixed per-glyph tone
+ * (lightbulb/star/edit-square breaking to gray/green) read as inconsistent
+ * across the grid, per direct feedback. Which glyph shows at a given
+ * position is still purely decorative, cycling by index — there's no
+ * reliable way to categorize an arbitrary chapter title. The one exception
+ * is "Pedagogy of X", an extremely common, unambiguous chapter-naming
+ * convention across these teacher-eligibility exams (matches the graduation
+ * cap already used for pedagogy elsewhere in this app) — not a guess at
+ * arbitrary content. */
+const CHAPTER_ICONS: (() => React.ReactNode)[] = [
+  () => <BookIcon />,
+  () => <DocumentIcon />,
+  () => <EditSquareIcon />,
+  () => <LayersIcon />,
+  () => <ChatIcon />,
+  () => <LightbulbIcon />,
+  () => <StarIcon />,
+  () => <LinkIcon />,
 ];
 
 export function chapterIconAndTone(name: string, index: number) {
   if (/pedagog/i.test(name)) return { Icon: CapIcon, tone: TONES[0] };
-  const [Icon, tone] = CHAPTER_ICON_TONES[index % CHAPTER_ICON_TONES.length];
-  return { Icon, tone };
+  const Icon = CHAPTER_ICONS[index % CHAPTER_ICONS.length];
+  return { Icon, tone: TONES[0] };
 }
