@@ -4,7 +4,7 @@ import Image from "next/image";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import EnLangCirlcIcon from "@/components/ui/icons/en-lang-circle-icon";
 import HindiLangCirclIcon from "@/components/ui/icons/hindi-lang-circle-icon";
-import MarathiLangCircleIcon from "@/components/ui/icons/marathi-lang-circle-icon";
+// import MarathiLangCircleIcon from "@/components/ui/icons/marathi-lang-circle-icon"; // unused while the "mr" language option below is disabled
 import MainContainer from "@/components/ui/main-container";
 import { StepProps } from "@/types/onboarding/onboarding";
 import { useTranslations } from "next-intl";
@@ -19,7 +19,10 @@ import MainButton from "@/components/ui/button/main-button";
 const LANGUAGES = [
   { id: "हिंदी", title: "हिंदी", code: "hi", icon: <HindiLangCirclIcon /> },
   { id: "English", title: "English", code: "en", icon: <EnLangCirlcIcon /> },
-  { id: "मराठी", title: "मराठी", code: "mr", icon: <MarathiLangCircleIcon /> },
+  // Temporarily disabled — matches LanguageModal.tsx's settings-modal
+  // language list; Marathi UI/content isn't ready to ship to users yet.
+  // Re-enable by uncommenting this entry (and the icon import above).
+  // { id: "मराठी", title: "मराठी", code: "mr", icon: <MarathiLangCircleIcon /> },
 ];
 
 export default function LanguageStep({
