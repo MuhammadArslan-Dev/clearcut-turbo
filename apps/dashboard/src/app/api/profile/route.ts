@@ -1,7 +1,11 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND!
+// Same fallback as lib/api/client.ts — unset in production would otherwise
+// silently fetch "undefined/..." (see this app's CLAUDE.md).
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND ??
+  'http://clearcutoff-main-backend.test/api'
 
 export async function GET() {
   try {

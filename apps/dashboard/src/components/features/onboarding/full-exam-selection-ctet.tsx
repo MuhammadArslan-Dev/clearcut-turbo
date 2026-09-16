@@ -19,6 +19,7 @@ import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { useTranslations } from "next-intl";
+import { FRONTEND_URL } from "@/lib/frontend-url";
 
 type SelectionState = {
   path: Level[];
@@ -251,7 +252,7 @@ export default function FullExamSelectionCtet({ data }: { data: any }) {
       localStorage.removeItem("onboarding-storage");
       localStorage.removeItem("ONBOARDING_START");
 
-      window.location.href = `https://app.clearcutoff.in/prepration/${
+      window.location.href = `${FRONTEND_URL}/prepration/${
         req?.data?.uuid
       }?token=${getAuthTokenClient()}`;
     }

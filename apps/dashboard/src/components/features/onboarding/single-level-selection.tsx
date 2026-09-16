@@ -18,6 +18,7 @@ import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import { Level, purchaseLevels } from "@/lib/api/onboarding";
 import { getAuthTokenClient } from "@/lib/auth-token-client";
 import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
+import { FRONTEND_URL } from "@/lib/frontend-url";
 
 export default function SingleLevelSelection({ data }: { data: any }) {
   const rootId = data?.level?.id as number | undefined;
@@ -125,7 +126,7 @@ export default function SingleLevelSelection({ data }: { data: any }) {
       localStorage.removeItem("onboarding-storage");
       localStorage.removeItem("ONBOARDING_START");
 
-      window.location.href = `https://app.clearcutoff.in/prepration/${
+      window.location.href = `${FRONTEND_URL}/prepration/${
         req?.data?.uuid
       }?token=${getAuthTokenClient()}`;
     }

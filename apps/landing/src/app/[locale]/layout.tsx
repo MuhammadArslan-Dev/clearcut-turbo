@@ -16,6 +16,9 @@ import { buildMetadata } from "@clearcut/utils/build-metadata";
 import { Agentation } from "agentation";
 
 const SITE_URL = "https://clearcutoff.in";
+// Same var + fallback as REDIRECT_BASE_URL in lib/auth.ts.
+const REDIRECT_BASE_URL =
+  process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in";
 const SITE_NAME = "Clear Cutoff";
 const DESCRIPTION =
   "Clear Cutoff helps you crack teaching exams like CTET, HTET, UPTET with focused courses and test series.";
@@ -94,8 +97,11 @@ export default async function RootLayout({
             the DNS hint is the right weight of hint for it.
             apptest.clearcutoff.in (the staging backend) was preconnected from
             production pages and is removed entirely — production traffic should
-            never be opening connections to a test origin. */}
-        <link rel="dns-prefetch" href="https://app.clearcutoff.in" />
+            never be opening connections to a test origin.
+            Same env var as REDIRECT_BASE_URL in lib/auth.ts, so a staging
+            build resolves this hint to its own staging dashboard host
+            instead of hard-coding production's. */}
+        <link rel="dns-prefetch" href={REDIRECT_BASE_URL} />
       </head>
       <body className="font-sans">
         <ReactQueryProvider>

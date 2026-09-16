@@ -1,7 +1,11 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 
-const LARAVEL_API_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND!; // e.g. http://localhost:8000/api
+// Same fallback as lib/api/client.ts — unset in production would otherwise
+// silently fetch "undefined/..." (see this app's CLAUDE.md).
+const LARAVEL_API_URL =
+  process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND ??
+  'http://clearcutoff-main-backend.test/api'; // e.g. http://localhost:8000/api
 
 export async function POST(req: Request) {
   const body = await req.json(); // { email, password }

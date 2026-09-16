@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { fetchWithRetry } from "./api/fetchWithRetry";
 
 // lib/api/server-fetch.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND!;
+// Same fallback as lib/api/client.ts — unset in production would otherwise
+// silently fetch "undefined/..." (see this app's CLAUDE.md).
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND ??
+    "http://clearcutoff-main-backend.test/api";
 
 export async function serverFetch<T>(
     path: string,
