@@ -2,10 +2,17 @@
 import 'server-only'; // Ensure this file is only used on the server
 import { createFetchClient } from "@clearcut/api/fetch-client";
 
-const PAYLOAD_URL = process.env.NEXT_PUBLIC_PAYLOAD_URL;
+// Falls back to the known production CMS if the env var isn't set (e.g. a
+// deploy environment missing/misconfiguring the secret) — this used to
+// throw at module load, which took down every page that imports this file
+// the moment the env var was blank, rather than just degrading gracefully.
+const PAYLOAD_URL =
+  process.env.NEXT_PUBLIC_PAYLOAD_URL || 'https://payloadcms.clearcutoff.in';
 
-if (!PAYLOAD_URL) {
-  throw new Error('NEXT_PUBLIC_PAYLOAD_URL is not defined');
+if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
+  console.warn(
+    'NEXT_PUBLIC_PAYLOAD_URL is not set — falling back to https://payloadcms.clearcutoff.in',
+  );
 }
 
 const client = createFetchClient({ baseUrl: PAYLOAD_URL });
