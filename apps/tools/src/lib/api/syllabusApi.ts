@@ -6,7 +6,7 @@
 // everywhere else in this app).
 
 const MAIN_BACKEND_URL =
-  process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND || "http://clearcutoff-main-backend.test/api";
+  process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND || "https://apptest.clearcutoff.in/api";
 
 export interface SyllabusExam {
   id: number;
