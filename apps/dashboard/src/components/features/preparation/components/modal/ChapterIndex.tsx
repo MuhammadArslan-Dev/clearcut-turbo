@@ -7,7 +7,7 @@ import {
   HindiLangCircleIcon,
   LockIcon,
 } from "@/components/ui/icons";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { AnimatePresence } from "framer-motion";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import { Modal } from "@/components/features/Sheets/Modal";
@@ -17,6 +17,7 @@ import { useBackHandler } from "@/hooks/Global/useBackHandler";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { Chapter } from "../../types/types";
 import { getChapterProgress } from "../../util/progressTracker";
+import { getLocalizedName } from "../../util/getLocalizedName";
 import Text from "@clearcut/ui/text";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
@@ -25,6 +26,7 @@ export default function ChapterIndex() {
   const isMobile = useIsMobile();
   const router = useRouter();
   const t = useTranslations("");
+  const locale = useLocale();
   const { chapters, selectedChapter, setChapter, progressByTopicId, course } =
     usePreparationStore();
   const { isOpen, closeModal, stack } = usePreparationModalStore();
@@ -81,6 +83,7 @@ export default function ChapterIndex() {
                     chaptersById,
                     progressByTopicId,
                   );
+                  const chapterName = getLocalizedName(chapter, locale);
                   return (
                     <SectionHeaderCard
                       key={chapterIndex}
@@ -106,7 +109,7 @@ export default function ChapterIndex() {
                           </Text>
                         </div>
                       }
-                      title={chapter.name}
+                      title={chapterName}
                       cursor="cursor-pointer"
                       onClick={() => {
                         if (chapter?.locked)

@@ -11,17 +11,25 @@ import { usePreparationStore } from "../../store/usePreparationDataStore";
 import Text from "@clearcut/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckIcon, NoteIcon, MediaPlayerIcon } from "@/components/ui/icons";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { getLocalizedName } from "../../util/getLocalizedName";
 
 export default function ChapterDetailHeader() {
   const { set } = useQueryParams();
   const t = useTranslations();
+  const locale = useLocale();
 
   const { selectedTopic, selectedChapter, progressByTopicId, course } =
     usePreparationStore();
   const topicProgress = progressByTopicId[selectedTopic?.id!];
+  const chapterName = selectedChapter
+    ? getLocalizedName(selectedChapter, locale)
+    : undefined;
+  const topicName = selectedTopic
+    ? getLocalizedName(selectedTopic, locale)
+    : undefined;
 
   const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
     queryKey: ["minitest-check", selectedTopic?.id],
@@ -62,20 +70,20 @@ export default function ChapterDetailHeader() {
             </Button>
           </div>
 
-          {selectedChapter?.name ? (
+          {chapterName ? (
             <div className="break-all">
-              {selectedChapter?.name ? (
+              {chapterName ? (
                 <Text variant="body-large" color="gray-muted">
-                  {selectedChapter?.name}
+                  {chapterName}
                   {" > "}
                 </Text>
               ) : (
                 <Skeleton className="w-10 h-6" />
               )}
 
-              {selectedTopic?.name ? (
+              {topicName ? (
                 <Text variant="body-large" color="gray-normal">
-                  {selectedTopic?.name}
+                  {topicName}
                 </Text>
               ) : (
                 <Skeleton className="w-10 h-6" />

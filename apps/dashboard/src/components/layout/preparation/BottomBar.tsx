@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 import { toContentLocale } from "@/utils/text/contentLocale";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
 // padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
@@ -95,6 +96,8 @@ export default function BottomBar() {
   }, [currentPaper?.name]);
 
   const localizedName = parsedName[toContentLocale(locale)]?.name ?? currentPaper?.name ?? "";
+  const prevTopicName = prevTopic ? getLocalizedName(prevTopic, locale) : "";
+  const nextTopicName = nextTopic ? getLocalizedName(nextTopic, locale) : "";
 
   // 🦴 Skeleton UI instead of null
   if (loading || !currentPaper) {
@@ -217,7 +220,7 @@ export default function BottomBar() {
               </Button>
             </div>
             <h6 className="body-medium truncate hidden md:block w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-              {prevTopic ? limitChars(prevTopic.name, 17) : ""}
+              {prevTopic ? limitChars(prevTopicName, 17) : ""}
             </h6>
           </div>
         )}
@@ -292,7 +295,7 @@ export default function BottomBar() {
             )}
           </div>
           <h6 className="body-medium hidden md:block  truncate w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-            {nextTopicLocked ? "" : nextTopic ? limitChars(nextTopic.name, 17) : ""}
+            {nextTopicLocked ? "" : nextTopic ? limitChars(nextTopicName, 17) : ""}
           </h6>
         </div>
       </div>

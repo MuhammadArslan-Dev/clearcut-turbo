@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useCallback } from "react";
 
 import { usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { ApiError } from "@/lib/api/api-error";
 
@@ -43,6 +43,7 @@ import {
   getOverallChapterProgress,
   isTopicCompleted,
 } from "@/components/features/preparation/util/progressTracker";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import Text from "@clearcut/ui/text";
@@ -73,6 +74,7 @@ const TOPBAR_MAX_HIDE_OFFSET = 150;
 export default function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations();
+  const locale = useLocale();
   const { set } = useQueryParams();
   const isMobile = useIsMobile();
   const [expandedTopics, setExpandedTopics] = React.useState<
@@ -397,6 +399,7 @@ export default function Sidebar() {
               chaptersById,
               progressByTopicId,
             );
+            const chapterName = getLocalizedName(chapter, locale);
 
             return (
               <React.Fragment key={chapter.id}>
@@ -472,7 +475,7 @@ export default function Sidebar() {
                           </Text>
                         </div>
                       }
-                      title={chapter.name}
+                      title={chapterName}
                       cursor="cursor-pointer"
                       titleClassName="heading-medium !font-semibold text-surface-gray-normal"
                       breadcrumbClassName="body-medium !font-normal text-surface-gray-muted"
@@ -494,6 +497,7 @@ export default function Sidebar() {
 
                       const hasChildren = topic.children.length > 0;
                       const isExpanded = expandedTopics[topic.id];
+                      const topicName = getLocalizedName(topic, locale);
 
                       return (
                         <div key={topic.id} className="space-y-2">
@@ -603,8 +607,8 @@ export default function Sidebar() {
                               }
                               title={
                                 hasChildren
-                                  ? limitChars(topic.name, 35)
-                                  : limitChars(topic.name, 45)
+                                  ? limitChars(topicName, 35)
+                                  : limitChars(topicName, 45)
                               }
                               onClick={() => {
                                 if (chapter?.locked) {
@@ -656,6 +660,7 @@ export default function Sidebar() {
                                     progressByTopicId[child.id];
                                   const childCompleted =
                                     isTopicCompleted(childProgress);
+                                  const childName = getLocalizedName(child, locale);
 
                                   return (
                                     <div
@@ -733,7 +738,7 @@ export default function Sidebar() {
                                             value: t("common.minitest"),
                                           }] : []),
                                         ]}
-                                        title={limitChars(child.name, 35)}
+                                        title={limitChars(childName, 35)}
                                         onClick={() => {
                                           trackEvent("Topic Viewed", {
                                             entry_point: "scroll",
