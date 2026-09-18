@@ -8,10 +8,17 @@ import { createFetchClient } from "@clearcut/api/fetch-client";
 
 import type { Post, PayloadListResponse } from '@/types/blog/post';
 
-const PAYLOAD_URL = process.env.NEXT_PUBLIC_PAYLOAD_URL;
+// Falls back to the known production CMS if the env var isn't set (e.g. a
+// deploy environment missing/misconfiguring the secret) — this used to
+// throw at module load, which took down every page that imports this file
+// the moment the env var was blank, rather than just degrading gracefully.
+const PAYLOAD_URL =
+  process.env.NEXT_PUBLIC_PAYLOAD_URL || 'https://payloadcms.clearcutoff.in';
 
-if (!PAYLOAD_URL) {
-  throw new Error('NEXT_PUBLIC_PAYLOAD_URL is not defined');
+if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
+  console.warn(
+    'NEXT_PUBLIC_PAYLOAD_URL is not set — falling back to https://payloadcms.clearcutoff.in',
+  );
 }
 
 const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 60 });
@@ -27,7 +34,12 @@ interface GetPostBySlugOptions {
 
 /**
  * Fetch a single published post by slug (optionally scoped to an exam).
- * Returns null when no matching post is found.
+ * Returns null both when no matching post is found AND when the CMS call
+ * itself fails (network error, timeout, non-2xx) — callers here already
+ * treat a falsy result as "not found" (loadPost() falls back to a
+ * slug-only lookup, generateMetadata()/the page itself calls notFound()),
+ * so degrading a CMS hiccup to the same "not found" path is a graceful
+ * empty state rather than crashing the whole page into a 500.
  */
 export async function getPostBySlug(
   slug: string,
@@ -49,12 +61,17 @@ export async function getPostBySlug(
     return data.docs?.[0] ?? null;
   } catch (error) {
     console.error(`Network or parsing error fetching post "${slug}":`, error);
-    throw error;
+    return null;
   }
 }
 
 /**
  * Fetch published posts for an exam (for listings / static params).
+ * Returns an empty array when the CMS call fails, instead of throwing —
+ * every call site (blog listing page, sitemap generation, related-posts
+ * lookup) already handles an empty list as a normal "no posts yet" state,
+ * so a CMS hiccup degrades to that same empty state rather than crashing
+ * the whole page/route into a 500.
  */
 export async function getPostsByExam(
   examId: string,
@@ -72,6 +89,6 @@ export async function getPostsByExam(
     return data.docs ?? [];
   } catch (error) {
     console.error(`Network or parsing error fetching posts for exam "${examId}":`, error);
-    throw error;
+    return [];
   }
 }
