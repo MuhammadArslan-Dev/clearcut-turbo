@@ -10,7 +10,7 @@
 import { ResizerExamSpec, ResizerCategory, slugifyCategory } from "../resizerExams";
 import { ExamOfficialRequirements, OfficialRequirementCard } from "../officialRequirements";
 
-const API_BASE = process.env.TOOLS_API_URL ?? "http://clearcut-tools-backend.test/api/v1";
+const API_BASE = process.env.TOOLS_API_URL ?? "https://tools-api.clearcutoff.in/api/v1";
 
 interface ApiEnvelope<T> {
   status: string;
