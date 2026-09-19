@@ -37,6 +37,7 @@ import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 
 /* -------------------------------------------------------------------------- */
 /*                                  MAIN                                      */
@@ -88,13 +89,12 @@ export default function MiniTest() {
     setLocale,
   } = useMiniTestStore();
 
-  // setting language for test
+  // setting language for test — the course's own content language, not the
+  // site's UI locale (see courseLanguageToLocale()'s docblock). Only "en"/
+  // "hi" question translations exist, so anything else (incl. Marathi)
+  // must fall back to "hi", never silently to "en".
   useEffect(() => {
-    if (course?.language === "hindi") {
-      setLocale("hi");
-    } else {
-      setLocale("en");
-    }
+    setLocale(toContentLocale(courseLanguageToLocale(course?.language)));
   }, [courseData]);
 
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function MiniTest() {
     markTopicFieldDone(Number(selectedTopic?.id), "miniTestDone");
   }, []);
 
-  const language = course?.language === "hindi" ? "hi" : "en";
+  const language = toContentLocale(courseLanguageToLocale(course?.language));
 
   const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
 

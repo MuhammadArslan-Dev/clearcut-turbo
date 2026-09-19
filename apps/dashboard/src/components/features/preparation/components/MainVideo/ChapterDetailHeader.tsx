@@ -11,24 +11,27 @@ import { usePreparationStore } from "../../store/usePreparationDataStore";
 import Text from "@clearcut/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckIcon, NoteIcon, MediaPlayerIcon } from "@/components/ui/icons";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { getLocalizedName } from "../../util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 export default function ChapterDetailHeader() {
   const { set } = useQueryParams();
   const t = useTranslations();
-  const locale = useLocale();
 
   const { selectedTopic, selectedChapter, progressByTopicId, course } =
     usePreparationStore();
+  // The course's own content language, not the site's UI locale — see
+  // courseLanguageToLocale()'s docblock.
+  const contentLocale = courseLanguageToLocale(course?.language);
   const topicProgress = progressByTopicId[selectedTopic?.id!];
   const chapterName = selectedChapter
-    ? getLocalizedName(selectedChapter, locale)
+    ? getLocalizedName(selectedChapter, contentLocale)
     : undefined;
   const topicName = selectedTopic
-    ? getLocalizedName(selectedTopic, locale)
+    ? getLocalizedName(selectedTopic, contentLocale)
     : undefined;
 
   const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({

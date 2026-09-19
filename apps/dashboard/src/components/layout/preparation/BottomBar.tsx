@@ -18,11 +18,10 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { limitChars } from "@clearcut/utils/text-limit";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
-import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
-import { toContentLocale } from "@/utils/text/contentLocale";
+import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
@@ -48,10 +47,12 @@ export default function BottomBar() {
   const addP = useTranslations("modals.addPaper");
   const actions = useTranslations("actions");
   const t = useTranslations("modals");
-  const { locale } = useLanguageSwitch();
 
   const { selectedPaperId, papers, selectPaper, loading, selectedTopic, course } =
     usePreparationStore();
+  // The course's own content language, not the site's UI locale — see
+  // courseLanguageToLocale()'s docblock.
+  const contentLocale = courseLanguageToLocale(course?.language);
 
   const { canAddPaper, openAddPaper } = useAddPaper();
 
@@ -95,9 +96,9 @@ export default function BottomBar() {
     }
   }, [currentPaper?.name]);
 
-  const localizedName = parsedName[toContentLocale(locale)]?.name ?? currentPaper?.name ?? "";
-  const prevTopicName = prevTopic ? getLocalizedName(prevTopic, locale) : "";
-  const nextTopicName = nextTopic ? getLocalizedName(nextTopic, locale) : "";
+  const localizedName = parsedName[toContentLocale(contentLocale)]?.name ?? currentPaper?.name ?? "";
+  const prevTopicName = prevTopic ? getLocalizedName(prevTopic, contentLocale) : "";
+  const nextTopicName = nextTopic ? getLocalizedName(nextTopic, contentLocale) : "";
 
   // 🦴 Skeleton UI instead of null
   if (loading || !currentPaper) {
