@@ -13,7 +13,10 @@
   "progress": {
     "title": "Progress",
     "sectionalTests": "{completed}/{total} sectional tests",
-    "attemptMessage": "Attempt 2+ sectional tests to improve score"
+    "attemptMessage": "Attempt 2+ sectional tests to improve score",
+    "chapterTestCount": "{completed} / {total} Chapter Test",
+    "sectionalTestCount": "{completed} / {total} Sectional Test",
+    "fullLengthTestCount": "{completed} / {total} Full-length Paper"
   },
 
   "recommendedNext": {
@@ -44,6 +47,8 @@
     },
 
     "startButton": "Start Sectional Test",
+    "startButtonChapter": "Start Chapter Test",
+    "startButtonFullLength": "Start Full-length Paper",
     "coverageNote": "This test covers high-frequency {course} PYQs",
     "goBack": "Go back"
   },
@@ -87,6 +92,7 @@
     "mustAttempt": "Must attempt",
     "extraPractice": "Extra practice",
 
-    "nextRecommended": "Next recommended sectional test"
+    "nextRecommended": "Next recommended sectional test",
+    "nextRecommendedChapter": "Next recommended chapter test"
   }
 }

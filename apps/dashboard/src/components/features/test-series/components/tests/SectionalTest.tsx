@@ -18,6 +18,8 @@ import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStor
 import { trackEvent } from "@/lib/analytics/browser";
 import { SectionalTestItem, SectionalSection } from "@/lib/tests/getExam";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 interface SectionalTestProps {
   courseId?: string | number;
@@ -31,6 +33,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
+  const contentLocale = courseLanguageToLocale(courseData?.language);
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
   const {
@@ -122,7 +125,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     setData(
       {
         id: recommendedTest.test.id,
-        title: `${recommendedTest.section.name} - Sectional Test ${recommendedTest.test.test_number}`,
+        title: `${getLocalizedName(recommendedTest.section, contentLocale)} - ${cardT("testCard.sectionalTitle", { number: recommendedTest.test.test_number })}`,
         paperId: data?.paper?.id ?? 0,
         sectionId: recommendedTest.section.id,
         courseId: courseId ?? 0,
@@ -130,14 +133,17 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
         totalQuestions: recommendedTest.test.number_of_questions,
       },
       {
-        title: `${completedSections} / ${totalSections} Sectional Test`,
+        title: cardT("progress.sectionalTestCount", {
+          completed: completedSections,
+          total: totalSections,
+        }),
         subtitle: "Weekly",
         total: totalSections,
         completed: completedSections,
         testType: "mock",
       },
     );
-  }, [recommendedTest, completedSections, totalSections, data?.paper?.id, courseId, setData, testType]);
+  }, [recommendedTest, completedSections, totalSections, data?.paper?.id, courseId, setData, testType, contentLocale, cardT]);
 
   /* ================= ACTION HANDLERS ================= */
 
@@ -151,7 +157,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
           // The pre-test modal shows the section name as its subtitle.
           metadata: {
             ...((test as any).metadata ?? {}),
-            section_name: section.name ?? "",
+            section_name: getLocalizedName(section, contentLocale),
           },
         } as any,
         sectionId: section.id,
@@ -163,7 +169,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
         test_status: test.is_mandatory ? "mandatory" : "optional",
       });
     },
-    [open],
+    [open, contentLocale],
   );
 
   const handleViewHistory = useCallback(
@@ -175,7 +181,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
           st_status: test.is_mandatory ? "mandatory" : "optional",
           metadata: {
             ...((test as any).metadata ?? {}),
-            section_name: section.name ?? "",
+            section_name: getLocalizedName(section, contentLocale),
           },
         } as any,
         sectionId: section.id,
@@ -191,7 +197,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
         is_retake: false,
       });
     },
-    [open],
+    [open, contentLocale],
   );
 
   /* ================= RENDER CARD ================= */
@@ -293,7 +299,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                   )
                 : handleViewHistory(test, section),
           }}
-          announcement={isRecommended ? "Next recommended sectional test" : undefined}
+          announcement={isRecommended ? cardT("testCard.nextRecommended") : undefined}
         />
       );
     },
@@ -357,7 +363,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                     </Text>
                   </div>
                 }
-                title={section.name}
+                title={getLocalizedName(section, contentLocale)}
                 cursor="cursor-pointer"
                 onClick={() => {}}
                 titleClassName="!heading-small !font-semibold text-surface-gray-normal"

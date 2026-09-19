@@ -16,6 +16,7 @@ import CountDownTimer from "@/components/features/exam/components/countdown/Coun
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { useExamStore } from "@/components/features/exam/store/useExamStore";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 import {
   LanguageIcon,
   LearningInsightIllustration,
@@ -86,14 +87,24 @@ const Actions = memo(function Actions({
 }) {
   const { setLanguage, getExamContext, language } = useExamStore();
   const { open, closeModal, stack } = useExamModalStore();
+  const { course } = useGetCurrentCourseStore();
   const active = stack[stack.length - 1];
   const { currentQuestion } = getExamContext();
   const hasMultipleTranslations = (currentQuestion?.question?.translations?.length ?? 0) > 1;
 
+  // Toggle between English and the enrolled course's own content language
+  // (Hindi/Marathi/Punjabi) — not a hardcoded "hi". A Marathi-enrolled
+  // course only ever has en/mr translations synced for it, so blindly
+  // switching to "hi" (as this used to) landed on a locale that doesn't
+  // exist for the question, silently fell back to the first translation
+  // (English), and made the button look like it did nothing.
+  const contentLocale = courseLanguageToLocale(course?.language);
+  const toggleLocale = language === "en" ? contentLocale : "en";
+
   return (
     <div className="flex items-center gap-6">
       {hasMultipleTranslations && (
-        <div onClick={() => setLanguage("hi")} className="cursor-pointer">
+        <div onClick={() => setLanguage(toggleLocale)} className="cursor-pointer">
           <LanguageIcon size={30} />
         </div>
       )}
