@@ -14,6 +14,9 @@ import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/Se
 import { CrossIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import { SectionalSection } from "@/lib/tests/getExam";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
+import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 
 export default function SectionIndexModal() {
   const { isOpen, closeModal, stack } = useTestSeriesModalStore();
@@ -23,6 +26,8 @@ export default function SectionIndexModal() {
   const testType = get("testType");
   const isMobile = useIsMobile();
   const t = useTranslations("");
+  const { course: courseData } = useGetCurrentCourseStore();
+  const contentLocale = courseLanguageToLocale(courseData?.language);
 
   const active = stack[stack.length - 1];
   useBackHandler({
@@ -96,7 +101,7 @@ export default function SectionIndexModal() {
                       </Text>
                     </div>
                   }
-                  title={section.name}
+                  title={getLocalizedName(section, contentLocale)}
                   cursor="cursor-pointer"
                   onClick={() => goToSection(section)}
                   titleClassName="!heading-small !font-semibold text-surface-gray-normal"

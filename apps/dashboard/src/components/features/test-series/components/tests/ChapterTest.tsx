@@ -27,6 +27,8 @@ import SectionSwitchUI from "@/components/ui/tabs/SectionSwitchUI";
 import { TabItem } from "@/components/ui/tabs/TabSwitch";
 import { ArrowRightIcon } from "lucide-react";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 interface ChapterTestProps {
   courseId?: string | number;
@@ -40,6 +42,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
+  const contentLocale = courseLanguageToLocale(courseData?.language);
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
   const {
@@ -150,8 +153,12 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   }, [sections, selectedSectionId, setSelectedSectionId]);
 
   const sectionItems = useMemo<TabItem[]>(
-    () => sections.map((s) => ({ id: String(s.id), label: s.name })),
-    [sections],
+    () =>
+      sections.map((s) => ({
+        id: String(s.id),
+        label: getLocalizedName(s, contentLocale),
+      })),
+    [sections, contentLocale],
   );
 
   const activeChapters = useMemo(
@@ -205,7 +212,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
       },
       {
         title: `${sectionCompletedChapters} / ${sectionTotalChapters} Chapter Test`,
-        subtitle: selectedSection.name,
+        subtitle: getLocalizedName(selectedSection, contentLocale),
         total: sectionTotalChapters,
         completed: sectionCompletedChapters,
         testType: "chapter",
@@ -219,6 +226,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     data?.paper?.id,
     courseId,
     setData,
+    contentLocale,
   ]);
 
   /* ================= ACTION HANDLERS ================= */
@@ -233,8 +241,8 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
           // The pre-test modal shows the chapter name as its subtitle.
           metadata: {
             ...((test as any).metadata ?? {}),
-            section_name: selectedSection?.name ?? "",
-            chapter_name: chapter.name ?? "",
+            section_name: selectedSection ? getLocalizedName(selectedSection, contentLocale) : "",
+            chapter_name: getLocalizedName(chapter, contentLocale),
           },
         } as any,
         sectionId: chapter.id,
@@ -245,7 +253,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
         test_status: test.is_mandatory ? "mandatory" : "optional",
       });
     },
-    [open, selectedSection],
+    [open, selectedSection, contentLocale],
   );
 
   const handleViewHistory = useCallback(
@@ -257,8 +265,8 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
           st_status: test.is_mandatory ? "mandatory" : "optional",
           metadata: {
             ...((test as any).metadata ?? {}),
-            section_name: selectedSection?.name ?? "",
-            chapter_name: chapter.name ?? "",
+            section_name: selectedSection ? getLocalizedName(selectedSection, contentLocale) : "",
+            chapter_name: getLocalizedName(chapter, contentLocale),
           },
         } as any,
         sectionId: chapter.id,
@@ -273,7 +281,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
         is_retake: false,
       });
     },
-    [open, selectedSection],
+    [open, selectedSection, contentLocale],
   );
 
   /* ================= RENDER TEST CARD ================= */
@@ -474,7 +482,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                         </Text>
                       </div>
                     }
-                    title={chapter.name}
+                    title={getLocalizedName(chapter, contentLocale)}
                     cursor="cursor-pointer"
                     onClick={() => { }}
                     titleClassName="!heading-small !font-semibold text-surface-gray-normal"

@@ -75,6 +75,10 @@ export interface ChapterItem {
   id: number;
   uuid: string;
   name: string;
+  // Locale-keyed translation blob — see getLocalizedName() in
+  // preparation/util. Same shape/double-decode as the preparation page's
+  // Chapter.translation (ChapterResource on the backend).
+  translation?: string | Record<string, { name: string }> | null;
   chapter_id: string;
   total_tests: number;
   attempted_count: number;
@@ -86,6 +90,10 @@ export interface SectionalSection {
   id: number;
   uuid: string;
   name: string;
+  // e_sections has no dedicated translations column — this is the
+  // repurposed `description` field, same as the preparation page's
+  // Section.translation (SectionResource on the backend).
+  translation?: string | Record<string, { name: string }> | null;
   section_id: string;
   total_tests: number;
   attempted_count: number;
