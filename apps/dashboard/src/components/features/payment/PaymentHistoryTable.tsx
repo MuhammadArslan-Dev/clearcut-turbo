@@ -39,11 +39,9 @@ const STATUS_MAP = {
 } as const
 
 const formatCurrency = (amount?: number | null) =>
-  amount == null
-    ? '-'
-    : `₹${amount.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-    })}`
+  `₹${(Number.isFinite(amount) ? (amount as number) : 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+  })}`
 
 /* ----------------------------------
  * Component
