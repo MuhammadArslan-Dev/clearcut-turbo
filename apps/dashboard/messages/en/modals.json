@@ -1,4 +1,12 @@
 {
+  "countDownModal": {
+    "getReady": "Get Ready",
+    "testStartingSoon": "Test Starting Soon",
+    "focusAndPrepare": "Focus and prepare yourself",
+    "preparingYourTest": "Preparing your test...",
+    "testWillBeginAutomatically": "The test will begin automatically"
+  },
+
   "editCourseModal": {
     "title": "{exam} Settings",
 

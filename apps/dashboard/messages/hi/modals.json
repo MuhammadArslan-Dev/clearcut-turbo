@@ -1,4 +1,12 @@
 {
+  "countDownModal": {
+    "getReady": "तैयार हो जाएं",
+    "testStartingSoon": "टेस्ट जल्द शुरू होने वाला है",
+    "focusAndPrepare": "फोकस करें और खुद को तैयार करें",
+    "preparingYourTest": "आपका टेस्ट तैयार किया जा रहा है...",
+    "testWillBeginAutomatically": "टेस्ट अपने आप शुरू हो जाएगा"
+  },
+
   "editCourseModal": {
     "title": "{exam} सेटिंग्स",
 

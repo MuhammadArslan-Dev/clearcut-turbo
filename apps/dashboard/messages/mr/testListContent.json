@@ -4,6 +4,12 @@
   "timeInfo": "{time} मिनिटे",
   "goBack": "मागे जा",
 
+  "testTypeSwitch": {
+    "chapterTests": "प्रकरण टेस्ट",
+    "sectionalTests": "सेक्शनल टेस्ट",
+    "fullLengthPapers": "फुल-लेंथ पेपर्स"
+  },
+
   "progress": {
     "title": "प्रगती",
     "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",

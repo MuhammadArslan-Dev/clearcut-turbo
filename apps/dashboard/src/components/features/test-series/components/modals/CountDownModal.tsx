@@ -2,6 +2,7 @@
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
@@ -36,6 +37,8 @@ export default function CountDownModal() {
     useTestSeriesModalStore();
 
   const { paper } = useTestListDataStore();
+
+  const t = useTranslations("modals.countDownModal");
 
   const router = useRouter();
   const { get } = useQueryParams();
@@ -204,15 +207,15 @@ export default function CountDownModal() {
               transition={{ repeat: Infinity, duration: 2 }}
               className="mb-4 px-4 py-1 rounded-full text-xs font-semibold bg-brand/9 text-brand"
             >
-              Get Ready
+              {t("getReady")}
             </motion.div>
 
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Test Starting Soon
+              {t("testStartingSoon")}
             </h2>
 
             <p className="text-sm text-gray-500 mb-6 text-center">
-              Focus and prepare yourself
+              {t("focusAndPrepare")}
             </p>
 
             <div className="relative w-36 h-36 mb-6">
@@ -272,8 +275,8 @@ export default function CountDownModal() {
 
             <p className="text-xs text-gray-400 text-center">
               {timeLeft === 0 && !attempt
-                ? "Preparing your test..."
-                : "The test will begin automatically"}
+                ? t("preparingYourTest")
+                : t("testWillBeginAutomatically")}
             </p>
           </div>
         </motion.div>

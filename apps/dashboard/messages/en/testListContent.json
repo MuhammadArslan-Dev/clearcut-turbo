@@ -4,6 +4,12 @@
   "timeInfo": "{time} mins",
   "goBack": "Go back",
 
+  "testTypeSwitch": {
+    "chapterTests": "Chapter Tests",
+    "sectionalTests": "Sectional Tests",
+    "fullLengthPapers": "Full-length Papers"
+  },
+
   "progress": {
     "title": "Progress",
     "sectionalTests": "{completed}/{total} sectional tests",
