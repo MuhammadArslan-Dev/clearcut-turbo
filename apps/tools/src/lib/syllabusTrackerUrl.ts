@@ -22,11 +22,32 @@ import type { Locale } from "./dictionary";
 
 const BASE_PATH = "/tools";
 
-// Locale-outermost, same convention as every other tool's Hindi/Marathi
-// routes (see LocaleLink.tsx) — "en" has no prefix, "hi"/"mr" sit in front
-// of the shared "/tools" basePath.
+// Locale-outermost, matching the PUBLIC production URL the browser actually
+// shows — /tools/syllabus-tracker (en), /hi/tools/syllabus-tracker,
+// /mr/tools/syllabus-tracker (see LocaleLink.tsx and apps/tools/worker's
+// HI_PREFIX/MR_PREFIX, which only recognize this order: the Worker strips
+// "/hi/tools" or "/mr/tools" as one unit and proxies to Pages' upstream
+// "/hi/..."/"/mr/..." path). Next's own basePath ("/tools") would put the
+// locale segment INSIDE it instead (/tools/mr/syllabus-tracker) when served
+// directly by `next dev` with no Worker in front — that's only ever true in
+// local dev, never in production, so don't "fix" this to match local dev's
+// shape; doing so once already silently broke every hi/mr page load in the
+// one environment (production, behind the Worker) this whole module exists
+// to serve deep links in.
 function rootPath(locale: Locale): string {
   return locale === "en" ? `${BASE_PATH}/syllabus-tracker` : `/${locale}${BASE_PATH}/syllabus-tracker`;
+}
+
+// The basePath-outermost shape (/tools/mr/syllabus-tracker) `next dev`
+// itself would serve this route at directly, with no Worker involved.
+// Never written by push/replaceSyllabusUrl (production never sees it), but
+// accepted when reading — see next.config.ts's dev-only `redirects()`,
+// which bounces the real production-shaped URL here locally so there's
+// something for `next dev` to actually 200. Same string for every locale
+// (English has no locale segment either way), so nothing extra to compute
+// for "en".
+function altRootPath(locale: Locale): string {
+  return locale === "en" ? rootPath(locale) : `${BASE_PATH}/${locale}/syllabus-tracker`;
 }
 
 export function slugify(value: string): string {
@@ -38,9 +59,23 @@ export function slugify(value: string): string {
 }
 
 /** Stable slug for the synthetic "Full Exam" level option, independent of its
- * per-exam display name (`Full HTET (all levels)`, `Full REET (all levels)`, ...). */
-export function levelSlug(level: { id: number | "full-exam"; name: string }): string {
-  return level.id === "full-exam" ? "full-exam" : slugify(level.name);
+ * per-exam display name (`Full HTET (all levels)`, `Full REET (all levels)`, ...).
+ *
+ * Prefers an English name (`name_en`/`nameEn` — the two casings cover the
+ * raw API shape and the TrackedPaper/TrackedLevel shape) over `name` when
+ * available: `name` can be pure Devanagari in Hindi/Marathi (e.g. "पेपर 2"),
+ * and slugify() only keeps ASCII a-z0-9 — slugifying that collapses to
+ * whatever stray digits happen to be in the string ("2") or, for a name
+ * with none at all, an empty path segment. Falls back to `name` only for
+ * data saved before this field existed. */
+export function levelSlug(level: {
+  id: number | "full-exam";
+  name: string;
+  name_en?: string;
+  nameEn?: string;
+}): string {
+  if (level.id === "full-exam") return "full-exam";
+  return slugify(level.name_en ?? level.nameEn ?? level.name);
 }
 
 /** Reads the current [examSlug, levelSlug] segments straight from the
@@ -49,8 +84,8 @@ export function levelSlug(level: { id: number | "full-exam"; name: string }): st
 export function readSlugFromLocation(locale: Locale = "en"): string[] {
   if (typeof window === "undefined") return [];
   const path = window.location.pathname;
-  const root = rootPath(locale);
-  if (!path.startsWith(root)) return [];
+  const root = [rootPath(locale), altRootPath(locale)].find((candidate) => path.startsWith(candidate));
+  if (!root) return [];
   return path
     .slice(root.length)
     .split("/")

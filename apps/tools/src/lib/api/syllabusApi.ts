@@ -21,6 +21,11 @@ export interface SyllabusExam {
 export interface SyllabusLevel {
   id: number;
   name: string;
+  // Always English regardless of the requested `locale` — used for URL
+  // slugging (see syllabusTrackerUrl.ts's levelSlug()), never for display.
+  // `name` itself can be pure Devanagari (Hindi/Marathi) with nothing
+  // slug()-able in it at all.
+  name_en: string;
   parent_id: number | null;
   group: string | null;
 }
@@ -55,13 +60,18 @@ export function fetchSyllabusExams(): Promise<SyllabusExam[]> {
   return getJson<SyllabusExam[]>(`${MAIN_BACKEND_URL}/tools/syllabus/exams`);
 }
 
-export function fetchSyllabusLevels(examId: number): Promise<SyllabusLevel[]> {
-  return getJson<SyllabusLevel[]>(`${MAIN_BACKEND_URL}/tools/syllabus/levels/${examId}`);
+export function fetchSyllabusLevels(examId: number, locale?: string): Promise<SyllabusLevel[]> {
+  return getJson<SyllabusLevel[]>(
+    `${MAIN_BACKEND_URL}/tools/syllabus/levels/${examId}?locale=${locale ?? "en"}`,
+  );
 }
 
 export function fetchSyllabusTree(
   examId: number,
   levelId: number | "full-exam",
+  locale?: string,
 ): Promise<SyllabusTree> {
-  return getJson<SyllabusTree>(`${MAIN_BACKEND_URL}/tools/syllabus/syllabus/${examId}/${levelId}`);
+  return getJson<SyllabusTree>(
+    `${MAIN_BACKEND_URL}/tools/syllabus/syllabus/${examId}/${levelId}?locale=${locale ?? "en"}`,
+  );
 }

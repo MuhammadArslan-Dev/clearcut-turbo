@@ -7,7 +7,7 @@ import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 import { getOverallProgress, TrackedExamEntry } from "@/lib/syllabusTracker";
 import ProgressRing from "./ProgressRing";
 import TipCard from "./TipCard";
-import { CapIcon, LightbulbIcon, TONES } from "./trackerIcons";
+import { ExamLogo, LightbulbIcon, TONES } from "./trackerIcons";
 
 const ChevronIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -109,12 +109,7 @@ export default function TrackedExamsList({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: tone.bg, color: tone.text }}
-                    >
-                      <CapIcon />
-                    </div>
+                    <ExamLogo logoUrl={entry.exam.logoUrl} examType={entry.exam.examType} tone={tone} />
                     <div>
                       <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="group-hover:text-brand transition-colors">
                         {entry.exam.shortName}
@@ -158,12 +153,7 @@ export default function TrackedExamsList({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                    style={{ background: tone.bg, color: tone.text }}
-                  >
-                    <CapIcon />
-                  </div>
+                  <ExamLogo logoUrl={entries[0].exam.logoUrl} examType={entries[0].exam.examType} tone={tone} />
                   <div>
                     <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
                       {entries[0].exam.shortName}

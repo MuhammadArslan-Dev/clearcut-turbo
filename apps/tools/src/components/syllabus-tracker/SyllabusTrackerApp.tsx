@@ -34,7 +34,7 @@ type Step = "loading" | "list" | "exam" | "level" | "dashboard";
 // SyllabusExam the picker grid returns. Every full SyllabusExam still
 // satisfies this structurally, so no conversion is needed at the other call
 // sites.
-type WizardExam = Pick<SyllabusExam, "id" | "short_name" | "name">;
+type WizardExam = Pick<SyllabusExam, "id" | "short_name" | "name" | "logo_url" | "exam_type">;
 
 export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale }) {
   const t = getSyllabusStrings(locale);
@@ -141,7 +141,24 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
       resetWizardState();
       setState(matched);
       setStep("dashboard");
-      const segments = matched.paper ? [levelSlug(matched.paper), levelSlug(matched.level)] : [levelSlug(matched.level)];
+      // Prefer the incoming URL's own segments over reconstructing a
+      // shorthand from just `matched.paper`/`matched.level` — a
+      // TrackedExamEntry only ever stores the paper (root) and the final
+      // leaf level, never the intermediate subject-group nodes drilled
+      // through to reach it (e.g. UPTET Paper 2's "Hindi and English"
+      // before "Maths and Science"). Reconstructing from those two alone
+      // silently collapsed a freshly-completed wizard's full descriptive
+      // URL (.../paper-2/hindi-and-english/maths-and-science) down to a
+      // shorter one (.../paper-2/maths-and-science) the moment the page
+      // restored from that same URL — so the URL a user just finished on,
+      // and the URL a reload or shared link of it settles back to, didn't
+      // match. levelPathFromUrl is already known valid here (the match
+      // above confirmed its first/last segments), so just keep it.
+      const segments = levelPathFromUrl.length
+        ? levelPathFromUrl
+        : matched.paper
+          ? [levelSlug(matched.paper), levelSlug(matched.level)]
+          : [levelSlug(matched.level)];
       replaceSyllabusUrl(locale, examSlugFromUrl, ...segments);
       return;
     }
@@ -182,7 +199,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   // that attempt.
   const loadExamLevels = (examId: number) => {
     setExamLevels(null);
-    fetchSyllabusLevels(examId)
+    fetchSyllabusLevels(examId, locale)
       .then((levels) => setExamLevels(levels))
       .catch(() => setExamLevels(undefined));
   };
@@ -210,7 +227,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
       handleLevelSelect({ id: "full-exam", name: t.fullExamTitle(exam.short_name) }, []);
       return;
     }
-    setPaper({ id: selected.id, name: selected.name, group: selected.group ?? null });
+    setPaper({ id: selected.id, name: selected.name, nameEn: selected.name_en, group: selected.group ?? null });
     pushSyllabusUrl(locale, slugify(exam.short_name), levelSlug(selected));
   };
 
@@ -233,7 +250,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
     // and this is null — matching today's single-entry-per-exam behavior.
     const rootNode = path.length > 0 ? path[0] : null;
     const rootSelection: TrackedPaper | null = rootNode
-      ? { id: rootNode.id, name: rootNode.name, group: rootNode.group ?? null }
+      ? { id: rootNode.id, name: rootNode.name, nameEn: rootNode.name_en, group: rootNode.group ?? null }
       : null;
     // Also mirrored into `paper` state (harmless at this point — the Paper
     // step, if any, is already behind us and about to unmount) so the
@@ -259,11 +276,14 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   const loadFullTracker = (forExam: WizardExam, forPaper: TrackedPaper | null, forLevel: SelectedLevel) => {
     setLoadingTracker(true);
     setTrackerLoadError(false);
-    fetchSyllabusTree(forExam.id, forLevel.id)
+    fetchSyllabusTree(forExam.id, forLevel.id, locale)
       .then((tree) => {
+        // Every subject the API returns is kept, even one with zero
+        // chapters mapped yet (e.g. MAHATET's "Marathi") — otherwise this
+        // subject list silently disagrees with the section tabs the real
+        // preparation page shows for the same exam/level.
         const subjects: TrackedExamEntry["subjects"] = {};
         for (const [subject, chapters] of Object.entries(tree)) {
-          if (chapters.length === 0) continue;
           subjects[subject] = chapters.map((c) => ({ id: c.id, name: c.name, completed: false, revisedAt: null }));
         }
 
@@ -278,9 +298,15 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
         }
 
         const next: TrackedExamEntry = {
-          exam: { id: forExam.id, shortName: forExam.short_name, name: forExam.name },
+          exam: {
+            id: forExam.id,
+            shortName: forExam.short_name,
+            name: forExam.name,
+            logoUrl: forExam.logo_url,
+            examType: forExam.exam_type,
+          },
           paper: forPaper,
-          level: { id: forLevel.id, name: forLevel.name },
+          level: { id: forLevel.id, name: forLevel.name, nameEn: forLevel.nameEn },
           subjects,
           ...(Object.keys(crossCompletions).length ? { crossCompletions } : {}),
           trackedAt: new Date().toISOString(),
@@ -359,14 +385,14 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   const handleAddPaper = (examId: number) => {
     const examEntries = getTrackedExamsByExamId(examId);
     if (examEntries.length === 0) return;
-    const { id, shortName, name } = examEntries[0].exam;
+    const { id, shortName, name, logoUrl, examType } = examEntries[0].exam;
     setPendingExamSlug(undefined);
     setPendingLevelPath(undefined);
     setPaper(null);
     setAddPaperExcludeIds(
       examEntries.map((e) => e.paper?.id).filter((paperId): paperId is number => paperId != null),
     );
-    setExam({ id, short_name: shortName, name });
+    setExam({ id, short_name: shortName, name, logo_url: logoUrl ?? null, exam_type: examType ?? "" });
     setStep("level");
     pushSyllabusUrl(locale, slugify(shortName));
     loadExamLevels(id);
@@ -452,6 +478,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
                 replaceSyllabusUrl(locale);
               }
             }}
+            onPathChange={(path) => pushSyllabusUrl(locale, slugify(exam.short_name), ...path.map(levelSlug))}
             rootLevel={paper ?? undefined}
             preloadedLevels={examLevels ?? undefined}
             excludeRootIds={addPaperExcludeIds}
