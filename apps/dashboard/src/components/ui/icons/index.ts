@@ -17,6 +17,7 @@ export { default as MainAppLogo } from "./main-app-logo";
 export { default as MarathiLangCircleIcon } from "./marathi-lang-circle-icon";
 export { default as PaymentCardIcon } from "./payment-card-icon";
 export { default as PhoneIcon } from "./phone-icon";
+export { default as PunjabiLangCircleIcon } from "./punjabi-lang-circle-icon";
 export { default as SettingGearIcon } from "./setting-gear-icon";
 export { default as TelegramIcon } from "./telegram-icon";
 export { default as WarningCircleIcon } from "./warning-circle-icon";

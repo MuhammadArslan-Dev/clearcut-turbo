@@ -15,6 +15,8 @@ import { useCourseStore } from "@/store/course/useCourseStore";
 import {
   ArrowIcon,
   HindiLangCircleIcon,
+  MarathiLangCircleIcon,
+  PunjabiLangCircleIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons";
 import EnLangCirlcIcon from "@/components/ui/icons/en-lang-circle-icon";
@@ -52,10 +54,30 @@ type SelectionState = {
   finalSelection: Level | null;
 };
 
-const LANGUAGES = [
+// Full catalog of content languages the platform supports. Which of these
+// are actually offered for a given exam is driven at render time by that
+// exam's `exam_content_language` (synced from BigQuery), not hardcoded here.
+const ALL_LANGUAGES = [
   { id: "english", title: "English", code: "en", icon: <EnLangCirlcIcon /> },
   { id: "hindi", title: "हिंदी", code: "hi", icon: <HindiLangCircleIcon /> },
+  { id: "marathi", title: "मराठी", code: "mr", icon: <MarathiLangCircleIcon /> },
+  { id: "punjabi", title: "ਪੰਜਾਬੀ", code: "pa", icon: <PunjabiLangCircleIcon /> },
 ];
+
+// `exam_content_language` is a comma-separated code list, e.g. "en, hi".
+// Falls back to the full catalog when it's missing (e.g. not yet synced),
+// so the picker never renders empty.
+function getAvailableLanguages(examContentLanguage?: string | null) {
+  if (!examContentLanguage) return ALL_LANGUAGES;
+
+  const codes = examContentLanguage
+    .split(",")
+    .map((c) => c.trim().toLowerCase())
+    .filter(Boolean);
+
+  const filtered = ALL_LANGUAGES.filter((lang) => codes.includes(lang.code));
+  return filtered.length ? filtered : ALL_LANGUAGES;
+}
 
 export default function EditCourseModal() {
   const { isOpen, data, close, mode, onSuccess } = useCourseStore();
@@ -73,6 +95,15 @@ export default function EditCourseModal() {
     return courses?.courses.find((c) => c.exam_id === data?.id);
   }, [data?.id, courses?.courses]);
   const courseLanguage = course?.language ?? "english";
+
+  // Only the languages this exam actually has content for (driven by
+  // `exam_content_language`, synced from BigQuery) — e.g. MAHATET shows
+  // English + Marathi, PSTET shows English + Punjabi, not a hardcoded
+  // English/Hindi pair.
+  const languages = useMemo(
+    () => getAvailableLanguages(data?.exam_content_language),
+    [data?.exam_content_language],
+  );
 
   const [contentLang, setContentLang] = useState<string>("english");
 
@@ -92,10 +123,13 @@ export default function EditCourseModal() {
    * ------------------------------------------ */
 
   useEffect(() => {
-    if (courseLanguage) {
-      setContentLang(courseLanguage ?? "english");
-    }
-  }, [courseLanguage]);
+    if (!courseLanguage) return;
+    // Guard against a previously-saved language (e.g. an exam that used to
+    // support it, or stale enrollment data) no longer being offered for
+    // this exam — fall back to the first language it does support.
+    const isSupported = languages.some((l) => l.id === courseLanguage);
+    setContentLang(isSupported ? courseLanguage : languages[0].id);
+  }, [courseLanguage, languages]);
 
   const transCache = useMemo(
     () =>
@@ -413,7 +447,7 @@ export default function EditCourseModal() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {LANGUAGES.map((lang) => (
+                  {languages.map((lang) => (
                     <OptionSelectionCard
                       key={lang.id}
                       padding="11.5px 20px"

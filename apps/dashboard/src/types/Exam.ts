@@ -54,6 +54,10 @@ export type Exam = {
   deleted_at?: string | null;
 
   translation?: ExamTranslation;
+
+  // Comma-separated ISO language codes, e.g. "en, hi" / "en, mr" / "en, pa" —
+  // which content languages this exam actually has content for.
+  exam_content_language?: string | null;
 };
 
 export type MyCourse = {
