@@ -15,7 +15,8 @@
     "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
     "attemptMessage": "स्कोअर सुधारण्यासाठी 2+ सेक्शनल टेस्ट द्या",
     "chapterTestCount": "{completed} / {total} प्रकरण टेस्ट",
-    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट"
+    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट",
+    "fullLengthTestCount": "{completed} / {total} फुल-लेंथ पेपर"
   },
 
   "recommendedNext": {

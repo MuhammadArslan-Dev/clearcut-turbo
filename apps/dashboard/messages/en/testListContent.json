@@ -15,7 +15,8 @@
     "sectionalTests": "{completed}/{total} sectional tests",
     "attemptMessage": "Attempt 2+ sectional tests to improve score",
     "chapterTestCount": "{completed} / {total} Chapter Test",
-    "sectionalTestCount": "{completed} / {total} Sectional Test"
+    "sectionalTestCount": "{completed} / {total} Sectional Test",
+    "fullLengthTestCount": "{completed} / {total} Full-length Paper"
   },
 
   "recommendedNext": {

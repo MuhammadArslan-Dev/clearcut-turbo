@@ -15,7 +15,8 @@
     "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
     "attemptMessage": "स्कोर इम्प्रूव करने के लिए 2+ सेक्शनल टेस्ट अटेम्प्ट करें",
     "chapterTestCount": "{completed} / {total} चैप्टर टेस्ट",
-    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट"
+    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट",
+    "fullLengthTestCount": "{completed} / {total} फुल-लेंथ पेपर"
   },
 
   "recommendedNext": {

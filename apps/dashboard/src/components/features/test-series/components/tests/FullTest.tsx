@@ -150,14 +150,17 @@ export default function FullTest({ courseId }: FullTestProps) {
     setData(
       {
         id: recommendedTest?.test?.id ?? 0,
-        title: `Full-length Test ${recommendedTest?.index! + 1}`,
+        title: cardT("testCard.fullLengthTitle", { number: recommendedTest?.index! + 1 }),
         paperId: paper?.id ?? 0,
         courseId: courseId ?? 0,
         test: recommendedTest?.test ?? null,
         totalQuestions: 150,
       },
       {
-        title: `${completedMandatoryCount} / ${mandatoryTests.length} Full-length Test`,
+        title: cardT("progress.fullLengthTestCount", {
+          completed: completedMandatoryCount,
+          total: mandatoryTests.length,
+        }),
         subtitle: "Weekly",
         total: mandatoryTests.length,
         completed: completedMandatoryCount,
@@ -173,6 +176,7 @@ export default function FullTest({ courseId }: FullTestProps) {
     courseId,
     setData,
     testType,
+    cardT,
   ]);
 
   /* ======================= PAYWALL ======================= */
