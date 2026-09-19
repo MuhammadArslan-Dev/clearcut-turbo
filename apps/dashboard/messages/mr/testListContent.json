@@ -13,7 +13,9 @@
   "progress": {
     "title": "प्रगती",
     "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
-    "attemptMessage": "स्कोअर सुधारण्यासाठी 2+ सेक्शनल टेस्ट द्या"
+    "attemptMessage": "स्कोअर सुधारण्यासाठी 2+ सेक्शनल टेस्ट द्या",
+    "chapterTestCount": "{completed} / {total} प्रकरण टेस्ट",
+    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट"
   },
 
   "recommendedNext": {
@@ -44,6 +46,8 @@
     },
 
     "startButton": "सेक्शनल टेस्ट सुरू करा",
+    "startButtonChapter": "प्रकरण टेस्ट सुरू करा",
+    "startButtonFullLength": "फुल-लेंथ पेपर सुरू करा",
     "coverageNote": "ही टेस्ट वारंवार विचारले जाणारे {course} PYQs कव्हर करते",
     "goBack": "मागे जा"
   },
@@ -88,6 +92,7 @@
     "mustAttempt": "आवश्यक",
     "extraPractice": "अतिरिक्त सराव",
 
-    "nextRecommended": "पुढे शिफारस केलेली सेक्शनल टेस्ट"
+    "nextRecommended": "पुढे शिफारस केलेली सेक्शनल टेस्ट",
+    "nextRecommendedChapter": "पुढे शिफारस केलेली प्रकरण टेस्ट"
   }
 }

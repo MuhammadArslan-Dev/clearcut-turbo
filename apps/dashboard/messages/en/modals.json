@@ -179,6 +179,29 @@
     },
     "info": {
       "coverage": "This test covers high-frequency {exam} PYQs"
+    },
+    "filters": {
+      "title": "Filter Questions",
+      "all": "All",
+      "emptyAll": "There are no questions in this section.",
+      "emptyCorrect": "You didn't answer any question correctly in this test.",
+      "emptyIncorrect": "No incorrect answers — nothing to review here.",
+      "emptySkipped": "You attempted every question, so nothing was skipped."
+    },
+    "badges": {
+      "reviewed": "Reviewed"
+    },
+    "explanation": {
+      "heading": "Answer & Explanation",
+      "correctAnswer": "Correct Answer",
+      "title": "Explanation",
+      "show": "Show Correct Answer and Explanation",
+      "hide": "Hide Correct Answer and Explanation"
+    },
+    "time": {
+      "seconds": "{count} sec",
+      "minutes": "{count} min",
+      "minutesSeconds": "{minutes} min {seconds} sec"
     }
   },
 

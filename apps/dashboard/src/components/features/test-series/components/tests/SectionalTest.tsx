@@ -125,7 +125,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     setData(
       {
         id: recommendedTest.test.id,
-        title: `${getLocalizedName(recommendedTest.section, contentLocale)} - Sectional Test ${recommendedTest.test.test_number}`,
+        title: `${getLocalizedName(recommendedTest.section, contentLocale)} - ${cardT("testCard.sectionalTitle", { number: recommendedTest.test.test_number })}`,
         paperId: data?.paper?.id ?? 0,
         sectionId: recommendedTest.section.id,
         courseId: courseId ?? 0,
@@ -133,14 +133,17 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
         totalQuestions: recommendedTest.test.number_of_questions,
       },
       {
-        title: `${completedSections} / ${totalSections} Sectional Test`,
+        title: cardT("progress.sectionalTestCount", {
+          completed: completedSections,
+          total: totalSections,
+        }),
         subtitle: "Weekly",
         total: totalSections,
         completed: completedSections,
         testType: "mock",
       },
     );
-  }, [recommendedTest, completedSections, totalSections, data?.paper?.id, courseId, setData, testType, contentLocale]);
+  }, [recommendedTest, completedSections, totalSections, data?.paper?.id, courseId, setData, testType, contentLocale, cardT]);
 
   /* ================= ACTION HANDLERS ================= */
 
@@ -296,7 +299,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                   )
                 : handleViewHistory(test, section),
           }}
-          announcement={isRecommended ? "Next recommended sectional test" : undefined}
+          announcement={isRecommended ? cardT("testCard.nextRecommended") : undefined}
         />
       );
     },

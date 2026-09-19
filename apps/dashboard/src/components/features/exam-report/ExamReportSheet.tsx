@@ -39,17 +39,6 @@ import OptionCard from "./OptionCard";
 
 type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
 
-/**
- * Why a given filter has nothing to show. Tapping an empty filter keeps the
- * current list in place and surfaces one of these instead of blanking the page.
- */
-const EMPTY_FILTER_MESSAGES: Record<QuestionFilter, string> = {
-  all: "There are no questions in this section.",
-  correct: "You didn't answer any question correctly in this test.",
-  incorrect: "No incorrect answers — nothing to review here.",
-  skipped: "You attempted every question, so nothing was skipped.",
-};
-
 export default function ExamReportSheet() {
   const { isOpen, examId, closeModal, stack } = useExamModalStore();
   const [activeTab, setActiveTab] = useState("summary");
@@ -66,6 +55,19 @@ export default function ExamReportSheet() {
 
   const isMobile = useIsMobile();
   const t = useTranslations("modals.performanceReport");
+
+  // Why a given filter has nothing to show. Tapping an empty filter keeps
+  // the current list in place and surfaces one of these instead of
+  // blanking the page.
+  const EMPTY_FILTER_MESSAGES: Record<QuestionFilter, string> = useMemo(
+    () => ({
+      all: t("filters.emptyAll"),
+      correct: t("filters.emptyCorrect"),
+      incorrect: t("filters.emptyIncorrect"),
+      skipped: t("filters.emptySkipped"),
+    }),
+    [t],
+  );
 
   const tabNames = useMemo(() => {
     return [
@@ -308,7 +310,7 @@ export default function ExamReportSheet() {
                     <div className="w-full flex flex-col gap-3 bg-white">
                       {/* Filter chips */}
                       <div className="px-3 pb-1 flex flex-col gap-3">
-                        <Text as="p" variant="body-large" weight="medium" color="gray-subtle">Filter Questions</Text>
+                        <Text as="p" variant="body-large" weight="medium" color="gray-subtle">{t("filters.title")}</Text>
                         <div className="flex flex-wrap gap-2">
                           {(["all", "correct", "incorrect", "skipped"] as const).map((f) => {
                             const count = filterCounts[f];
@@ -339,7 +341,7 @@ export default function ExamReportSheet() {
                                       : "text-gray-500 border-2 border-gray-300"
                                 )}
                               >
-                                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)} ({count})
+                                {f === "all" ? t("filters.all") : t(`legend.${f}`)} ({count})
                               </button>
                             );
                           })}
@@ -410,6 +412,7 @@ const Footer = ({
   close: () => void;
 }) => {
   const t = useTranslations("modals.performanceReport");
+  const { exam } = useGetCurrentCourseStore();
 
   return (
     <div className="sticky bottom-0 px-3 py-3 bg-white">
@@ -442,7 +445,7 @@ const Footer = ({
               weight="normal"
               color="gray-muted"
             >
-              {t("info.coverage", { exam: "CTET" })}
+              {t("info.coverage", { exam: exam?.short_name ?? exam?.name ?? "" })}
             </Text>
           </div>
         </div>
@@ -559,9 +562,9 @@ const QuestionItem = React.memo(function QuestionItem({
                   {(() => {
                     const m = Math.floor(data.time_spent / 60);
                     const s = data.time_spent % 60;
-                    if (m === 0) return `${s} sec`;
-                    if (s === 0) return `${m} min`;
-                    return `${m} min ${s} sec`;
+                    if (m === 0) return t("time.seconds", { count: s });
+                    if (s === 0) return t("time.minutes", { count: m });
+                    return t("time.minutesSeconds", { minutes: m, seconds: s });
                   })()}
                 </Text>
               </div>
@@ -576,7 +579,7 @@ const QuestionItem = React.memo(function QuestionItem({
                 variant="outline"
                 tone="success"
                 className="!text-white !bg-orange-400 !border-orange-400 body-small !font-semibold"
-                label="Reviewed"
+                label={t("badges.reviewed")}
               />
             )}
             {Number(data?.is_correct) === 1 ? (
@@ -664,7 +667,7 @@ const QuestionItem = React.memo(function QuestionItem({
                         weight="semibold"
                         color="gray-normal"
                       >
-                        Answer & Explanation
+                        {t("explanation.heading")}
                       </Text>
 
                       <div className="flex gap-1 items-center">
@@ -674,7 +677,7 @@ const QuestionItem = React.memo(function QuestionItem({
                           weight="normal"
                           color="gray-subtle"
                         >
-                          Correct Answer
+                          {t("explanation.correctAnswer")}
                         </Text>
                         <NumberCountIcon
                           value={
@@ -691,7 +694,7 @@ const QuestionItem = React.memo(function QuestionItem({
                     </div>
                     <div className="flex flex-col justify-center items-start gap-4 bg-[#006bd108] p-3 rounded-lg">
                       <Text as="p" variant="heading-small" weight="semibold">
-                        Explanation
+                        {t("explanation.title")}
                       </Text>
                       <MathRender content={translation?.explanation}>
                         {/* "div" not "p" — ReactMarkdown wraps its own output
@@ -727,8 +730,7 @@ const QuestionItem = React.memo(function QuestionItem({
                   <div className="flex gap-2 items-center">
                     <p>
                       {" "}
-                      {isExplanation ? "Hide" : "Show"} Correct Answer and
-                      Explanation
+                      {isExplanation ? t("explanation.hide") : t("explanation.show")}
                     </p>
                     <motion.div
                       animate={{ rotate: isExplanation ? 180 : 0 }}

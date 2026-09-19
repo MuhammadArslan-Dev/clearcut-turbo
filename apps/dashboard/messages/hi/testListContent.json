@@ -13,7 +13,9 @@
   "progress": {
     "title": "प्रोग्रेस",
     "sectionalTests": "{completed}/{total} सेक्शनल टेस्ट",
-    "attemptMessage": "स्कोर इम्प्रूव करने के लिए 2+ सेक्शनल टेस्ट अटेम्प्ट करें"
+    "attemptMessage": "स्कोर इम्प्रूव करने के लिए 2+ सेक्शनल टेस्ट अटेम्प्ट करें",
+    "chapterTestCount": "{completed} / {total} चैप्टर टेस्ट",
+    "sectionalTestCount": "{completed} / {total} सेक्शनल टेस्ट"
   },
 
   "recommendedNext": {
@@ -44,6 +46,8 @@
     },
 
     "startButton": "सेक्शनल टेस्ट स्टार्ट करें",
+    "startButtonChapter": "चैप्टर टेस्ट स्टार्ट करें",
+    "startButtonFullLength": "फुल-लेंथ पेपर स्टार्ट करें",
     "coverageNote": "यह टेस्ट हाई-फ्रिक्वेंसी {course} PYQs कवर करता है",
     "goBack": "वापस जाएं"
   },
@@ -88,6 +92,7 @@
     "mustAttempt": "मस्ट अटेम्प्ट",
     "extraPractice": "एक्स्ट्रा प्रैक्टिस",
 
-    "nextRecommended": "नेक्स्ट रिकमेंडेड सेक्शनल टेस्ट"
+    "nextRecommended": "नेक्स्ट रिकमेंडेड सेक्शनल टेस्ट",
+    "nextRecommendedChapter": "नेक्स्ट रिकमेंडेड चैप्टर टेस्ट"
   }
 }

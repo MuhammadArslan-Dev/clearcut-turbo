@@ -248,10 +248,10 @@ const Footer = ({}: any) => {
   const testType = get("testType");
   const buttonText =
     testType === "sectional-tests"
-      ? "Start Sectional Test"
+      ? t("sectionalTestModal.startButton")
       : testType === "chapter-tests"
-        ? "Start Chapter Test"
-        : "Start Full-length Paper";
+        ? t("sectionalTestModal.startButtonChapter")
+        : t("sectionalTestModal.startButtonFullLength");
 
   return (
     <div className="sticky bottom-0 px-3 py-3 bg-white">

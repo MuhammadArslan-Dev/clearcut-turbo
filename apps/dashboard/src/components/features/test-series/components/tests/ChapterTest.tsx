@@ -204,14 +204,17 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     setData(
       {
         id: sectionRecommendedTest.test.id,
-        title: `${sectionRecommendedTest.chapter.name} - Chapter Test ${sectionRecommendedTest.test.test_number}`,
+        title: `${getLocalizedName(sectionRecommendedTest.chapter, contentLocale)} - ${cardT("testCard.chapterTitle", { number: sectionRecommendedTest.test.test_number })}`,
         paperId: data?.paper?.id ?? 0,
         courseId: courseId ?? 0,
         test: sectionRecommendedTest.test as any,
         totalQuestions: sectionRecommendedTest.test.number_of_questions,
       },
       {
-        title: `${sectionCompletedChapters} / ${sectionTotalChapters} Chapter Test`,
+        title: cardT("progress.chapterTestCount", {
+          completed: sectionCompletedChapters,
+          total: sectionTotalChapters,
+        }),
         subtitle: getLocalizedName(selectedSection, contentLocale),
         total: sectionTotalChapters,
         completed: sectionCompletedChapters,
@@ -227,6 +230,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     courseId,
     setData,
     contentLocale,
+    cardT,
   ]);
 
   /* ================= ACTION HANDLERS ================= */
@@ -382,7 +386,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                   )
                 : handleViewHistory(test, chapter),
           }}
-          announcement={isRecommended ? "Next recommended chapter test" : undefined}
+          announcement={isRecommended ? cardT("testCard.nextRecommendedChapter") : undefined}
         />
       );
     },
