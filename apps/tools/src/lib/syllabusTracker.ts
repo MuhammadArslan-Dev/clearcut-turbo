@@ -36,11 +36,21 @@ export interface TrackedExam {
   id: number;
   shortName: string;
   name: string;
+  /** Backend-hosted exam logo (Exam.logo_url) — optional because entries
+   * tracked before this field existed have neither key; the tracked-exams
+   * list falls back to a generic icon (by examType) when absent, same as
+   * a real logo_url that fails to load. */
+  logoUrl?: string | null;
+  examType?: string | null;
 }
 
 export interface TrackedPaper {
   id: number;
   name: string;
+  /** Always English — used for URL slugging (see syllabusTrackerUrl.ts's
+   * levelSlug()), never for display. Optional only because entries tracked
+   * before this field existed have neither key. */
+  nameEn?: string;
   /** The root tier's own group label from the API (e.g. "Paper" or
    * "Level") — display-only, so the tracked-exams list can say "Add Paper"
    * for CTET and "Add Level" for HTET instead of one hardcoded word. */
@@ -50,6 +60,8 @@ export interface TrackedPaper {
 export interface TrackedLevel {
   id: number | "full-exam";
   name: string;
+  /** Always English — same purpose as TrackedPaper.nameEn. */
+  nameEn?: string;
 }
 
 export interface TrackedExamEntry {

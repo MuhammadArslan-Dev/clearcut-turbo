@@ -52,7 +52,7 @@ export function useDailyTestExams() {
 
 /**
  * Call after a daily test attempt is submitted (see
- * daily-test-attempt/[examId]/[dailyTestId]/page.tsx) — marks this list
+ * daily-test-attempt/[courseId]/[testId]/[[...attempt]]/page.tsx) — marks this list
  * stale so the next read refetches instead of serving the pre-attempt cache.
  */
 export function useInvalidateDailyTestExams() {

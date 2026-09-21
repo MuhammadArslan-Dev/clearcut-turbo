@@ -7,9 +7,9 @@ import { getDailyTestHistory, DailyTestHistoryResponse } from "@/lib/api/dailyTe
 // QUERY KEY
 // ===============================
 
-export const DAILY_TEST_HISTORY_KEY = (examId: string | number) => [
+export const DAILY_TEST_HISTORY_KEY = (courseId: string) => [
   "daily-test-history",
-  String(examId),
+  String(courseId),
 ];
 
 // ===============================
@@ -22,16 +22,16 @@ export const DAILY_TEST_HISTORY_KEY = (examId: string | number) => [
  * come back" round trip, and is explicitly invalidated (see
  * useInvalidateDailyTestHistory) once a submit actually changes it.
  */
-export function useDailyTestHistory(examId: string | number) {
+export function useDailyTestHistory(courseId: string) {
   const { data, isLoading, isFetching, isError, refetch } = useQuery<DailyTestHistoryResponse>({
-    queryKey: DAILY_TEST_HISTORY_KEY(examId),
+    queryKey: DAILY_TEST_HISTORY_KEY(courseId),
 
     queryFn: async () => {
-      const res = await getDailyTestHistory(examId);
+      const res = await getDailyTestHistory(courseId);
       return res.data;
     },
 
-    enabled: !!examId,
+    enabled: !!courseId,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
@@ -50,6 +50,6 @@ export function useDailyTestHistory(examId: string | number) {
 /** Call after a daily test attempt is submitted for this exam. */
 export function useInvalidateDailyTestHistory() {
   const queryClient = useQueryClient();
-  return (examId: string | number) =>
-    queryClient.invalidateQueries({ queryKey: DAILY_TEST_HISTORY_KEY(examId) });
+  return (courseId: string) =>
+    queryClient.invalidateQueries({ queryKey: DAILY_TEST_HISTORY_KEY(courseId) });
 }

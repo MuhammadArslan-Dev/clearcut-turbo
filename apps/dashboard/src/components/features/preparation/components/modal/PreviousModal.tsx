@@ -34,6 +34,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import clsx from "clsx";
 import Image from "next/image";
+import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 
 const extractImgSrc = (value?: string | null) => {
   if (!value) return null;
@@ -44,17 +45,15 @@ const extractImgSrc = (value?: string | null) => {
   return match ? match[1] : null;
 };
 
-/** Map course language ("english"/"hindi") to a translation locale. */
-const langToLocale = (language?: string | null) =>
-  language?.toLowerCase() === "hindi" ? "hi" : "en";
-
-/** Pick the translation matching the course language, falling back to the first. */
+/** Pick the translation matching the course's own content language (not
+ * the site's UI locale — see courseLanguageToLocale()'s docblock), falling
+ * back to the first available translation. */
 const pickTranslation = (
   translations?: QuestionTranslation[] | null,
   language?: string | null,
 ): QuestionTranslation | null => {
   if (!translations?.length) return null;
-  const locale = langToLocale(language);
+  const locale = toContentLocale(courseLanguageToLocale(language));
   return translations.find((t) => t.locale === locale) ?? translations[0];
 };
 

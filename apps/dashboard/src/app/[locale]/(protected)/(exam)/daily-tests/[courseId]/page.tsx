@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Info, FileText } from "lucide-react";
@@ -12,17 +14,24 @@ import IconStat from "@/components/features/daily-tests/IconStat";
 import DailyTestHistoryRow from "@/components/features/daily-tests/DailyTestHistoryRow";
 import PremiumUpsell from "@/components/features/daily-tests/PremiumUpsell";
 import Pagination from "@/components/ui/widgets/pagination/Pagination";
+import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { DailyTestHistoryItem } from "@/lib/api/dailyTests";
+
+// Same lazy-loaded interstitial the preparation/test-series shells mount.
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
 
 const PAGE_SIZE = 5;
 
 export default function DailyTestHistoryPage() {
   const router = useRouter();
-  const params = useParams<{ examId: string }>();
-  const examId = params.examId;
+  const t = useTranslations("DailyTests");
+  const locale = useLocale();
+  const params = useParams<{ courseId: string }>();
+  const courseId = params.courseId;
 
-  const { history, isError } = useDailyTestHistory(examId);
+  const { history, isError } = useDailyTestHistory(courseId);
   const [page, setPage] = useState(1);
 
   // API returns tests oldest-first; the mockup ("Today's Test" pinned at the
@@ -33,13 +42,24 @@ export default function DailyTestHistoryPage() {
   const pageTests = tests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleAttempt = (test: DailyTestHistoryItem) => {
-    if (test.locked) return;
+    // Locked rows open the same unlock modal as the Upgrade CTAs.
+    if (test.locked) {
+      goToUpgrade();
+      return;
+    }
     // Full-screen attempt experience lives outside daily-tests' own
     // DashboardShell-wrapped layout — see daily-test-attempt/layout.tsx.
-    router.push(`/daily-test-attempt/${examId}/${test.daily_test_id}`);
+    router.push(`/daily-test-attempt/${courseId}/${test.test_id}`);
   };
 
-  const goToUpgrade = () => router.push(`/preparation/${examId}`);
+  const course = useEnrollmentForCourse(courseId);
+  const openPaywall = usePaywallsStore((s) => s.open);
+  // Every Upgrade/Get Full Access CTA opens the shared unlock modal; its
+  // "Unlock Now" continues to the existing /payment/initiated flow.
+  const goToUpgrade = () => {
+    if (!course?.exam) return;
+    openPaywall("daily-tests-locked-modal", course.exam, "daily_tests_page_clicked", course);
+  };
   const goToProfile = () => router.push(`/dashboard/profile`);
   // No more standalone exam-picker to "explore more" in — daily tests are
   // personalized to the course the user is already enrolled in (see
@@ -49,7 +69,7 @@ export default function DailyTestHistoryPage() {
   if (isError) {
     return (
       <div className="mx-auto max-w-[1200px] p-4 md:p-6">
-        <p className="body-medium text-red-500">Failed to load test history. Please try again.</p>
+        <p className="body-medium text-red-500">{t("list.loadFailed")}</p>
       </div>
     );
   }
@@ -59,13 +79,11 @@ export default function DailyTestHistoryPage() {
       <div className="mb-5 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="heading-xlarge !font-bold mb-1">
-            {history?.exam.short_name ?? "Daily Test"} – Daily Tests
+            {t("list.title", { exam: history?.exam.short_name ?? t("list.defaultExam") })}
           </h1>
           <p className="body-medium text-surface-gray-muted">
-            Attempt today&apos;s test and improve your preparation.{" "}
-            {history?.is_paid
-              ? "Previous tests are also available for practice."
-              : "Previous tests are available with Premium."}
+            {t("list.subtitle")}{" "}
+            {history?.is_paid ? t("list.previousPaid") : t("list.previousFree")}
           </p>
         </div>
 
@@ -108,7 +126,7 @@ export default function DailyTestHistoryPage() {
               <IconStat
                 icon={<FileText size={18} className="text-brand" />}
                 value={history.total_tests}
-                label="Total Tests"
+                label={t("list.totalTests")}
               />
               <div className="h-8 w-px bg-gray-200" />
               <IconStat
@@ -116,13 +134,13 @@ export default function DailyTestHistoryPage() {
                 value={
                   history.best_score ? `${history.best_score.score}/${history.best_score.total_questions}` : "-"
                 }
-                label="Best Score"
+                label={t("list.bestScore")}
               />
               <div className="h-8 w-px bg-gray-200" />
               <IconStat
                 icon={<ClockIcon size={18} color="var(--color-brand)" />}
-                value={history.avg_time_minutes !== null ? `${history.avg_time_minutes} min` : "-"}
-                label="Avg. Time"
+                value={history.avg_time_minutes !== null ? t("list.minutesShort", { count: history.avg_time_minutes }) : "-"}
+                label={t("list.avgTime")}
               />
             </div>
           </div>
@@ -134,9 +152,9 @@ export default function DailyTestHistoryPage() {
         <div className="body-small mb-4 flex items-center gap-1.5 text-surface-gray-muted">
           <Info size={16} />
           <span>
-            You are on Free Plan. Only today&apos;s test is available.{" "}
-            <Link href={`/preparation/${examId}`} className="!font-semibold text-brand underline">
-              Upgrade to unlock all tests.
+            {t("list.freePlan")}{" "}
+            <Link href={`/preparation/${courseId}`} className="!font-semibold text-brand underline">
+              {t("list.upgradeToUnlock")}
             </Link>
           </span>
         </div>
@@ -149,25 +167,30 @@ export default function DailyTestHistoryPage() {
           ))}
         </div>
       ) : tests.length === 0 ? (
-        <p className="body-medium text-surface-gray-muted">No daily tests generated yet — check back soon.</p>
+        <p className="body-medium text-surface-gray-muted">{t("list.noTests")}</p>
       ) : (
         <>
           <div className="flex flex-col gap-3">
             {pageTests.map((test) => (
               <DailyTestHistoryRow
-                key={test.daily_test_id}
+                key={test.test_id}
                 test={test}
-                title={testTitle(test.test_date)}
+                title={testTitle(test.test_date, t, locale)}
                 isToday={test.test_date === dateKey(new Date())}
                 onAttempt={() => handleAttempt(test)}
+                onViewHistory={() => router.push(`/daily-tests/${courseId}/${test.test_id}`)}
+                onAttemptAgain={() => router.push(`/daily-test-attempt/${courseId}/${test.test_id}/new`)}
               />
             ))}
           </div>
 
           <div className="mt-4 flex flex-col items-center justify-between gap-3 md:flex-row">
             <p className="body-small text-surface-gray-muted">
-              Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, tests.length)} of {tests.length}{" "}
-              tests
+              {t("list.showing", {
+                from: (page - 1) * PAGE_SIZE + 1,
+                to: Math.min(page * PAGE_SIZE, tests.length),
+                total: tests.length,
+              })}
             </p>
             <Pagination page={page} totalPages={totalPages} onChange={setPage} />
           </div>
@@ -181,6 +204,7 @@ export default function DailyTestHistoryPage() {
           </div>
         </>
       )}
+      <LockedContentModal />
     </div>
   );
 }
@@ -189,18 +213,21 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function testTitle(testDate: string): string {
+// Intl locale per app locale, so the date renders in the user's language.
+const DATE_LOCALES: Record<string, string> = { en: "en-GB", hi: "hi-IN", mr: "mr-IN" };
+
+function testTitle(testDate: string, t: (key: string, values?: Record<string, string>) => string, locale: string): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (testDate === dateKey(today)) return "Today's Test";
-  if (testDate === dateKey(yesterday)) return "Yesterday's Test";
+  if (testDate === dateKey(today)) return t("list.today");
+  if (testDate === dateKey(yesterday)) return t("list.yesterday");
 
-  const formatted = new Intl.DateTimeFormat("en-GB", {
+  const formatted = new Intl.DateTimeFormat(DATE_LOCALES[locale] ?? "en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   }).format(new Date(testDate));
-  return `${formatted} Test`;
+  return t("list.datedTest", { date: formatted });
 }

@@ -113,25 +113,33 @@ export default function LearnPage() {
           {/* <div className="space-y-6"> */}
           <MainContainer maxWidth="max-w-[900px]" padding="pb-[114px] md:pb-0">
             <div className="flex flex-col gap-2 md:gap-4">
-              <div className="flex flex-col md:flex-row gap-2 md:gap-4">
-                {/* No mobile max-width: below `md` this column is the whole page, so the
-                    My Courses card should stretch edge to edge. The old
-                    `max-w-[480px]` capped it, which left dead space on any viewport
-                    wider than 480px but narrower than `md`. The 380px cap still
-                    applies from `md` up, where it is a real side column. */}
-                <div className="w-full md:max-w-[380px] space-y-2 md:space-y-4">
+              {/* Row 1 — the course card (untouched) with Daily Test right beside
+                  it on desktop; stacked course → Daily Test on mobile. Both rows
+                  share one grid template so the two columns line up. */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:items-stretch md:gap-4">
+                <div className="w-full">
                   <MyCoursesWrapTwo
                     activeCourse={activeCourse}
                     allCourses={allCourses}
                     data={courses}
                     isLoading={isFetching}
                   />
+                </div>
+                <div className={`min-w-0 ${hideWidgetsOnMobile}`}>
+                  <DailyTestWidget rounded="md:rounded-md" />
+                </div>
+              </div>
+
+              {/* Row 2 — the rest of the original two columns, unchanged in
+                  content and conditions. */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:gap-4">
+                <div className="w-full space-y-2 md:space-y-4">
                   {/* The countdown hides itself once the exam date passes, but its
                       WRAPPERS used to stay behind — and the parent `space-y-*`
-                      still applied margin to them, leaving a phantom gap under
-                      My Courses. Gating the wrappers on the same shared
-                      `isExamDatePassed` rule the widget uses means the column
-                      reflows properly instead of holding empty space. */}
+                      still applied margin to them, leaving a phantom gap.
+                      Gating the wrappers on the same shared `isExamDatePassed`
+                      rule the widget uses means the column reflows properly
+                      instead of holding empty space. */}
                   {!countdownFinished && (
                     <div className={hideWidgetsOnMobile}>
                       {milestoneDate?.toLowerCase() !== "upcoming" ? (
@@ -142,20 +150,16 @@ export default function LearnPage() {
                     </div>
                   )}
                   {/* Once the countdown retires, its slot would otherwise sit
-                      empty: the row is a flex container, so the left column is
-                      still STRETCHED to the right column's height (measured
-                      680.1px) while holding only the My Courses card. Promoting
-                      Quick Revision into that slot fills it and rebalances the
-                      two columns instead of leaving a tall blank. It renders in
-                      exactly one place either way — see the matching
-                      `countdownFinished` guard in the right column. */}
+                      empty; promoting Quick Revision into it rebalances the two
+                      columns. It renders in exactly one place either way — see
+                      the matching `countdownFinished` guard in the right column. */}
                   {countdownFinished && (
                     <div className={hideWidgetsOnMobile}>
                       <QuickRevision />
                     </div>
                   )}
                 </div>
-                <div className={`flex-1 space-y-2 md:space-y-4 ${hideWidgetsOnMobile}`}>
+                <div className={`min-w-0 space-y-2 md:space-y-4 ${hideWidgetsOnMobile}`}>
                   <TodayGoals rounded="md:rounded-md" exam={exam} />
                   {milestoneDate?.toLowerCase() !== "upcoming" ? <NextMilestone rounded="md:rounded-md" exam={exam} /> : null}
                   {!countdownFinished && <QuickRevision />}
@@ -166,12 +170,6 @@ export default function LearnPage() {
 
                 <div className="flex-1 overflow-hidden">
                   <LearningStreak rounded="md:rounded-md" />
-                </div>
-              </div>
-
-              <div className={`flex flex-col md:flex-row gap-2 md:gap-4 ${hideWidgetsRowOnMobile}`}>
-                <div className="flex-1 overflow-hidden">
-                  <DailyTestWidget rounded="md:rounded-md" />
                 </div>
               </div>
 

@@ -4,7 +4,34 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { Bookmark, CheckCircle2, FileText, Flag, Lightbulb, Maximize, Quote, Target } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  BookOpen,
+  Bookmark,
+  CheckCircle2,
+  ChevronDown,
+  Crown,
+  FileText,
+  Flag,
+  Lightbulb,
+  ListChecks,
+  Maximize,
+  Quote,
+  Target,
+  Trophy,
+  XCircle,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import { useLocale, useTranslations } from "next-intl";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
+import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import MathRender from "@/components/features/mathjax/Math";
+import OptionCard from "@/components/features/exam-report/OptionCard";
+import QuestionText from "@/components/ui/cards/QuestionMaterial/Question/QuestionText";
+import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import { useRouter } from "@/i18n/navigation";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
@@ -18,6 +45,8 @@ import SandTimerIcon from "@/components/ui/icons/sand-timer-icon";
 import CountDownTimer from "@/components/features/exam/components/countdown/CountDownTimer";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import ModalHeader from "@/components/features/test-series/components/ModalHeader";
+import BottomNavWrap from "@/components/features/navigation/bottom-bar/dashboard-bar/BottomNavWrap";
+import DashboardShell from "@/components/layout/dasbboard/DashboardShell";
 import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import { useModalStore } from "@/store/modal/useModalStore";
 import {
@@ -26,9 +55,11 @@ import {
   TrashIcon,
   MainAppLogo,
   ClockIcon,
+  LanguageIcon,
   ChartSuccessBarIcon,
   WarningCircleIcon,
   CrossIcon,
+  NumberCountIcon,
 } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -36,10 +67,13 @@ import {
   submitDailyTest,
   DailyTestQuestion,
   DailyTestResult,
+  DailyTestResultQuestion,
 } from "@/lib/api/dailyTests";
 import { isApiError } from "@/lib/api/api-error";
 import { useInvalidateDailyTestExams } from "@/components/features/daily-tests/hooks/useDailyTestExams";
 import { useInvalidateDailyTestHistory, useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
+import { useInvalidateDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
+import { useDailyTestResult, useSetDailyTestResult } from "@/components/features/daily-tests/hooks/useDailyTestResult";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
 
 // Its own full-screen chrome (topbar, timer/progress/tip strip, Test
@@ -53,19 +87,31 @@ import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constant
 // (report just toasts a confirmation) matches the visual behavior without
 // inventing backend support nothing else needs yet.
 
+// Intl locale per app locale, so dates render in the user's language.
+const DATE_LOCALES: Record<string, string> = { en: "en-GB", hi: "hi-IN", mr: "mr-IN" };
+
 type QuestionStatus = "notVisited" | "answered" | "notAnswered" | "review";
 
 type ViewState =
   | { phase: "loading" }
   | { phase: "locked" }
-  | { phase: "attempting"; attemptId: number; testDate: string; questions: DailyTestQuestion[] }
+  | { phase: "attempting"; attemptId: string; testDate: string; sectionName: string | null; questions: DailyTestQuestion[] }
   | { phase: "result"; result: DailyTestResult }
-  | { phase: "error"; message: string };
+  | { phase: "error"; message: "loadFailed" | "submitFailed" };
 
 export default function DailyTestAttemptPage() {
   const router = useRouter();
-  const params = useParams<{ examId: string; dailyTestId: string }>();
-  const { examId, dailyTestId } = params;
+  const t = useTranslations("DailyTests");
+  const locale = useLocale();
+  const params = useParams<{ courseId: string; testId: string; attempt?: string[] }>();
+  const { courseId, testId } = params;
+  // Optional third segment: /new → start a new numbered attempt of this same
+  // test; /<attemptId> → show that specific past attempt's result; absent →
+  // resume/start (or the latest result of a completed test).
+  const attemptSegment = params.attempt?.[0];
+  const retake = attemptSegment === "new";
+  const attemptParam = attemptSegment && !retake ? attemptSegment : null;
+  const invalidateDailyTestAttempts = useInvalidateDailyTestAttempts();
   const invalidateDailyTestExams = useInvalidateDailyTestExams();
   const invalidateDailyTestHistory = useInvalidateDailyTestHistory();
   const openGlobalModal = useModalStore((s) => s.open);
@@ -73,7 +119,17 @@ export default function DailyTestAttemptPage() {
   // page the user just came from; reused here only for the exam's display
   // name/type, so this never triggers its own extra loading state on a
   // normal click-through.
-  const { history } = useDailyTestHistory(examId);
+  const { history, isLoading: historyLoading } = useDailyTestHistory(courseId);
+  const setCachedResult = useSetDailyTestResult();
+
+  // A test the history already says is completed is read through the cached
+  // result query instead of POSTing /start again — so re-opening it is
+  // instant after the first load, and never re-creates/touches the attempt.
+  const attemptedItem = history?.tests.find(
+    (t) => String(t.test_id) === String(testId) && t.attempted && t.attempt_id != null,
+  );
+  const completedAttemptId = retake ? null : (attemptParam ?? attemptedItem?.attempt_id ?? null);
+  const { result: cachedResult, isError: resultError } = useDailyTestResult(courseId, testId, completedAttemptId);
 
   const [state, setState] = useState<ViewState>({ phase: "loading" });
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -85,9 +141,17 @@ export default function DailyTestAttemptPage() {
   const [navSheetOpen, setNavSheetOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [dismissedSavedBanners, setDismissedSavedBanners] = useState<Set<number>>(new Set());
+  // null = whatever locale the question came back in first; set once the
+  // user taps the language button.
+  const [language, setLanguage] = useState<string | null>(null);
 
   useEffect(() => {
-    startDailyTest(dailyTestId)
+    // Wait for history so a completed test isn't started (POST) needlessly;
+    // it's read via the result query above instead. If the result query
+    // fails, fall through to start(), which also returns a completed result.
+    if (historyLoading) return;
+    if (completedAttemptId != null && !resultError) return;
+    startDailyTest(courseId, testId, { retake })
       .then((res) => {
         const data = res.data;
         if (data.status === "completed") {
@@ -97,6 +161,7 @@ export default function DailyTestAttemptPage() {
             phase: "attempting",
             attemptId: data.attempt_id,
             testDate: data.test_date,
+            sectionName: data.topic_meta?.section_name ?? null,
             questions: data.questions,
           });
           const first = data.questions[0];
@@ -107,13 +172,39 @@ export default function DailyTestAttemptPage() {
         if (isApiError(err) && err.status === 403) {
           setState({ phase: "locked" });
         } else {
-          setState({ phase: "error", message: "Failed to load this test." });
+          setState({ phase: "error", message: "loadFailed" });
         }
       });
-  }, [dailyTestId]);
+  }, [courseId, testId, historyLoading, completedAttemptId, resultError, retake]);
 
   const questions = state.phase === "attempting" ? state.questions : [];
   const currentQuestion = questions[currentIndex] ?? null;
+
+  // Toggle between English and the test's other language — derived from the
+  // translations the questions actually carry, so it never offers a locale
+  // that doesn't exist (same failure the full-test button had with a
+  // hardcoded "hi").
+  const otherLocale = useMemo(() => {
+    for (const q of questions) {
+      const found = q.translations?.find((t) => t.locale !== "en");
+      if (found) return found.locale;
+    }
+    return null;
+  }, [questions]);
+  const hasMultipleTranslations =
+    otherLocale != null && questions.some((q) => q.translations?.some((t) => t.locale === "en"));
+  const activeLocale = language ?? currentQuestion?.translations?.[0]?.locale ?? "en";
+  const toggleLocale = activeLocale === "en" ? otherLocale : "en";
+
+  // The current question in the selected language; a question missing that
+  // locale falls back to its default (first) translation.
+  const displayQuestion = useMemo(() => {
+    if (!currentQuestion) return null;
+    const t = currentQuestion.translations?.find((tr) => tr.locale === activeLocale);
+    return t
+      ? { question: t.question, question_image: t.question_image, options: t.options }
+      : currentQuestion;
+  }, [currentQuestion, activeLocale]);
 
   useEffect(() => {
     setDraftOption(currentQuestion ? (answers[currentQuestion.question_id] ?? null) : null);
@@ -125,19 +216,22 @@ export default function DailyTestAttemptPage() {
       if (state.phase !== "attempting") return;
       setSubmitting(true);
       try {
-        const res = await submitDailyTest(state.attemptId, finalAnswers ?? answers);
-        setState({ phase: "result", result: res.data });
+        const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers);
+        setCachedResult(state.attemptId, res.data);
+        invalidateDailyTestAttempts(courseId, testId);
         // The course list's "Attempted"/streak/avg-score, and this exam's
         // own history (score/best-score/avg-time), are now stale.
         invalidateDailyTestExams();
-        invalidateDailyTestHistory(examId);
+        invalidateDailyTestHistory(courseId);
+        // Submit lands on this test's Attempt History (View Result there).
+        router.replace(`/daily-tests/${courseId}/${testId}`);
       } catch {
-        setState({ phase: "error", message: "Failed to submit your answers. Please try again." });
+        setState({ phase: "error", message: "submitFailed" });
       } finally {
         setSubmitting(false);
       }
     },
-    [state, answers, invalidateDailyTestExams, invalidateDailyTestHistory, examId],
+    [state, answers, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, router, courseId, testId],
   );
 
   const goToIndex = useCallback(
@@ -188,18 +282,18 @@ export default function DailyTestAttemptPage() {
   }, [currentQuestion, draftOption]);
 
   const handleReportQuestion = useCallback(() => {
-    toast.success("Question reported. Our team will review it.");
-  }, []);
+    toast.success(t("attempt.reported"));
+  }, [t]);
 
   const handleEndTest = useCallback(() => {
     if (
       typeof window !== "undefined" &&
-      !window.confirm("End the test now? You won't be able to change your answers after this.")
+      !window.confirm(t("attempt.endConfirm"))
     ) {
       return;
     }
     handleSubmit();
-  }, [handleSubmit]);
+  }, [handleSubmit, t]);
 
   const handleToggleFullscreen = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -248,24 +342,32 @@ export default function DailyTestAttemptPage() {
 
   const testDateLabel = useMemo(() => {
     if (state.phase !== "attempting") return "";
-    return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(
-      new Date(state.testDate),
-    );
-  }, [state]);
+    return new Intl.DateTimeFormat(DATE_LOCALES[locale] ?? "en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(state.testDate));
+  }, [state, locale]);
 
   if (state.phase === "loading") {
-    return <AttemptPageSkeleton />;
+    // Cached result (from a previous visit or a just-finished submit) renders
+    // straight away — no skeleton at all.
+    if (cachedResult) {
+      return <DailyTestResultView result={cachedResult} courseId={courseId} testId={testId} />;
+    }
+    // Already-attempted test: show the result page's own skeleton (inside the
+    // sidebar shell) rather than the full-screen attempt one.
+    return completedAttemptId != null ? <ResultPageSkeleton /> : <AttemptPageSkeleton />;
   }
 
   if (state.phase === "locked") {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center flex flex-col items-center gap-4 py-12">
-        <h2 className="heading-medium !font-semibold">This test is locked</h2>
+        <h2 className="heading-medium !font-semibold">{t("attempt.lockedTitle")}</h2>
         <p className="body-medium text-surface-gray-muted">
-          Free users can only attempt today&apos;s daily test. Upgrade this course to unlock every
-          past test and full answer explanations.
+          {t("attempt.lockedDesc")}
         </p>
-        <Button onClick={() => router.push(`/daily-tests/${examId}`)}>Back to history</Button>
+        <Button onClick={() => router.push(`/daily-tests/${courseId}`)}>{t("attempt.backToHistory")}</Button>
       </div>
     );
   }
@@ -273,13 +375,13 @@ export default function DailyTestAttemptPage() {
   if (state.phase === "error") {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center py-12">
-        <p className="body-medium text-red-500">{state.message}</p>
+        <p className="body-medium text-red-500">{t(`attempt.${state.message}`)}</p>
       </div>
     );
   }
 
   if (state.phase === "result") {
-    return <DailyTestResultView result={state.result} examId={examId} />;
+    return <DailyTestResultView result={state.result} courseId={courseId} testId={testId} />;
   }
 
   // phase === "attempting"
@@ -361,10 +463,10 @@ export default function DailyTestAttemptPage() {
             </div>
             <div>
               <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                {history?.exam.short_name ?? "Daily Test"} – Daily Test ({testDateLabel})
+                {t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
               </Text>
               <Text as="p" variant="body-small" color="gray-muted">
-                {questions.length} Questions • {totalMinutes} Minutes • {history?.exam.short_name ?? "…"}
+                {t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
               </Text>
             </div>
           </div>
@@ -372,20 +474,29 @@ export default function DailyTestAttemptPage() {
           <div className="hidden flex-1 items-center justify-center gap-2 px-4 lg:flex">
             <Quote size={16} className="shrink-0 text-brand" />
             <Text as="p" variant="body-small" className="italic text-surface-gray-muted">
-              &quot;Small steps every day lead to big results.&quot; — Clear Cutoff
+              {t("attempt.quote")}
             </Text>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {hasMultipleTranslations && toggleLocale && (
+              <button
+                onClick={() => setLanguage(toggleLocale)}
+                aria-label={t("attempt.changeLanguage")}
+                className="cursor-pointer"
+              >
+                <LanguageIcon size={30} />
+              </button>
+            )}
             <Button sx={{ borderRadius: "50px" }} variant="soft" color="gray" size="sm" onClick={handleEndTest}>
               <div className="flex items-center gap-[6px]">
-                <span>End Test</span>
+                <span>{t("attempt.endTest")}</span>
                 <LogoutDoorIcon size={16} />
               </div>
             </Button>
             <button
               onClick={handleToggleFullscreen}
-              aria-label="Toggle fullscreen"
+              aria-label={t("attempt.toggleFullscreen")}
               className="hidden h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 sm:flex"
             >
               <Maximize size={16} />
@@ -405,14 +516,14 @@ export default function DailyTestAttemptPage() {
                 </div>
                 <div>
                   <Text as="p" variant="body-small" weight="semibold" color="primary-normal">
-                    Time Left
+                    {t("attempt.timeLeft")}
                   </Text>
                   <div className="flex items-end gap-1">
-                    <TimeUnit value={timeLeft.hours} label="Hours" />
+                    <TimeUnit value={timeLeft.hours} label={t("attempt.hours")} />
                     <span className="pb-3 heading-medium !font-semibold text-brand">:</span>
-                    <TimeUnit value={timeLeft.minutes} label="Minutes" />
+                    <TimeUnit value={timeLeft.minutes} label={t("attempt.minutes")} />
                     <span className="pb-3 heading-medium !font-semibold text-brand">:</span>
-                    <TimeUnit value={timeLeft.seconds} label="Seconds" />
+                    <TimeUnit value={timeLeft.seconds} label={t("attempt.seconds")} />
                   </div>
                 </div>
               </div>
@@ -442,12 +553,10 @@ export default function DailyTestAttemptPage() {
                 )}
                 <div className="z-10 flex-1">
                   <Text as="p" variant="body-small" weight="semibold" color="primary-normal">
-                    {answeredCount > 0 ? "You're Doing Great!" : "Stay Focused!"}
+                    {answeredCount > 0 ? t("attempt.doingGreat") : t("attempt.stayFocused")}
                   </Text>
                   <Text as="p" variant="body-small" color="gray-muted">
-                    {answeredCount > 0
-                      ? "Keep going. Stay consistent!"
-                      : "Complete the test and check your performance."}
+                    {answeredCount > 0 ? t("attempt.keepGoing") : t("attempt.completeTest")}
                   </Text>
                 </div>
               </div>
@@ -462,15 +571,15 @@ export default function DailyTestAttemptPage() {
                 <div className="mb-3 flex items-center gap-2">
                   <FileText size={18} className="text-brand" />
                   <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                    Test Information
+                    {t("attempt.testInformation")}
                   </Text>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label="Exam" value={history?.exam.short_name ?? "…"} />
-                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label="Test Type" value="Daily Test" />
-                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label="Total Questions" value={String(questions.length)} />
-                  <InfoRow icon={<ChartSuccessBarIcon width={16} height={16} />} label="Total Marks" value={String(questions.length)} />
-                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label="Time Duration" value={`${totalMinutes} Minutes`} />
+                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.exam")} value={history?.exam.short_name ?? "…"} />
+                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.section")} value={state.sectionName ?? "—"} />
+                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.totalQuestions")} value={String(questions.length)} />
+                  <InfoRow icon={<ChartSuccessBarIcon width={16} height={16} />} label={t("attempt.totalMarks")} value={String(questions.length)} />
+                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.timeDuration")} value={t("attempt.minutesValue", { count: totalMinutes })} />
                 </div>
               </Card>
             </aside>
@@ -480,7 +589,7 @@ export default function DailyTestAttemptPage() {
               <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <span className="body-small w-fit rounded-md bg-brand/9 px-3 py-1 !font-medium text-brand">
-                    {history?.exam.short_name ?? "Daily Test"} • Daily Test
+                    {history?.exam.short_name ?? t("list.defaultExam")} • {t("list.defaultExam")}
                   </span>
 
                   <div className="flex items-center gap-4">
@@ -491,14 +600,14 @@ export default function DailyTestAttemptPage() {
                       }`}
                     >
                       <Bookmark size={18} fill={isMarked ? "currentColor" : "none"} />
-                      <span>Mark for Review</span>
+                      <span>{t("attempt.markForReview")}</span>
                     </button>
                     <button
                       onClick={handleReportQuestion}
                       className="flex cursor-pointer items-center gap-2 body-medium !font-semibold text-[var(--color-danger)]"
                     >
                       <Flag size={18} />
-                      <span className="hidden sm:inline">Report Question</span>
+                      <span className="hidden sm:inline">{t("attempt.reportQuestion")}</span>
                     </button>
                   </div>
                 </div>
@@ -510,22 +619,22 @@ export default function DailyTestAttemptPage() {
                   </Text>
                 </Text>
 
-                <QuestionMath content={currentQuestion.question ?? ""}>
+                <QuestionMath content={displayQuestion?.question ?? ""}>
                   <Text as="div" variant="body-large">
-                    <TextMarkDown>{currentQuestion.question ?? ""}</TextMarkDown>
+                    <TextMarkDown>{displayQuestion?.question ?? ""}</TextMarkDown>
                   </Text>
                 </QuestionMath>
-                {currentQuestion.question_image && (
+                {displayQuestion?.question_image && (
                   <div className="mt-3 flex justify-center">
                     <div className="relative h-[160px] w-[160px] overflow-hidden rounded-md">
-                      <Image src={currentQuestion.question_image} alt="" fill />
+                      <Image src={displayQuestion.question_image} alt="" fill />
                     </div>
                   </div>
                 )}
 
                 <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
                   {(["1", "2", "3", "4"] as const).map((key) => {
-                    const text = currentQuestion.options[key];
+                    const text = displayQuestion?.options[key];
                     if (!text) return null;
                     const optionIndex = Number(key) - 1;
                     const isSelected = draftOption === Number(key);
@@ -555,14 +664,14 @@ export default function DailyTestAttemptPage() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 size={16} className="text-[var(--icon-positive-normal)]" />
                       <Text as="p" variant="body-small" weight="semibold" className="text-[var(--icon-positive-normal)]">
-                        Answer saved!
+                        {t("attempt.answerSaved")}
                       </Text>
                     </div>
                     <button
                       onClick={() =>
                         setDismissedSavedBanners((prev) => new Set(prev).add(currentQuestion.question_id))
                       }
-                      aria-label="Dismiss"
+                      aria-label={t("attempt.dismiss")}
                       className="text-surface-gray-muted"
                     >
                       <CrossIcon size={14} />
@@ -573,7 +682,7 @@ export default function DailyTestAttemptPage() {
                 <div className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--color-primary-bg-soft)] p-3">
                   <WarningCircleIcon variant="help" size={16} color="var(--color-brand)" />
                   <Text as="p" variant="body-small" color="primary-normal">
-                    Select the best answer from the options above.
+                    {t("attempt.selectBest")}
                   </Text>
                 </div>
               </Card>
@@ -595,7 +704,7 @@ export default function DailyTestAttemptPage() {
                     rightIcon={<ChevronIcon size={16} variant="right" color="white" />}
                     fullWidth
                   >
-                    {currentIndex === questions.length - 1 ? "Save and Submit Test" : "Save and Next"}
+                    {currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
                   </Button>
                 </div>
 
@@ -611,7 +720,7 @@ export default function DailyTestAttemptPage() {
                   >
                     <div className="flex items-center gap-2">
                       <ChevronIcon size={20} variant="left" />
-                      <span>Previous</span>
+                      <span>{t("attempt.previous")}</span>
                     </div>
                   </Button>
 
@@ -626,7 +735,7 @@ export default function DailyTestAttemptPage() {
                   >
                     <div className="flex items-center gap-2">
                       <TrashIcon size={18} />
-                      <span>Clear Response</span>
+                      <span>{t("attempt.clearResponse")}</span>
                     </div>
                   </Button>
                 </div>
@@ -642,10 +751,10 @@ export default function DailyTestAttemptPage() {
                   <Bookmark size={16} className="text-brand" />
                   <div className="text-left">
                     <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                      Questions
+                      {t("attempt.questions")}
                     </Text>
                     <Text as="p" variant="body-small" color="gray-muted">
-                      {answeredCount} / {questions.length} answered
+                      {t("attempt.answeredOf", { answered: answeredCount, total: questions.length })}
                     </Text>
                   </div>
                 </div>
@@ -657,14 +766,14 @@ export default function DailyTestAttemptPage() {
             <aside className="hidden w-[260px] shrink-0 flex-col gap-4 lg:flex">
               <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
                 <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="mb-3">
-                  Questions
+                  {t("attempt.questions")}
                 </Text>
 
                 <div className="mb-3 flex flex-col gap-2">
-                  <CountRow label="Not Visited" count={counts.notVisited} color="bg-gray-300" textColor="text-surface-gray-muted" />
-                  <CountRow label="Answered" count={counts.answered} color="bg-[var(--icon-positive-subtle)]" textColor="text-[var(--icon-positive-normal)]" />
-                  <CountRow label="Not Answered" count={counts.notAnswered} color="bg-[var(--icon-negative-normal)]" textColor="text-[var(--icon-negative-normal)]" />
-                  <CountRow label="Marked for Review" count={counts.review} color="bg-[var(--icon-notice-subtle)]" textColor="text-[var(--icon-notice-normal)]" />
+                  <CountRow label={t("attempt.notVisited")} count={counts.notVisited} color="bg-gray-300" textColor="text-surface-gray-muted" />
+                  <CountRow label={t("attempt.answered")} count={counts.answered} color="bg-[var(--icon-positive-subtle)]" textColor="text-[var(--icon-positive-normal)]" />
+                  <CountRow label={t("attempt.notAnswered")} count={counts.notAnswered} color="bg-[var(--icon-negative-normal)]" textColor="text-[var(--icon-negative-normal)]" />
+                  <CountRow label={t("attempt.markedForReview")} count={counts.review} color="bg-[var(--icon-notice-subtle)]" textColor="text-[var(--icon-notice-normal)]" />
                 </div>
 
                 {questionGrid("sidebar")}
@@ -680,7 +789,7 @@ export default function DailyTestAttemptPage() {
                   >
                     <div className="flex items-center gap-2">
                       <Bookmark size={16} />
-                      <span>Review Later ({counts.review})</span>
+                      <span>{t("attempt.reviewLater", { count: counts.review })}</span>
                     </div>
                   </Button>
                 </div>
@@ -702,12 +811,12 @@ export default function DailyTestAttemptPage() {
           >
             <WarningCircleIcon variant="help" size={16} />
             <span>
-              Need help? <span className="!font-semibold text-brand">Contact Support</span>
+              {t("attempt.needHelp")} <span className="!font-semibold text-brand">{t("attempt.contactSupport")}</span>
             </span>
           </button>
           <div className="hidden items-center gap-1.5 body-small text-surface-gray-muted sm:flex">
             <Maximize size={14} />
-            <span>Press F to toggle fullscreen</span>
+            <span>{t("attempt.pressF")}</span>
           </div>
         </div>
       </div>
@@ -715,13 +824,13 @@ export default function DailyTestAttemptPage() {
       {/* Mobile question palette — same BottomSheet used elsewhere
           (see QuestionNavigatorSheet.tsx), not a new modal. */}
       <BottomSheet isOpen={navSheetOpen} onClose={() => setNavSheetOpen(false)} isHeader={false}>
-        <ModalHeader title="Questions" onClose={() => setNavSheetOpen(false)} />
+        <ModalHeader title={t("attempt.questions")} onClose={() => setNavSheetOpen(false)} />
         <div className="flex flex-col gap-4 px-4 pb-4">
           <div className="grid grid-cols-2 gap-2">
-            <LegendItem label="Not Visited" color="bg-gray-300" />
-            <LegendItem label="Answered" color="bg-[var(--icon-positive-subtle)]" />
-            <LegendItem label="Not Answered" color="bg-[var(--icon-negative-normal)]" />
-            <LegendItem label="Marked for Review" color="bg-[var(--icon-notice-subtle)]" />
+            <LegendItem label={t("attempt.notVisited")} color="bg-gray-300" />
+            <LegendItem label={t("attempt.answered")} color="bg-[var(--icon-positive-subtle)]" />
+            <LegendItem label={t("attempt.notAnswered")} color="bg-[var(--icon-negative-normal)]" />
+            <LegendItem label={t("attempt.markedForReview")} color="bg-[var(--icon-notice-subtle)]" />
           </div>
 
           {questionGrid("sheet")}
@@ -733,7 +842,7 @@ export default function DailyTestAttemptPage() {
             sx={{ borderRadius: "50px" }}
             onClick={() => setNavSheetOpen(false)}
           >
-            Close
+            {t("attempt.close")}
           </Button>
         </div>
       </BottomSheet>
@@ -877,6 +986,44 @@ const AttemptPageSkeleton = () => (
   </div>
 );
 
+// Mirrors DailyTestResultView's shape (header, score card, review list) inside
+// the same DashboardShell so the sidebar doesn't pop in after loading.
+const ResultPageSkeleton = () => (
+  <DashboardShell>
+    <main className="flex-1 overflow-y-auto bg-[var(--background-gray-subtle)] pb-20 md:pb-0">
+      <div className="mx-auto flex max-w-[1000px] flex-col gap-4 p-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-14 w-14 rounded-full" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-6 w-56" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+        <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+          <Skeleton className="mb-2 h-6 w-40" />
+          <Skeleton className="mb-4 h-4 w-72" />
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <Skeleton className="h-[150px] w-[150px] shrink-0 rounded-full" />
+            <div className="grid w-full flex-1 grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </div>
+        </Card>
+        <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+          <Skeleton className="mb-4 h-6 w-40" />
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-xl" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    </main>
+  </DashboardShell>
+);
+
 const TimeUnit = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col items-center">
     <span className="heading-medium !font-bold leading-none text-brand">{String(value).padStart(2, "0")}</span>
@@ -931,80 +1078,460 @@ const LegendItem = ({ label, color }: { label: string; color: string }) => (
   </div>
 );
 
-function DailyTestResultView({
-  result,
-  examId,
+type ReviewFilter = "all" | "correct" | "incorrect" | "skipped";
+type ReviewStatus = "correct" | "incorrect" | "skipped";
+
+function ScoreRing({ percent, score, total }: { percent: number; score: number; total: number }) {
+  const t = useTranslations("DailyTests");
+  const r = 52;
+  const circumference = 2 * Math.PI * r;
+  return (
+    <div className="relative h-[150px] w-[150px] shrink-0">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
+        <circle cx="60" cy="60" r={r} fill="none" strokeWidth="9" className="stroke-gray-200" />
+        <circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          strokeWidth="9"
+          strokeLinecap="round"
+          stroke="var(--color-brand)"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - percent / 100)}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="heading-medium !font-bold">
+          {score} / {total}
+        </span>
+        <span className="body-medium !font-semibold">{percent}%</span>
+        <span className="body-small text-surface-gray-muted">{t("result.yourScore")}</span>
+      </div>
+    </div>
+  );
+}
+
+const StatBlock = ({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) => (
+  <div className="flex flex-1 items-center justify-center gap-3 px-2 py-2">
+    {icon}
+    <div>
+      <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal" className="leading-tight">
+        {value}
+      </Text>
+      <Text as="p" variant="body-small" color="gray-muted">
+        {label}
+      </Text>
+    </div>
+  </div>
+);
+
+// Same look and behaviour as the full-length test's Performance Report
+// (exam-report/ExamReportSheet.tsx → QuestionItem): tinted header with the
+// status chip and a round chevron, question + OptionCard grid, and an
+// outlined "Show Correct Answer and Explanation" toggle. Easy/time-spent are
+// omitted — daily tests don't record either.
+function ReviewRow({
+  index,
+  total,
+  q,
+  status,
 }: {
-  result: DailyTestResult;
-  examId: string;
+  index: number;
+  total: number;
+  q: DailyTestResultQuestion;
+  status: ReviewStatus;
 }) {
-  const router = useRouter();
+  const t = useTranslations("modals.performanceReport");
+  const tCommon = useTranslations("");
+  const [isOpen, setIsOpen] = useState(() => index === 0);
+  const [isExplanation, setIsExplanation] = useState(false);
+
+  const options = (["1", "2", "3", "4"] as const)
+    .map((key) => ({ text: q.options[key] }))
+    .filter((o) => o.text);
+  const isAnswered = q.selected_option != null;
+  const chipTone = {
+    correct: "!bg-[var(--icon-positive-subtle)] !border-[var(--icon-positive-subtle)]",
+    incorrect: "!bg-[var(--icon-negative-normal)] !border-[var(--icon-negative-normal)]",
+    skipped: "!bg-[var(--icon-gray-muted)] !border-[var(--icon-gray-muted)]",
+  }[status];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-4">
-      <div className="py-6 text-center">
-        <h1 className="heading-large !font-semibold">
-          {result.score} / {result.total_questions}
-        </h1>
-        <p className="body-medium text-surface-gray-muted">Your score</p>
+    <div className="flex w-full flex-col justify-between gap-2">
+      <div
+        onClick={() => setIsOpen((v) => !v)}
+        className={`flex cursor-pointer items-center justify-between gap-2 bg-brand/9 px-3 py-2 ${
+          isOpen ? "border-l-4 border-brand" : ""
+        }`}
+      >
+        <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
+          {tCommon("common.questions")} {index + 1}/{total}
+        </Text>
+
+        <div className="flex items-center gap-4">
+          <StatusChip
+            variant="outline"
+            tone="success"
+            className={`body-small !font-semibold !text-white ${chipTone}`}
+            label={t(`legend.${status}`)}
+          />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200/60">
+            <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25, ease: "easeInOut" }}>
+              <ChevronIcon size={16} variant="down" />
+            </motion.div>
+          </div>
+        </div>
       </div>
 
-      {!result.is_paid && (
-        <Card padding="16px" borderRadius={12} className="text-center !bg-amber-50 !border-amber-200">
-          <p className="body-medium !font-semibold mb-1">Want to see what you got wrong?</p>
-          <p className="body-small text-surface-gray-muted mb-3">
-            Upgrade this course to see which questions were correct or incorrect, plus full
-            explanations for every question.
-          </p>
-          <Button onClick={() => router.push(`/preparation/${examId}`)}>Upgrade</Button>
-        </Card>
-      )}
-
-      {result.is_paid && result.questions && (
-        <div className="flex flex-col gap-4">
-          {result.questions.map((q, index) => (
-            <Card
-              key={q.question_id}
-              padding="16px"
-              borderRadius={12}
-              className={q.is_correct ? "!bg-green-50 !border-green-200" : "!bg-red-50 !border-red-200"}
-            >
-              <p className="body-medium !font-semibold mb-2">
-                {index + 1}. {q.question}
-              </p>
-              <div className="mb-2 flex flex-col gap-1">
-                {(["1", "2", "3", "4"] as const).map((optionKey) => {
-                  const optionText = q.options[optionKey];
-                  if (!optionText) return null;
-                  const isCorrectOption = Number(optionKey) === q.correct_option;
-                  const isSelectedOption = Number(optionKey) === q.selected_option;
-                  return (
-                    <div
-                      key={optionKey}
-                      className={`body-small rounded-md px-2 py-1 ${
-                        isCorrectOption
-                          ? "!font-semibold text-green-700"
-                          : isSelectedOption
-                            ? "text-red-700 line-through"
-                            : ""
-                      }`}
-                    >
-                      {optionText}
-                    </div>
-                  );
-                })}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-3 px-3">
+              <div className="px-3">
+                <QuestionText question={q.question ?? ""} image={q.question_image ?? undefined} />
               </div>
-              {q.explanation && (
-                <p className="body-small text-surface-gray-muted border-t border-gray-200 pt-2">
-                  {q.explanation}
-                </p>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
 
-      <Button onClick={() => router.push(`/daily-tests/${examId}`)}>Back to history</Button>
+              <div className="grid gap-3 md:grid-cols-2">
+                {options.map((opt, i) => (
+                  <OptionCard
+                    key={i}
+                    index={i}
+                    value={opt}
+                    correctOption={q.correct_option - 1}
+                    userOption={q.selected_option != null ? q.selected_option - 1 : null}
+                    isQuestionAnswered={isAnswered}
+                  />
+                ))}
+              </div>
+
+              <AnimatePresence mode="wait" initial={false}>
+                {isExplanation && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="flex flex-col gap-4 py-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
+                        {t("explanation.heading")}
+                      </Text>
+                      <div className="flex items-center gap-1">
+                        <Text as="p" variant="body-small" weight="normal" color="gray-subtle">
+                          {t("explanation.correctAnswer")}
+                        </Text>
+                        <NumberCountIcon
+                          value={String.fromCharCode(65 + q.correct_option - 1) as any}
+                          radius={6}
+                          size={24}
+                          background="var(--color-primary-bg-soft)"
+                          color="var(--color-brand)"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-start justify-center gap-4 rounded-lg bg-[var(--color-primary-bg-soft)] p-3">
+                      <Text as="p" variant="heading-small" weight="semibold">
+                        {t("explanation.title")}
+                      </Text>
+                      <MathRender content={q.explanation ?? ""}>
+                        <Text as="div" variant="body-large" weight="normal" color="gray-normal">
+                          <ReactMarkdown>{q.explanation ?? ""}</ReactMarkdown>
+                        </Text>
+                      </MathRender>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="pb-2">
+                <Button
+                  onClick={() => setIsExplanation((v) => !v)}
+                  sx={{ borderRadius: "50px" }}
+                  fullWidth
+                  variant="outlined"
+                  size="md"
+                >
+                  <div className="flex items-center gap-2">
+                    <p>{isExplanation ? t("explanation.hide") : t("explanation.show")}</p>
+                    <motion.div
+                      animate={{ rotate: isExplanation ? 180 : 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                    >
+                      <ChevronIcon size={16} variant="down" color="var(--color-brand)" />
+                    </motion.div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+// Same lazy-loaded interstitial the preparation/test-series shells mount.
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
+
+function DailyTestResultView({
+  result,
+  courseId,
+  testId,
+}: {
+  result: DailyTestResult;
+  courseId: string;
+  testId: string;
+}) {
+  const router = useRouter();
+  const { history } = useDailyTestHistory(courseId);
+  const [filter, setFilter] = useState<ReviewFilter>("all");
+
+  const t = useTranslations("DailyTests");
+  const locale = useLocale();
+  const course = useEnrollmentForCourse(courseId);
+  const openPaywall = usePaywallsStore((s) => s.open);
+  const openUnlockModal = () => {
+    if (!course?.exam) return;
+    openPaywall("daily-test-locked-modal", course.exam, "daily_test_result_clicked", course);
+  };
+
+  const total = result.total_questions;
+  const correct = result.score;
+  const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  const reviewed = useMemo(
+    () =>
+      (result.questions ?? []).map((q) => ({
+        q,
+        status: (q.selected_option == null ? "skipped" : q.is_correct ? "correct" : "incorrect") as ReviewStatus,
+      })),
+    [result.questions],
+  );
+  const skipped = reviewed.filter((r) => r.status === "skipped").length;
+  // Free users get score only, so skipped questions can't be told apart
+  // from wrong ones — everything not correct counts as incorrect there.
+  const incorrect = result.is_paid ? total - correct - skipped : total - correct;
+
+  const testDate = history?.tests.find((t) => String(t.test_id) === String(testId))?.test_date;
+  const dateLabel = testDate
+    ? new Intl.DateTimeFormat(DATE_LOCALES[locale] ?? "en-GB", { day: "2-digit", month: "long", year: "numeric" }).format(
+        new Date(testDate),
+      )
+    : "";
+  const examName = history?.exam.short_name ?? t("list.defaultExam");
+
+  const filters: { key: ReviewFilter; label: string; count: number; icon?: React.ReactNode }[] = [
+    { key: "all", label: t("result.all"), count: total },
+    {
+      key: "correct",
+      label: t("result.correct"),
+      count: correct,
+      icon: <CheckCircle2 size={14} className="text-[var(--icon-positive-normal)]" />,
+    },
+    {
+      key: "incorrect",
+      label: t("result.incorrect"),
+      count: incorrect,
+      icon: <XCircle size={14} className="text-[var(--icon-negative-normal)]" />,
+    },
+    { key: "skipped", label: t("result.skipped"), count: skipped },
+  ];
+
+  const bannerTitle =
+    percent >= 70 ? t("result.greatJob") : percent >= 40 ? t("result.goodEffort") : t("result.keepPracticing");
+
+  return (
+    <DashboardShell>
+    <main className="flex-1 overflow-y-auto bg-[var(--background-gray-subtle)] pb-20 md:pb-0">
+      <div className="mx-auto flex max-w-[1000px] flex-col gap-4 p-4">
+        <div className="flex items-center gap-3">
+          {history?.exam.logo_url && (
+            <Image
+              src={history.exam.logo_url}
+              alt=""
+              width={56}
+              height={56}
+              unoptimized
+              className="h-14 w-14 rounded-full object-cover"
+            />
+          )}
+          <div>
+            <h1 className="heading-medium !font-semibold">{examName} • {t("list.defaultExam")}</h1>
+            {(dateLabel || result.attempt_number) && (
+              <p className="body-medium text-surface-gray-muted">
+                {[dateLabel, result.attempt_number ? t("result.attemptNumber", { number: result.attempt_number }) : ""]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="heading-small !font-semibold">{t("result.title")}</h2>
+              <p className="body-medium text-surface-gray-muted">
+                {result.is_paid ? t("result.paidDesc") : t("result.freeDesc")}
+              </p>
+            </div>
+            {result.is_paid ? (
+              <div className="flex items-center gap-3 rounded-lg bg-[var(--color-success-bg-soft)] px-4 py-3">
+                <Trophy size={22} className="text-[var(--icon-positive-normal)]" />
+                <div>
+                  <Text as="p" variant="body-medium" weight="semibold" className="text-[var(--icon-positive-normal)]">
+                    {bannerTitle}
+                  </Text>
+                  <Text as="p" variant="body-small" className="text-[var(--icon-positive-normal)]">
+                    {t("result.rightTrack")}
+                  </Text>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={openUnlockModal}
+                className="flex cursor-pointer items-center gap-3 rounded-lg bg-[var(--color-primary-bg-soft)] px-4 py-3"
+              >
+                <Crown size={22} className="text-[var(--color-warning-strong)]" />
+                <div>
+                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                    {t("result.lockedTitle")}
+                  </Text>
+                  <Text as="p" variant="body-small" color="gray-muted">
+                    {t("result.lockedDesc")}
+                  </Text>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+            <ScoreRing percent={percent} score={correct} total={total} />
+            <div className="grid w-full flex-1 grid-cols-3 divide-x divide-gray-200">
+              <StatBlock icon={<FileText size={24} className="text-surface-gray-muted" />} value={total} label={t("result.questions")} />
+              <StatBlock
+                icon={<CheckCircle2 size={26} className="text-[var(--icon-positive-normal)]" />}
+                value={correct}
+                label={t("result.correct")}
+              />
+              <StatBlock
+                icon={<XCircle size={26} className="text-[var(--icon-negative-normal)]" />}
+                value={incorrect}
+                label={t("result.incorrect")}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {!result.is_paid && (
+          <Card
+            padding="24px"
+            borderRadius={12}
+            className="flex flex-col items-center gap-4 text-center !border-amber-200 !bg-amber-50"
+          >
+            <Crown size={22} className="text-[var(--color-warning-strong)]" />
+            <div>
+              <p className="heading-small !font-semibold">{t("result.wantToSee")}</p>
+              <p className="body-medium text-surface-gray-muted">
+                {t("result.wantToSeeDesc")}
+              </p>
+            </div>
+            <div className="grid w-full max-w-[720px] grid-cols-1 gap-4 text-left sm:grid-cols-3">
+              {[
+                { icon: <ListChecks size={20} />, title: t("result.feature1Title"), body: t("result.feature1Body") },
+                { icon: <BookOpen size={20} />, title: t("result.feature2Title"), body: t("result.feature2Body") },
+                { icon: <BarChart3 size={20} />, title: t("result.feature3Title"), body: t("result.feature3Body") },
+              ].map((f) => (
+                <div key={f.title} className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[var(--color-warning-strong)]">
+                    {f.icon}
+                  </span>
+                  <div>
+                    <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                      {f.title}
+                    </Text>
+                    <Text as="p" variant="body-small" color="gray-muted">
+                      {f.body}
+                    </Text>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button
+              size="lg"
+              sx={{ borderRadius: "50px", paddingX: "32px" }}
+              rightIcon={<ChevronIcon size={16} variant="right" color="white" />}
+              disabled={!course?.exam}
+              onClick={openUnlockModal}
+            >
+              {t("result.upgrade")}
+            </Button>
+          </Card>
+        )}
+
+        {result.is_paid && result.questions && (
+          <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="heading-small !font-semibold">{t("result.reviewTitle")}</h2>
+                <p className="body-medium text-surface-gray-muted">{t("result.reviewDesc")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {filters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    disabled={f.count === 0}
+                    className={`body-small flex items-center gap-1.5 rounded-full px-4 py-2 !font-medium ${
+                      f.count === 0
+                        ? "cursor-not-allowed bg-gray-100 text-surface-gray-muted opacity-50"
+                        : filter === f.key
+                          ? "cursor-pointer bg-brand text-white"
+                          : "cursor-pointer bg-gray-100 text-surface-gray-normal"
+                    }`}
+                  >
+                    {filter !== f.key && f.icon}
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {reviewed.map(({ q, status }, index) =>
+                filter === "all" || filter === status ? (
+                  <ReviewRow key={q.question_id} index={index} total={total} q={q} status={status} />
+                ) : null,
+              )}
+            </div>
+          </Card>
+        )}
+
+        <Button
+          size="lg"
+          variant={result.is_paid ? undefined : "soft"}
+          color={result.is_paid ? undefined : "gray"}
+          sx={{ borderRadius: "50px" }}
+          fullWidth
+          onClick={() => router.push(`/daily-tests/${courseId}/${testId}`)}
+        >
+          <div className="flex items-center gap-2">
+            <ArrowLeft size={16} />
+            <span>{t("result.backToHistory")}</span>
+          </div>
+        </Button>
+      </div>
+      <BottomNavWrap />
+    </main>
+      <LockedContentModal />
+    </DashboardShell>
   );
 }

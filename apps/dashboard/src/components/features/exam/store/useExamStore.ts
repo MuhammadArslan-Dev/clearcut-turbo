@@ -174,7 +174,7 @@ export const useExamStore = create<ExamStore>()(
       // ===============================
 
       setLanguage: (lang) => {
-        set((state) => ({ language: state.language === "en" ? "hi" : "en" }));
+        set({ language: lang });
       },
 
       // ===============================

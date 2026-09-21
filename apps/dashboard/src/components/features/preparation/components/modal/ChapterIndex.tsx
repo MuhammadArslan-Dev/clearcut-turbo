@@ -17,6 +17,8 @@ import { useBackHandler } from "@/hooks/Global/useBackHandler";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { Chapter } from "../../types/types";
 import { getChapterProgress } from "../../util/progressTracker";
+import { getLocalizedName } from "../../util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 import Text from "@clearcut/ui/text";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
@@ -27,6 +29,7 @@ export default function ChapterIndex() {
   const t = useTranslations("");
   const { chapters, selectedChapter, setChapter, progressByTopicId, course } =
     usePreparationStore();
+  const contentLocale = courseLanguageToLocale(course?.language);
   const { isOpen, closeModal, stack } = usePreparationModalStore();
   useBackHandler({
     isOpen: isOpen,
@@ -81,6 +84,7 @@ export default function ChapterIndex() {
                     chaptersById,
                     progressByTopicId,
                   );
+                  const chapterName = getLocalizedName(chapter, contentLocale);
                   return (
                     <SectionHeaderCard
                       key={chapterIndex}
@@ -106,7 +110,7 @@ export default function ChapterIndex() {
                           </Text>
                         </div>
                       }
-                      title={chapter.name}
+                      title={chapterName}
                       cursor="cursor-pointer"
                       onClick={() => {
                         if (chapter?.locked)

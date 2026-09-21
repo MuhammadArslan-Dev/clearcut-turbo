@@ -14,6 +14,8 @@ import { CheckIcon, NoteIcon, MediaPlayerIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { getLocalizedName } from "../../util/getLocalizedName";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 export default function ChapterDetailHeader() {
   const { set } = useQueryParams();
@@ -21,7 +23,16 @@ export default function ChapterDetailHeader() {
 
   const { selectedTopic, selectedChapter, progressByTopicId, course } =
     usePreparationStore();
+  // The course's own content language, not the site's UI locale — see
+  // courseLanguageToLocale()'s docblock.
+  const contentLocale = courseLanguageToLocale(course?.language);
   const topicProgress = progressByTopicId[selectedTopic?.id!];
+  const chapterName = selectedChapter
+    ? getLocalizedName(selectedChapter, contentLocale)
+    : undefined;
+  const topicName = selectedTopic
+    ? getLocalizedName(selectedTopic, contentLocale)
+    : undefined;
 
   const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
     queryKey: ["minitest-check", selectedTopic?.id],
@@ -62,20 +73,20 @@ export default function ChapterDetailHeader() {
             </Button>
           </div>
 
-          {selectedChapter?.name ? (
+          {chapterName ? (
             <div className="break-all">
-              {selectedChapter?.name ? (
+              {chapterName ? (
                 <Text variant="body-large" color="gray-muted">
-                  {selectedChapter?.name}
+                  {chapterName}
                   {" > "}
                 </Text>
               ) : (
                 <Skeleton className="w-10 h-6" />
               )}
 
-              {selectedTopic?.name ? (
+              {topicName ? (
                 <Text variant="body-large" color="gray-normal">
-                  {selectedTopic?.name}
+                  {topicName}
                 </Text>
               ) : (
                 <Skeleton className="w-10 h-6" />

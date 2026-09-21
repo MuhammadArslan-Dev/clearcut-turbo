@@ -18,11 +18,11 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { limitChars } from "@clearcut/utils/text-limit";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
-import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
-import { toContentLocale } from "@/utils/text/contentLocale";
+import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
 // padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
@@ -47,10 +47,12 @@ export default function BottomBar() {
   const addP = useTranslations("modals.addPaper");
   const actions = useTranslations("actions");
   const t = useTranslations("modals");
-  const { locale } = useLanguageSwitch();
 
   const { selectedPaperId, papers, selectPaper, loading, selectedTopic, course } =
     usePreparationStore();
+  // The course's own content language, not the site's UI locale — see
+  // courseLanguageToLocale()'s docblock.
+  const contentLocale = courseLanguageToLocale(course?.language);
 
   const { canAddPaper, openAddPaper } = useAddPaper();
 
@@ -94,7 +96,9 @@ export default function BottomBar() {
     }
   }, [currentPaper?.name]);
 
-  const localizedName = parsedName[toContentLocale(locale)]?.name ?? currentPaper?.name ?? "";
+  const localizedName = parsedName[toContentLocale(contentLocale)]?.name ?? currentPaper?.name ?? "";
+  const prevTopicName = prevTopic ? getLocalizedName(prevTopic, contentLocale) : "";
+  const nextTopicName = nextTopic ? getLocalizedName(nextTopic, contentLocale) : "";
 
   // 🦴 Skeleton UI instead of null
   if (loading || !currentPaper) {
@@ -217,7 +221,7 @@ export default function BottomBar() {
               </Button>
             </div>
             <h6 className="body-medium truncate hidden md:block w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-              {prevTopic ? limitChars(prevTopic.name, 17) : ""}
+              {prevTopic ? limitChars(prevTopicName, 17) : ""}
             </h6>
           </div>
         )}
@@ -292,7 +296,7 @@ export default function BottomBar() {
             )}
           </div>
           <h6 className="body-medium hidden md:block  truncate w-12 xs:w-auto md:w-12 1xl:w-auto !font-normal text-surface-gray-normal">
-            {nextTopicLocked ? "" : nextTopic ? limitChars(nextTopic.name, 17) : ""}
+            {nextTopicLocked ? "" : nextTopic ? limitChars(nextTopicName, 17) : ""}
           </h6>
         </div>
       </div>

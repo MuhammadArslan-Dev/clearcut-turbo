@@ -39,6 +39,11 @@ export default function PaymentHistoryWrap() {
           status = "expired";
       }
 
+      // Amount paid is the enrollment's own `price` (set from the actual
+      // transaction at purchase time), never the exam's catalog price —
+      // and only shown for a currently active enrollment.
+      const paidAmount = Number(item.price ?? 0);
+
       return {
         id: item.uuid,
         date: item.enrolled_at
@@ -50,7 +55,10 @@ export default function PaymentHistoryWrap() {
           : "--",
         program: item.exam?.short_name ?? "—",
         status,
-        amount: Number(item.exam?.price ?? 0),
+        amount:
+          status === "active" && Number.isFinite(paidAmount)
+            ? paidAmount
+            : 0,
         paymentMethod: "-",
         invoiceUrl: null,
       };

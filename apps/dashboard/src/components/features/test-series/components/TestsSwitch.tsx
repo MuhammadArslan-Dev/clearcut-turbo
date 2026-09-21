@@ -2,11 +2,13 @@
 import TabSwitch from "@/components/ui/tabs/TabSwitch";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
+import { useTranslations } from "next-intl";
 import React, { useEffect, useState } from "react";
 
 export default React.memo(function TestsSwitch() {
   const { get, set } = useQueryParams();
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const t = useTranslations("testListContent.testTypeSwitch");
 
   useEffect(() => {
     const tab = (get("testType") as string) ?? "chapter-tests";
@@ -21,9 +23,9 @@ export default React.memo(function TestsSwitch() {
       layoutScopeId="paper-change-12"
       scrollable
       items={[
-        { id: "chapter-tests", label: "Chapter Tests" },
-        { id: "sectional-tests", label: "Sectional Tests" },
-        { id: "full-length-papers", label: "Full-length Papers" },
+        { id: "chapter-tests", label: t("chapterTests") },
+        { id: "sectional-tests", label: t("sectionalTests") },
+        { id: "full-length-papers", label: t("fullLengthPapers") },
       ]}
       value={activeTab}
       onChange={(id) => {

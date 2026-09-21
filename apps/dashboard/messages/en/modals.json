@@ -1,4 +1,12 @@
 {
+  "countDownModal": {
+    "getReady": "Get Ready",
+    "testStartingSoon": "Test Starting Soon",
+    "focusAndPrepare": "Focus and prepare yourself",
+    "preparingYourTest": "Preparing your test...",
+    "testWillBeginAutomatically": "The test will begin automatically"
+  },
+
   "editCourseModal": {
     "title": "{exam} Settings",
 
@@ -63,6 +71,34 @@
     },
     "cta": "Unlock Now",
     "continueFree": "Continue free learning"
+  },
+
+  "dailyTestsLockedModal": {
+    "title": "Unlock Full Test Access",
+    "subtitle": "Upgrade to attempt previous tests, view detailed analysis, and improve your preparation.",
+    "unlockAndGet": "Unlock and get",
+    "features": {
+      "allTests": "Access all previous tests",
+      "solutions": "Detailed solution & explanations",
+      "subjectAnalysis": "Subject-wise performance analysis",
+      "trackProgress": "Track your progress over time"
+    },
+    "cta": "Unlock Now",
+    "continueFree": "Continue with free plan"
+  },
+
+  "dailyTestLockedModal": {
+    "title": "Unlock Full Test Analysis",
+    "subtitle": "Upgrade to see which questions were correct or incorrect, plus detailed explanations for every question.",
+    "unlockAndGet": "Unlock and get",
+    "features": {
+      "questionReview": "Question-wise review with your answers",
+      "explanations": "Correct answers and detailed explanations",
+      "analysis": "Performance analysis and insights",
+      "trackImprovement": "Track your improvement over time"
+    },
+    "cta": "Unlock Now",
+    "continueFree": "Continue with limited view"
   },
 
   "testLockedModal": {
@@ -171,6 +207,29 @@
     },
     "info": {
       "coverage": "This test covers high-frequency {exam} PYQs"
+    },
+    "filters": {
+      "title": "Filter Questions",
+      "all": "All",
+      "emptyAll": "There are no questions in this section.",
+      "emptyCorrect": "You didn't answer any question correctly in this test.",
+      "emptyIncorrect": "No incorrect answers — nothing to review here.",
+      "emptySkipped": "You attempted every question, so nothing was skipped."
+    },
+    "badges": {
+      "reviewed": "Reviewed"
+    },
+    "explanation": {
+      "heading": "Answer & Explanation",
+      "correctAnswer": "Correct Answer",
+      "title": "Explanation",
+      "show": "Show Correct Answer and Explanation",
+      "hide": "Hide Correct Answer and Explanation"
+    },
+    "time": {
+      "seconds": "{count} sec",
+      "minutes": "{count} min",
+      "minutesSeconds": "{minutes} min {seconds} sec"
     }
   },
 

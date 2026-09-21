@@ -10,6 +10,7 @@ import type { Locale } from "@/lib/dictionary";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 import StepEyebrow from "./StepEyebrow";
 import TipCard from "./TipCard";
+import { CapIcon, ExamLogo } from "./trackerIcons";
 
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -36,59 +37,6 @@ const DocIcon = () => (
     <path d="M9 12h6M9 16h6" />
   </svg>
 );
-
-const CapIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 10L12 5 2 10l10 5 10-5Z" />
-    <path d="M6 12.5V17c0 1.1 2.7 3 6 3s6-1.9 6-3v-4.5" />
-  </svg>
-);
-
-const BriefcaseIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="7" width="18" height="13" rx="2" />
-    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" />
-  </svg>
-);
-
-/** Real exam icon, not a decorative one — picked from the exam's own
- * exam_type (an "Eligiblity" exam vs a "Job" recruitment exam are visibly
- * different things), rather than initials or an arbitrary glyph. Used only
- * as the fallback for ExamLogo below, when the exam has no logo_url or its
- * image fails to load. */
-function ExamTypeIcon({ examType }: { examType: string }) {
-  return examType.toLowerCase().includes("job") ? <BriefcaseIcon /> : <CapIcon />;
-}
-
-/** The exam's real logo (backend-hosted, e.g. an S3 image) when available,
- * falling back to a generic exam-type icon otherwise — either because the
- * backend has no logo for this exam, or the image failed to load. Owns its
- * own circular wrapper (not just the glyph) because a real logo — usually
- * already colourful/branded — sits better on a plain white disc than on the
- * same tinted background the icon fallback uses. */
-function ExamLogo({ exam, tone }: { exam: SyllabusExam; tone: { bg: string; text: string } }) {
-  const [failed, setFailed] = useState(false);
-  const hasLogo = Boolean(exam.logo_url) && !failed;
-
-  return (
-    <div
-      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${hasLogo ? "border border-[var(--color-border-gray-subtle)] bg-white" : ""}`}
-      style={hasLogo ? undefined : { background: tone.bg, color: tone.text }}
-    >
-      {hasLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={exam.logo_url!}
-          alt=""
-          className="h-full w-full rounded-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <ExamTypeIcon examType={exam.exam_type} />
-      )}
-    </div>
-  );
-}
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -284,7 +232,7 @@ export default function ExamPickerStep({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <ExamLogo exam={exam} tone={tone} />
+                    <ExamLogo logoUrl={exam.logo_url} examType={exam.exam_type} tone={tone} />
                     <div>
                       <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="group-hover:text-brand transition-colors">
                         {exam.short_name}

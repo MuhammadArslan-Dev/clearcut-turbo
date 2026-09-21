@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card } from "@clearcut/ui/card";
 import { Button } from "@clearcut/ui/button";
 import { Crown } from "lucide-react";
@@ -23,6 +24,7 @@ export interface PremiumUpsellProps {
  * card + a wide banner, not a full paywall modal.
  */
 export default function PremiumUpsell({ variant, active, onAction }: PremiumUpsellProps) {
+  const t = useTranslations("DailyTests.upsell");
   if (variant === "compact") {
     return (
       <Card
@@ -47,12 +49,10 @@ export default function PremiumUpsell({ variant, active, onAction }: PremiumUpse
             <p
               className={`body-small !font-semibold ${active ? "text-[var(--color-success-strong)]" : "text-brand"}`}
             >
-              {active ? "Premium Plan Active" : "Upgrade to Premium"}
+              {active ? t("premiumActive") : t("upgrade")}
             </p>
             <p className="body-xsmall whitespace-nowrap text-surface-gray-muted">
-              {active
-                ? "You have full access to all tests and features."
-                : "Unlock all previous tests, detailed analysis and more."}
+              {active ? t("compactActiveDesc") : t("compactUpgradeDesc")}
             </p>
           </div>
           <ChevronIcon
@@ -74,12 +74,10 @@ export default function PremiumUpsell({ variant, active, onAction }: PremiumUpse
           </div>
           <div>
             <p className="body-large !font-semibold">
-              {active ? "You're on Premium!" : "Get Full Access to All Tests"}
+              {active ? t("onPremium") : t("getFullAccess")}
             </p>
             <p className="body-small text-surface-gray-muted">
-              {active
-                ? "You have full access to all daily tests, previous papers, detailed analysis and more."
-                : "Unlock all previous tests, detailed performance analysis, subject-wise report and more."}
+              {active ? t("bannerActiveDesc") : t("bannerUpgradeDesc")}
             </p>
           </div>
         </div>
@@ -93,7 +91,7 @@ export default function PremiumUpsell({ variant, active, onAction }: PremiumUpse
           onClick={onAction}
           className="w-full md:w-auto"
         >
-          {active ? "Explore More Tests" : "Upgrade to Premium"}
+          {active ? t("exploreMore") : t("upgrade")}
         </Button>
       </div>
     </Card>

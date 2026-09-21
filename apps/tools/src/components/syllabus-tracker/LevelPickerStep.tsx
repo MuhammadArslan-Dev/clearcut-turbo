@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Text from "@clearcut/ui/text";
 import Skeleton from "@clearcut/ui/skeleton";
 import { Button } from "@clearcut/ui/button";
@@ -14,6 +14,9 @@ import TipCard from "./TipCard";
 export interface SelectedLevel {
   id: number | "full-exam";
   name: string;
+  /** Always English — used for URL slugging, never display. See
+   * syllabusTrackerUrl.ts's levelSlug() for why. */
+  nameEn?: string;
 }
 
 const BackIcon = () => (
@@ -174,6 +177,7 @@ export default function LevelPickerStep({
   onBack,
   autoSelectPath,
   onInvalidSlug,
+  onPathChange,
   rootLevel,
   preloadedLevels,
   excludeRootIds,
@@ -184,6 +188,12 @@ export default function LevelPickerStep({
   exam: Pick<SyllabusExam, "id" | "short_name">;
   onSelect: (level: SelectedLevel, path: SyllabusLevel[]) => void;
   onBack: () => void;
+  /** Fires every time `path` changes from drilling deeper or going back a
+   * level — NOT just once at the final leaf (that's `onSelect`'s job). Lets
+   * the caller keep the URL bar in sync with each intermediate subject
+   * pick, so reloading or sharing the link mid-drill lands back at the
+   * right depth instead of the last-pushed (much shallower) URL. */
+  onPathChange?: (path: SyllabusLevel[]) => void;
   /** Remaining URL slug segments after the exam (e.g. ["paper-1", "english-and-hindi"]) —
    * walked one depth at a time as each matches, auto-drilling/selecting. */
   autoSelectPath?: string[];
@@ -196,7 +206,7 @@ export default function LevelPickerStep({
    * options, and "Back" from the first screen returns to the Paper step
    * instead of the exam picker. Omitted entirely for exams with no Paper
    * tier, which behave exactly as before. */
-  rootLevel?: { id: number; name: string; group?: string | null };
+  rootLevel?: { id: number; name: string; nameEn?: string; group?: string | null };
   /** Skips this component's own fetchSyllabusLevels call when the caller
    * already fetched the same exam's levels (e.g. to detect a Paper tier
    * before deciding which step to show). Omitted = self-fetch, unchanged
@@ -219,7 +229,9 @@ export default function LevelPickerStep({
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [path, setPath] = useState<SyllabusLevel[]>(
-    rootLevel ? [{ ...rootLevel, parent_id: null, group: rootLevel.group ?? null }] : [],
+    rootLevel
+      ? [{ ...rootLevel, parent_id: null, group: rootLevel.group ?? null, name_en: rootLevel.nameEn ?? rootLevel.name }]
+      : [],
   );
   const [autoWalked, setAutoWalked] = useState(0);
   const [pending, setPending] = useState<SyllabusLevel | "full-exam" | null>(null);
@@ -234,7 +246,7 @@ export default function LevelPickerStep({
     setError(false);
     setAutoWalked(0);
     setPending(null);
-    fetchSyllabusLevels(exam.id)
+    fetchSyllabusLevels(exam.id, locale)
       .then((data) => {
         if (!cancelled) setLevels(data);
       })
@@ -264,40 +276,71 @@ export default function LevelPickerStep({
 
   const showFullExamOption = path.length === 0 && currentOptions.length > 1;
 
-  // Immediate drill/select — used only by the URL auto-walk, which is
-  // restoring a choice already made, not staging a new one.
-  const autoAdvance = (node: SyllabusLevel) => {
-    const hasChildren = childrenAt(node.id).length > 0;
-    if (hasChildren) {
-      setPath((prev) => [...prev, node]);
-    } else {
-      onSelect({ id: node.id, name: node.name }, [...path, node]);
-    }
-  };
-
-  // Auto-drive the drill from the URL, one depth at a time, as soon as
-  // levels are loaded and each successive segment resolves.
+  // Auto-drive the drill from the URL in one uninterrupted synchronous
+  // pass, rather than one depth per *effect re-run* (the original
+  // approach, which relied on `path`/`currentOptions` state to have
+  // already re-rendered before the next segment could be processed). That
+  // one-step-per-render design hit two different failure modes that both
+  // silently dropped a middle segment when restoring a 3+ level-deep URL:
+  // React StrictMode's dev-only double-invocation reprocessing the same
+  // segment twice before its state committed, and a step's onSelect()
+  // parent-state cascade (this component unmounts on the FINAL segment)
+  // racing the next segment's dependency-change trigger. Walking the whole
+  // path here against `levels` directly — not the once-per-render `path`/
+  // `currentOptions` state — sidesteps both: nothing spans more than one
+  // render for a double-invocation or an in-flight update to interleave
+  // with. Guarded to run at most once per mount (`hasAutoWalked`), since
+  // it's restoring a URL that was already fully resolved once.
+  const hasAutoWalked = useRef(false);
   useEffect(() => {
-    if (!levels || !autoSelectPath) return;
-    const nextSlug = autoSelectPath[autoWalked];
-    if (nextSlug === undefined) return; // nothing left to walk — show the picker at this depth
-    if (nextSlug === "full-exam") {
-      if (showFullExamOption || childrenAt(null).length === 1) {
-        onSelect({ id: "full-exam", name: t.fullExamTitle(exam.short_name) }, []);
-      } else {
-        onInvalidSlug?.();
+    if (!levels || !autoSelectPath || hasAutoWalked.current) return;
+    hasAutoWalked.current = true;
+
+    let walkPath = path;
+    for (let i = 0; i < autoSelectPath.length; i++) {
+      const slug = autoSelectPath[i];
+      const parentId = walkPath.length ? walkPath[walkPath.length - 1].id : null;
+      let optionsHere = levels.filter((l) => l.parent_id === parentId);
+      if (walkPath.length === 0 && excludeRootIds?.length) {
+        optionsHere = optionsHere.filter((o) => !excludeRootIds.includes(o.id));
       }
-      return;
+
+      if (slug === "full-exam") {
+        const canFullExam = (walkPath.length === 0 && optionsHere.length > 1) || optionsHere.length === 1;
+        setAutoWalked(i + 1);
+        if (canFullExam) {
+          onSelect({ id: "full-exam", name: t.fullExamTitle(exam.short_name) }, []);
+        } else {
+          onInvalidSlug?.();
+        }
+        return;
+      }
+
+      const match = optionsHere.find((o) => levelSlug(o) === slug);
+      if (!match) {
+        setAutoWalked(i);
+        onInvalidSlug?.();
+        return;
+      }
+
+      const hasChildren = levels.some((l) => l.parent_id === match.id);
+      if (hasChildren) {
+        walkPath = [...walkPath, match];
+      } else {
+        setAutoWalked(i + 1);
+        onSelect({ id: match.id, name: match.name }, [...walkPath, match]);
+        return;
+      }
     }
-    const match = currentOptions.find((o) => levelSlug(o) === nextSlug);
-    if (!match) {
-      onInvalidSlug?.();
-      return;
-    }
-    setAutoWalked((n) => n + 1);
-    autoAdvance(match);
+
+    // Exhausted autoSelectPath but the last matched node still has
+    // children (the URL only specifies a PREFIX of the real path, e.g. it
+    // was reloaded mid-drill) — settle the picker at that depth instead of
+    // finishing the wizard.
+    setPath(walkPath);
+    setAutoWalked(autoSelectPath.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levels, currentOptions, autoSelectPath, autoWalked]);
+  }, [levels, autoSelectPath]);
 
   const isAutoWalking = Boolean(autoSelectPath) && autoWalked < (autoSelectPath?.length ?? 0);
 
@@ -307,7 +350,17 @@ export default function LevelPickerStep({
     } else if (path.length <= baseDepth) {
       onBack();
     } else {
-      setPath((prev) => prev.slice(0, -1));
+      // Computed as a plain value, not inside setPath's functional updater —
+      // an updater must be a pure function of its previous state (React can
+      // invoke it more than once, e.g. under StrictMode), so a side effect
+      // like onPathChange's history.pushState living inside one previously
+      // fired twice for a single transition and confused Next's own Router
+      // (a "Cannot update a component while rendering a different
+      // component" warning, with real symptoms: a middle path segment
+      // silently dropped when restoring a multi-level deep link).
+      const next = path.slice(0, -1);
+      setPath(next);
+      onPathChange?.(next);
     }
   };
 
@@ -319,10 +372,12 @@ export default function LevelPickerStep({
     }
     const hasChildren = childrenAt(pending.id).length > 0;
     if (hasChildren) {
-      setPath((prev) => [...prev, pending]);
+      const next = [...path, pending];
+      setPath(next);
+      onPathChange?.(next);
       setPending(null);
     } else {
-      onSelect({ id: pending.id, name: pending.name }, [...path, pending]);
+      onSelect({ id: pending.id, name: pending.name, nameEn: pending.name_en }, [...path, pending]);
     }
   };
 
@@ -341,7 +396,7 @@ export default function LevelPickerStep({
             label: t.continueLabel,
             onClick: () =>
               rootLevel
-                ? onSelect({ id: rootLevel.id, name: rootLevel.name }, path)
+                ? onSelect({ id: rootLevel.id, name: rootLevel.name, nameEn: rootLevel.nameEn }, path)
                 : onSelect({ id: "full-exam", name: exam.short_name }, []),
             disabled: false,
           }

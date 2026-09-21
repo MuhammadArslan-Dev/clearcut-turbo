@@ -9,7 +9,9 @@ export type PaywallTypes =
   | "main-paywall"
   | "course-paywall"
   | "topic-locked-modal"
-  | "test-locked-modal";
+  | "test-locked-modal"
+  | "daily-test-locked-modal"
+  | "daily-tests-locked-modal";
 
 export type PaywallSource =
   | "my_courses_card_clicked"
@@ -21,7 +23,9 @@ export type PaywallSource =
   | "sectional_test_card_clicked"
   | "test_series_card_clicked"
   | "payment_failed_retry_clicked"
-  | "next_button_clicked";
+  | "next_button_clicked"
+  | "daily_test_result_clicked"
+  | "daily_tests_page_clicked";
 interface EditCourseState {
   isOpen: boolean;
   data: Exam | undefined | null;

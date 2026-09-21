@@ -23,6 +23,7 @@ import { useTestSeriesModalStore } from "@/components/features/test-series/store
 import { useTranslations } from "next-intl";
 import DiscountBadgeIcon from "@/components/ui/icons/discount-badge-icon";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
+import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 
 /* =========================================================
    MAIN COMPONENT
@@ -191,7 +192,7 @@ function RecommendedNextSection({
             sx={{ borderRadius: "50px" }}
           >
             <div className="flex gap-1 items-center">
-              <p>Start Test</p>
+              <p>{sidebarT("startTest")}</p>
               <ChevronIcon
                 size={20}
                 type="double"
@@ -212,6 +213,7 @@ function RecommendedNextSection({
 
 function ClearCutoffSection() {
   const sidebarT = useTranslations("testListContent");
+  const { exam } = useGetCurrentCourseStore();
 
   return (
     <div className="flex flex-col gap-3">
@@ -238,7 +240,7 @@ function ClearCutoffSection() {
             />
           }
           text={sidebarT("testSeries.basedOnPattern", {
-            course: "CTET",
+            course: exam?.short_name ?? exam?.name ?? "",
           })}
         />
 

@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import MainButton from "../../button/main-button";
@@ -26,63 +27,69 @@ type DailyTestWidgetProps = {
  * consistent.
  */
 export default function DailyTestWidget({
-  bgColor = "bg-white",
+  // Prominent by default: a soft brand wash + brand-tinted border set it
+  // apart from the plain white widgets below it on the Learn page.
+  bgColor = "bg-gradient-to-b from-[var(--color-primary-bg-soft)] to-white border border-brand/15",
   rounded = "rounded-md",
 }: DailyTestWidgetProps) {
+  const t = useTranslations("DailyTests.widget");
   const { activeCourse } = useMyActiveCourses();
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const router = useRouter();
 
   const course = focusedCourse ?? activeCourse;
-  const examId = course?.exam?.id;
+  // Opaque id for the URL: the user's own enrollment uuid (never the exam's numeric id).
+  const courseId = course?.uuid;
 
   const handleOpen = useCallback(async () => {
-    if (!examId) return;
+    if (!courseId) return;
 
     await trackEvent("Content Started", {
       source: "daily_test_widget",
       exam_name: course?.exam?.short_name!,
     });
-    router.push(`/daily-tests/${examId}`);
-  }, [examId, course, router]);
+    router.push(`/daily-tests/${courseId}`);
+  }, [courseId, course, router]);
 
-  if (!examId) return null;
+  if (!courseId) return null;
 
   return (
-    <div className={clsx("flex p-4 flex-col gap-4", bgColor, rounded)}>
-      <div className="flex items-center gap-2">
-        <ClipBoardIcon size={22} color="var(--color-brand)" />
+    <div className={clsx("flex h-full flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+          <ClipBoardIcon size={24} color="var(--color-brand)" />
+        </span>
         <div>
-          <h6 className="heading-medium !font-semibold">Daily Test</h6>
+          <h6 className="heading-large !font-semibold">{t("title")}</h6>
           <div className="body-small !font-normal text-surface-gray-muted">
-            One short test a day, picked just for you
+            {t("subtitle")}
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 rounded-lg bg-white/80 p-3">
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="size-5 shrink-0 text-brand" aria-hidden="true" />
           <p className="body-medium !font-normal text-surface-gray-normal">
-            Personalized to your enrolled level
+            {t("personalized")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="size-5 shrink-0 text-brand" aria-hidden="true" />
           <p className="body-medium !font-normal text-surface-gray-normal">
-            Track your score and daily streak
+            {t("trackScore")}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 w-full justify-center items-center text-center">
-        <div className="max-w-[320px] w-full">
+      <div className="mt-auto flex w-full flex-col items-center justify-center gap-1 text-center">
+        <div className="w-full">
           <MainButton
             fullWidth
-            variant="outlined"
+            variant="solid"
             rightIcon={<ChevronRightIcon width={16} strokeWidth={3} />}
             size="md"
-            text="Open Daily Test"
+            text={t("open")}
             onClick={handleOpen}
           />
         </div>

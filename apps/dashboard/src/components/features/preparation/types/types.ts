@@ -87,6 +87,7 @@ export interface Topic {
   uuid: string;
   topic_id: string;
   name: string;
+  translation?: string | Record<string, LocalizedText> | null;
   topic_order: number;
   primary_language: string;
   difficulty_level: string;
@@ -102,6 +103,7 @@ export interface Chapter {
   uuid: string;
   chapter_id: string;
   name: string;
+  translation?: string | Record<string, LocalizedText> | null;
   chapter_order: number;
   primary_language: string;
   locked: boolean;

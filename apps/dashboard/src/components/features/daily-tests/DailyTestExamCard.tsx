@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, TrendingUp } from "lucide-react";
 import { Card } from "@clearcut/ui/card";
 import { CalendarIcon, ClockIcon, ChevronIcon } from "@/components/ui/icons";
@@ -13,6 +14,7 @@ export interface DailyTestExamCardProps {
 }
 
 export default function DailyTestExamCard({ exam, onOpen, onAttempt }: DailyTestExamCardProps) {
+  const t = useTranslations("DailyTests.examCard");
   return (
     <Card
       bgcolor="white"
@@ -44,7 +46,7 @@ export default function DailyTestExamCard({ exam, onOpen, onAttempt }: DailyTest
             <CalendarIcon size={16} color="var(--color-surface-gray-muted)" />
             <div>
               <p className="body-small !font-semibold leading-tight">{exam.daily_tests_count}</p>
-              <p className="body-xsmall leading-tight text-surface-gray-muted">Daily tests</p>
+              <p className="body-xsmall leading-tight text-surface-gray-muted">{t("dailyTests")}</p>
             </div>
           </div>
 
@@ -56,9 +58,9 @@ export default function DailyTestExamCard({ exam, onOpen, onAttempt }: DailyTest
             )}
             <div>
               <p className="body-small !font-semibold leading-tight">
-                {exam.attempted_today ? "Attempted" : "Not attempted"}
+                {exam.attempted_today ? t("attempted") : t("notAttempted")}
               </p>
-              <p className="body-xsmall leading-tight text-surface-gray-muted">Today&apos;s test</p>
+              <p className="body-xsmall leading-tight text-surface-gray-muted">{t("todaysTest")}</p>
             </div>
           </div>
 
@@ -67,7 +69,7 @@ export default function DailyTestExamCard({ exam, onOpen, onAttempt }: DailyTest
               <TrendingUp size={16} className="text-[var(--icon-positive-normal)]" />
               <div>
                 <p className="body-small !font-semibold leading-tight">{exam.expected_cutoff}</p>
-                <p className="body-xsmall leading-tight text-surface-gray-muted">Expected cutoff</p>
+                <p className="body-xsmall leading-tight text-surface-gray-muted">{t("expectedCutoff")}</p>
               </div>
             </div>
           )}
@@ -77,7 +79,7 @@ export default function DailyTestExamCard({ exam, onOpen, onAttempt }: DailyTest
           onClick={onAttempt}
           className="flex w-full items-center justify-center gap-1 rounded-full border-2 border-brand py-2.5 body-medium !font-semibold text-brand transition-colors hover:bg-brand/9"
         >
-          {exam.attempted_today ? "View Today's Result" : "Start Today's Test"}
+          {exam.attempted_today ? t("viewTodaysResult") : t("startTodaysTest")}
           <ChevronIcon size={16} variant="right" color="var(--color-brand)" />
         </button>
       </div>

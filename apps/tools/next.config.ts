@@ -39,6 +39,38 @@ const config: NextConfig = {
         { source: "/mr/syllabus-tracker/:path*", destination: "/mr/syllabus-tracker" },
       ];
     },
+    // The rewrites above cover this app's OWN basePath-prefixed shape
+    // (/tools/hi/syllabus-tracker/..., matching what `next dev` serves
+    // directly). The real PRODUCTION public URL is locale-OUTERMOST instead
+    // (/hi/tools/syllabus-tracker/..., see syllabusTrackerUrl.ts's
+    // rootPath) — in prod the Cloudflare Worker strips that "/hi/tools"
+    // prefix and proxies to Pages before Next ever sees the request, so
+    // pasting that exact URL locally has nothing to match without this.
+    // Can't be a `rewrites` rule: Next hard-rejects a `basePath: false`
+    // rewrite whose destination isn't an absolute http(s) URL (it won't
+    // internally dispatch a path outside basePath to one inside it), and an
+    // absolute destination would mean hardcoding this dev server's own
+    // host:port. A redirect has no such restriction — it just tells the
+    // BROWSER to re-request the basePath-prefixed equivalent, which "next
+    // dev" then serves normally. readSlugFromLocation() accepts either URL
+    // shape when restoring state, so this still lands on the exact same
+    // selection either way.
+    async redirects() {
+      return [
+        {
+          source: "/hi/tools/syllabus-tracker/:path*",
+          destination: "/tools/hi/syllabus-tracker/:path*",
+          basePath: false,
+          permanent: false,
+        },
+        {
+          source: "/mr/tools/syllabus-tracker/:path*",
+          destination: "/tools/mr/syllabus-tracker/:path*",
+          basePath: false,
+          permanent: false,
+        },
+      ];
+    },
   }),
 };
 

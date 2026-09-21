@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // Small inline icon set for the dashboard — subject icons are picked by
 // keyword against a known, bounded vocabulary of subjects that actually show
 // up across these teacher-eligibility exams (Math, Science, Environmental
@@ -69,6 +71,62 @@ export const CapIcon = () => (
     <path d="M6 12.5V17c0 1.1 2.7 3 6 3s6-1.9 6-3v-4.5" />
   </svg>
 );
+
+export const BriefcaseIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" />
+  </svg>
+);
+
+/** Real exam icon, not a decorative one — picked from the exam's own
+ * exam_type (an "Eligiblity" exam vs a "Job" recruitment exam are visibly
+ * different things), rather than initials or an arbitrary glyph. Used only
+ * as the fallback for ExamLogo below, when the exam has no logo_url or its
+ * image fails to load. */
+export function ExamTypeIcon({ examType }: { examType?: string | null }) {
+  return (examType ?? "").toLowerCase().includes("job") ? <BriefcaseIcon /> : <CapIcon />;
+}
+
+/** The exam's real logo (backend-hosted, e.g. an S3 image) when available,
+ * falling back to a generic exam-type icon otherwise — either because the
+ * backend has no logo for this exam, or the image failed to load. Owns its
+ * own circular wrapper (not just the glyph) because a real logo — usually
+ * already colourful/branded — sits better on a plain white disc than on the
+ * same tinted background the icon fallback uses. Shared between the exam
+ * picker (fresh SyllabusExam data) and the tracked-exams list (persisted
+ * TrackedExam data) — same fallback rules either way. */
+export function ExamLogo({
+  logoUrl,
+  examType,
+  tone,
+}: {
+  logoUrl?: string | null;
+  examType?: string | null;
+  tone: { bg: string; text: string };
+}) {
+  const [failed, setFailed] = useState(false);
+  const hasLogo = Boolean(logoUrl) && !failed;
+
+  return (
+    <div
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${hasLogo ? "border border-[var(--color-border-gray-subtle)] bg-white" : ""}`}
+      style={hasLogo ? undefined : { background: tone.bg, color: tone.text }}
+    >
+      {hasLogo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={logoUrl!}
+          alt=""
+          className="h-full w-full rounded-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <ExamTypeIcon examType={examType} />
+      )}
+    </div>
+  );
+}
 
 export const PaletteIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
