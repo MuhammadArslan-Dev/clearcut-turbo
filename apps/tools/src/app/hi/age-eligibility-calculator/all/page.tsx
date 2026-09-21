@@ -4,21 +4,27 @@ import Text from "@clearcut/ui/text";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import AgeEligibilityDirectory from "@/components/AgeEligibilityDirectory";
-import { AGE_ELIGIBILITY_EXAMS } from "@/lib/ageEligibility";
+import { getAgeEligibilityCategories, getAgeEligibilityExams } from "@/lib/ageEligibility";
 
-export const metadata: Metadata = {
-  title: `सभी ${AGE_ELIGIBILITY_EXAMS.length} परीक्षा आयु कैलकुलेटर | Clear Cutoff`,
-  description: "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य — हर परीक्षा का आयु कैलकुलेटर खोजें या श्रेणी अनुसार फ़िल्टर करें।",
-  alternates: {
-    canonical: "https://clearcutoff.in/hi/tools/age-eligibility-calculator/all",
-    languages: {
-      en: "https://clearcutoff.in/tools/age-eligibility-calculator/all",
-      hi: "https://clearcutoff.in/hi/tools/age-eligibility-calculator/all",
+export async function generateMetadata(): Promise<Metadata> {
+  const exams = await getAgeEligibilityExams();
+  return {
+    title: `सभी ${exams.length} परीक्षा आयु कैलकुलेटर | Clear Cutoff`,
+    description: "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य — हर परीक्षा का आयु कैलकुलेटर खोजें या श्रेणी अनुसार फ़िल्टर करें।",
+    alternates: {
+      canonical: "https://clearcutoff.in/hi/tools/age-eligibility-calculator/all",
+      languages: {
+        en: "https://clearcutoff.in/tools/age-eligibility-calculator/all",
+        hi: "https://clearcutoff.in/hi/tools/age-eligibility-calculator/all",
+      },
     },
-  },
-};
+  };
+}
 
-export default function Page() {
+export default async function Page() {
+  const exams = await getAgeEligibilityExams();
+  const categories = await getAgeEligibilityCategories("hi");
+
   return (
     <>
       <SiteHeader locale="hi" tool="age-eligibility-calculator" />
@@ -29,12 +35,12 @@ export default function Page() {
             सभी परीक्षा आयु कैलकुलेटर
           </Text>
           <Text as="p" variant="body-large" color="gray-muted" className="mt-3 max-w-xl mx-auto">
-            {AGE_ELIGIBILITY_EXAMS.length} परीक्षाओं में आयु पात्रता नियम और श्रेणी छूट देखें।
+            {exams.length} परीक्षाओं में आयु पात्रता नियम और श्रेणी छूट देखें।
           </Text>
         </div>
 
         <Suspense>
-          <AgeEligibilityDirectory exams={AGE_ELIGIBILITY_EXAMS} locale="hi" basePath="/hi/tools/age-eligibility-calculator" />
+          <AgeEligibilityDirectory exams={exams} categories={categories} locale="hi" basePath="/hi/tools/age-eligibility-calculator" />
         </Suspense>
       </main>
 

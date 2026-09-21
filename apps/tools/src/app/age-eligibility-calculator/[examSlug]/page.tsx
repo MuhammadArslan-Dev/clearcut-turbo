@@ -1,20 +1,20 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import AgeEligibilityPage from "@/components/AgeEligibilityPage";
-import { AGE_ELIGIBILITY_EXAMS, getAgeEligibilityExamBySlug } from "@/lib/ageEligibility";
+import { getAgeEligibilityExams, getAgeEligibilityExamBySlug } from "@/lib/ageEligibility";
 import JsonLd from "@clearcut/ui/json-ld";
 
 // Static export needs the full param set up front — an unlisted slug 404s
 // rather than resolving on demand.
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return AGE_ELIGIBILITY_EXAMS.map((exam) => ({ examSlug: exam.slug }));
+export async function generateStaticParams() {
+  return (await getAgeEligibilityExams()).map((exam) => ({ examSlug: exam.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ examSlug: string }> }): Promise<Metadata> {
   const { examSlug } = await params;
-  const exam = getAgeEligibilityExamBySlug(examSlug);
+  const exam = await getAgeEligibilityExamBySlug(examSlug);
   if (!exam) return {};
 
   const title = `${exam.shortName} Age Calculator (${exam.year}) - Eligibility & Cutoff Date | Clear Cutoff`;
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: Promise<{ examSlug:
 
 export default async function Page({ params }: { params: Promise<{ examSlug: string }> }) {
   const { examSlug } = await params;
-  const exam = getAgeEligibilityExamBySlug(examSlug);
+  const exam = await getAgeEligibilityExamBySlug(examSlug);
   if (!exam) notFound();
 
   const faqSchema = {

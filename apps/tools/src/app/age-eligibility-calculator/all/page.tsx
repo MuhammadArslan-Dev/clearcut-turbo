@@ -4,16 +4,22 @@ import Text from "@clearcut/ui/text";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import AgeEligibilityDirectory from "@/components/AgeEligibilityDirectory";
-import { AGE_ELIGIBILITY_EXAMS } from "@/lib/ageEligibility";
+import { getAgeEligibilityCategories, getAgeEligibilityExams } from "@/lib/ageEligibility";
 
-export const metadata: Metadata = {
-  title: `All ${AGE_ELIGIBILITY_EXAMS.length} Exam Age Calculators | Clear Cutoff`,
-  description:
-    "Browse every exam age calculator — UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more. Search or filter by category.",
-  alternates: { canonical: "https://clearcutoff.in/tools/age-eligibility-calculator/all" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const exams = await getAgeEligibilityExams();
+  return {
+    title: `All ${exams.length} Exam Age Calculators | Clear Cutoff`,
+    description:
+      "Browse every exam age calculator — UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more. Search or filter by category.",
+    alternates: { canonical: "https://clearcutoff.in/tools/age-eligibility-calculator/all" },
+  };
+}
 
-export default function Page() {
+export default async function Page() {
+  const exams = await getAgeEligibilityExams();
+  const categories = await getAgeEligibilityCategories("en");
+
   return (
     <>
       <SiteHeader tool="age-eligibility-calculator" />
@@ -24,12 +30,12 @@ export default function Page() {
             All Exam Age Calculators
           </Text>
           <Text as="p" variant="body-large" color="gray-muted" className="mt-3 max-w-xl mx-auto">
-            Explore age eligibility rules and category relaxations across all {AGE_ELIGIBILITY_EXAMS.length} exams.
+            Explore age eligibility rules and category relaxations across all {exams.length} exams.
           </Text>
         </div>
 
         <Suspense>
-          <AgeEligibilityDirectory exams={AGE_ELIGIBILITY_EXAMS} />
+          <AgeEligibilityDirectory exams={exams} categories={categories} />
         </Suspense>
       </main>
 

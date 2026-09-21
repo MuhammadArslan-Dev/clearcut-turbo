@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getResizerExams } from "@/lib/resizerExams";
-import { AGE_ELIGIBILITY_EXAMS } from "@/lib/ageEligibility";
+import { getAgeEligibilityExams } from "@/lib/ageEligibility";
 
 // This app is a separate static export/deployment from apps/landing (see
 // "apps/tools deployment" in the root CLAUDE.md) and was never wired into
@@ -26,6 +26,7 @@ function entry(path: string, priority: number, changeFrequency: MetadataRoute.Si
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const resizerExams = await getResizerExams();
+  const ageExams = await getAgeEligibilityExams();
 
   const entries: MetadataRoute.Sitemap = [
     entry("/tools", 0.8, "monthly"),
@@ -55,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push(entry(`/mr/tools/resizer/${exam.slug}`, 0.6, "weekly"));
   }
 
-  for (const exam of AGE_ELIGIBILITY_EXAMS) {
+  for (const exam of ageExams) {
     entries.push(entry(`/tools/age-eligibility-calculator/${exam.slug}`, 0.8, "weekly"));
     entries.push(entry(`/hi/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));
     entries.push(entry(`/mr/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));

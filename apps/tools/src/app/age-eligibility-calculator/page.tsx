@@ -6,45 +6,52 @@ import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import FAQAccordion, { AccordionItem } from "@/components/FAQAccordion";
 import AgeExamCard, { ageLimitLabel } from "@/components/AgeExamCard";
-import { AGE_ELIGIBILITY_EXAMS, getAgeEligibilityExamBySlug, type ExamGroup } from "@/lib/ageEligibility";
+import { getAgeEligibilityCategories, getAgeEligibilityExams, getPopularAgeExams } from "@/lib/ageEligibility";
 import { getAgeCalcStrings } from "@/lib/ageCalculatorStrings";
 
-export const metadata: Metadata = {
-  title: `Age Calculator for ${AGE_ELIGIBILITY_EXAMS.length} Govt Exams | Clear Cutoff`,
-  description:
-    "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more — free, private, calculated entirely in your browser.",
-  alternates: { canonical: "https://clearcutoff.in/tools/age-eligibility-calculator" },
-  openGraph: {
-    title: `Age Calculator for ${AGE_ELIGIBILITY_EXAMS.length} Govt Exams | Clear Cutoff`,
-    description: "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more.",
-    url: "https://clearcutoff.in/tools/age-eligibility-calculator",
-    siteName: "Clear Cutoff",
-    type: "website",
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const exams = await getAgeEligibilityExams();
+  return {
+    title: `Age Calculator for ${exams.length} Govt Exams | Clear Cutoff`,
+    description:
+      "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more — free, private, calculated entirely in your browser.",
+    alternates: { canonical: "https://clearcutoff.in/tools/age-eligibility-calculator" },
+    openGraph: {
+      title: `Age Calculator for ${exams.length} Govt Exams | Clear Cutoff`,
+      description: "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more.",
+      url: "https://clearcutoff.in/tools/age-eligibility-calculator",
+      siteName: "Clear Cutoff",
+      type: "website",
+    },
+  };
+}
+
+// Icon per category slug. The category list, order and labels come from the
+// backend; only the artwork lives here. A category without an entry (or a
+// newly added one) falls back to BookIcon.
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "civil-services": <BankIcon />,
+  banking: <BriefcaseIcon />,
+  railways: <TrainIcon />,
+  defence: <ShieldIcon />,
+  "ssc-exams": <BuildingIcon />,
+  engineering: <CapIcon />,
+  medical: <StethoscopeIcon />,
+  "state-psc": <MapIcon />,
+  teaching: <BookIcon />,
+  insurance: <HeartIcon />,
+  police: <ShieldAlertIcon />,
 };
 
-const POPULAR_SLUGS = ["upsc-ias", "ssc-cgl", "ssc-mts", "ibps-po", "sbi-po", "rbi-grade-b"];
-
-const CATEGORY_GROUPS: { group: ExamGroup; icon: React.ReactNode }[] = [
-  { group: "Civil Services", icon: <BankIcon /> },
-  { group: "Banking", icon: <BriefcaseIcon /> },
-  { group: "Railways", icon: <TrainIcon /> },
-  { group: "Defence", icon: <ShieldIcon /> },
-  { group: "SSC Exams", icon: <BuildingIcon /> },
-  { group: "Engineering", icon: <CapIcon /> },
-  { group: "Medical", icon: <StethoscopeIcon /> },
-  { group: "State PSC", icon: <MapIcon /> },
-  { group: "Teaching", icon: <BookIcon /> },
-  { group: "Insurance", icon: <HeartIcon /> },
-  { group: "Police", icon: <ShieldAlertIcon /> },
-];
-
-export default function Page() {
+export default async function Page() {
   const t = getAgeCalcStrings("en");
-  const groupCounts = new Map<ExamGroup, number>();
-  for (const exam of AGE_ELIGIBILITY_EXAMS) groupCounts.set(exam.group, (groupCounts.get(exam.group) ?? 0) + 1);
+  const exams = await getAgeEligibilityExams();
+  const groupCounts = new Map<string, number>();
+  for (const exam of exams) groupCounts.set(exam.group, (groupCounts.get(exam.group) ?? 0) + 1);
 
-  const popularExams = POPULAR_SLUGS.map((slug) => getAgeEligibilityExamBySlug(slug)).filter((e) => e !== undefined);
+  const categories = await getAgeEligibilityCategories("en");
+  const labelBySlug = new Map(categories.map((c) => [c.slug, c.label]));
+  const popularExams = await getPopularAgeExams();
 
   const faqItems: AccordionItem[] = t.homeFaqs.map((faq, i) => ({ id: `home-faq-${i}`, title: faq.q, content: faq.a }));
 
@@ -111,7 +118,7 @@ export default function Page() {
               {t.hubHeadingSuffix}
             </Text>
             <Text as="p" variant="body-large" color="gray-muted" className="mt-3 max-w-xl mx-auto">
-              {t.hubSubtitle(AGE_ELIGIBILITY_EXAMS.length - 5)}
+              {t.hubSubtitle(exams.length - 5)}
             </Text>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               <Link
@@ -145,7 +152,7 @@ export default function Page() {
               </Text>
             </div>
             <Link href="/age-eligibility-calculator/all" className="body-medium !font-semibold text-brand hover:underline whitespace-nowrap">
-              {t.viewAllExams(AGE_ELIGIBILITY_EXAMS.length)}
+              {t.viewAllExams(exams.length)}
             </Link>
           </div>
 
@@ -153,6 +160,7 @@ export default function Page() {
             {popularExams.map((exam) => (
               <AgeExamCard
                 key={exam.slug}
+                groupLabel={labelBySlug.get(exam.group)}
                 exam={exam}
                 href={`/age-eligibility-calculator/${exam.slug}`}
                 ageLimitText={ageLimitLabel(exam)}
@@ -173,20 +181,20 @@ export default function Page() {
           </Text>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-            {CATEGORY_GROUPS.map(({ group, icon }) => (
+            {categories.map((category) => (
               <Link
-                key={group}
-                href={`/age-eligibility-calculator/all?group=${encodeURIComponent(group)}`}
+                key={category.slug}
+                href={`/age-eligibility-calculator/all?group=${encodeURIComponent(category.slug)}`}
                 className="group flex flex-col items-center text-center gap-2 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-6 transition-all hover:border-brand hover:shadow-[0_4px_18px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
               >
                 <span className="grid place-items-center w-12 h-12 rounded-full bg-[var(--color-gray-bg-soft)] text-brand group-hover:bg-[var(--color-primary-bg-soft)] transition-colors">
-                  {icon}
+                  {CATEGORY_ICONS[category.slug] ?? <BookIcon />}
                 </span>
                 <Text as="p" variant="body-medium" weight="bold" color="gray-normal">
-                  {group}
+                  {category.label}
                 </Text>
                 <Text as="p" variant="body-small" color="gray-muted">
-                  {t.examsCount(groupCounts.get(group) ?? 0)}
+                  {t.examsCount(groupCounts.get(category.slug) ?? 0)}
                 </Text>
               </Link>
             ))}

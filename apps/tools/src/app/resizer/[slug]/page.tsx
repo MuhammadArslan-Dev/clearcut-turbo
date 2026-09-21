@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs } from "@/lib/resizerExams";
+import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
 import { getOfficialRequirements } from "@/lib/officialRequirements";
 import JsonLd from "@clearcut/ui/json-ld";
 
@@ -68,7 +68,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const faqSchema = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec).map((faq) => ({
+      mainEntity: getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, "en", { photoLive: isPhotoLiveCapture(exam) }).map((faq) => ({
         "@type": "Question",
         name: faq.q,
         acceptedAnswer: { "@type": "Answer", text: faq.a },
