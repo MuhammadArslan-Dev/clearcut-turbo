@@ -1,7 +1,8 @@
 import { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+import PageJsonLd from "@/components/PageJsonLd";
 import Link from "next/link";
 import Text from "@clearcut/ui/text";
-import JsonLd from "@clearcut/ui/json-ld";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import FAQAccordion, { AccordionItem } from "@/components/FAQAccordion";
@@ -11,19 +12,13 @@ import { getAgeCalcStrings } from "@/lib/ageCalculatorStrings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const exams = await getAgeEligibilityExams();
-  return {
+  return buildMetadata({
+    locale: "en",
+    path: "/age-eligibility-calculator",
     title: `Age Calculator for ${exams.length} Govt Exams | Clear Cutoff`,
-    description:
-      "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more — free, private, calculated entirely in your browser.",
-    alternates: { canonical: "https://clearcutoff.in/tools/age-eligibility-calculator" },
-    openGraph: {
-      title: `Age Calculator for ${exams.length} Govt Exams | Clear Cutoff`,
-      description: "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more.",
-      url: "https://clearcutoff.in/tools/age-eligibility-calculator",
-      siteName: "Clear Cutoff",
-      type: "website",
-    },
-  };
+    description: "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more — free, private, calculated entirely in your browser.",
+    ogDescription: "Check your exact age and eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and more.",
+  });
 }
 
 // Icon per category slug. The category list, order and labels come from the
@@ -55,49 +50,15 @@ export default async function Page() {
 
   const faqItems: AccordionItem[] = t.homeFaqs.map((faq, i) => ({ id: `home-faq-${i}`, title: faq.q, content: faq.a }));
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: t.homeFaqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: { "@type": "Answer", text: faq.a },
-    })),
-  };
-
-  const webAppSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Age Eligibility Calculator",
-    applicationCategory: "UtilityApplication",
-    operatingSystem: "Any (runs in browser)",
-    url: "https://clearcutoff.in/tools/age-eligibility-calculator",
-    description:
-      "Check your exact age and category-wise eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and other government exams — free, private, calculated entirely in your browser.",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-    publisher: { "@type": "Organization", name: "Clear Cutoff", url: "https://clearcutoff.in" },
-  };
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://clearcutoff.in" },
-      { "@type": "ListItem", position: 2, name: "Free Tools", item: "https://clearcutoff.in/tools" },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "Age Eligibility Calculator",
-        item: "https://clearcutoff.in/tools/age-eligibility-calculator",
-      },
-    ],
-  };
-
   return (
     <>
-      <JsonLd id="age-calc-home-faq-schema" data={faqSchema} />
-      <JsonLd id="age-calc-home-app-schema" data={webAppSchema} />
-      <JsonLd id="age-calc-home-breadcrumb-schema" data={breadcrumbSchema} />
+      <PageJsonLd
+        locale="en"
+        path="/age-eligibility-calculator"
+        trail={[{ name: "Age Eligibility Calculator", path: "/age-eligibility-calculator" }]}
+        app={{ name: "Age Eligibility Calculator", description: "Check your exact age and category-wise eligibility for UPSC, SSC, Banking, Railways, Defence, State PSC, Teaching and other government exams — free, private, calculated entirely in your browser." }}
+        faqs={t.homeFaqs}
+      />
       <SiteHeader tool="age-eligibility-calculator" />
 
       <div className="relative overflow-hidden">

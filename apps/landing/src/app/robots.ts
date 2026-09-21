@@ -46,6 +46,8 @@ export default function robots(): MetadataRoute.Robots {
       "https://clearcutoff.in/sitemap.xml",
       "https://clearcutoff.in/go/sitemap.xml", // Astro marketing pages, served via the Cloudflare Worker at /go/*
       "https://clearcutoff.in/tools/sitemap.xml", // apps/tools pages, served via the Cloudflare Worker at /tools/*
+      "https://clearcutoff.in/hi/tools/sitemap.xml", // apps/tools Hindi pages (/hi/tools/*) — a sitemap only covers its own directory tree, hence one per locale
+      "https://clearcutoff.in/mr/tools/sitemap.xml", // apps/tools Marathi pages (/mr/tools/*)
     ],
     host: "https://clearcutoff.in",
   };

@@ -2,7 +2,6 @@
 
 import React from "react";
 import clsx from "clsx";
-import { useSearchParams } from "next/navigation";
 import Text from "@clearcut/ui/text";
 import type { AgeCategory, AgeEligibilityExam, ExamGroup } from "@/lib/ageEligibility";
 import type { Locale } from "@/lib/dictionary";
@@ -24,18 +23,24 @@ export default function AgeEligibilityDirectory({
   basePath?: string;
 }) {
   const t = getAgeCalcStrings(locale);
-  const searchParams = useSearchParams();
-  const groupFromUrl = searchParams.get("group");
+  // The list is server-rendered in full (every exam is a plain <a> in the static
+  // HTML, which is what lets crawlers that don't run JavaScript discover the
+  // exam pages). useSearchParams() would have made this whole subtree
+  // client-only, so the ?group= filter is applied after mount instead:
   // ?group= carries a category slug; an old English-label link
   // (?group=Banking) still resolves by label.
-  const groupFromUrlSlug = groupFromUrl
-    ? categories.find((c) => c.slug === groupFromUrl || c.label.toLowerCase() === groupFromUrl.toLowerCase())?.slug
-    : undefined;
-  const resolvedInitialGroup: ExamGroup | "all" = initialGroup !== "all" ? initialGroup : (groupFromUrlSlug ?? "all");
   const labelBySlug = new Map(categories.map((c) => [c.slug, c.label]));
 
   const [query, setQuery] = React.useState("");
-  const [activeGroup, setActiveGroup] = React.useState<ExamGroup | "all">(resolvedInitialGroup);
+  const [activeGroup, setActiveGroup] = React.useState<ExamGroup | "all">(initialGroup);
+
+  React.useEffect(() => {
+    if (initialGroup !== "all") return;
+    const fromUrl = new URLSearchParams(window.location.search).get("group");
+    if (!fromUrl) return;
+    const match = categories.find((c) => c.slug === fromUrl || c.label.toLowerCase() === fromUrl.toLowerCase());
+    if (match) setActiveGroup(match.slug);
+  }, [initialGroup, categories]);
 
   const chipsContainerRef = React.useRef<HTMLDivElement>(null);
   const chipRefs = React.useRef<(HTMLButtonElement | null)[]>([]);

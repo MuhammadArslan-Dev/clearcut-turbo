@@ -1,30 +1,21 @@
 import { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import SyllabusTrackerApp from "@/components/syllabus-tracker/SyllabusTrackerApp";
+import SyllabusAbout from "@/components/SyllabusAbout";
+import PageJsonLd from "@/components/PageJsonLd";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 
 const t = getSyllabusStrings("en");
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
+  locale: "en",
+  path: "/syllabus-tracker",
   title: t.metaTitle,
   description: t.metaDescription,
-  alternates: {
-    canonical: "https://clearcutoff.in/tools/syllabus-tracker",
-    languages: {
-      en: "https://clearcutoff.in/tools/syllabus-tracker",
-      hi: "https://clearcutoff.in/hi/tools/syllabus-tracker",
-      mr: "https://clearcutoff.in/mr/tools/syllabus-tracker",
-    },
-  },
-  openGraph: {
-    title: t.metaTitle,
-    description: t.metaOgDescription,
-    url: "https://clearcutoff.in/tools/syllabus-tracker",
-    siteName: "Clear Cutoff",
-    type: "website",
-  },
-};
+  ogDescription: t.metaOgDescription,
+});
 
 // Deliberately a plain, non-dynamic page — NOT a [[...slug]] catch-all.
 // output: "export" (next.config.ts) enforces generateStaticParams even in
@@ -51,10 +42,17 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <>
+      <PageJsonLd
+        locale="en"
+        path="/syllabus-tracker"
+        trail={[{ name: "Syllabus Tracker", path: "/syllabus-tracker" }]}
+        app={{ name: "Syllabus Tracker", description: t.metaDescription, category: "EducationalApplication" }}
+      />
       <SiteHeader tool="syllabus-tracker" />
       <main className="min-h-[70vh] bg-[var(--color-background-gray-subtle)]">
         <SyllabusTrackerApp locale="en" />
       </main>
+      <SyllabusAbout locale="en" />
       <SiteFooter locale="en" />
     </>
   );

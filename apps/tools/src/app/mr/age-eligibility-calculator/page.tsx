@@ -1,6 +1,7 @@
 import { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+import PageJsonLd from "@/components/PageJsonLd";
 import Text from "@clearcut/ui/text";
-import JsonLd from "@clearcut/ui/json-ld";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import FAQAccordion, { AccordionItem } from "@/components/FAQAccordion";
@@ -13,19 +14,12 @@ import { getAgeCalcStrings } from "@/lib/ageCalculatorStrings";
 // full section-by-section design notes. Marathi UI chrome only.
 export async function generateMetadata(): Promise<Metadata> {
   const exams = await getAgeEligibilityExams();
-  return {
+  return buildMetadata({
+    locale: "mr",
+    path: "/age-eligibility-calculator",
     title: `${exams.length} सरकारी परीक्षांसाठी वय कॅल्क्युलेटर | Clear Cutoff`,
-    description:
-      "UPSC, SSC, बँकिंग, रेल्वे, संरक्षण, State PSC, टीचिंग आणि इतर परीक्षांसाठी तुमचे अचूक वय आणि पात्रता तपासा — मोफत, खासगी, पूर्णपणे तुमच्या ब्राउझरमध्ये.",
-    alternates: {
-      canonical: "https://clearcutoff.in/mr/tools/age-eligibility-calculator",
-      languages: {
-        en: "https://clearcutoff.in/tools/age-eligibility-calculator",
-        hi: "https://clearcutoff.in/hi/tools/age-eligibility-calculator",
-        mr: "https://clearcutoff.in/mr/tools/age-eligibility-calculator",
-      },
-    },
-  };
+    description: "UPSC, SSC, बँकिंग, रेल्वे, संरक्षण, State PSC, टीचिंग आणि इतर परीक्षांसाठी तुमचे अचूक वय आणि पात्रता तपासा — मोफत, खासगी, पूर्णपणे तुमच्या ब्राउझरमध्ये.",
+  });
 }
 
 export default async function Page() {
@@ -40,49 +34,15 @@ export default async function Page() {
 
   const faqItems: AccordionItem[] = t.homeFaqs.map((faq, i) => ({ id: `home-faq-${i}`, title: faq.q, content: faq.a }));
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: t.homeFaqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: { "@type": "Answer", text: faq.a },
-    })),
-  };
-
-  const webAppSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "वय पात्रता कॅल्क्युलेटर",
-    applicationCategory: "UtilityApplication",
-    operatingSystem: "Any (runs in browser)",
-    url: "https://clearcutoff.in/mr/tools/age-eligibility-calculator",
-    description:
-      "UPSC, SSC, बँकिंग, रेल्वे, संरक्षण, State PSC, टीचिंग आणि इतर सरकारी परीक्षांसाठी तुमचे अचूक वय आणि श्रेणीनुसार पात्रता तपासा — मोफत, खासगी, पूर्णपणे तुमच्या ब्राउझरमध्ये.",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-    publisher: { "@type": "Organization", name: "Clear Cutoff", url: "https://clearcutoff.in" },
-  };
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "मुख्यपृष्ठ", item: "https://clearcutoff.in" },
-      { "@type": "ListItem", position: 2, name: "मोफत टूल्स", item: "https://clearcutoff.in/tools" },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "वय पात्रता कॅल्क्युलेटर",
-        item: "https://clearcutoff.in/mr/tools/age-eligibility-calculator",
-      },
-    ],
-  };
-
   return (
     <>
-      <JsonLd id="age-calc-home-faq-schema" data={faqSchema} />
-      <JsonLd id="age-calc-home-app-schema" data={webAppSchema} />
-      <JsonLd id="age-calc-home-breadcrumb-schema" data={breadcrumbSchema} />
+      <PageJsonLd
+        locale="mr"
+        path="/age-eligibility-calculator"
+        trail={[{ name: "वय पात्रता कॅल्क्युलेटर", path: "/age-eligibility-calculator" }]}
+        app={{ name: "वय पात्रता कॅल्क्युलेटर", description: "UPSC, SSC, बँकिंग, रेल्वे, संरक्षण, State PSC, टीचिंग आणि इतर सरकारी परीक्षांसाठी तुमचे अचूक वय आणि श्रेणीनुसार पात्रता तपासा — मोफत, खासगी, पूर्णपणे तुमच्या ब्राउझरमध्ये." }}
+        faqs={t.homeFaqs}
+      />
       <SiteHeader locale="mr" tool="age-eligibility-calculator" />
 
       <div className="relative overflow-hidden">
