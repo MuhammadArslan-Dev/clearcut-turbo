@@ -55,9 +55,17 @@
   "widget": {
     "title": "Daily Test",
     "subtitle": "One short test a day, picked just for you",
-    "personalized": "Personalized to your enrolled level",
-    "trackScore": "Track your score and daily streak",
-    "open": "Open Daily Test"
+    "open": "Open Daily Test",
+    "new": "New",
+    "questions": "Questions",
+    "duration": "Duration",
+    "personalizedShort": "Personalized",
+    "toYourLevel": "to your level",
+    "streakNote": "Maintain your preparation with daily practice!",
+    "startToday": "Start Today's Test",
+    "chipTopics": "Covers important topics",
+    "chipProgress": "Helps track your progress",
+    "chipConsistency": "Builds consistency daily"
   },
   "attempt": {
     "lockedTitle": "This test is locked",

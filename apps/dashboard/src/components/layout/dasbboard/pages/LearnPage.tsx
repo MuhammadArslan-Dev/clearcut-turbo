@@ -17,6 +17,7 @@ import { useRouter } from "@/i18n/navigation";
 import QuickRevision from "@/components/ui/widgets/quick-revision/quick-revision";
 import AppDownloadWidget from "@/components/ui/widgets/app-download/app-download-widget";
 import DailyTestWidget from "@/components/ui/widgets/daily-test/DailyTestWidget";
+import HomeGreeting from "@/components/features/dashboard/HomeGreeting";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 
 // Both render nothing until their own store says they're open (see each
@@ -113,6 +114,8 @@ export default function LearnPage() {
           {/* <div className="space-y-6"> */}
           <MainContainer maxWidth="max-w-[900px]" padding="pb-[114px] md:pb-0">
             <div className="flex flex-col gap-2 md:gap-4">
+              <HomeGreeting />
+
               {/* Row 1 — the course card (untouched) with Daily Test right beside
                   it on desktop; stacked course → Daily Test on mobile. Both rows
                   share one grid template so the two columns line up. */}
@@ -130,40 +133,32 @@ export default function LearnPage() {
                 </div>
               </div>
 
-              {/* Row 2 — the rest of the original two columns, unchanged in
-                  content and conditions. */}
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:gap-4">
-                <div className="w-full space-y-2 md:space-y-4">
-                  {/* The countdown hides itself once the exam date passes, but its
-                      WRAPPERS used to stay behind — and the parent `space-y-*`
-                      still applied margin to them, leaving a phantom gap.
-                      Gating the wrappers on the same shared `isExamDatePassed`
-                      rule the widget uses means the column reflows properly
-                      instead of holding empty space. */}
-                  {!countdownFinished && (
-                    <div className={hideWidgetsOnMobile}>
-                      {milestoneDate?.toLowerCase() !== "upcoming" ? (
-                        <div className="w-full max-w-[400px] overflow-hidden">
-                          <RemainingTimeWrapper rounded="md:rounded-md" exam={exam} />
-                        </div>
-                      ) : <NextMilestone rounded="md:rounded-md" exam={exam} />}
-                    </div>
-                  )}
-                  {/* Once the countdown retires, its slot would otherwise sit
-                      empty; promoting Quick Revision into it rebalances the two
-                      columns. It renders in exactly one place either way — see
-                      the matching `countdownFinished` guard in the right column. */}
-                  {countdownFinished && (
-                    <div className={hideWidgetsOnMobile}>
-                      <QuickRevision />
-                    </div>
-                  )}
-                </div>
-                <div className={`min-w-0 space-y-2 md:space-y-4 ${hideWidgetsOnMobile}`}>
+              {/* Row 2 — Today's Goals | Next Milestone, side by side. Same
+                  widgets and conditions as before, just re-flowed to the
+                  reference layout: NextMilestone renders exactly once whatever
+                  the exam-date state (it was left column when "upcoming", right
+                  column otherwise). */}
+              <div className={`grid grid-cols-1 gap-2 md:grid-cols-2 md:items-stretch md:gap-4 ${hideWidgetsOnMobile}`}>
+                <div className="min-w-0">
                   <TodayGoals rounded="md:rounded-md" exam={exam} />
-                  {milestoneDate?.toLowerCase() !== "upcoming" ? <NextMilestone rounded="md:rounded-md" exam={exam} /> : null}
-                  {!countdownFinished && <QuickRevision />}
                 </div>
+                <div className="min-w-0">
+                  <NextMilestone rounded="md:rounded-md" exam={exam} />
+                </div>
+              </div>
+
+              {/* The countdown hides itself once the exam date passes; gating its
+                  wrapper on the same shared `isExamDatePassed` rule keeps the
+                  layout from holding an empty slot. */}
+              {!countdownFinished && milestoneDate?.toLowerCase() !== "upcoming" && (
+                <div className={`w-full md:max-w-[400px] overflow-hidden ${hideWidgetsOnMobile}`}>
+                  <RemainingTimeWrapper rounded="md:rounded-md" exam={exam} />
+                </div>
+              )}
+
+              {/* Quick Revision — full width. */}
+              <div className={hideWidgetsOnMobile}>
+                <QuickRevision />
               </div>
 
               <div className={`flex flex-col md:flex-row gap-2 md:gap-4 ${hideWidgetsRowOnMobile}`}>
