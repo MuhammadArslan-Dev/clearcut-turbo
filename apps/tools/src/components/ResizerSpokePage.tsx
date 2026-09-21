@@ -6,19 +6,33 @@ import FAQAccordion, { AccordionItem } from "./FAQAccordion";
 import RecentExamTracker from "./RecentExamTracker";
 import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
-import { ResizerExamSpec, ResizerCategory, getExamFaqs } from "@/lib/resizerExams";
+import { ResizerExamSpec, ResizerCategory, ExamDocument, ExamDocumentType, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
+import type { PresetKey } from "./ResizeImageTool";
 import { ExamOfficialRequirements } from "@/lib/officialRequirements";
 import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
 import LocaleLink from "./LocaleLink";
 import RelatedExams from "./RelatedExams";
 import OfficialRequirements from "./OfficialRequirements";
 
-function SpecTable({ exam, locale }: { exam: ResizerExamSpec; locale: Locale }) {
+const DOC_LABEL_KEY = {
+  photo: "specPhoto",
+  signature: "specSignature",
+  left_thumb: "specLeftThumb",
+  right_thumb: "specRightThumb",
+  handwritten_declaration: "specDeclaration",
+} as const satisfies Record<ExamDocumentType, string>;
+
+// Which resizer tile handles which document type ("draw" is the Signature tile).
+const PRESET_BY_DOC = {
+  photo: "photo",
+  signature: "draw",
+  left_thumb: "thumb",
+  right_thumb: "right_thumb",
+  handwritten_declaration: "declaration",
+} as const satisfies Record<ExamDocumentType, PresetKey>;
+
+function SpecTable({ documents, locale }: { documents: ExamDocument[]; locale: Locale }) {
   const t = getDict(locale).spoke;
-  const rows = [
-    { label: t.specPhoto, spec: exam.photoSpec },
-    { label: t.specSignature, spec: exam.signatureSpec },
-  ];
 
   return (
     <div className="max-w-[620px] mx-auto w-full overflow-x-auto rounded-2xl border border-[var(--color-border-gray-subtle)]">
@@ -33,15 +47,23 @@ function SpecTable({ exam, locale }: { exam: ResizerExamSpec; locale: Locale }) 
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-t border-[var(--color-border-gray-subtle)]">
-              <td className="px-4 py-3 body-medium !font-semibold text-text-gray-normal">{row.label}</td>
-              <td className="px-4 py-3 body-medium text-text-gray-muted">
-                {row.spec.widthPx}×{row.spec.heightPx}px
-              </td>
-              <td className="px-4 py-3 body-medium text-text-gray-muted">
-                {row.spec.minKB}–{row.spec.maxKB}KB
-              </td>
+          {documents.map((doc) => (
+            <tr key={doc.type} className="border-t border-[var(--color-border-gray-subtle)]">
+              <td className="px-4 py-3 body-medium !font-semibold text-text-gray-normal">{t[DOC_LABEL_KEY[doc.type]]}</td>
+              {doc.mode === "live_capture" ? (
+                <td colSpan={2} className="px-4 py-3 body-medium text-text-gray-muted">
+                  {t.liveCapture}
+                </td>
+              ) : (
+                <>
+                  <td className="px-4 py-3 body-medium text-text-gray-muted">
+                    {doc.spec ? `${doc.spec.widthPx}×${doc.spec.heightPx}px` : "—"}
+                  </td>
+                  <td className="px-4 py-3 body-medium text-text-gray-muted">
+                    {doc.spec ? `${doc.spec.minKB}–${doc.spec.maxKB}KB` : "—"}
+                  </td>
+                </>
+              )}
             </tr>
           ))}
         </tbody>
@@ -68,7 +90,15 @@ export default function ResizerSpokePage({
   locale?: Locale;
 }) {
   const t = getDict(locale).spoke;
-  const faqItems: AccordionItem[] = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, locale).map(
+  const photoLive = isPhotoLiveCapture(exam);
+  const hasExtraDocs = exam.documents.some((d) => d.type !== "photo" && d.type !== "signature");
+  // Tiles = the exam's uploadable documents, in the backend's order. A
+  // live-captured photograph gets no tile; if nothing is uploadable at all,
+  // keep the classic Photo + Signature pair.
+  const uploadDocs = exam.documents.filter((d) => d.mode === "upload");
+  const allowedPresets: PresetKey[] = uploadDocs.length ? uploadDocs.map((d) => PRESET_BY_DOC[d.type]) : ["photo", "draw"];
+  const specOf = (type: ExamDocumentType) => uploadDocs.find((d) => d.type === type)?.spec ?? undefined;
+  const faqItems: AccordionItem[] = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, locale, { photoLive }).map(
     (faq, i) => ({
       id: `faq-${i}`,
       title: faq.q,
@@ -91,10 +121,21 @@ export default function ResizerSpokePage({
         {/* Only Photo + Signature — the two document types resizerExams.ts
             actually has verified per-exam specs for, and the only pair the
             Image Resizer mode ever shows (matches ResizeHubPage). */}
+        {photoLive && (
+          <div className="max-w-[620px] mx-auto mb-6 rounded-xl border border-[var(--color-border-gray-subtle)] bg-[var(--color-gray-bg-soft)] p-4 text-center">
+            <Text as="p" variant="body-small" color="gray-muted">
+              {t.livePhotoNote(exam.shortName)}
+            </Text>
+          </div>
+        )}
+
         <ResizeImageTool
-          photoSpec={exam.photoSpec}
-          signatureSpec={exam.signatureSpec}
-          allowedPresets={["photo", "draw"]}
+          photoSpec={specOf("photo") ?? exam.photoSpec}
+          signatureSpec={specOf("signature") ?? exam.signatureSpec}
+          thumbSpec={specOf("left_thumb")}
+          rightThumbSpec={specOf("right_thumb")}
+          declarationSpec={specOf("handwritten_declaration")}
+          allowedPresets={allowedPresets}
           locale={locale}
         />
 
@@ -109,9 +150,9 @@ export default function ResizerSpokePage({
 
         <div className="mt-16 md:mt-20 flex flex-col items-center gap-4">
           <h2 className="heading-large !font-bold text-text-gray-normal text-center">
-            {t.specsTitle(exam.shortName)}
+            {hasExtraDocs ? t.specsTitleDocs(exam.shortName) : t.specsTitle(exam.shortName)}
           </h2>
-          <SpecTable exam={exam} locale={locale} />
+          <SpecTable documents={exam.documents} locale={locale} />
         </div>
 
         {officialRequirements && (
