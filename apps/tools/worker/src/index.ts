@@ -30,6 +30,13 @@ const MR_PREFIX = "/mr/tools";
 // the upstream path to request from PAGES_ORIGIN, or null if this pathname
 // isn't ours.
 function matchPath(pathname: string): string | null {
+	// The master sitemap index is published at the ORIGIN ROOT
+	// (https://clearcutoff.in/sitemap-tools.xml) rather than under /tools: a
+	// sitemap only covers URLs at or below its own directory, and only from the
+	// root are /tools/**, /hi/tools/** and /mr/tools/** all in scope. Upstream
+	// it is the static file app/sitemap-index.xml/route.ts exports.
+	if (pathname === "/sitemap-tools.xml") return "/sitemap-index.xml";
+
 	for (const [prefix, upstreamRoot] of [
 		[HI_PREFIX, "/hi"],
 		[MR_PREFIX, "/mr"],

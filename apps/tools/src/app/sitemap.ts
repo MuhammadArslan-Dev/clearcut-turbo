@@ -1,13 +1,17 @@
 import type { MetadataRoute } from "next";
-import { buildSitemap } from "@/lib/sitemap";
+import { SITEMAP_SECTIONS, buildSitemap, isSitemapSection } from "@/lib/sitemap";
 
-// English sitemap: https://clearcutoff.in/tools/sitemap.xml. The Hindi and
-// Marathi ones live in ./hi/sitemap.ts and ./mr/sitemap.ts (public URLs
-// /hi/tools/sitemap.xml and /mr/tools/sitemap.xml) — see lib/sitemap.ts for
-// why it is split. output: "export" (next.config.ts) makes this run once at
-// build time.
+// One sitemap per section for this language: https://clearcutoff.in/tools/sitemap/<section>.xml
+// Listed by the master index (../sitemap-index.xml/route.ts) — see lib/sitemap.ts
+// for the architecture. output: "export" runs this once at build time.
 export const dynamic = "force-static";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return buildSitemap("en");
+export async function generateSitemaps() {
+  return SITEMAP_SECTIONS.map((id) => ({ id }));
+}
+
+export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
+  const id = await props.id;
+  if (!isSitemapSection(id)) throw new Error(`Unknown sitemap section "${id}"`);
+  return buildSitemap("en", id);
 }

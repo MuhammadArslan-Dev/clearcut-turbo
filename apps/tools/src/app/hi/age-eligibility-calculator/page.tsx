@@ -33,7 +33,6 @@ export default async function Page() {
   const popularExams = await getPopularAgeExams();
 
   const faqItems: AccordionItem[] = t.homeFaqs.map((faq, i) => ({ id: `home-faq-${i}`, title: faq.q, content: faq.a }));
-j
   return (
     <>
       <PageJsonLd

@@ -86,23 +86,48 @@ Rules that were enforced (and fixed):
   site name on the home page, which belongs to apps/landing.
 
 ### Sitemaps
-Three files, because a sitemap only covers URLs at or below its own path:
+One **master index** that lists 12 sitemap files (3 languages × 4 sections):
 
-| File (public URL) | Contents |
-|---|---|
-| `https://clearcutoff.in/tools/sitemap.xml` | `/tools` + all English pages |
-| `https://clearcutoff.in/hi/tools/sitemap.xml` | all Hindi pages |
-| `https://clearcutoff.in/mr/tools/sitemap.xml` | all Marathi pages |
+```
+https://clearcutoff.in/sitemap-tools.xml        <- the ONLY URL to submit / list in robots.txt
+  ├─ /tools/sitemap/<section>.xml               English
+  ├─ /hi/tools/sitemap/<section>.xml            Hindi
+  └─ /mr/tools/sitemap/<section>.xml            Marathi
+sections: core | resizer-exams | resizer-categories | age-calculators
+```
 
-- Each URL carries the full hreflang set (`xhtml:link`, incl. `x-default`).
-- No `<priority>`/`<changefreq>` (Google ignores them) and no `<lastmod>`
-  (a build-time date on every URL is not "consistently and verifiably
-  accurate", so Google would discard it). Add `lastModified` only if you later
-  track a real per-page content date.
-- Resizer **category** pages in Hindi/Marathi were missing from the old
-  sitemap; all pages now come from the same route list.
-- All three are referenced from `robots.txt` (`apps/landing/src/app/robots.ts`).
-  Also submit them in Google Search Console (Domain property).
+Why this shape (Google's sitemap rules):
+- **Scope**: a sitemap only covers URLs at or below its own directory. The
+  index therefore sits at the **origin root** (the Worker serves the file
+  `out/sitemap-index.xml` at `/sitemap-tools.xml`, route in `wrangler.toml`), so
+  `/tools/**`, `/hi/tools/**` and `/mr/tools/**` are all legitimately in scope
+  without relying on Search Console to override the rule.
+- **Per-section files** let Search Console show indexing coverage per page
+  type ("are the 114 resizer exam pages indexed?") instead of one 640-URL blob.
+- One index = one submission; adding a page or section never changes what you
+  submit.
+
+Every entry is a canonical, indexable URL from the same helper as the page's
+`<link rel="canonical">`, with the full hreflang set (`xhtml:link`, incl.
+`x-default`). No `<priority>`/`<changefreq>` (Google ignores them) and no
+`<lastmod>` (a build-time date on every URL is not "consistently and verifiably
+accurate", so Google would discard it). Add `lastModified` in `lib/sitemap.ts`
+only if a real per-page content date exists.
+
+Code: `src/lib/sitemap.ts` (sections + entries), `src/app/sitemap.ts`,
+`src/app/hi/sitemap.ts`, `src/app/mr/sitemap.ts` (`generateSitemaps`),
+`src/app/sitemap-index.xml/route.ts` (the index). The tools index `/tools` is
+listed in `core` (English only — it has no hi/mr version).
+
+robots.txt (apps/landing) points at the index with a single
+`Sitemap: https://clearcutoff.in/sitemap-tools.xml` line.
+
+**Submitting**: in Google Search Console (Domain property `clearcutoff.in`)
+→ Sitemaps → add `sitemap-tools.xml`; same URL in Bing Webmaster Tools. If the
+old flat files (`/tools/sitemap.xml`, `/hi/tools/sitemap.xml`,
+`/mr/tools/sitemap.xml`) were ever submitted, remove them — they no longer exist.
+Expected: 12 child sitemaps, 643 URLs (`core`: 9 English incl. `/tools` + 8 Hindi + 8
+Marathi; resizer-exams 114, resizer-categories 7, age-calculators 85 — each ×3).
 
 ### Crawlability / internal linking
 - The age-calculator directory (`/age-eligibility-calculator/all`) was a
@@ -153,13 +178,12 @@ Three files, because a sitemap only covers URLs at or below its own path:
 1. In its `page.tsx`, `export const metadata = buildMetadata({ locale, path, title, description })`
    (or `generateMetadata` returning it) — for **all three locales**.
 2. Render `<PageJsonLd locale path trail app? faqs? collection? />`.
-3. Add its path to `src/lib/sitemap.ts` (data-driven pages — exams, categories —
-   are picked up automatically from the backend).
+3. Add its path to the right section in `src/lib/sitemap.ts` (`pathsFor`; data-driven
+   pages — exams, categories — are picked up automatically from the backend).
 4. Build and run the validation below.
 
 **Add a language**: add it to `SEO_LOCALES`, `LOCALE_PREFIX`, `OG_LOCALE` in
-`lib/seo.ts`, create its sitemap file, add the sitemap line to
-`apps/landing/src/app/robots.ts`, and make sure every route exists in it
+`lib/seo.ts`, add a `src/app/<lang>/sitemap.ts` (copy `hi/sitemap.ts`), and make sure every route exists in it
 (hreflang must stay reciprocal — a missing language version breaks the set).
 
 **Change the /tools index**: edit `TOOLS_INDEX_HTML` in `worker/src/index.ts`
@@ -170,16 +194,27 @@ Three files, because a sitemap only covers URLs at or below its own path:
 (see `TOOLS_DEPLOY.md`); Worker and `apps/landing/robots.ts` changes need
 their own deploys.
 
-**Validate after every build** (checks metadata, hreflang reciprocity, JSON-LD
-rules, sitemap scope/consistency, orphan pages):
+**Validate after every build** — `pnpm --filter tools seo:check`
+(`scripts/validate-seo.mjs`, zero dependencies, ~3 s). It reads `apps/tools/out`
+(the exact files that get deployed) and exits 1 if any indexable page or
+sitemap breaks the rules: unique title/description, exactly one self-referencing
+canonical (absolute, no trailing slash/query), OG + Twitter tags with image,
+`og:url` = canonical, an `<h1>`, complete + reciprocal hreflang
+(`en`,`hi`,`mr`,`x-default`), valid JSON-LD (Google's `applicationCategory` list,
+no invented ratings, FAQ questions visible on the page, breadcrumb shape,
+`ItemList` URLs are real pages), the master index lists exactly the 12 files,
+every child file exists and stays in its directory scope, every indexable page
+is in **exactly one** sitemap with the same hreflang as the page, and no
+`lastmod`/`priority`/`changefreq`. It also warns about pages with no inbound
+link in the static HTML (currently 4: the Hindi/Marathi age hub and syllabus
+pages — reachable via hreflang + sitemaps, see Known limitations).
+
 ```sh
-pnpm --filter tools build      # with the production env vars from TOOLS_DEPLOY.md
-# then inspect apps/tools/out: */sitemap.xml, a few pages' <head>, and paste
-# representative pages into Google's Rich Results Test / Search Console
+pnpm --filter tools build      # production env vars from TOOLS_DEPLOY.md
+pnpm --filter tools seo:check
 ```
-Things to re-check whenever content changes: unique titles/descriptions, every
-exam page canonical == og:url == its sitemap URL, FAQ text visible on the page,
-no invented ratings in structured data.
+For structured data also spot-check a few pages in Google's Rich Results Test
+and Search Console → Enhancements after deploys.
 
 ## Official documentation used
 - Google Search Central: structured data intro, software app, FAQPage,
