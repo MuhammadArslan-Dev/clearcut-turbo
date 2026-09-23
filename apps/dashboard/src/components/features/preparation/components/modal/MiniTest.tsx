@@ -312,7 +312,7 @@ const Content = ({
                 weight="bold"
                 className="whitespace-nowrap !text-[#00a251]"
               >
-                {question?.ai_metadata?.difficulty_level || "Easy"}
+                Easy
               </Text>
             </div>
           </div>

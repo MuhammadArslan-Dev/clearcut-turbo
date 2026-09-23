@@ -10,13 +10,7 @@ export type FilterTab = {
   value: string;
 };
 
-// Only `state`/`translation` are ever read below — narrowed from `Exam` so
-// any list carrying those two fields (e.g. Daily Tests' own exam list) can
-// reuse this exact "Select your state" filtering logic instead of
-// duplicating it, without needing to satisfy the rest of the `Exam` shape.
-export type StateFilterableExam = Pick<Exam, "state" | "translation">;
-
-export function useCourseFilters<T extends StateFilterableExam>(data?: T[]) {
+export function useCourseFilters(data?: Exam[]) {
   const [selectedState, setSelectedState] = useState<string>("all");
 
   const { locale } = useLanguageSwitch();

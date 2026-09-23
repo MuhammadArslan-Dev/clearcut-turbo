@@ -18,9 +18,6 @@ export interface CreateAuthFeatureConfig {
   loginRedirectPath?: string;
   logoutRedirectPath?: string;
   verifyTimeoutMs?: number;
-  /** See AuthContextConfig in context.tsx — path prefixes exempt from the
-   * already-logged-in auto-redirect (e.g. an embedded admin panel). */
-  skipRedirectPathSegments?: string[];
   /** Same event names/properties as the original inline logAmplitudeEvent
    * calls — pass your own analytics function to preserve tracking. */
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
@@ -54,7 +51,6 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     loginRedirectPath: config.loginRedirectPath,
     logoutRedirectPath: config.logoutRedirectPath,
     verifyTimeoutMs: config.verifyTimeoutMs,
-    skipRedirectPathSegments: config.skipRedirectPathSegments,
   });
 
   const useAuthStore = createAuthStore();

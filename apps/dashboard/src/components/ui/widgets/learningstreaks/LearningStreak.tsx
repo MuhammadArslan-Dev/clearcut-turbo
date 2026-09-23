@@ -7,7 +7,6 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { getStreak, StreakResponse } from "@/lib/dashboard/streak";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Check, Flame } from "lucide-react";
 
 interface LearningStreakProps {
   title?: React.ReactNode;
@@ -23,7 +22,6 @@ const LearningStreak: React.FC<LearningStreakProps> = ({
   rounded = "rounded-md",
 }) => {
   const t = useTranslations();
-  const tHome = useTranslations("DashboardHome");
   const streakTitle = t("learningStreak.title");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLDivElement>(null);
@@ -72,42 +70,22 @@ const LearningStreak: React.FC<LearningStreakProps> = ({
   }
 
   return (
-    <div className={clsx("w-full flex flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
-            <Flame size={24} />
-          </span>
-          <div>
-            <div className="heading-medium !font-semibold">{streakTitle}</div>
-            <div className="body-small !font-normal text-surface-gray-muted">{tHome("streakSubtitle")}</div>
-          </div>
-        </div>
-        <span className="body-small shrink-0 rounded-full bg-[var(--color-success-bg-soft)] px-3 py-1 !font-semibold text-[var(--color-success-strong)]">
-          {t("learningStreak.day", { streak: streak.current_streak })}
-        </span>
-      </div>
+    <div className={clsx("w-full flex flex-col gap-4 p-4", bgColor, rounded)}>
+      <div className="heading-medium !font-semibold">{streakTitle}</div>
 
-      <div ref={scrollContainerRef} className="flex justify-between gap-2 overflow-x-auto -mx-2 px-2 sm:px-4 sm:-mx-4 scrollbar-hide">
+      <div ref={scrollContainerRef} className="flex justify-between gap-4 overflow-x-auto -mx-2 px-2 sm:px-4 sm:-mx-4 scrollbar-hide">
         {streak.week.map((item, index) => (
           <div
             key={index}
             ref={item.day.toLowerCase() === "today" ? todayRef : undefined}
             className="flex flex-col items-center gap-1 flex-shrink-0"
           >
-            {item.completed && item.day.toLowerCase() === "today" ? (
-              // Today, done: brand-blue ring with a tick (the past days keep the green tick).
-              <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full border-[3px] border-brand bg-white text-brand">
-                <Check size={20} strokeWidth={3} />
-              </div>
-            ) : item.completed ? (
-              <CircleTickIcon size={40} />
+            {item.completed ? (
+              <CircleTickIcon size={48} />
             ) : (
               <div
                 className={clsx(
-                  "w-[40px] h-[40px] rounded-full border",
-                  // Today (not completed yet) gets the brand ring, per the reference.
-                  item.day.toLowerCase() === "today" ? "border-2 border-brand" : "border-gray-300",
+                  "w-[48px] h-[48px] rounded-full border border-gray-300",
                 )}
               />
             )}
@@ -178,7 +156,7 @@ const LearningStreakSkeleton = ({
             key={index}
             className="flex flex-col items-center gap-2 flex-shrink-0"
           >
-            <div className="w-[40px] h-[40px] rounded-full bg-gray-200 animate-pulse" />
+            <div className="w-[48px] h-[48px] rounded-full bg-gray-200 animate-pulse" />
             <div className="h-3 w-8 rounded bg-gray-200 animate-pulse" />
           </div>
         ))}

@@ -73,34 +73,6 @@
     "continueFree": "Continue free learning"
   },
 
-  "dailyTestsLockedModal": {
-    "title": "Unlock Full Test Access",
-    "subtitle": "Upgrade to attempt previous tests, view detailed analysis, and improve your preparation.",
-    "unlockAndGet": "Unlock and get",
-    "features": {
-      "allTests": "Access all previous tests",
-      "solutions": "Detailed solution & explanations",
-      "subjectAnalysis": "Subject-wise performance analysis",
-      "trackProgress": "Track your progress over time"
-    },
-    "cta": "Unlock Now",
-    "continueFree": "Continue with free plan"
-  },
-
-  "dailyTestLockedModal": {
-    "title": "Unlock Full Test Analysis",
-    "subtitle": "Upgrade to see which questions were correct or incorrect, plus detailed explanations for every question.",
-    "unlockAndGet": "Unlock and get",
-    "features": {
-      "questionReview": "Question-wise review with your answers",
-      "explanations": "Correct answers and detailed explanations",
-      "analysis": "Performance analysis and insights",
-      "trackImprovement": "Track your improvement over time"
-    },
-    "cta": "Unlock Now",
-    "continueFree": "Continue with limited view"
-  },
-
   "testLockedModal": {
     "title": "Test Locked",
     "subtitle": "Unlock to attempt this test",

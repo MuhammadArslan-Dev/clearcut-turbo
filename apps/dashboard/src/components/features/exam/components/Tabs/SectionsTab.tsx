@@ -1,37 +1,17 @@
 import TabSwitch from "@/components/ui/tabs/TabSwitch";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useExamStore } from "../../store/useExamStore";
 
-export default function SectionsTab({
-  layoutId,
-  wrapperClassName = "lg:rounded-l-full overflow-hidden",
-}: {
-  layoutId?: string;
-  wrapperClassName?: string;
-}) {
+export default function SectionsTab({ layoutId }: { layoutId?: string }) {
   const { getExamContext, goToSection } = useExamStore();
-  const wrapRef = useRef<HTMLDivElement>(null);
 
   // ===============================
   // CONTEXT
   // ===============================
 
   const { sections, sectionIndex } = getExamContext();
-
-  // Keep the active section centred in the (scrollable) strip — on mount and
-  // whenever the section changes, whether by tapping a tab or by moving past
-  // the end of a section with Next / Save and Next.
-  useEffect(() => {
-    const list = wrapRef.current?.querySelector<HTMLElement>('[role="tablist"]');
-    const active = list?.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (!list || !active) return;
-    list.scrollTo({
-      left: active.offsetLeft - list.clientWidth / 2 + active.clientWidth / 2,
-      behavior: "smooth",
-    });
-  }, [sectionIndex, sections.length]);
 
   // ===============================
   // TAB ITEMS
@@ -69,7 +49,7 @@ export default function SectionsTab({
   }
 
   return (
-    <div ref={wrapRef} className={wrapperClassName}>
+    <div className="lg:rounded-l-full overflow-hidden">
       <TabSwitch
         layoutScopeId={layoutId ?? "section-tab"}
         scrollable
