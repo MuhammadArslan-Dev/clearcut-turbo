@@ -12,6 +12,15 @@ export const SYLLABUS_STRINGS = {
     metaDescription:
       "Pick your exam, level and subjects, then check off chapters as you study them. Free, private, and saved entirely in your browser — nothing is sent to any server.",
     metaOgDescription: "Pick your exam, level and subjects, then check off chapters as you study them. Saved entirely in your browser.",
+    aboutTitle: "About the Syllabus Tracker",
+    aboutBody:
+      "Pick your exam, level and subjects, then check off each chapter as you finish it. Your progress is saved only in this browser — nothing is uploaded and no sign-up is needed. Syllabus data is loaded from Clear Cutoff's exam database.",
+    howTitle: "How it works",
+    howSteps: [
+      "Choose your exam (and its paper or level, if it has one).",
+      "Open a subject to see its chapters.",
+      "Tick chapters as you complete them and watch your progress grow.",
+    ],
 
     stepperAriaLabel: "Syllabus Tracker progress",
     stepExamLabel: "Exam",
@@ -104,6 +113,15 @@ export const SYLLABUS_STRINGS = {
     metaDescription:
       "अपना एग्जाम, लेवल और विषय चुनें, फिर पढ़ाई करते समय अध्यायों को चेक ऑफ करें। मुफ़्त, निजी, और पूरी तरह आपके ब्राउज़र में सेव होता है — कुछ भी सर्वर पर नहीं भेजा जाता।",
     metaOgDescription: "अपना एग्जाम, लेवल और विषय चुनें, फिर पढ़ाई करते समय अध्यायों को चेक ऑफ करें। पूरी तरह आपके ब्राउज़र में सेव होता है।",
+    aboutTitle: "सिलेबस ट्रैकर के बारे में",
+    aboutBody:
+      "अपनी परीक्षा, लेवल और विषय चुनें, फिर हर अध्याय पूरा होते ही उसे टिक करें। आपकी प्रगति सिर्फ़ इसी ब्राउज़र में सेव होती है — कुछ भी अपलोड नहीं होता और साइन-अप की ज़रूरत नहीं है। सिलेबस का डेटा Clear Cutoff के परीक्षा डेटाबेस से लोड होता है।",
+    howTitle: "यह कैसे काम करता है",
+    howSteps: [
+      "अपनी परीक्षा चुनें (और अगर हो तो उसका पेपर या लेवल)।",
+      "किसी विषय को खोलकर उसके अध्याय देखें।",
+      "अध्याय पूरे होते ही उन्हें टिक करें और अपनी प्रगति देखें।",
+    ],
 
     stepperAriaLabel: "सिलेबस ट्रैकर प्रगति",
     stepExamLabel: "एग्जाम",
@@ -196,6 +214,15 @@ export const SYLLABUS_STRINGS = {
     metaDescription:
       "तुमची परीक्षा, लेव्हल आणि विषय निवडा, नंतर अभ्यास करताना प्रकरणे चेक ऑफ करा. मोफत, खासगी, आणि पूर्णपणे तुमच्या ब्राउझरमध्ये सेव्ह होते — काहीही सर्व्हरवर पाठवले जात नाही.",
     metaOgDescription: "तुमची परीक्षा, लेव्हल आणि विषय निवडा, नंतर अभ्यास करताना प्रकरणे चेक ऑफ करा. पूर्णपणे तुमच्या ब्राउझरमध्ये सेव्ह होते.",
+    aboutTitle: "अभ्यासक्रम ट्रॅकरबद्दल",
+    aboutBody:
+      "तुमची परीक्षा, लेव्हल आणि विषय निवडा, मग प्रत्येक प्रकरण पूर्ण होताच त्यावर टिक करा. तुमची प्रगती फक्त याच ब्राउझरमध्ये सेव्ह होते — काहीही अपलोड होत नाही आणि साइन-अपची गरज नाही. अभ्यासक्रमाचा डेटा Clear Cutoff च्या परीक्षा डेटाबेसमधून लोड होतो.",
+    howTitle: "हे कसे काम करते",
+    howSteps: [
+      "तुमची परीक्षा निवडा (आणि असल्यास त्याचा पेपर किंवा लेव्हल).",
+      "एखादा विषय उघडून त्यातील प्रकरणे पहा.",
+      "प्रकरणे पूर्ण होताच त्यावर टिक करा आणि तुमची प्रगती पहा.",
+    ],
 
     stepperAriaLabel: "अभ्यासक्रम ट्रॅकर प्रगती",
     stepExamLabel: "परीक्षा",

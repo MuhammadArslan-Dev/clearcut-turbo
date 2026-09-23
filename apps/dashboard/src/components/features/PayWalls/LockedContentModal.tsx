@@ -35,16 +35,41 @@ export default function LockedContentModal() {
   const router = useRouter();
   useDrawerBackHandler();
 
-  const isTest = mode === "test-locked-modal";
+  // "daily-test-locked-modal" = result page (no illustration);
+  // "daily-tests-locked-modal" = Daily Tests list page (with illustration).
+  const isDailyResult = mode === "daily-test-locked-modal";
+  const isDailyList = mode === "daily-tests-locked-modal";
+  const isDaily = isDailyResult || isDailyList;
+  const isTest = mode === "test-locked-modal" || isDaily;
   const modalT = useTranslations(
-    isTest ? "modals.testLockedModal" : "modals.topicLockedModal",
+    isDailyResult
+      ? "modals.dailyTestLockedModal"
+      : isDailyList
+        ? "modals.dailyTestsLockedModal"
+        : isTest
+        ? "modals.testLockedModal"
+        : "modals.topicLockedModal",
   );
 
   const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
 
   const examTitle = course?.exam?.short_name ?? "";
 
-  const features = isTest
+  const features = isDailyList
+    ? [
+        modalT("features.allTests"),
+        modalT("features.solutions"),
+        modalT("features.subjectAnalysis"),
+        modalT("features.trackProgress"),
+      ]
+    : isDailyResult
+    ? [
+        modalT("features.questionReview"),
+        modalT("features.explanations"),
+        modalT("features.analysis"),
+        modalT("features.trackImprovement"),
+      ]
+    : isTest
     ? [
         modalT("features.attemptTest"),
         modalT("features.detailedSolutions"),
@@ -61,7 +86,10 @@ export default function LockedContentModal() {
   return (
     <AnimatePresence>
       {isOpen &&
-        (mode === "topic-locked-modal" || mode === "test-locked-modal") && (
+        (mode === "topic-locked-modal" ||
+          mode === "test-locked-modal" ||
+          mode === "daily-test-locked-modal" ||
+          mode === "daily-tests-locked-modal") && (
           <Container
             maxWidth="max-w-[420px] !rounded-t-lg"
             isHeader={false}
@@ -100,7 +128,8 @@ export default function LockedContentModal() {
                 </div>
               </div>
 
-              {/* Illustration */}
+              {/* Illustration — not shown for the daily-test result modal */}
+              {!isDaily && (
               <div className="flex items-center justify-center py-2">
                 <Image
                   src={
@@ -115,6 +144,7 @@ export default function LockedContentModal() {
                   priority
                 />
               </div>
+              )}
 
               {/* Unlock and get */}
               <div className="flex items-center justify-center">
@@ -141,7 +171,12 @@ export default function LockedContentModal() {
                   onClick={() =>
                     handleOpenPaywall(
                       router,
-                      source ?? "topic_card_clicked",
+                      source ??
+                        (isDailyResult
+                          ? "daily_test_result_clicked"
+                          : isDailyList
+                            ? "daily_tests_page_clicked"
+                            : "topic_card_clicked"),
                       course,
                     )
                   }

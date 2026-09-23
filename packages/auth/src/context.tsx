@@ -23,6 +23,19 @@ export interface AuthContextConfig {
   logoutRedirectPath?: string;
   /** Abort the mount-time verify call after this many ms. Defaults to 8000. */
   verifyTimeoutMs?: number;
+  /**
+   * Path prefixes where an already-logged-in visitor should NOT be
+   * hard-redirected to `redirectBaseUrl` — e.g. an internal admin panel
+   * embedded in an otherwise-public marketing app, where the redirect would
+   * make the panel unusable for any logged-in staff member. The token is
+   * still verified and populated into context as normal; only the
+   * `window.location.replace(...)` step is skipped. Checked against
+   * `window.location.pathname` with `startsWith`, so pass the exact segment
+   * (e.g. "/admin") without a locale prefix — every locale variant
+   * ("/admin", "/hi/admin") is matched via `.includes()`. Optional; omitting
+   * it preserves the original always-redirect behavior.
+   */
+  skipRedirectPathSegments?: string[];
 }
 
 export interface AuthContextValue {
@@ -46,6 +59,7 @@ export function createAuthContext(config: AuthContextConfig) {
     loginRedirectPath = "/app",
     logoutRedirectPath = "/",
     verifyTimeoutMs = 8000,
+    skipRedirectPathSegments = [],
   } = config;
 
   const AuthContext = createContext<AuthContextValue | null>(null);
@@ -83,7 +97,12 @@ export function createAuthContext(config: AuthContextConfig) {
 
           if (data?.status === "success") {
             setTokenState(tok);
-            window.location.replace(redirectUrl);
+            const isExemptPath = skipRedirectPathSegments.some((segment) =>
+              window.location.pathname.includes(segment),
+            );
+            if (!isExemptPath) {
+              window.location.replace(redirectUrl);
+            }
           } else {
             clearToken();
             setTokenState(null);

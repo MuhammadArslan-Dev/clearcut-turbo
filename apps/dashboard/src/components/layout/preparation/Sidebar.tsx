@@ -514,7 +514,7 @@ export default function Sidebar() {
                                   <Text as="p" className="whitespace-nowrap">
                                     {hasChildren
                                       ? `(${topic.children.length} sub-topics)`
-                                      : topic.difficulty_level}
+                                      : ""}
                                   </Text>
                                   {hasChildren ? (
                                     <ChevronIcon
@@ -531,7 +531,7 @@ export default function Sidebar() {
                                         weight="bold"
                                         className="whitespace-nowrap !text-[#00a251]"
                                       >
-                                        Easy
+                                        {topic.difficulty_level || "Easy"}
                                       </Text>
                                     </div>
                                   )}
@@ -676,7 +676,7 @@ export default function Sidebar() {
                                         cardBgColor="!px-0"
                                         badge={
                                           <div className="flex gap-2">
-                                            <p>{child?.difficulty_level}</p>
+                                            <p>{child?.difficulty_level || "Easy"}</p>
                                             <StarBadge />
                                           </div>
                                         }

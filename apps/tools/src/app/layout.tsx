@@ -23,6 +23,15 @@ export const metadata: Metadata = {
     apple: [{ url: `${BASE_PATH}/apple-touch-icon.png`, sizes: "180x180" }],
   },
   manifest: `${BASE_PATH}/site.webmanifest`,
+  applicationName: "Clear Cutoff Tools",
+  // Explicit index/follow plus the preview limits Google documents for
+  // snippets/thumbnails. Pages that must stay out of the index opt out per
+  // page via buildMetadata({ noindex: true }) (lib/seo.ts).
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large", "max-video-preview": -1 },
+  },
   appleWebApp: {
     title: "ClearCutOff",
   },
