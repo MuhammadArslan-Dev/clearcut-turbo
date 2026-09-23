@@ -2,60 +2,45 @@
 
 import React from "react";
 import clsx from "clsx";
-import { useSearchParams } from "next/navigation";
 import Text from "@clearcut/ui/text";
-import type { AgeEligibilityExam, ExamGroup } from "@/lib/ageEligibility";
+import type { AgeCategory, AgeEligibilityExam, ExamGroup } from "@/lib/ageEligibility";
 import type { Locale } from "@/lib/dictionary";
 import { getAgeCalcStrings } from "@/lib/ageCalculatorStrings";
 import AgeExamCard, { ageLimitLabel } from "./AgeExamCard";
 
-const VALID_GROUPS = new Set<ExamGroup>([
-  "Civil Services",
-  "SSC Exams",
-  "Banking",
-  "Railways",
-  "Defence",
-  "Engineering",
-  "Medical",
-  "State PSC",
-  "Teaching",
-  "Insurance",
-  "Police",
-]);
-
-const GROUP_ORDER: ExamGroup[] = [
-  "Civil Services",
-  "SSC Exams",
-  "Banking",
-  "Railways",
-  "Defence",
-  "Engineering",
-  "Medical",
-  "State PSC",
-  "Teaching",
-  "Insurance",
-  "Police",
-];
-
 export default function AgeEligibilityDirectory({
   exams,
+  categories,
   locale = "en",
   initialGroup = "all",
   basePath = "/age-eligibility-calculator",
 }: {
   exams: AgeEligibilityExam[];
+  /** Active categories for this locale, already in display order (from the backend). */
+  categories: AgeCategory[];
   locale?: Locale;
   initialGroup?: ExamGroup | "all";
   basePath?: string;
 }) {
   const t = getAgeCalcStrings(locale);
-  const searchParams = useSearchParams();
-  const groupFromUrl = searchParams.get("group");
-  const resolvedInitialGroup: ExamGroup | "all" =
-    initialGroup !== "all" ? initialGroup : groupFromUrl && VALID_GROUPS.has(groupFromUrl as ExamGroup) ? (groupFromUrl as ExamGroup) : "all";
+  // The list is server-rendered in full (every exam is a plain <a> in the static
+  // HTML, which is what lets crawlers that don't run JavaScript discover the
+  // exam pages). useSearchParams() would have made this whole subtree
+  // client-only, so the ?group= filter is applied after mount instead:
+  // ?group= carries a category slug; an old English-label link
+  // (?group=Banking) still resolves by label.
+  const labelBySlug = new Map(categories.map((c) => [c.slug, c.label]));
 
   const [query, setQuery] = React.useState("");
-  const [activeGroup, setActiveGroup] = React.useState<ExamGroup | "all">(resolvedInitialGroup);
+  const [activeGroup, setActiveGroup] = React.useState<ExamGroup | "all">(initialGroup);
+
+  React.useEffect(() => {
+    if (initialGroup !== "all") return;
+    const fromUrl = new URLSearchParams(window.location.search).get("group");
+    if (!fromUrl) return;
+    const match = categories.find((c) => c.slug === fromUrl || c.label.toLowerCase() === fromUrl.toLowerCase());
+    if (match) setActiveGroup(match.slug);
+  }, [initialGroup, categories]);
 
   const chipsContainerRef = React.useRef<HTMLDivElement>(null);
   const chipRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
@@ -150,7 +135,8 @@ export default function AgeEligibilityDirectory({
             {exams.length}
           </span>
         </button>
-        {GROUP_ORDER.filter((g) => groupCounts.has(g)).map((group, i) => {
+        {categories.filter((c) => groupCounts.has(c.slug)).map((category, i) => {
+          const group = category.slug;
           const isActive = activeGroup === group;
           return (
             <button
@@ -167,7 +153,7 @@ export default function AgeEligibilityDirectory({
                   : "bg-white text-text-gray-muted border-[var(--color-border-gray-subtle)] hover:border-brand hover:text-brand",
               )}
             >
-              {group}
+              {category.label}
               <span
                 className={clsx(
                   "rounded-full px-1.5 body-xsmall !font-bold",
@@ -196,6 +182,7 @@ export default function AgeEligibilityDirectory({
               ageLimitText={ageLimitLabel(exam, t.noLimit, t.minLabel)}
               ageLimitLabelText={t.ageLimit}
               popularLabel={t.popular}
+              groupLabel={labelBySlug.get(exam.group)}
               locale={locale}
             />
           ))}
