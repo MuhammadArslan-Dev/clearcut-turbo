@@ -14,7 +14,11 @@ export default function BottomNavWrap() {
   );
 
   const activeTab =
-    sortedNav.find((item) => pathname.startsWith(item.href))?.key ?? "exams";
+    sortedNav.find(
+      (item) => item.activePrefixes?.some((p) => pathname.startsWith(p)),
+    )?.key ??
+    sortedNav.find((item) => pathname.startsWith(item.href))?.key ??
+    "exams";
 
   return (
     <div className="md:hidden">

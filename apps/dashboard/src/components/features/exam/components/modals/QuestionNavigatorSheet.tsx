@@ -37,7 +37,7 @@ export default function QuestionNavigatorSheet() {
           as="p"
           variant="heading-medium"
           weight="semibold"
-          color="gray-subtle"
+          color="gray-normal"
         >
           Progress and Questions
         </Text>
@@ -46,13 +46,17 @@ export default function QuestionNavigatorSheet() {
     );
   };
 
-  const mainContent = () => {
+  // `stickyTop`: the desktop card has 16px of padding, and sticky offsets are
+  // measured inside it, so the switch needs -top-4 to sit flush at the very top.
+  const mainContent = (stickyTop = "top-0") => {
     return (
       <>
-        <QuestionReportTabs />
+        {/* Sticks to the top of the panel's scroll area while the sections scroll under it. */}
+        <div className={`sticky ${stickyTop} z-10 bg-white py-2`}>
+          <QuestionReportTabs />
+        </div>
         <div className="flex flex-col gap-3">
           {/* <QuestionFilter /> */}
-          <Divider />
           {get("report") === "summary-view" && <QuestionNavigationPanel />}
           {get("report") === "question-view" && <QuestionViewPanel />}
         </div>
@@ -82,7 +86,10 @@ export default function QuestionNavigatorSheet() {
 
               {/* main content  */}
               <div className=" flex flex-col max-h-[90vh] md:items-center gap-2 overflow-scroll">
-                <QuestionStatusLegend />
+                {/* Breathing room around the legend inside the bottom sheet */}
+                <div className="w-full px-4 py-2">
+                  <QuestionStatusLegend />
+                </div>
                 {mainContent()}
               </div>
 
@@ -99,7 +106,7 @@ export default function QuestionNavigatorSheet() {
       ) : (
         <>
           {header()}
-          {mainContent()}
+          {mainContent("-top-4")}
         </>
       )}
     </>

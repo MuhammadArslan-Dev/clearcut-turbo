@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Before Any Task
+
+**Read `docs/DEVELOPMENT_RULES.md` first, before starting any task**, and follow it (reuse existing components/tokens, no new colours/patterns, i18n in en/hi/mr, verification workflow). Update it when you discover a new reusable pattern or convention.
+
 ## Repository Overview
 
 `clearcut-master` is a **Turborepo + pnpm workspace** for ClearCutOff's web apps. It consolidates what used to be separate projects into one monorepo with a shared-package architecture — `apps/*` consume `@clearcut/*` packages instead of maintaining parallel copies of auth, API clients, state, design tokens, analytics, and UI primitives.
@@ -11,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `apps/blog` | Next.js 16 (App Router), Tailwind v4, next-intl | Learner-facing content app — exam question banks, practice tests, blog content |
 | `apps/dashboard` | Next.js 16 (App Router), Tailwind v4, next-intl, Amplitude, Sentry | Logged-in product — preparation, test series, exams, payments, onboarding, profile |
 | `apps/landing` | Next.js 16 (App Router), Tailwind v4 + Radix UI + CVA, next-intl | Public marketing site — exam landing pages, pricing, onboarding, comparison pages |
-| `apps/tools` | Next.js 16, static export (`output: "export"`), Tailwind v4 | Standalone, no-backend browser tools (currently a photo/signature resizer) deployed to Cloudflare Pages, fronted by a Cloudflare Worker at `clearcutoff.in/tools/*` — see "apps/tools deployment" below |
+| `apps/tools` | Next.js 16, static export (`output: "export"`), Tailwind v4 | Standalone, no-backend browser tools (photo/signature resizer, age eligibility calculator, Syllabus Tracker) deployed to Cloudflare Pages, fronted by a Cloudflare Worker at `clearcutoff.in/tools/*` — see "apps/tools deployment" below |
 | `packages/*` | TypeScript, no build step (consumed as source via `exports` maps) | Shared code — see table below |
 
 `apps/blog`, `apps/dashboard`, and `apps/landing` are Next.js 16 App Router with i18n via `next-intl` (`en` default unprefixed, `hi` under `/hi`, config in `packages/i18n`) and Tailwind v4. `apps/tools` is intentionally outside this — no `next-intl`, no auth, no CMS, no backend calls.
@@ -107,7 +111,7 @@ Historically `apps/blog` was built on `@mui/joy` + Emotion while landing was Rad
 
 CI fails when a change introduces a **new** hardcoded colour instead of a token from `@clearcut/design-tokens`. It scans `apps/` and `packages/` for hex/rgb/hsl/oklch literals and Tailwind arbitrary colour classes (`bg-[…]`, `text-[…]`, …).
 
-Because the audit found ~900 pre-existing literals, this gates against a **per-package baseline** in `scripts/hardcoded-colors-baseline.json` (currently blog 230, dashboard 577, landing 115) rather than zero-tolerance — the count can only go down. Files matching `EXCEPTIONS` (icon assets, logos, chart palettes, third-party SDK colours) are reported separately and not counted. `packages/design-tokens/tokens.css` is the source of truth and is exempt by definition.
+Because the audit found ~900 pre-existing literals, this gates against a **per-package baseline** in `scripts/hardcoded-colors-baseline.json` (currently blog 221, dashboard 525, landing 109, tools 14, packages/ui 1 — read the JSON for current numbers) rather than zero-tolerance — the count can only go down. Files matching `EXCEPTIONS` (icon assets, logos, chart palettes, third-party SDK colours) are reported separately and not counted. `packages/design-tokens/tokens.css` is the source of truth and is exempt by definition.
 
 If your change legitimately raises a count, `pnpm check:colors:update` re-baselines — but that should be rare and deliberate; prefer adding a token.
 
@@ -132,6 +136,8 @@ Blog, landing, and tools each used to maintain their own hand-rolled footer, and
 Two things worth knowing if you touch this:
 - `basePath` only prefixes the *links/assets* Next emits — it does not move the static export into a `/tools/resizer` subfolder. `out/` mirrors routes with no prefix (`/tools/resizer/htet` → file for `/htet`), so the Worker's `matchPath` strips the prefix itself before proxying upstream.
 - The Worker deletes the `X-Robots-Tag: noindex` response header before returning it. Pages sets that header via `public/_headers` so the raw `*.pages.dev` URL doesn't get indexed as duplicate content — but that same header would ride along on every proxied response and de-index the real, indexable `clearcutoff.in/tools/resizer/*` pages if left in place.
+
+**`TOOLS_DEPLOY.md` at the repo root documents the real production deploy path** (traced by hand 2026-09-19) and supersedes comments in `next.config.ts`/`syllabusTrackerUrl.ts` that describe a Pages Git-integration auto-deploy model — that model turned out to be wrong. Read it before touching deployment. `SYLLABUS_TRACKER_PLAN.md` holds the design for the Syllabus Tracker tool.
 
 `apps/tools/worker` is its own npm project (own `package.json`/`tsconfig.json`, `wrangler dev` / `wrangler deploy`) — it is not part of the pnpm workspace's `apps/*`/`packages/*` glob and has no Turborepo task.
 

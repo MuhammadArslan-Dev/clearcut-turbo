@@ -9,7 +9,7 @@ import { Exam } from "@/types/Exam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useCourseStore } from "@/store/course/useCourseStore";
-import { FireIcon } from "../../icons";
+import { FileText, PlayCircle, Target, Timer } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import MainButton from "../../button/main-button";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
@@ -27,16 +27,19 @@ const GOALS_CONFIG = [
     key: "video_watched",
     label: "todayGoals.watchVideos",
     videoCount: 2,
+    Icon: PlayCircle,
   },
   {
     key: "notes_taken",
     label: "todayGoals.studyNotes",
     videoCount: 2,
+    Icon: FileText,
   },
   {
     key: "mini_quiz_taken",
     label: "todayGoals.attemptTests",
     videoCount: 2,
+    Icon: Timer,
   },
 ] as const;
 
@@ -87,35 +90,31 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
   const goals = data?.goals;
 
   return (
-    <div className={clsx("flex p-4 flex-col gap-4", bgColor, rounded)}>
+    <div className={clsx("flex h-full flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>
       {/* Header */}
-      <div>
-        <h6 className="heading-medium !font-semibold">
-          {t("todayGoals.title")}
-        </h6>
-        <div className="body-small !font-normal text-surface-gray-muted">
-          {t("todayGoals.estimatedTime", { min: 20, max: 30 })}
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand/9 text-brand">
+          <Target size={24} />
+        </span>
+        <div>
+          <h6 className="heading-medium !font-semibold">
+            {t("todayGoals.title")}
+          </h6>
+          <div className="body-small !font-normal text-surface-gray-muted">
+            {t("todayGoals.estimatedTime", { min: 20, max: 30 })}
+          </div>
         </div>
       </div>
 
       {/* Goals List */}
-      <div className="space-y-2">
-        {GOALS_CONFIG.map(({ key, label, videoCount }, index) => {
+      <div className="divide-y divide-gray-100">
+        {GOALS_CONFIG.map(({ key, label, videoCount, Icon }) => {
           const goal = goals?.[key];
-          // Per the Figma: the first goal carries the full-colour flame, the rest
-          // are the plain grey outline. This is deliberately positional rather
-          // than driven by `goal.done` — the coloured flame marks the row the
-          // user should start with, so it must not disappear once that goal is
-          // completed (which is what a `done`-based variant did).
-          const isLeadGoal = index === 0;
 
           return (
-            <div key={key} className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <FireIcon
-                  variant={isLeadGoal ? "red" : "outline"}
-                  color="gray-muted"
-                />
+            <div key={key} className="flex items-center justify-between py-2.5">
+              <div className="flex items-center gap-3">
+                <Icon size={20} className="shrink-0 text-brand" />
                 <p className="body-medium !font-normal text-surface-gray-normal">
                   {t(label, { count: videoCount })}
                 </p>
@@ -132,8 +131,8 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
       </div>
 
       {/* CTA */}
-      <div className="flex flex-col gap-1 w-full justify-center items-center text-center">
-        <div className="max-w-[320px] w-full">
+      <div className="mt-auto flex w-full flex-col items-center justify-center gap-1 text-center">
+        <div className="w-full">
           <MainButton
             onClick={handleStart}
             fullWidth

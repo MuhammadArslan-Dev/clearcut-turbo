@@ -1,11 +1,12 @@
 import { Metadata } from "next";
+import { buildMetadata, toolsUrl } from "@/lib/seo";
+import PageJsonLd from "@/components/PageJsonLd";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs } from "@/lib/resizerExams";
+import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
 import { getOfficialRequirements } from "@/lib/officialRequirements";
 import { getCategoryLabel } from "@/lib/dictionary";
-import JsonLd from "@clearcut/ui/json-ld";
 
 // Hindi mirror of ../../resizer/[slug]/page.tsx — same flat exam+category
 // namespace, same static param set, locale="hi" passed to the shared page
@@ -26,19 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (exam) {
     const title = `${exam.shortName} फ़ोटो और हस्ताक्षर रिसाइज़र - मुफ़्त टूल | Clear Cutoff`;
     const description = `${exam.shortName} (${exam.fullName}) आवेदन-फॉर्म की आवश्यकताओं के अनुसार अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।`;
-    const url = `https://clearcutoff.in/hi/tools/resizer/${exam.slug}`;
-    return {
-      title,
-      description,
-      alternates: {
-        canonical: url,
-        languages: {
-          en: `https://clearcutoff.in/tools/resizer/${exam.slug}`,
-          hi: url,
-        },
-      },
-      openGraph: { title, description, url, siteName: "Clear Cutoff", type: "website" },
-    };
+    return buildMetadata({ locale: "hi", path: `/resizer/${exam.slug}`, title, description });
   }
 
   const category = await getResizerCategoryBySlug(slug);
@@ -46,19 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const label = getCategoryLabel(category.label, "hi");
     const title = `${label}: फ़ोटो और हस्ताक्षर रिसाइज़र | Clear Cutoff`;
     const description = `किसी भी ${label} परीक्षा के लिए अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।`;
-    const url = `https://clearcutoff.in/hi/tools/resizer/${category.slug}`;
-    return {
-      title,
-      description,
-      alternates: {
-        canonical: url,
-        languages: {
-          en: `https://clearcutoff.in/tools/resizer/${category.slug}`,
-          hi: url,
-        },
-      },
-      openGraph: { title, description, url, siteName: "Clear Cutoff", type: "website" },
-    };
+    return buildMetadata({ locale: "hi", path: `/resizer/${category.slug}`, title, description });
   }
 
   return {};
@@ -69,15 +46,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const exam = await getResizerExamBySlug(slug);
   if (exam) {
-    const faqSchema = {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, "hi").map((faq) => ({
-        "@type": "Question",
-        name: faq.q,
-        acceptedAnswer: { "@type": "Answer", text: faq.a },
-      })),
-    };
+    const faqs = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, "hi", { photoLive: isPhotoLiveCapture(exam) });
 
     const [categories, officialRequirements] = await Promise.all([
       getResizerCategories(),
@@ -87,7 +56,16 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
     return (
       <>
-        <JsonLd data={faqSchema} />
+        <PageJsonLd
+          locale="hi"
+          path={`/resizer/${exam.slug}`}
+          trail={[
+            { name: "फ़ोटो और हस्ताक्षर रिसाइज़र", path: "/resizer" },
+            { name: `${exam.shortName} फ़ोटो और हस्ताक्षर रिसाइज़र`, path: `/resizer/${exam.slug}` },
+          ]}
+          app={{ name: `${exam.shortName} फ़ोटो और हस्ताक्षर रिसाइज़र`, description: `${exam.shortName} (${exam.fullName}) आवेदन-फॉर्म की आवश्यकताओं के अनुसार अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।` }}
+          faqs={faqs}
+        />
         <ResizerSpokePage exam={exam} locale="hi" category={category} officialRequirements={officialRequirements} />
       </>
     );
@@ -95,7 +73,25 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const category = await getResizerCategoryBySlug(slug);
   if (category) {
-    return <CategoryPage category={category} locale="hi" />;
+    const label = getCategoryLabel(category.label, "hi");
+    return (
+      <>
+        <PageJsonLd
+          locale="hi"
+          path={`/resizer/${category.slug}`}
+          trail={[
+            { name: "फ़ोटो और हस्ताक्षर रिसाइज़र", path: "/resizer" },
+            { name: label, path: `/resizer/${category.slug}` },
+          ]}
+          collection={{
+            name: `${label}: फ़ोटो और हस्ताक्षर रिसाइज़र`,
+            description: `किसी भी ${label} परीक्षा के लिए अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।`,
+            items: category.exams.map((e) => ({ name: e.shortName, url: toolsUrl("hi", `/resizer/${e.slug}`) })),
+          }}
+        />
+        <CategoryPage category={category} locale="hi" />
+      </>
+    );
   }
 
   notFound();
