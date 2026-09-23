@@ -83,10 +83,22 @@ function QuestionNavigationPanel() {
 
     if (!el) return;
 
-    el.scrollIntoView({
-      behavior: "smooth",
-      block: "center", // 👈 center vertically
-    });
+    // Scroll only the panel's own scroll container. scrollIntoView() also
+    // scrolls every ancestor — including the overflow-hidden app shell — which
+    // shifted the whole page up when the section changed.
+    let container: HTMLElement | null = el.parentElement;
+    while (container) {
+      const { overflowY } = getComputedStyle(container);
+      if ((overflowY === "auto" || overflowY === "scroll") && container.scrollHeight > container.clientHeight) break;
+      container = container.parentElement;
+    }
+    if (!container) return;
+
+    const offset =
+      el.getBoundingClientRect().top -
+      container.getBoundingClientRect().top -
+      (container.clientHeight - el.clientHeight) / 2;
+    container.scrollTo({ top: container.scrollTop + offset, behavior: "smooth" });
   }, [openSection]);
 
   // ===============================
@@ -105,7 +117,7 @@ function QuestionNavigationPanel() {
 
   return (
     <aside className="w-full px-2 md:px-0">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col">
         {sections.map((section, i) => {
           const isOpen = openSection === i;
 
@@ -117,7 +129,7 @@ function QuestionNavigationPanel() {
               ref={(el) => {
                 sectionRefs.current[i] = el as HTMLDivElement | null;
               }}
-              className="flex flex-col gap-3"
+              className="flex flex-col gap-3 border-b border-gray-200 py-3 last:border-b-0"
             >
               {/* HEADER */}
               <SectionHeader
@@ -129,33 +141,6 @@ function QuestionNavigationPanel() {
                 }}
                 showButton={sections.length > 1}
               />
-
-              {/* SUMMARY */}
-              <div className="flex justify-between md:px-2">
-                <StatusItem
-                  label="QS"
-                  count={stats.answered}
-                  colorClass="bg-[var(--icon-positive-subtle)]"
-                />
-
-                <StatusItem
-                  label="QS"
-                  count={stats.notVisited}
-                  colorClass="bg-[var(--background-gray-subtle)]"
-                />
-
-                <StatusItem
-                  label="QS"
-                  count={stats.review}
-                  colorClass="bg-[var(--icon-notice-subtle)]"
-                />
-
-                <StatusItem
-                  label="QS"
-                  count={stats.total - stats.answered - stats.notVisited}
-                  colorClass="bg-[var(--icon-negative-normal)]"
-                />
-              </div>
 
               {/* GRID */}
               <AnimatePresence initial={false}>
@@ -232,15 +217,15 @@ export const SectionHeader = memo(function SectionHeader({
       onClick={onToggle}
       className="flex w-full items-center justify-between text-left"
     >
-      <p className="body-medium">
-        {title}: <span className="font-semibold">{total} Qs</span>
+      <p className="body-large !font-medium text-surface-gray-normal">
+        {title} ({total})
       </p>
 
       {showButton && (
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.25 }}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100"
+          className="flex h-8 w-8 items-center justify-center"
         >
           <ChevronIcon size={16} variant="down" color="#192839" />
         </motion.span>
@@ -263,19 +248,21 @@ export const QuestionGrid = memo(function QuestionGrid({
   jumpTo: (s: number, q: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-6 gap-3 md:px-2 pb-2">
+    <div className="grid grid-cols-6 gap-2.5 pb-2">
       {questions.map((q, index) => {
         let bg = "!bg-[var(--background-gray-subtle)]";
         let border = "!border-[var(--background-gray-subtle)]";
         let text = null;
 
-        const isActive =
-          sectionIndex === sectionIndex && currentQuestion === index;
+        // Only the CURRENT section's grid highlights the current question
+        // (this used to compare sectionIndex with itself, so every opened
+        // section lit up the same question number).
+        const isActive = currentSection === sectionIndex && currentQuestion === index;
 
         if (isActive) {
-          bg = "!bg-brand/20";
+          bg = "!bg-brand";
           border = "!border-brand";
-          text = "!text-black";
+          text = "!text-white";
         } else if (q.marked_for_review) {
           bg = "!bg-[var(--icon-notice-subtle)]";
           border = "!border-[var(--icon-notice-subtle)]";
@@ -299,9 +286,11 @@ export const QuestionGrid = memo(function QuestionGrid({
             <CounterCard
               value={String(index + 1)}
               border={`border-2 ${border}`}
-              fontFamily="body-large"
+              fontFamily="body-medium"
               bgColor={bg}
-              rounded="rounded-md"
+              rounded="rounded-lg"
+              width="w-full"
+              height="h-9"
               textClass={`!font-semibold ${text}`}
             />
           </div>

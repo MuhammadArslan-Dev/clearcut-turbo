@@ -217,7 +217,7 @@ const QuestionItem = React.memo(function QuestionItem({
     data?.exam_context_b?.exam_instance_id ||
     data?.exam_context_a?.exam_instance_id ||
     "";
-  const difficulty = translation?.ai_metadata?.difficulty_level ?? "";
+  const difficulty = translation?.ai_metadata?.difficulty_level || "Easy";
   const questionText = translation?.content?.question ?? "";
   const questionImage = translation?.content?.question_image ?? null;
   const options = translation?.options ?? [];

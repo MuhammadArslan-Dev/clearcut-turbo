@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Before Any Task
+
+**Read `docs/DEVELOPMENT_RULES.md` first, before starting any task**, and follow it (reuse existing components/tokens, no new colours/patterns, i18n in en/hi/mr, verification workflow). Update it when you discover a new reusable pattern or convention.
+
 ## Repository Overview
 
 `clearcut-master` is a **Turborepo + pnpm workspace** for ClearCutOff's web apps. It consolidates what used to be separate projects into one monorepo with a shared-package architecture — `apps/*` consume `@clearcut/*` packages instead of maintaining parallel copies of auth, API clients, state, design tokens, analytics, and UI primitives.

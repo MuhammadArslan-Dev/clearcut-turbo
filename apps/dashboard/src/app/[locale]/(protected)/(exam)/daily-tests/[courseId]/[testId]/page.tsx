@@ -11,6 +11,7 @@ import { Button } from "@clearcut/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
+import InfoRow from "@/components/features/daily-tests/InfoRow";
 import { DailyTestAttemptSummary } from "@/lib/api/dailyTests";
 
 // Attempt History for ONE daily test: every completed attempt (same
@@ -379,18 +380,6 @@ function SummaryTile({
         <p className="body-large !font-semibold leading-tight">{value}</p>
         <p className="body-small leading-tight text-surface-gray-muted">{label}</p>
         {sub && <p className="body-xsmall leading-tight text-surface-gray-muted">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 text-surface-gray-muted">{icon}</span>
-      <div>
-        <p className="body-small leading-tight text-surface-gray-muted">{label}</p>
-        <p className="body-medium !font-semibold leading-tight">{value}</p>
       </div>
     </div>
   );

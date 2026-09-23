@@ -10,15 +10,11 @@ import {
   BookOpen,
   Bookmark,
   CheckCircle2,
-  ChevronDown,
   Crown,
   FileText,
-  Flag,
   Lightbulb,
   ListChecks,
   Maximize,
-  Quote,
-  Target,
   Trophy,
   XCircle,
 } from "lucide-react";
@@ -40,9 +36,16 @@ import CounterCard from "@/components/ui/cards/CounterCard";
 import QOption from "@/components/ui/cards/QuestionMaterial/Qoption/QOption";
 import QuestionMath from "@/components/features/mathjax/Math";
 import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
-import ProgressBar from "@/components/ui/ProgressBar";
-import SandTimerIcon from "@/components/ui/icons/sand-timer-icon";
-import CountDownTimer from "@/components/features/exam/components/countdown/CountDownTimer";
+import AttemptTopbar from "@/components/features/attempt-ui/AttemptTopbar";
+import AttemptSummaryStrip from "@/components/features/attempt-ui/AttemptSummaryStrip";
+import LiveTimeLeft from "@/components/features/attempt-ui/LiveTimeLeft";
+import AttemptProgress from "@/components/features/attempt-ui/AttemptProgress";
+import TipCard from "@/components/features/attempt-ui/TipCard";
+import QuestionMetaBar from "@/components/features/attempt-ui/QuestionMetaBar";
+import InfoStrip from "@/components/features/attempt-ui/InfoStrip";
+import InfoRow from "@/components/features/daily-tests/InfoRow";
+import AttemptActionBar from "@/components/features/attempt-ui/AttemptActionBar";
+import FullscreenButton from "@/components/features/attempt-ui/FullscreenButton";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import ModalHeader from "@/components/features/test-series/components/ModalHeader";
 import BottomNavWrap from "@/components/features/navigation/bottom-bar/dashboard-bar/BottomNavWrap";
@@ -52,8 +55,6 @@ import { useModalStore } from "@/store/modal/useModalStore";
 import {
   ChevronIcon,
   LogoutDoorIcon,
-  TrashIcon,
-  MainAppLogo,
   ClockIcon,
   LanguageIcon,
   ChartSuccessBarIcon,
@@ -139,7 +140,6 @@ export default function DailyTestAttemptPage() {
   const [draftOption, setDraftOption] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [navSheetOpen, setNavSheetOpen] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [dismissedSavedBanners, setDismissedSavedBanners] = useState<Set<number>>(new Set());
   // null = whatever locale the question came back in first; set once the
   // user taps the language button.
@@ -447,38 +447,12 @@ export default function DailyTestAttemptPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
-      {/* Timer logic only — CountDownTimer's own compact box UI isn't used
-          here, the big labelled H/M/S readout below is, but the countdown
-          math/expiry callback stay the single implementation. */}
-      <div className="hidden">
-        <CountDownTimer duration={totalDuration} onTick={setTimeLeft} onComplete={() => handleSubmit()} />
-      </div>
-
-      {/* Topbar */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="flex items-center justify-between gap-4 px-6 py-2 lg:px-10">
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block">
-              <MainAppLogo width={130} />
-            </div>
-            <div>
-              <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                {t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
-              </Text>
-              <Text as="p" variant="body-small" color="gray-muted">
-                {t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
-              </Text>
-            </div>
-          </div>
-
-          <div className="hidden flex-1 items-center justify-center gap-2 px-4 lg:flex">
-            <Quote size={16} className="shrink-0 text-brand" />
-            <Text as="p" variant="body-small" className="italic text-surface-gray-muted">
-              {t("attempt.quote")}
-            </Text>
-          </div>
-
-          <div className="flex items-center gap-3">
+      <AttemptTopbar
+        title={t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
+        meta={t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
+        quote={t("attempt.quote")}
+        actions={
+          <>
             {hasMultipleTranslations && toggleLocale && (
               <button
                 onClick={() => setLanguage(toggleLocale)}
@@ -488,80 +462,44 @@ export default function DailyTestAttemptPage() {
                 <LanguageIcon size={30} />
               </button>
             )}
-            <Button sx={{ borderRadius: "50px" }} variant="soft" color="gray" size="sm" onClick={handleEndTest}>
+            <Button sx={{ borderRadius: "10px" }} variant="soft" color="gray" size="sm" onClick={handleEndTest}>
               <div className="flex items-center gap-[6px]">
                 <span>{t("attempt.endTest")}</span>
                 <LogoutDoorIcon size={16} />
               </div>
             </Button>
-            <button
-              onClick={handleToggleFullscreen}
-              aria-label={t("attempt.toggleFullscreen")}
-              className="hidden h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 sm:flex"
-            >
-              <Maximize size={16} />
-            </button>
-          </div>
-        </div>
-      </header>
+            <FullscreenButton onClick={handleToggleFullscreen} label={t("attempt.toggleFullscreen")} />
+          </>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4">
-          {/* Time left / progress / focus-tip strip */}
-          <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
-            <div className="flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand/12">
-                  <SandTimerIcon size={22} color="var(--color-brand)" />
-                </div>
-                <div>
-                  <Text as="p" variant="body-small" weight="semibold" color="primary-normal">
-                    {t("attempt.timeLeft")}
-                  </Text>
-                  <div className="flex items-end gap-1">
-                    <TimeUnit value={timeLeft.hours} label={t("attempt.hours")} />
-                    <span className="pb-3 heading-medium !font-semibold text-brand">:</span>
-                    <TimeUnit value={timeLeft.minutes} label={t("attempt.minutes")} />
-                    <span className="pb-3 heading-medium !font-semibold text-brand">:</span>
-                    <TimeUnit value={timeLeft.seconds} label={t("attempt.seconds")} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden h-10 w-px bg-gray-200 lg:block" />
-
-              <div className="flex-1">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                    Question {currentQNo} of {questions.length}
-                  </Text>
-                  <Text as="p" variant="body-small" color="gray-muted" className="whitespace-nowrap">
-                    {percentComplete}% Complete
-                  </Text>
-                </div>
-                <ProgressBar completed={currentQNo} total={questions.length} showLabel={false} color="var(--color-brand)" />
-              </div>
-
-              <div className="hidden h-10 w-px bg-gray-200 lg:block" />
-
-              <div className="relative flex flex-1 items-center gap-3 overflow-hidden rounded-lg bg-[var(--color-primary-bg-soft)] p-3 lg:max-w-[340px]">
-                <MountainFlagIllustration className="pointer-events-none absolute inset-y-0 right-0 h-full w-[140px] opacity-70" />
-                {answeredCount > 0 ? (
-                  <Lightbulb size={20} className="z-10 shrink-0 text-[var(--color-warning-strong)]" />
-                ) : (
-                  <Target size={20} className="z-10 shrink-0 text-brand" />
-                )}
-                <div className="z-10 flex-1">
-                  <Text as="p" variant="body-small" weight="semibold" color="primary-normal">
-                    {answeredCount > 0 ? t("attempt.doingGreat") : t("attempt.stayFocused")}
-                  </Text>
-                  <Text as="p" variant="body-small" color="gray-muted">
-                    {answeredCount > 0 ? t("attempt.keepGoing") : t("attempt.completeTest")}
-                  </Text>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {/* Time left / progress / focus-tip strip — shared with the full exam page */}
+          <AttemptSummaryStrip
+            time={
+              <LiveTimeLeft
+                duration={totalDuration}
+                onComplete={() => handleSubmit()}
+                labels={{
+                  timeLeft: t("attempt.timeLeft"),
+                  hours: t("attempt.hours"),
+                  minutes: t("attempt.minutes"),
+                  seconds: t("attempt.seconds"),
+                }}
+              />
+            }
+            progress={<AttemptProgress position={currentQNo} total={questions.length} percent={percentComplete} />}
+            tip={
+              <TipCard
+                icon={
+                  answeredCount > 0 ? <Lightbulb size={24} className="text-[var(--color-warning-strong)]" /> : undefined
+                }
+                title={answeredCount > 0 ? t("attempt.doingGreat") : t("attempt.stayFocused")}
+                body={answeredCount > 0 ? t("attempt.keepGoing") : t("attempt.completeTest")}
+              />
+            }
+          />
 
           {/* Test Information + question + navigator, 3-column on desktop */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
@@ -575,11 +513,11 @@ export default function DailyTestAttemptPage() {
                   </Text>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.exam")} value={history?.exam.short_name ?? "…"} />
-                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.section")} value={state.sectionName ?? "—"} />
-                  <InfoRow icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.totalQuestions")} value={String(questions.length)} />
-                  <InfoRow icon={<ChartSuccessBarIcon width={16} height={16} />} label={t("attempt.totalMarks")} value={String(questions.length)} />
-                  <InfoRow icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.timeDuration")} value={t("attempt.minutesValue", { count: totalMinutes })} />
+                  <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.exam")} value={history?.exam.short_name ?? "…"} />
+                  <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.section")} value={state.sectionName ?? "—"} />
+                  <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.totalQuestions")} value={String(questions.length)} />
+                  <InfoRow compact icon={<ChartSuccessBarIcon width={16} height={16} />} label={t("attempt.totalMarks")} value={String(questions.length)} />
+                  <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.timeDuration")} value={t("attempt.minutesValue", { count: totalMinutes })} />
                 </div>
               </Card>
             </aside>
@@ -587,29 +525,15 @@ export default function DailyTestAttemptPage() {
             {/* Center column */}
             <div className="flex flex-1 flex-col gap-4">
               <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <span className="body-small w-fit rounded-md bg-brand/9 px-3 py-1 !font-medium text-brand">
-                    {history?.exam.short_name ?? t("list.defaultExam")} • {t("list.defaultExam")}
-                  </span>
-
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={handleToggleMarkForReview}
-                      className={`flex cursor-pointer items-center gap-2 body-medium !font-semibold ${
-                        isMarked ? "text-[var(--icon-notice-normal)]" : "text-surface-gray-muted"
-                      }`}
-                    >
-                      <Bookmark size={18} fill={isMarked ? "currentColor" : "none"} />
-                      <span>{t("attempt.markForReview")}</span>
-                    </button>
-                    <button
-                      onClick={handleReportQuestion}
-                      className="flex cursor-pointer items-center gap-2 body-medium !font-semibold text-[var(--color-danger)]"
-                    >
-                      <Flag size={18} />
-                      <span className="hidden sm:inline">{t("attempt.reportQuestion")}</span>
-                    </button>
-                  </div>
+                <div className="mb-3">
+                  <QuestionMetaBar
+                    chip={`${history?.exam.short_name ?? t("list.defaultExam")} \u2022 ${t("list.defaultExam")}`}
+                    isMarked={isMarked}
+                    onToggleMark={handleToggleMarkForReview}
+                    markLabel={t("attempt.markForReview")}
+                    onReport={handleReportQuestion}
+                    reportLabel={t("attempt.reportQuestion")}
+                  />
                 </div>
 
                 <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal" className="mb-2">
@@ -679,66 +603,24 @@ export default function DailyTestAttemptPage() {
                   </div>
                 )}
 
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--color-primary-bg-soft)] p-3">
-                  <WarningCircleIcon variant="help" size={16} color="var(--color-brand)" />
-                  <Text as="p" variant="body-small" color="primary-normal">
-                    {t("attempt.selectBest")}
-                  </Text>
+                <div className="mt-4">
+                  <InfoStrip>{t("attempt.selectBest")}</InfoStrip>
                 </div>
               </Card>
 
-              {/* Bottom action bar. Mobile: Save and Next full-width on its
-                  own row, Previous + Clear Response side by side below it.
-                  Desktop: the usual Previous | Save and Next | Clear
-                  Response single row. The "lg:contents" wrapper makes the
-                  Previous/Clear pairing disappear as a box at that
-                  breakpoint so its two buttons become direct flex items of
-                  the outer row again, orderable alongside Save and Next. */}
-              <div className="flex flex-col gap-3 rounded-xl bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="w-full lg:order-2 lg:w-auto lg:flex-1 lg:max-w-[400px]">
-                  <Button
-                    size="lg"
-                    sx={{ borderRadius: "50px" }}
-                    disabled={draftOption == null || submitting}
-                    onClick={handleSaveAndNext}
-                    rightIcon={<ChevronIcon size={16} variant="right" color="white" />}
-                    fullWidth
-                  >
-                    {currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 lg:contents">
-                  <Button
-                    sx={{ borderRadius: "50px", paddingX: "24px" }}
-                    size="lg"
-                    variant="soft"
-                    color="gray"
-                    className="lg:order-1"
-                    disabled={currentIndex === 0}
-                    onClick={() => goToIndex(currentIndex - 1)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ChevronIcon size={20} variant="left" />
-                      <span>{t("attempt.previous")}</span>
-                    </div>
-                  </Button>
-
-                  <Button
-                    sx={{ borderRadius: "50px", paddingX: "24px" }}
-                    size="lg"
-                    variant="soft"
-                    color="gray"
-                    className="lg:order-3"
-                    disabled={draftOption == null}
-                    onClick={handleClear}
-                  >
-                    <div className="flex items-center gap-2">
-                      <TrashIcon size={18} />
-                      <span>{t("attempt.clearResponse")}</span>
-                    </div>
-                  </Button>
-                </div>
+              {/* Bottom action bar (shared with the full exam page) */}
+              <div className="rounded-xl bg-white p-3">
+                <AttemptActionBar
+                  onPrevious={() => goToIndex(currentIndex - 1)}
+                  previousDisabled={currentIndex === 0}
+                  onPrimary={handleSaveAndNext}
+                  primaryDisabled={draftOption == null || submitting}
+                  primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
+                  onClear={handleClear}
+                  clearDisabled={draftOption == null}
+                  previousLabel={t("attempt.previous")}
+                  clearLabel={t("attempt.clearResponse")}
+                />
               </div>
 
               {/* Collapsed questions summary — mobile only, opens the same
@@ -854,20 +736,6 @@ export default function DailyTestAttemptPage() {
     </div>
   );
 }
-
-// Small decorative mountain-with-flag graphic for the "Stay Focused" tip
-// card — no existing illustration asset in the codebase matches this
-// motif (checked components/ui/icons — only LearningInsightIllustration
-// exists, a different scene), so it's a minimal one-off inline SVG rather
-// than a full new illustration component.
-const MountainFlagIllustration = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 160 90" fill="none" className={className} aria-hidden="true">
-    <path d="M0 90L45 25L75 60L95 35L160 90H0Z" fill="var(--color-brand)" opacity="0.18" />
-    <path d="M20 90L60 35L85 65L110 40L160 90H20Z" fill="var(--color-brand)" opacity="0.3" />
-    <line x1="110" y1="40" x2="110" y2="14" stroke="var(--color-brand)" strokeWidth="2" opacity="0.6" />
-    <path d="M110 14L128 20L110 26V14Z" fill="var(--color-brand)" opacity="0.6" />
-  </svg>
-);
 
 // Mirrors the real "attempting" layout's shape (topbar, stats strip, 3-column
 // Test Information / question / Questions sidebars, bottom action bar) so the
@@ -1022,27 +890,6 @@ const ResultPageSkeleton = () => (
       </div>
     </main>
   </DashboardShell>
-);
-
-const TimeUnit = ({ value, label }: { value: number; label: string }) => (
-  <div className="flex flex-col items-center">
-    <span className="heading-medium !font-bold leading-none text-brand">{String(value).padStart(2, "0")}</span>
-    <span className="body-xsmall text-surface-gray-muted">{label}</span>
-  </div>
-);
-
-const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
-  <div className="flex items-center gap-2">
-    {icon}
-    <div>
-      <Text as="p" variant="body-small" color="gray-muted" className="leading-tight">
-        {label}
-      </Text>
-      <Text as="p" variant="body-small" weight="semibold" color="gray-normal" className="leading-tight">
-        {value}
-      </Text>
-    </div>
-  </div>
 );
 
 const CountRow = ({
@@ -1229,7 +1076,7 @@ function ReviewRow({
                           {t("explanation.correctAnswer")}
                         </Text>
                         <NumberCountIcon
-                          value={String.fromCharCode(65 + q.correct_option - 1) as any}
+                          value={String.fromCharCode(65 + q.correct_option - 1) as React.ComponentProps<typeof NumberCountIcon>["value"]}
                           radius={6}
                           size={24}
                           background="var(--color-primary-bg-soft)"

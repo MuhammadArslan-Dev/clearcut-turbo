@@ -43,7 +43,7 @@ export default function QuestionReportTabs({
         activeTabFontWeight="!font-semibold"
         containerBg="bg-[var(--color-brand-dark)]"
         containerRadius="rounded-full"
-        className="!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1  md:w-fit"
+        className="!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1 w-full [&>button]:flex-1"
         activeTabBg="bg-white"
       />
     </div>

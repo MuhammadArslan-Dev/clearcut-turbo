@@ -1,20 +1,17 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { CheckCircle2, Play, RefreshCw, BarChart3 } from "lucide-react";
 import { Card } from "@clearcut/ui/card";
 import { Button } from "@clearcut/ui/button";
-import { CalendarIcon, ClockIcon, ChartSuccessBarIcon, ChevronIcon, LockIcon } from "@/components/ui/icons";
-import { FileText, CheckCircle2 } from "lucide-react";
+import { LockIcon } from "@/components/ui/icons";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
-import IconStat from "./IconStat";
-import { SECONDS_PER_QUESTION } from "./constants";
 import { DailyTestHistoryItem } from "@/lib/api/dailyTests";
 
 export interface DailyTestHistoryRowProps {
   test: DailyTestHistoryItem;
   title: string;
-  /** The "Today's Test" row gets a light highlight in both mockups
-   * (free and premium), independent of whether it's been attempted yet. */
+  /** The "Today's Test" row gets a light highlight. */
   isToday?: boolean;
   onAttempt: () => void;
   /** Attempted rows: open this test's Attempt History. */
@@ -23,11 +20,13 @@ export interface DailyTestHistoryRowProps {
   onAttemptAgain?: () => void;
 }
 
-// Three real states a row can be in (never more than one at once —
-// `locked` on the backend already implies `!attempted`): locked (unpaid +
-// not today), attempted (score exists), or available (can be started/
-// resumed right now).
+// Three real states a row can be in (`locked` on the backend already implies
+// `!attempted`): locked (unpaid + not today), attempted (has a completed
+// attempt), or available (can be started/resumed right now).
 type RowStatus = "locked" | "attempted" | "available";
+
+// en-US so the row reads "Sep 2026" and "10:24 AM", like the design.
+const DATE_LOCALES: Record<string, string> = { en: "en-US", hi: "hi-IN", mr: "mr-IN" };
 
 export default function DailyTestHistoryRow({
   test,
@@ -38,10 +37,21 @@ export default function DailyTestHistoryRow({
   onAttemptAgain,
 }: DailyTestHistoryRowProps) {
   const t = useTranslations("DailyTests");
-  const durationMinutes = Math.round((test.total_questions * SECONDS_PER_QUESTION) / 60);
-  const scoreLabel = test.attempted && test.score !== null ? `${test.score}/${test.total_questions}` : "-";
+  const locale = useLocale();
+  const dateLocale = DATE_LOCALES[locale] ?? "en-US";
 
   const status: RowStatus = test.locked ? "locked" : test.attempted ? "attempted" : "available";
+
+  const [y, m, d] = test.test_date.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const monthYear = new Intl.DateTimeFormat(dateLocale, { month: "short", year: "numeric" }).format(dateObj);
+
+  const attempts = test.attempts_count ?? (test.attempted ? 1 : 0);
+  const best = test.best_score;
+  const bestPercent = best && best.total_questions > 0 ? Math.round((best.score / best.total_questions) * 100) : null;
+  const lastAttempt = test.last_attempt_at
+    ? new Intl.DateTimeFormat(dateLocale, { hour: "2-digit", minute: "2-digit" }).format(new Date(test.last_attempt_at))
+    : "-";
 
   return (
     <Card
@@ -49,90 +59,123 @@ export default function DailyTestHistoryRow({
       bordercolor={isToday ? "var(--color-brand)" : undefined}
       padding="16px"
       borderRadius={12}
+      className="!h-auto"
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-            <CalendarIcon size={18} color="var(--color-brand)" />
+      {/*
+        The single-line layout (date | title | stats | actions) needs real
+        room: it only switches on at `2xl` (1536px) rather than `lg`
+        (1024px), because `lg` is also where the page puts the 300px Test
+        Info sidebar next to this card — at 1024–1400px the two together
+        left too little width for the 3 nowrap stat columns, and they
+        visually overlapped instead of shrinking. Below `2xl` this stays
+        the same stacked layout used on mobile/tablet, which never breaks.
+      */}
+      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:gap-6">
+        {/* Date + title + status */}
+        <div className="flex items-center gap-4 2xl:w-[270px] 2xl:shrink-0">
+          <div className="w-24 shrink-0 border-r border-gray-200 pr-4 text-center">
+            <p className="heading-large !font-semibold leading-tight">{dateObj.getDate()}</p>
+            <p className="body-small whitespace-nowrap leading-tight text-surface-gray-muted">{monthYear}</p>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="body-medium !font-semibold">{title}</p>
+          <div className="min-w-0">
+            <p className="body-large !font-semibold truncate">{title}</p>
+            <div className="mt-1">
               {status === "locked" && (
-                <button type="button" onClick={onAttempt} className="cursor-pointer">
-                  <StatusChip label={t("row.locked")} variant="soft" tone="neutral" iconLeft={<LockIcon size={11} />} />
-                </button>
+                <StatusChip
+                  label={t("row.locked")}
+                  variant="soft"
+                  tone="neutral"
+                  iconLeft={<LockIcon size={11} />}
+                  onClick={onAttempt}
+                />
               )}
               {status === "attempted" && (
-                <StatusChip label={t("row.attempted")} variant="soft" tone="info" iconLeft={<CheckCircle2 size={12} />} />
+                <StatusChip label={t("row.attempted")} variant="soft" tone="success" iconLeft={<CheckCircle2 size={12} />} />
               )}
               {status === "available" && (
                 <StatusChip
-                  label={t("row.available")}
+                  label={test.in_progress ? t("row.inProgress") : t("row.notAttempted")}
                   variant="soft"
-                  tone="success"
-                  iconLeft={<span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success-strong)]" />}
+                  tone="neutral"
                 />
               )}
             </div>
-            <p className="body-small text-surface-gray-muted">{test.test_date}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 md:gap-x-8">
-          <IconStat icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} value={test.total_questions} label={t("row.questions")} />
-          {/* bg-black/10 (not bg-gray-200) so the divider still shows up
-              against the "Today's Test" row's light-blue highlight — a fixed
-              light gray nearly disappears there. */}
-          <div className="hidden h-8 w-px bg-black/10 md:block" />
-          <IconStat icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} value={t("list.minutesShort", { count: durationMinutes })} label={t("row.duration")} />
-          {/* bg-black/10 (not bg-gray-200) so the divider still shows up
-              against the "Today's Test" row's light-blue highlight — a fixed
-              light gray nearly disappears there. */}
-          <div className="hidden h-8 w-px bg-black/10 md:block" />
-          <IconStat icon={<ChartSuccessBarIcon />} value={scoreLabel} label={t("row.yourScore")} />
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 2xl:flex-1 2xl:divide-x 2xl:divide-gray-200 2xl:border-l 2xl:border-gray-200 2xl:pl-6">
+          <Stat label={t("row.attempts")} value={t("row.attemptsCount", { count: attempts })} />
+          <Stat
+            label={t("row.bestScore")}
+            value={best ? `${best.score} / ${best.total_questions}` : "-"}
+            sub={bestPercent != null ? `(${bestPercent}%)` : undefined}
+            className="2xl:pl-3"
+          />
+          <Stat label={t("row.lastAttempt")} value={lastAttempt} className="2xl:pl-3" />
         </div>
 
-        <div className="flex flex-col items-stretch gap-1 md:items-end">
+        {/* Actions */}
+        <div className="flex flex-col gap-2 2xl:w-[180px] 2xl:shrink-0 2xl:border-l 2xl:border-gray-200 2xl:pl-6">
           {status === "locked" && (
-            <Button variant="soft" color="gray" size="md" rounded="50px" onClick={onAttempt} leftIcon={<LockIcon size={14} />}>
-              {t("row.locked")}
-            </Button>
+            <>
+              <Button variant="soft" color="gray" size="md" rounded="10px" fullWidth onClick={onAttempt} leftIcon={<LockIcon size={14} />}>
+                {t("row.locked")}
+              </Button>
+              <p className="body-xsmall text-center text-surface-gray-muted">{t("row.upgradeToAttempt")}</p>
+            </>
           )}
           {status === "attempted" && (
-            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <>
+              <Button
+                variant="solid"
+                color="primary"
+                size="md"
+                rounded="10px"
+                fullWidth
+                leftIcon={<RefreshCw size={16} />}
+                onClick={onAttemptAgain ?? onAttempt}
+              >
+                {t("row.attemptAgain")}
+              </Button>
               <Button
                 variant="outlined"
                 color="primary"
                 size="md"
-                rounded="50px"
-                rightIcon={<ChevronIcon size={14} variant="right" color="var(--color-brand)" />}
+                rounded="10px"
+                fullWidth
+                leftIcon={<BarChart3 size={16} />}
                 onClick={onViewHistory ?? onAttempt}
               >
-                {onViewHistory ? t("row.viewHistory") : t("row.viewResult")}
+                {t("row.viewHistory")}
               </Button>
-              {onAttemptAgain && (
-                <Button variant="solid" color="primary" size="md" rounded="50px" onClick={onAttemptAgain}>
-                  {t("row.attemptAgain")}
-                </Button>
-              )}
-            </div>
+            </>
           )}
           {status === "available" && (
             <Button
               variant="solid"
               color="primary"
               size="md"
-              rounded="50px"
-              rightIcon={<ChevronIcon size={14} variant="right" color="white" />}
+              rounded="10px"
+              fullWidth
+              leftIcon={<Play size={16} />}
               onClick={onAttempt}
             >
               {test.in_progress ? t("row.resume") : t("row.start")}
             </Button>
           )}
-          {status === "locked" && <p className="body-xsmall text-surface-gray-muted">{t("row.upgradeToAttempt")}</p>}
         </div>
       </div>
     </Card>
+  );
+}
+
+function Stat({ label, value, sub, className }: { label: string; value: string; sub?: string; className?: string }) {
+  return (
+    <div className={className}>
+      <p className="body-small whitespace-nowrap leading-tight text-surface-gray-muted">{label}</p>
+      <p className="body-medium whitespace-nowrap !font-semibold leading-tight">{value}</p>
+      {sub && <p className="body-xsmall leading-tight text-surface-gray-muted">{sub}</p>}
+    </div>
   );
 }

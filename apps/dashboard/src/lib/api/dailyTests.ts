@@ -35,8 +35,13 @@ export interface DailyTestHistoryItem {
   in_progress: boolean;
   /** How many times this test has been completed (retakes included). */
   attempts_count?: number;
+  /** Highest-scoring completed attempt of this test. */
+  best_score?: { score: number; total_questions: number } | null;
+  /** ISO time of the most recent completed attempt. */
+  last_attempt_at?: string | null;
   score: number | null;
   attempt_id: string | null;
+  topic_meta?: { section_name?: string | null; chapter_name?: string | null } | null;
 }
 
 export interface DailyTestHistoryExam {

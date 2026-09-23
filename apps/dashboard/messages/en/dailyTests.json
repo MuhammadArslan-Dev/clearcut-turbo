@@ -16,7 +16,11 @@
     "showing": "Showing {from} to {to} of {total} tests",
     "today": "Today's Test",
     "yesterday": "Yesterday's Test",
-    "datedTest": "{date} Test"
+    "datedTest": "{date} Test",
+    "headerDesc": "Practice daily tests to strengthen your preparation. You can attempt the same test multiple times and track your progress.",
+    "infoStrip": "You can attempt each daily test multiple times. Click on a test to view your attempt history or start a new attempt.",
+    "sectionTitle": "Daily Tests",
+    "sectionSubtitle": "Attempt today's test and keep your preparation on track."
   },
   "row": {
     "locked": "Locked",
@@ -30,7 +34,13 @@
     "start": "Start Test",
     "upgradeToAttempt": "Upgrade to attempt",
     "viewHistory": "View History",
-    "attemptAgain": "Attempt Again"
+    "attemptAgain": "Attempt Again",
+    "attempts": "Attempts",
+    "attemptsCount": "{count, plural, =0 {0 times} one {# time} other {# times}}",
+    "bestScore": "Best Score",
+    "lastAttempt": "Last Attempt",
+    "notAttempted": "Not Attempted",
+    "inProgress": "In Progress"
   },
   "upsell": {
     "premiumActive": "Premium Plan Active",
@@ -189,5 +199,15 @@
     "noAttempts": "No completed attempts yet.",
     "timeSec": "{seconds} sec",
     "timeMinSec": "{minutes} min {seconds} sec"
+  },
+  "info": {
+    "title": "Test Info",
+    "exam": "Exam",
+    "subject": "Subject",
+    "questions": "Questions",
+    "duration": "Duration",
+    "durationValue": "{count} Minutes",
+    "tip": "Tip",
+    "tipBody": "You can attempt the same daily test multiple times to improve your score. Focus on your mistakes and keep practicing!"
   }
 }
