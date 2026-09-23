@@ -10,6 +10,7 @@ import Skeleton from "@clearcut/ui/skeleton";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
+import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 type TabId = "notes" | "bonus-videos" | "trends" | "concepts";
 
@@ -39,8 +40,11 @@ export default function RelatedContentWrapper() {
   const safeData = selectedTopic?.data ?? [];
   const trend = selectedTopic?.trends ?? null;
 
+  // Matches getLocalizedName()/VideoWrapper's rule: exact content language
+  // first (e.g. "mr" for a Marathi course), then Hindi so nothing goes
+  // blank while a course's translations are still being synced.
   const language = React.useMemo(
-    () => (course?.language === "english" ? "en" : "hi"),
+    () => courseLanguageToLocale(course?.language),
     [course],
   );
 
@@ -48,10 +52,22 @@ export default function RelatedContentWrapper() {
 
   const videoItem = safeData.find((i) => i.type === "video");
 
-  const bonusVideos = Array.isArray(videoItem?.content)
-    ? videoItem.content.slice(1)
-    : [];
-    
+  // Same exact-language-then-Hindi fallback as VideoWrapper's mainVideo, so
+  // "bonus videos" here are always the *other* videos in the language the
+  // main player actually picked — not just "items 2+" regardless of language.
+  const videosInLanguage = React.useMemo(() => {
+    const all = videoItem?.content ?? [];
+    const exact = all.filter((v) => v?.language === language);
+    if (exact.length) return exact;
+    if (language !== "hi") {
+      const hiFallback = all.filter((v) => v?.language === "hi");
+      if (hiFallback.length) return hiFallback;
+    }
+    return all;
+  }, [videoItem, language]);
+
+  const bonusVideos = videosInLanguage.slice(1);
+
   const concepts = React.useMemo(
     () => safeContent.filter((i) => i.content_flag === "concepts"),
     [safeContent],
@@ -60,8 +76,13 @@ export default function RelatedContentWrapper() {
   const notes = safeData.find((i) => i.type === "note")?.content ?? [];
   const filterNotes = React.useMemo(() => {
     if (!notes?.length) return null;
-    const languageNotes = notes.filter((note) => note?.language === language);
-    return languageNotes[0] ?? notes[0];
+    const exact = notes.find((note) => note?.language === language);
+    if (exact) return exact;
+    if (language !== "hi") {
+      const hiFallback = notes.find((note) => note?.language === "hi");
+      if (hiFallback) return hiFallback;
+    }
+    return notes[0] ?? null;
   }, [notes, language]);
 
   const hasNotes = !filterNotes ? false : true;

@@ -7,7 +7,7 @@ import StarBadge from "@/components/ui/badge/star-badge";
 import { Button } from "@clearcut/ui/button";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { usePathname } from "next/navigation";
-import { formatToSlug, unFormatSlug, sanitizeAiSlug } from "@/utils/slugify";
+import { unFormatSlug, getQuestionUrlParam } from "@/utils/slugify";
 import dynamic from "next/dynamic";
 import { useLanguageStore } from "@/store/useLanguageStore";
 
@@ -127,9 +127,7 @@ export default function QuestionsList({ data }: { data: Question[] }) {
             const plain = translation?.question?.replace(/<[^>]*>/g, "") || "";
 
             const snippet = limitWords(plain, 25);
-            const slug =
-              (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
-              formatToSlug(limitWords(plain, 4));
+            const urlParam = getQuestionUrlParam(item.id, question);
 
             return (
               <>
@@ -138,7 +136,7 @@ export default function QuestionsList({ data }: { data: Question[] }) {
                   q_no={index + 1}
                   index={index}
                   setLoadingId={setLoadingId}
-                  path={`/question/${slug}-${item.id}`}
+                  path={`/question/${urlParam}`}
                   onClick={() => setLoadingId(item.id)}
                   questionText={snippet}
                   active={loadingId === item.id}

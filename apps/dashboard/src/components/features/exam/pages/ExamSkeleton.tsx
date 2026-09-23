@@ -1,72 +1,45 @@
 "use client";
 
 import React from "react";
-import MainContainer from "@/components/ui/main-container";
+import { Card } from "@clearcut/ui/card";
 
+// Mirrors MainContent's layout (question card with a header row, question,
+// options and a pinned action row) so nothing jumps when the exam arrives.
 export default function ExamSkeleton() {
   return (
-    <div className="max-h-screen mt-2 lg:mt-0 animate-pulse">
-      <MainContainer maxWidth="max-w-[800px]" padding="p-0 lg:p-4">
-        <div className="flex flex-col gap-3">
-          {/* ===============================
-              QUESTION CONTAINER
-          =============================== */}
-
-          <div
-            className="
-              bg-white
-              lg:h-[calc(100vh-240px)]
-              h-[calc(100vh-205px)]
-              flex flex-col
-              gap-6
-              py-5
-              px-4
-              overflow-hidden
-            "
-          >
-            {/* Progress skeleton */}
-            <div className="flex justify-between items-center">
-              <div className="h-6 w-40 bg-gray-200 rounded-md" />
-              <div className="h-5 w-16 bg-gray-200 rounded-md" />
-            </div>
-
-            {/* Question skeleton */}
-            <div className="flex flex-col gap-3 mt-4">
-              <div className="h-5 w-full bg-gray-200 rounded-md" />
-              <div className="h-5 w-5/6 bg-gray-200 rounded-md" />
-              <div className="h-5 w-4/6 bg-gray-200 rounded-md" />
-            </div>
-
-            {/* Options skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-gray-200 rounded-xl"
-                />
-              ))}
-            </div>
+    <div className="h-full animate-pulse lg:p-3 lg:pl-3">
+      <Card bgcolor="white" border="border-none" padding={0} borderRadius={12} className="flex h-full flex-col">
+        <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-5">
+          {/* Chip + mark for review + clock */}
+          <div className="flex items-center justify-between">
+            <div className="h-8 w-48 rounded-lg bg-gray-200" />
+            <div className="h-5 w-40 rounded-md bg-gray-200" />
           </div>
 
-          {/* ===============================
-              ACTIONS SKELETON
-          =============================== */}
+          {/* Question title + text */}
+          <div className="h-7 w-40 rounded-md bg-gray-200" />
+          <div className="flex flex-col gap-3">
+            <div className="h-5 w-full rounded-md bg-gray-200" />
+            <div className="h-5 w-5/6 rounded-md bg-gray-200" />
+          </div>
 
-          <div className="fixed md:sticky bottom-0 w-full bg-white">
-            <div className="max-w-[600px] mx-auto flex flex-col gap-3 py-4 px-3">
-              <div className="flex justify-between gap-4">
-                <div className="h-10 w-28 bg-gray-200 rounded-full" />
-                <div className="h-10 flex-1 bg-gray-200 rounded-full" />
-                <div className="h-10 w-28 bg-gray-200 rounded-full" />
-              </div>
-
-              <div className="flex justify-center mt-2">
-                <div className="h-4 w-64 bg-gray-200 rounded-md" />
-              </div>
-            </div>
+          {/* Options */}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 rounded-xl bg-gray-200" />
+            ))}
           </div>
         </div>
-      </MainContainer>
+
+        {/* Actions */}
+        <div className="border-t border-gray-100 px-3 py-3 lg:px-5 lg:py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="h-11 w-32 rounded-full bg-gray-200" />
+            <div className="h-11 w-full max-w-[460px] rounded-full bg-gray-200" />
+            <div className="h-11 w-40 rounded-full bg-gray-200" />
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
