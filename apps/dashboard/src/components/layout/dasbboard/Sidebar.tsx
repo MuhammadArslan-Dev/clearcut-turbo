@@ -3,7 +3,7 @@
 import React, { ComponentType, memo, useCallback } from "react";
 import clsx from "clsx";
 import { Link, usePathname } from "@/i18n/navigation";
-import { mainNav, IconProps, isNavItemActive } from "@/config/navigation";
+import { mainNav, IconProps } from "@/config/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { LogoutDoorIcon, MainAppLogo } from "@/components/ui/icons";
@@ -106,7 +106,9 @@ const Sidebar = memo(function Sidebar() {
         {/* Navigation */}
         <nav className="h-[calc(100%-120px)] flex-1 space-y-3 px-4 py-4 overflow-y-auto">
           {mainNav.map((item) => {
-            const isActive = isNavItemActive(item, pathname);
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
               <SidebarItem

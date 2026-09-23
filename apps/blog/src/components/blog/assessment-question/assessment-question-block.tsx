@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import StarBadge from "@/components/ui/badge/star-badge";
 import DetailsSectionCard from "./details-section-card";
 import QuestionCard from "../ui/question-card";
-import { unFormatSlug, formatStageLabel, getQuestionUrlParam } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, formatStageLabel, sanitizeAiSlug } from "@/utils/slugify";
 import removeMd from "remove-markdown";
 import { Button } from "@clearcut/ui/button";
 import { Question, Translation } from "./question-list-by-subject";
@@ -210,14 +210,16 @@ export default function AssessmentQuestionBlock({
                 translation?.question?.replace(/<[^>]*>/g, "") || "";
 
               const snippet = limitWords(plain, 25);
-              const urlParam = getQuestionUrlParam(question.id, quest);
+              const slug =
+                (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+                formatToSlug(limitWords(plain, 4));
 
               return (
                 <QuestionCard
                   key={index}
                   q_no={index + 1}
                   index={index}
-                  path={`/question/${urlParam}`}
+                  path={`/question/${slug}-${question.id}`}
                   questionText={snippet}
                   source={unFormatSlug(question?.exam_instance_id_b ?? "")}
                   chapter_name={question?.chapter?.name}

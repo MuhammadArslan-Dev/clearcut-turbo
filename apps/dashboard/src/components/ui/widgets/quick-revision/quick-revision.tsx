@@ -9,7 +9,6 @@ import { useCourseStore } from "@/store/course/useCourseStore";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
-import { BookOpen, FileText, Folder, Star } from "lucide-react";
 
 type QuickRevisionProps = {
   bgColor?: string;
@@ -22,7 +21,6 @@ export default function QuickRevision({
 }: QuickRevisionProps) {
 
   const t = useTranslations();
-  const tHome = useTranslations("DashboardHome");
   const { activeCourse } = useMyActiveCourses();
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const open = useCourseStore((s) => s.open);
@@ -44,37 +42,14 @@ export default function QuickRevision({
     }
   }, [course, open]);
   return (
-    <div className={clsx("relative flex flex-col gap-4 overflow-hidden p-4 md:p-5", bgColor, rounded)}>
-      {/* Decorative backdrop — reference art: a soft page with three label chips.
-          Purely visual, desktop only. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-[380px] md:block">
-        <div className="absolute right-24 top-6 h-[150px] w-[190px] rotate-[-6deg] rounded-xl bg-[var(--color-primary-bg-soft)]" />
-        <div className="absolute right-10 top-4 h-[150px] w-[190px] rotate-[4deg] rounded-xl bg-brand/9" />
-        <div className="absolute right-8 top-6 flex flex-col gap-3">
-          <span className="body-small flex w-[150px] items-center gap-2 rounded-lg bg-white px-3 py-2 !font-medium shadow-sm">
-            <FileText size={16} className="text-brand" /> {tHome("qrNotes")}
-          </span>
-          <span className="body-small ml-[-24px] flex w-[150px] items-center gap-2 rounded-lg bg-white px-3 py-2 !font-medium shadow-sm">
-            <Folder size={16} className="text-amber-500" /> {tHome("qrPyqs")}
-          </span>
-          <span className="body-small flex w-[170px] items-center gap-2 rounded-lg bg-white px-3 py-2 !font-medium shadow-sm">
-            <Star size={16} className="text-amber-500" /> {tHome("qrImportant")}
-          </span>
-        </div>
-      </div>
-
+    <div className={clsx("flex p-4 flex-col gap-4", bgColor, rounded)}>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-          <BookOpen size={24} />
-        </span>
-        <div>
-          <h6 className="heading-medium !font-semibold">
-            {t("quickRvision.title")}
-          </h6>
-          <div className="body-small !font-normal text-surface-gray-muted">
-            {t("quickRvision.subtitle", { min: 20, max: 30 })}
-          </div>
+      <div>
+        <h6 className="heading-medium !font-semibold">
+          {t("quickRvision.title")}
+        </h6>
+        <div className="body-small !font-normal text-surface-gray-muted">
+          {t("quickRvision.subtitle", { min: 20, max: 30 })}
         </div>
       </div>
 
@@ -107,8 +82,8 @@ export default function QuickRevision({
       </div>
 
       {/* CTA */}
-      <div className="flex w-full flex-col items-start gap-1">
-        <div className="w-full md:max-w-[320px]">
+      <div className="flex flex-col gap-1 w-full justify-center items-center text-center">
+        <div className="max-w-[320px] w-full">
           <MainButton
             fullWidth
             variant="outlined"

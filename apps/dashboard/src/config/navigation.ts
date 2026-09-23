@@ -35,19 +35,7 @@ export type NavItem = {
     | "/dashboard/referral";
   match?: "exact" | "startsWith";
   icon?: ComponentType<IconProps>;
-  // Extra route prefixes that should light this tab up even though they
-  // aren't under `href` (Daily Tests belongs to Learn, but its attempt/result
-  // page lives outside /dashboard).
-  activePrefixes?: string[];
 };
-
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
-  return (
-    pathname === item.href ||
-    (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
-    (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false)
-  );
-}
 
 export const mainNav: NavItem[] = [
   {
@@ -56,7 +44,6 @@ export const mainNav: NavItem[] = [
     href: "/dashboard",
     match: "startsWith",
     icon: GraduationCapIcon,
-    activePrefixes: ["/daily-tests", "/daily-test-attempt"],
   },
   {
     key: "exams",
@@ -104,7 +91,6 @@ export const mobileNav: NavItem[] = [
     href: "/dashboard",
     match: "startsWith",
     icon: GraduationCapIcon,
-    activePrefixes: ["/daily-tests", "/daily-test-attempt"],
   },
 
   {

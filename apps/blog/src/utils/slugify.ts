@@ -1,5 +1,3 @@
-import { limitWords } from "@clearcut/utils/text-limit";
-
 export function formatToSlug(str: string): string {
   return str
     .trim()                          // remove spaces from both ends
@@ -24,26 +22,6 @@ export function sanitizeAiSlug(aiSlug: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
-// The single source of truth for a question's "<slug>-<id>" URL param.
-// Always uses translations[0] — never locale-matched — because that's what
-// the question detail page's own canonical redirect (app/[locale]/(blog)/
-// question/[questionId]/page.tsx) and the question sitemap builder
-// (lib/sitemap/build-questions-sitemap-xml.ts) both use. Any internal link
-// that builds its href a different way (e.g. matching the viewer's course
-// language) points at a non-canonical URL that immediately 308-redirects on
-// click, wasting crawl budget and shipping the wrong <a href> to Google.
-export function getQuestionUrlParam(
-  id: number | string,
-  translations?: { ai_slug?: string | null; question?: string | null }[] | null,
-): string {
-  const translation = translations?.[0];
-  const plain = (translation?.question || "").replace(/<[^>]*>/g, "");
-  const slug =
-    (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
-    formatToSlug(limitWords(plain, 4));
-  return `${slug}-${id}`;
-}
-
 export function unFormatSlug(slug: string): string {
   return slug
     .replace(/_/g, " ")             // underscores → spaces

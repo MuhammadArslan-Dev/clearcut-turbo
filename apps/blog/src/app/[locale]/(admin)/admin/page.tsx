@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import React from 'react'
 
-export default function AdminPage() {
-  redirect("/admin/daily-tests");
+export default function page() {
+  return (
+    <div> Admin Page</div>
+  )
 }

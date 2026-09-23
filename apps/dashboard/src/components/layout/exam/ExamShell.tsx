@@ -3,7 +3,6 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import TimerStrip from "./TimerStrip";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
@@ -38,13 +37,12 @@ export default function ExamShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
+    <div className="flex h-screen flex-col overflow-hidden">
+      {/* Sidebar */}
       <Topbar />
 
-      <TimerStrip />
-
       {/* Main column */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
         {/* Only this part scrolls */}

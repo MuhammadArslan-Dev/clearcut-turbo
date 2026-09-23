@@ -1,5 +1,4 @@
 import SiteHeader from "./SiteHeader";
-import PageJsonLd from "./PageJsonLd";
 import SiteFooter from "./SiteFooter";
 import Text from "@clearcut/ui/text";
 import ResizeImageTool from "./ResizeImageTool";
@@ -98,16 +97,9 @@ function HowItWorks({ locale }: { locale: Locale }) {
 /** Hub — generic tool + copy, no exam context. Per-exam spokes: ResizerSpokePage. */
 export default function ResizeHubPage({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).hub;
-  const hubName = { en: "Photo & Signature Resizer", hi: "फ़ोटो और हस्ताक्षर रिसाइज़र", mr: "फोटो आणि स्वाक्षरी रिसाइझर" }[locale];
 
   return (
     <div>
-      <PageJsonLd
-        locale={locale}
-        path="/resizer"
-        trail={[{ name: hubName, path: "/resizer" }]}
-        app={{ name: hubName, description: t.lead }}
-      />
       <SiteHeader locale={locale} />
 
       <div className="px-4 md:px-6 py-10 md:py-14">

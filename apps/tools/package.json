@@ -7,8 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "seo:check": "node scripts/validate-seo.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@clearcut/design-tokens": "workspace:*",

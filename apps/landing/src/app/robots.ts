@@ -45,9 +45,7 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: [
       "https://clearcutoff.in/sitemap.xml",
       "https://clearcutoff.in/go/sitemap.xml", // Astro marketing pages, served via the Cloudflare Worker at /go/*
-      // apps/tools: ONE index (served by the Cloudflare Worker at the origin root) that lists the
-      // per-language, per-section sitemaps under /tools, /hi/tools and /mr/tools — see apps/tools/SEO.md.
-      "https://clearcutoff.in/sitemap-tools.xml",
+      "https://clearcutoff.in/tools/sitemap.xml", // apps/tools pages, served via the Cloudflare Worker at /tools/*
     ],
     host: "https://clearcutoff.in",
   };

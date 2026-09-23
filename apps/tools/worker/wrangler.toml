@@ -17,8 +17,6 @@ routes = [
 	{ pattern = "clearcutoff.in/tools/*", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/hi/tools/*", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/mr/tools/*", zone_name = "clearcutoff.in" },
-	# Master sitemap index, served from the origin root (see matchPath()).
-	{ pattern = "clearcutoff.in/sitemap-tools.xml", zone_name = "clearcutoff.in" },
 ]
 
 [vars]

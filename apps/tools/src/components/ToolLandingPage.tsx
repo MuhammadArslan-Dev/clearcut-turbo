@@ -1,5 +1,4 @@
 import SiteHeader from "./SiteHeader";
-import PageJsonLd from "./PageJsonLd";
 import SiteFooter from "./SiteFooter";
 import ResizeImageTool, { PresetKey } from "./ResizeImageTool";
 import ToolModeTabs from "./ToolModeTabs";
@@ -16,8 +15,6 @@ interface ToolLandingPageProps {
   /** Hides the "Document type" tile grid — the Add Name & Date page is its own dedicated form in the reference, not a mode picked from a tile grid. Defaults to shown. */
   showPresetPicker?: boolean;
   locale?: Locale;
-  /** Route below /tools (e.g. "/resizer/image-compressor") — used for this page's structured data. */
-  path: string;
   /** Extra sections (How it works / feature highlights / FAQ) rendered below the tool card — only the Add Name & Date page uses this so far. */
   children?: React.ReactNode;
 }
@@ -39,22 +36,10 @@ export default function ToolLandingPage({
   showModeTabs = false,
   showPresetPicker = true,
   locale = "en",
-  path,
   children,
 }: ToolLandingPageProps) {
-  const hubName = { en: "Photo & Signature Resizer", hi: "फ़ोटो और हस्ताक्षर रिसाइज़र", mr: "फोटो आणि स्वाक्षरी रिसाइझर" }[locale];
-
   return (
     <div>
-      <PageJsonLd
-        locale={locale}
-        path={path}
-        trail={[
-          { name: hubName, path: "/resizer" },
-          { name: heading, path },
-        ]}
-        app={{ name: heading, description }}
-      />
       <SiteHeader locale={locale} />
 
       <div className="px-4 md:px-6 py-10 md:py-14">

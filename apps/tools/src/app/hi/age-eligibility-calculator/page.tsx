@@ -1,47 +1,97 @@
 import { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
-import PageJsonLd from "@/components/PageJsonLd";
 import Text from "@clearcut/ui/text";
+import JsonLd from "@clearcut/ui/json-ld";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";
 import FAQAccordion, { AccordionItem } from "@/components/FAQAccordion";
 import AgeExamCard, { ageLimitLabel } from "@/components/AgeExamCard";
 import LocaleLink from "@/components/LocaleLink";
-import { getAgeEligibilityCategories, getAgeEligibilityExams, getPopularAgeExams } from "@/lib/ageEligibility";
+import { AGE_ELIGIBILITY_EXAMS, getAgeEligibilityExamBySlug, type ExamGroup } from "@/lib/ageEligibility";
 import { getAgeCalcStrings } from "@/lib/ageCalculatorStrings";
 
 // Mirrors src/app/age-eligibility-calculator/page.tsx — see that file for the
 // full section-by-section design notes. Hindi UI chrome only.
-export async function generateMetadata(): Promise<Metadata> {
-  const exams = await getAgeEligibilityExams();
-  return buildMetadata({
-    locale: "hi",
-    path: "/age-eligibility-calculator",
-    title: `${exams.length} सरकारी परीक्षाओं के लिए आयु कैलकुलेटर | Clear Cutoff`,
-    description: "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य परीक्षाओं के लिए अपनी सही उम्र और पात्रता जांचें — मुफ्त, निजी, पूरी तरह आपके ब्राउज़र में।",
-  });
-}
+export const metadata: Metadata = {
+  title: `${AGE_ELIGIBILITY_EXAMS.length} सरकारी परीक्षाओं के लिए आयु कैलकुलेटर | Clear Cutoff`,
+  description:
+    "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य परीक्षाओं के लिए अपनी सही उम्र और पात्रता जांचें — मुफ्त, निजी, पूरी तरह आपके ब्राउज़र में।",
+  alternates: {
+    canonical: "https://clearcutoff.in/hi/tools/age-eligibility-calculator",
+    languages: {
+      en: "https://clearcutoff.in/tools/age-eligibility-calculator",
+      hi: "https://clearcutoff.in/hi/tools/age-eligibility-calculator",
+    },
+  },
+};
 
-export default async function Page() {
+const POPULAR_SLUGS = ["upsc-ias", "ssc-cgl", "ssc-mts", "ibps-po", "sbi-po", "rbi-grade-b"];
+
+const CATEGORY_GROUPS: ExamGroup[] = [
+  "Civil Services",
+  "Banking",
+  "Railways",
+  "Defence",
+  "SSC Exams",
+  "Engineering",
+  "Medical",
+  "State PSC",
+  "Teaching",
+  "Insurance",
+  "Police",
+];
+
+export default function Page() {
   const t = getAgeCalcStrings("hi");
-  const exams = await getAgeEligibilityExams();
-  const groupCounts = new Map<string, number>();
-  for (const exam of exams) groupCounts.set(exam.group, (groupCounts.get(exam.group) ?? 0) + 1);
+  const groupCounts = new Map<ExamGroup, number>();
+  for (const exam of AGE_ELIGIBILITY_EXAMS) groupCounts.set(exam.group, (groupCounts.get(exam.group) ?? 0) + 1);
 
-  const categories = await getAgeEligibilityCategories("hi");
-  const labelBySlug = new Map(categories.map((c) => [c.slug, c.label]));
-  const popularExams = await getPopularAgeExams();
+  const popularExams = POPULAR_SLUGS.map((slug) => getAgeEligibilityExamBySlug(slug)).filter((e) => e !== undefined);
 
   const faqItems: AccordionItem[] = t.homeFaqs.map((faq, i) => ({ id: `home-faq-${i}`, title: faq.q, content: faq.a }));
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: t.homeFaqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: { "@type": "Answer", text: faq.a },
+    })),
+  };
+
+  const webAppSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "आयु पात्रता कैलकुलेटर",
+    applicationCategory: "UtilityApplication",
+    operatingSystem: "Any (runs in browser)",
+    url: "https://clearcutoff.in/hi/tools/age-eligibility-calculator",
+    description:
+      "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य सरकारी परीक्षाओं के लिए अपनी सही उम्र और श्रेणी-वार पात्रता जांचें — मुफ्त, निजी, पूरी तरह आपके ब्राउज़र में।",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+    publisher: { "@type": "Organization", name: "Clear Cutoff", url: "https://clearcutoff.in" },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "होम", item: "https://clearcutoff.in" },
+      { "@type": "ListItem", position: 2, name: "मुफ्त टूल्स", item: "https://clearcutoff.in/tools" },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "आयु पात्रता कैलकुलेटर",
+        item: "https://clearcutoff.in/hi/tools/age-eligibility-calculator",
+      },
+    ],
+  };
+
   return (
     <>
-      <PageJsonLd
-        locale="hi"
-        path="/age-eligibility-calculator"
-        trail={[{ name: "आयु पात्रता कैलकुलेटर", path: "/age-eligibility-calculator" }]}
-        app={{ name: "आयु पात्रता कैलकुलेटर", description: "UPSC, SSC, बैंकिंग, रेलवे, रक्षा, State PSC, टीचिंग और अन्य सरकारी परीक्षाओं के लिए अपनी सही उम्र और श्रेणी-वार पात्रता जांचें — मुफ्त, निजी, पूरी तरह आपके ब्राउज़र में।" }}
-        faqs={t.homeFaqs}
-      />
+      <JsonLd id="age-calc-home-faq-schema" data={faqSchema} />
+      <JsonLd id="age-calc-home-app-schema" data={webAppSchema} />
+      <JsonLd id="age-calc-home-breadcrumb-schema" data={breadcrumbSchema} />
       <SiteHeader locale="hi" tool="age-eligibility-calculator" />
 
       <div className="relative overflow-hidden">
@@ -61,7 +111,7 @@ export default async function Page() {
               {t.hubHeadingSuffix}
             </Text>
             <Text as="p" variant="body-large" color="gray-muted" className="mt-3 max-w-xl mx-auto">
-              {t.hubSubtitle(exams.length - 5)}
+              {t.hubSubtitle(AGE_ELIGIBILITY_EXAMS.length - 5)}
             </Text>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               <LocaleLink
@@ -103,7 +153,7 @@ export default async function Page() {
               href="/all"
               className="body-medium !font-semibold text-brand hover:underline whitespace-nowrap"
             >
-              {t.viewAllExams(exams.length)}
+              {t.viewAllExams(AGE_ELIGIBILITY_EXAMS.length)}
             </LocaleLink>
           </div>
 
@@ -111,7 +161,6 @@ export default async function Page() {
             {popularExams.map((exam) => (
               <AgeExamCard
                 key={exam.slug}
-                groupLabel={labelBySlug.get(exam.group)}
                 exam={exam}
                 href={`/hi/tools/age-eligibility-calculator/${exam.slug}`}
                 ageLimitText={ageLimitLabel(exam, t.noLimit, t.minLabel)}
@@ -133,17 +182,17 @@ export default async function Page() {
           </Text>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-            {categories.map((category) => (
+            {CATEGORY_GROUPS.map((group) => (
               <a
-                key={category.slug}
-                href={`/hi/tools/age-eligibility-calculator/all?group=${encodeURIComponent(category.slug)}`}
+                key={group}
+                href={`/hi/tools/age-eligibility-calculator/all?group=${encodeURIComponent(group)}`}
                 className="group flex flex-col items-center text-center gap-2 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-6 transition-all hover:border-brand hover:shadow-[0_4px_18px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
               >
                 <Text as="p" variant="body-medium" weight="bold" color="gray-normal">
-                  {category.label}
+                  {group}
                 </Text>
                 <Text as="p" variant="body-small" color="gray-muted">
-                  {t.examsCount(groupCounts.get(category.slug) ?? 0)}
+                  {t.examsCount(groupCounts.get(group) ?? 0)}
                 </Text>
               </a>
             ))}

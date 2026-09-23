@@ -30,13 +30,6 @@ const MR_PREFIX = "/mr/tools";
 // the upstream path to request from PAGES_ORIGIN, or null if this pathname
 // isn't ours.
 function matchPath(pathname: string): string | null {
-	// The master sitemap index is published at the ORIGIN ROOT
-	// (https://clearcutoff.in/sitemap-tools.xml) rather than under /tools: a
-	// sitemap only covers URLs at or below its own directory, and only from the
-	// root are /tools/**, /hi/tools/** and /mr/tools/** all in scope. Upstream
-	// it is the static file app/sitemap-index.xml/route.ts exports.
-	if (pathname === "/sitemap-tools.xml") return "/sitemap-index.xml";
-
 	for (const [prefix, upstreamRoot] of [
 		[HI_PREFIX, "/hi"],
 		[MR_PREFIX, "/mr"],
@@ -63,22 +56,6 @@ const TOOLS_INDEX_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Free Tools | Clear Cutoff</title>
 <meta name="description" content="Free browser-based tools for exam forms — photo &amp; signature resizing and more." />
-<link rel="canonical" href="https://clearcutoff.in/tools" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Clear Cutoff" />
-<meta property="og:title" content="Free Tools | Clear Cutoff" />
-<meta property="og:description" content="Free browser-based tools for exam forms — photo &amp; signature resizing and more." />
-<meta property="og:url" content="https://clearcutoff.in/tools" />
-<meta property="og:locale" content="en_IN" />
-<meta property="og:image" content="https://clearcutoff.in/tools/og/clear-cutoff-tools.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Free Tools | Clear Cutoff" />
-<meta name="twitter:description" content="Free browser-based tools for exam forms — photo &amp; signature resizing and more." />
-<meta name="twitter:image" content="https://clearcutoff.in/tools/og/clear-cutoff-tools.png" />
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "CollectionPage", "name": "Free Tools", "description": "Free browser-based tools for exam forms — photo & signature resizing and more.", "url": "https://clearcutoff.in/tools", "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Clear Cutoff", "url": "https://clearcutoff.in"}, "mainEntity": {"@type": "ItemList", "numberOfItems": 3, "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Photo & Signature Resizer", "url": "https://clearcutoff.in/tools/resizer"}, {"@type": "ListItem", "position": 2, "name": "Age Eligibility Calculator", "url": "https://clearcutoff.in/tools/age-eligibility-calculator"}, {"@type": "ListItem", "position": 3, "name": "Syllabus Tracker", "url": "https://clearcutoff.in/tools/syllabus-tracker"}]}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://clearcutoff.in"}, {"@type": "ListItem", "position": 2, "name": "Free Tools", "item": "https://clearcutoff.in/tools"}]}]}</script>
 <link rel="icon" href="https://clearcutoff.in/favicon.ico" />
 <style>
   /* Every literal colour this page uses is defined exactly once here,

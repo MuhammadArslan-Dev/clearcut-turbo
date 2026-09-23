@@ -104,8 +104,6 @@ export const AGE_CALC_STRINGS = {
     faqTitle: "Frequently Asked Questions",
     faqSubtitle: (examShortName: string) => `Common queries regarding ${examShortName} age limits, cutoff date, and eligibility.`,
     pageTitle: (examShortName: string, year: number) => `${examShortName} Age Calculator (${year})`,
-    metaDescription: (shortName: string, fullName: string) =>
-      `Calculate your exact age for ${shortName} (${fullName}) and check category-wise eligibility instantly. Free tool, nothing is uploaded.`,
     conductedBy: "Conducted by",
 
     // Homepage-only sections (hero CTAs, Popular Calculators, Browse By
@@ -229,8 +227,6 @@ export const AGE_CALC_STRINGS = {
     faqTitle: "अक्सर पूछे जाने वाले प्रश्न",
     faqSubtitle: (examShortName: string) => `${examShortName} की आयु सीमा, कटऑफ तारीख और पात्रता से जुड़े सामान्य सवाल।`,
     pageTitle: (examShortName: string, year: number) => `${examShortName} आयु कैलकुलेटर (${year})`,
-    metaDescription: (shortName: string, fullName: string) =>
-      `${shortName} (${fullName}) के लिए अपनी सही उम्र जांचें और श्रेणी-वार आयु पात्रता तुरंत देखें। मुफ़्त टूल, कुछ भी अपलोड नहीं होता।`,
     conductedBy: "आयोजक",
 
     exploreCalculators: "कैलकुलेटर देखें",
@@ -351,8 +347,6 @@ export const AGE_CALC_STRINGS = {
     faqTitle: "वारंवार विचारले जाणारे प्रश्न",
     faqSubtitle: (examShortName: string) => `${examShortName} च्या वयोमर्यादा, कटऑफ तारीख आणि पात्रतेबाबत सामान्य प्रश्न.`,
     pageTitle: (examShortName: string, year: number) => `${examShortName} वय कॅल्क्युलेटर (${year})`,
-    metaDescription: (shortName: string, fullName: string) =>
-      `${shortName} (${fullName}) साठी तुमचे अचूक वय तपासा आणि श्रेणीनिहाय वय पात्रता त्वरित पहा. मोफत टूल, काहीही अपलोड होत नाही.`,
     conductedBy: "आयोजक",
 
     exploreCalculators: "कॅल्क्युलेटर पहा",

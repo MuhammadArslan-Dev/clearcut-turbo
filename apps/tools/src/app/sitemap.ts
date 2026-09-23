@@ -1,17 +1,65 @@
 import type { MetadataRoute } from "next";
-import { SITEMAP_SECTIONS, buildSitemap, isSitemapSection } from "@/lib/sitemap";
+import { getResizerExams } from "@/lib/resizerExams";
+import { AGE_ELIGIBILITY_EXAMS } from "@/lib/ageEligibility";
 
-// One sitemap per section for this language: https://clearcutoff.in/tools/sitemap/<section>.xml
-// Listed by the master index (../sitemap-index.xml/route.ts) — see lib/sitemap.ts
-// for the architecture. output: "export" runs this once at build time.
+// This app is a separate static export/deployment from apps/landing (see
+// "apps/tools deployment" in the root CLAUDE.md) and was never wired into
+// landing's own sitemap.xml, so none of these ~450 pages had a sitemap entry
+// at all — Google could only find them by crawling links, which barely
+// exist site-wide either. Emitting our own sitemap.xml here (served at
+// /tools/sitemap.xml through the Worker's now-broad /tools/* route) and
+// listing it in apps/landing's robots.ts closes that gap without landing
+// needing to import this app's exam data.
+//
+// output: "export" in next.config.ts makes this run at build time only —
+// lastModified is fixed at build time, not per-request.
 export const dynamic = "force-static";
 
-export async function generateSitemaps() {
-  return SITEMAP_SECTIONS.map((id) => ({ id }));
+const BASE = "https://clearcutoff.in";
+const BUILD_DATE = new Date();
+
+const RESIZER_STATIC_SLUGS = ["image-compressor", "signature-compressor", "75-face-coverage", "add-name-date"];
+
+function entry(path: string, priority: number, changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]): MetadataRoute.Sitemap[number] {
+  return { url: `${BASE}${path}`, lastModified: BUILD_DATE, changeFrequency, priority };
 }
 
-export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
-  const id = await props.id;
-  if (!isSitemapSection(id)) throw new Error(`Unknown sitemap section "${id}"`);
-  return buildSitemap("en", id);
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const resizerExams = await getResizerExams();
+
+  const entries: MetadataRoute.Sitemap = [
+    entry("/tools", 0.8, "monthly"),
+    entry("/tools/resizer", 0.8, "weekly"),
+    entry("/hi/tools/resizer", 0.7, "weekly"),
+    entry("/mr/tools/resizer", 0.7, "weekly"),
+    entry("/tools/age-eligibility-calculator", 0.9, "weekly"),
+    entry("/hi/tools/age-eligibility-calculator", 0.8, "weekly"),
+    entry("/mr/tools/age-eligibility-calculator", 0.8, "weekly"),
+    entry("/tools/age-eligibility-calculator/all", 0.8, "weekly"),
+    entry("/hi/tools/age-eligibility-calculator/all", 0.7, "weekly"),
+    entry("/mr/tools/age-eligibility-calculator/all", 0.7, "weekly"),
+    entry("/tools/syllabus-tracker", 0.8, "weekly"),
+    entry("/hi/tools/syllabus-tracker", 0.7, "weekly"),
+    entry("/mr/tools/syllabus-tracker", 0.7, "weekly"),
+  ];
+
+  for (const slug of RESIZER_STATIC_SLUGS) {
+    entries.push(entry(`/tools/resizer/${slug}`, 0.6, "monthly"));
+    entries.push(entry(`/hi/tools/resizer/${slug}`, 0.5, "monthly"));
+    entries.push(entry(`/mr/tools/resizer/${slug}`, 0.5, "monthly"));
+  }
+
+  for (const exam of resizerExams) {
+    entries.push(entry(`/tools/resizer/${exam.slug}`, 0.7, "weekly"));
+    entries.push(entry(`/hi/tools/resizer/${exam.slug}`, 0.6, "weekly"));
+    entries.push(entry(`/mr/tools/resizer/${exam.slug}`, 0.6, "weekly"));
+  }
+
+  for (const exam of AGE_ELIGIBILITY_EXAMS) {
+    entries.push(entry(`/tools/age-eligibility-calculator/${exam.slug}`, 0.8, "weekly"));
+    entries.push(entry(`/hi/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));
+    entries.push(entry(`/mr/tools/age-eligibility-calculator/${exam.slug}`, 0.7, "weekly"));
+  }
+
+  return entries;
 }

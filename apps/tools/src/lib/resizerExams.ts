@@ -15,25 +15,6 @@
 
 import { getResizerData } from "./api/toolsApi";
 
-export type ExamDocumentType = "photo" | "signature" | "left_thumb" | "right_thumb" | "handwritten_declaration";
-
-export type DocSpec = { widthPx: number; heightPx: number; minKB: number; maxKB: number };
-
-/**
- * One document an exam asks for (from the backend's tool_exam_documents,
- * in display order). `spec` is null when the backend row lacks a size the
- * resizer needs and there is no other source to fill it from.
- */
-export interface ExamDocument {
-  type: ExamDocumentType;
-  /** "live_capture": the application portal captures it itself — nothing to resize. */
-  mode: "upload" | "live_capture";
-  spec: DocSpec | null;
-  format: string;
-  required: boolean;
-  verification: string;
-}
-
 export interface ResizerExamSpec {
   slug: string;
   shortName: string;
@@ -42,13 +23,6 @@ export interface ResizerExamSpec {
   category: string;
   photoSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
   signatureSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
-  /** Which documents this exam asks for, in display order. Never empty (falls back to photo + signature). */
-  documents: ExamDocument[];
-}
-
-/** True when the exam's photograph is captured live on the portal instead of uploaded. */
-export function isPhotoLiveCapture(exam: Pick<ResizerExamSpec, "documents">): boolean {
-  return exam.documents.some((d) => d.type === "photo" && d.mode === "live_capture");
 }
 
 type Spec = { widthPx: number; heightPx: number; minKB: number; maxKB: number };
@@ -70,22 +44,6 @@ export function getExamFaqs(
   photoSpec: Spec,
   signatureSpec: Spec,
   locale: "en" | "hi" | "mr" = "en",
-  options: { photoLive?: boolean } = {},
-) {
-  const faqs = buildExamFaqs(examShortName, photoSpec, signatureSpec, locale);
-  if (!options.photoLive) return faqs;
-
-  // The photograph is captured live on the portal, so drop every answer that
-  // quotes a photo upload size.
-  const photoDims = `${photoSpec.widthPx}×${photoSpec.heightPx}px`;
-  return faqs.filter((faq) => !faq.a.includes(photoDims));
-}
-
-function buildExamFaqs(
-  examShortName: string,
-  photoSpec: Spec,
-  signatureSpec: Spec,
-  locale: "en" | "hi" | "mr",
 ) {
   if (locale === "mr") {
     return [

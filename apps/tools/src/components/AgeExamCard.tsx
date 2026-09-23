@@ -3,6 +3,8 @@ import Text from "@clearcut/ui/text";
 import type { AgeEligibilityExam } from "@/lib/ageEligibility";
 import type { Locale } from "@/lib/dictionary";
 
+const FEATURED_SLUGS = new Set(["ctet", "htet", "uptet", "reet", "hptet"]);
+
 export function ageLimitLabel(exam: AgeEligibilityExam, noLimitLabel = "No Limit", minLabel = "Min"): string {
   const min = exam.categories[0]?.minAge ?? 0;
   const max = exam.categories[0]?.maxAge ?? null;
@@ -17,7 +19,6 @@ export default function AgeExamCard({
   ageLimitText,
   ageLimitLabelText,
   popularLabel,
-  groupLabel,
   locale = "en",
 }: {
   exam: AgeEligibilityExam;
@@ -26,8 +27,6 @@ export default function AgeExamCard({
   ageLimitText: string;
   ageLimitLabelText: string;
   popularLabel: string;
-  /** Localized name of exam.group (its category label); falls back to the raw group slug. */
-  groupLabel?: string;
   locale?: Locale;
 }) {
   const className =
@@ -37,9 +36,9 @@ export default function AgeExamCard({
     <>
       <div className="flex items-center justify-between gap-2">
         <span className="inline-block rounded-full bg-[var(--color-primary-bg-soft)] text-brand px-2.5 py-1 body-xsmall !font-semibold">
-          {groupLabel ?? exam.group}
+          {exam.group}
         </span>
-        {exam.popularRank !== null && (
+        {FEATURED_SLUGS.has(exam.slug) && (
           <span className="inline-block rounded-full bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)] px-2.5 py-1 body-xsmall !font-semibold">
             {popularLabel}
           </span>

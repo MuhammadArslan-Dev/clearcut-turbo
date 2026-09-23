@@ -14,7 +14,6 @@ import { logger } from "@/lib/sentry/sentry-logger";
 import { ContentItem, VideoContent } from "../../types/topic-content-type";
 import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
-import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 export default function VideoWrapper() {
   const queryClient = useQueryClient();
@@ -33,22 +32,12 @@ export default function VideoWrapper() {
     ) as VideoContent) ?? [];
 
   /**
-   * 🎥 Resolve main video by the course's content language
-   * 1. Exact language match (e.g. "mr" for a Marathi course)
-   * 2. Hindi — same per-item fallback used by getLocalizedName() for
-   *    chapter/topic names, so a Marathi course never shows blank just
-   *    because a topic's Marathi video hasn't synced yet
-   * 3. Whatever's first, so an English/Hindi-only topic still plays
+   * 🎥 Resolve main video safely
+   * 1. Prefer main_video with valid link
+   * 2. Fallback to supporting_video with valid link
    */
-  const contentLocale = courseLanguageToLocale(course?.language);
-  const videos = safeContent?.content ?? [];
-  const mainVideo =
-    videos.find((v) => v.language === contentLocale) ??
-    (contentLocale !== "hi"
-      ? videos.find((v) => v.language === "hi")
-      : undefined) ??
-    videos[0] ??
-    null;
+
+  const mainVideo = safeContent?.content?.[0] ?? null;
   const { video, setVideo } = useVideoPlayerStore();
 
   React.useEffect(() => {

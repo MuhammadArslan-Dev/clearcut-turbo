@@ -7,7 +7,7 @@ import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
 import { getDict, Locale } from "@/lib/dictionary";
 
-export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
+export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb";
 
 interface Preset {
   label: string;
@@ -32,15 +32,6 @@ const DEFAULT_SIGNATURE_SPEC: ImageSpec = { widthPx: 140, heightPx: 60, minKB: 1
 // closest widely-cited real-world figure, used as a generic default the same
 // way DEFAULT_PHOTO_SPEC/DEFAULT_SIGNATURE_SPEC are generic defaults.
 const DEFAULT_THUMB_SPEC: ImageSpec = { widthPx: 200, heightPx: 200, minKB: 10, maxKB: 20 };
-// Generic default for the handwritten declaration (IBPS/SBI's published size), used only when the exam's own document row has no size.
-const DEFAULT_DECLARATION_SPEC: ImageSpec = { widthPx: 800, heightPx: 400, minKB: 50, maxKB: 100 };
-
-/** Per-exam sizes for the document tiles beyond photo/signature; any missing one falls back to a generic default. */
-export interface ExtraSpecs {
-  thumbSpec?: ImageSpec;
-  rightThumbSpec?: ImageSpec;
-  declarationSpec?: ImageSpec;
-}
 
 // Purely an input convenience for the Custom preset's optional cm entry —
 // exam specs themselves are always defined in px. 300 DPI is the print-
@@ -62,7 +53,6 @@ function buildPresets(
   locale: Locale,
   photoSpec: ImageSpec = DEFAULT_PHOTO_SPEC,
   signatureSpec: ImageSpec = DEFAULT_SIGNATURE_SPEC,
-  extra: ExtraSpecs = {},
 ): Record<PresetKey, Preset> {
   const p = getDict(locale).presets;
   return {
@@ -90,24 +80,10 @@ function buildPresets(
     },
     thumb: {
       ...p.thumb,
-      width: (extra.thumbSpec ?? DEFAULT_THUMB_SPEC).widthPx,
-      height: (extra.thumbSpec ?? DEFAULT_THUMB_SPEC).heightPx,
-      minKB: (extra.thumbSpec ?? DEFAULT_THUMB_SPEC).minKB,
-      maxKB: (extra.thumbSpec ?? DEFAULT_THUMB_SPEC).maxKB,
-    },
-    right_thumb: {
-      ...p.right_thumb,
-      width: (extra.rightThumbSpec ?? extra.thumbSpec ?? DEFAULT_THUMB_SPEC).widthPx,
-      height: (extra.rightThumbSpec ?? extra.thumbSpec ?? DEFAULT_THUMB_SPEC).heightPx,
-      minKB: (extra.rightThumbSpec ?? extra.thumbSpec ?? DEFAULT_THUMB_SPEC).minKB,
-      maxKB: (extra.rightThumbSpec ?? extra.thumbSpec ?? DEFAULT_THUMB_SPEC).maxKB,
-    },
-    declaration: {
-      ...p.declaration,
-      width: (extra.declarationSpec ?? DEFAULT_DECLARATION_SPEC).widthPx,
-      height: (extra.declarationSpec ?? DEFAULT_DECLARATION_SPEC).heightPx,
-      minKB: (extra.declarationSpec ?? DEFAULT_DECLARATION_SPEC).minKB,
-      maxKB: (extra.declarationSpec ?? DEFAULT_DECLARATION_SPEC).maxKB,
+      width: DEFAULT_THUMB_SPEC.widthPx,
+      height: DEFAULT_THUMB_SPEC.heightPx,
+      minKB: DEFAULT_THUMB_SPEC.minKB,
+      maxKB: DEFAULT_THUMB_SPEC.maxKB,
     },
   };
 }
@@ -392,8 +368,6 @@ const PRESET_ICONS: Record<PresetKey, React.ReactNode> = {
   custom: <CropTypeIcon />,
   draw: <SignatureTypeIcon />,
   thumb: <ThumbTypeIcon />,
-  right_thumb: <ThumbTypeIcon />,
-  declaration: <SignatureTypeIcon />,
 };
 
 // No existing @clearcut/ui component covers a selectable icon+label+sublabel
@@ -867,10 +841,6 @@ const ALL_PRESET_KEYS: PresetKey[] = ["photo", "signature", "draw", "thumb"];
 interface ResizeImageToolProps {
   photoSpec?: ImageSpec;
   signatureSpec?: ImageSpec;
-  /** Sizes for the left/right thumb and declaration tiles (per exam, from the backend). */
-  thumbSpec?: ImageSpec;
-  rightThumbSpec?: ImageSpec;
-  declarationSpec?: ImageSpec;
   /** Which preset tile is active on first render — lets a dedicated tool page (e.g. "/signature-compressor") open straight into the relevant mode instead of always defaulting to Photo. */
   defaultPreset?: PresetKey;
   /** Restricts which document-type tiles render — e.g. an exam spoke page only lists Photo + Signature, since that's the only pair resizerExams.ts actually has verified specs for. Defaults to every preset (the general hub page). */
@@ -883,30 +853,23 @@ interface ResizeImageToolProps {
 export default function ResizeImageTool({
   photoSpec,
   signatureSpec,
-  thumbSpec,
-  rightThumbSpec,
-  declarationSpec,
   defaultPreset = "photo",
   allowedPresets = ALL_PRESET_KEYS,
   showPresetPicker = true,
   locale = "en",
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
-  const PRESETS = buildPresets(locale, photoSpec, signatureSpec, { thumbSpec, rightThumbSpec, declarationSpec });
-  // Tiles follow the order of allowedPresets (an exam's document order), not the
-  // PRESETS object's own key order.
-  const visiblePresetEntries = (Object.entries(PRESETS) as [PresetKey, Preset][])
-    .filter(([key]) => allowedPresets.includes(key))
-    .sort(([a], [b]) => allowedPresets.indexOf(a) - allowedPresets.indexOf(b));
-  // An exam without a photo tile (live-captured photograph) must open on its first tile.
-  const initialPreset: PresetKey = allowedPresets.includes(defaultPreset) ? defaultPreset : (allowedPresets[0] ?? defaultPreset);
+  const PRESETS = buildPresets(locale, photoSpec, signatureSpec);
+  const visiblePresetEntries = (Object.entries(PRESETS) as [PresetKey, Preset][]).filter(([key]) =>
+    allowedPresets.includes(key),
+  );
   const processingStatusMessages = getProcessingStatusMessages(locale);
 
-  const [preset, setPreset] = useState<PresetKey>(initialPreset);
-  const [width, setWidth] = useState(PRESETS[initialPreset].width);
-  const [height, setHeight] = useState(PRESETS[initialPreset].height);
-  const [minKB, setMinKB] = useState(PRESETS[initialPreset].minKB);
-  const [maxKB, setMaxKB] = useState(PRESETS[initialPreset].maxKB);
+  const [preset, setPreset] = useState<PresetKey>(defaultPreset);
+  const [width, setWidth] = useState(PRESETS[defaultPreset].width);
+  const [height, setHeight] = useState(PRESETS[defaultPreset].height);
+  const [minKB, setMinKB] = useState(PRESETS[defaultPreset].minKB);
+  const [maxKB, setMaxKB] = useState(PRESETS[defaultPreset].maxKB);
   const [unit, setUnit] = useState<"px" | "cm">("px");
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
@@ -1138,15 +1101,7 @@ export default function ResizeImageTool({
   // like "IMG_20260212_scan (3).jpg") is exactly the kind of filename an
   // exam portal's upload validator tends to choke on.
   const downloadFilename =
-    {
-      photo: "photo",
-      signature: "photo-with-name",
-      custom: "custom",
-      draw: "signature",
-      thumb: "thumb-impression",
-      right_thumb: "right-thumb-impression",
-      declaration: "handwritten-declaration",
-    }[
+    { photo: "photo", signature: "photo-with-name", custom: "custom", draw: "signature", thumb: "thumb-impression" }[
       preset
     ] + ".jpg";
 

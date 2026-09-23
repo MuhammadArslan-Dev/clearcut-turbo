@@ -11,8 +11,7 @@ declare const messages: {
     "myCourses": "My Courses",
     "payments": "Payments",
     "settings": "Settings",
-    "referral": "Referral",
-    "dailyTests": "Daily Tests"
+    "referral": "Referral"
   },
   "DashboardPage": {
     "metaTitle": "Dashboard | ClearCutoff",

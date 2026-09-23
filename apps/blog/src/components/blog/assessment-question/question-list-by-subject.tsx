@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { limitWords } from "@clearcut/utils/text-limit";
-import { unFormatSlug, getQuestionUrlParam } from "@/utils/slugify";
+import { formatToSlug, unFormatSlug, sanitizeAiSlug } from "@/utils/slugify";
 import QuestionCard from "../ui/question-card";
 import { Button } from "@clearcut/ui/button";
 import Link from "next/link";
@@ -116,10 +116,9 @@ export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
                   translation?.question?.replace(/<[^>]*>/g, "") || "";
 
                 const snippet = limitWords(plain, 25);
-                const urlParam = getQuestionUrlParam(
-                  question.id,
-                  question.translations,
-                );
+                const slug =
+                  (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
+                  formatToSlug(limitWords(plain, 4));
                 return (
                   <QuestionCard
                     key={index}
@@ -128,7 +127,7 @@ export default function QuestionListBySubject({ data }: { data: Chapter[] }) {
                     topic_name={question.topic?.name}
                     index={index}
                     setLoadingId={setLoadingId}
-                    path={`/question/${urlParam}`}
+                    path={`/question/${slug}-${question.id}`}
                     onClick={() => setLoadingId(question.id)}
                     questionText={snippet}
                     active={loadingId === question.id}

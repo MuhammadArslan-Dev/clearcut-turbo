@@ -122,30 +122,19 @@ export default function AppDownloadWidget({
   return (
     <div
       className={clsx(
-        "flex w-full flex-col md:flex-row items-center gap-4 md:gap-6 p-4 md:p-6",
+        "flex md:w-fit flex-col md:flex-row items-center gap-4 md:gap-6 p-4 md:p-6",
         bgColor,
         rounded,
       )}
     >
-      {/* Phone art (existing asset), cropped to the top like the reference. */}
-      <div className="relative hidden h-[210px] w-[150px] shrink-0 overflow-hidden rounded-xl bg-[var(--color-primary-bg-soft)] md:block">
-        <Image
-          src="/images/app-download-illustration.png"
-          alt={t("appDownload.titleLine1")}
-          width={242}
-          height={274}
-          className="absolute left-1/2 top-4 h-auto w-[130px] -translate-x-1/2"
-        />
-      </div>
-
       <div className="flex-1 flex flex-col justify-center gap-4 w-full">
-        <h6 className="text-center md:text-left heading-large !font-semibold text-surface-gray-normal">
+        <h6 className="text-center heading-medium !font-semibold text-surface-gray-normal">
           {t("appDownload.titleLine1")}
           <br />
           {t("appDownload.titleLine2")}
         </h6>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+        <div className="flex flex-col gap-3">
           <FeatureRow
             icon={
               <PenIcon variant="book-pen" size={20} color="var(--color-brand)" />
@@ -170,7 +159,7 @@ export default function AppDownloadWidget({
         </div>
 
         <div className="flex flex-col gap-2 items-start w-full">
-          <div className="w-full md:max-w-[520px]">
+          <div className=" w-full">
             <MainButton
               fullWidth
               bgColor="var(--color-brand)"

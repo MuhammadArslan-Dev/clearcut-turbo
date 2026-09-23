@@ -1,10 +1,7 @@
 import { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import SyllabusTrackerApp from "@/components/syllabus-tracker/SyllabusTrackerApp";
-import SyllabusAbout from "@/components/SyllabusAbout";
-import PageJsonLd from "@/components/PageJsonLd";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
 
 const t = getSyllabusStrings("mr");
@@ -14,28 +11,33 @@ const t = getSyllabusStrings("mr");
 // rule for /mr/syllabus-tracker/*, and src/lib/syllabusTrackerUrl.ts is
 // locale-aware so it reads/writes the "/mr/tools/syllabus-tracker" URL
 // root instead of the English one).
-export const metadata: Metadata = buildMetadata({
-  locale: "mr",
-  path: "/syllabus-tracker",
+export const metadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDescription,
-  ogDescription: t.metaOgDescription,
-});
+  alternates: {
+    canonical: "https://clearcutoff.in/mr/tools/syllabus-tracker",
+    languages: {
+      en: "https://clearcutoff.in/tools/syllabus-tracker",
+      hi: "https://clearcutoff.in/hi/tools/syllabus-tracker",
+      mr: "https://clearcutoff.in/mr/tools/syllabus-tracker",
+    },
+  },
+  openGraph: {
+    title: t.metaTitle,
+    description: t.metaOgDescription,
+    url: "https://clearcutoff.in/mr/tools/syllabus-tracker",
+    siteName: "Clear Cutoff",
+    type: "website",
+  },
+};
 
 export default function Page() {
   return (
     <>
-      <PageJsonLd
-        locale="mr"
-        path="/syllabus-tracker"
-        trail={[{ name: "अभ्यासक्रम ट्रॅकर", path: "/syllabus-tracker" }]}
-        app={{ name: "अभ्यासक्रम ट्रॅकर", description: t.metaDescription, category: "EducationalApplication" }}
-      />
       <SiteHeader locale="mr" tool="syllabus-tracker" />
       <main className="min-h-[70vh] bg-[var(--color-background-gray-subtle)]">
         <SyllabusTrackerApp locale="mr" />
       </main>
-      <SyllabusAbout locale="mr" />
       <SiteFooter locale="mr" />
     </>
   );
