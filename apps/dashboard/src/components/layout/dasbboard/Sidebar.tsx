@@ -91,7 +91,7 @@ const Sidebar = memo(function Sidebar() {
   const { logout } = useAuth();
 
   return (
-    <aside className="hidden md:flex h-screen md:w-[100px] 2lg:w-[var(--dashboard-sidebar-width)] flex-col p-3">
+    <aside data-nav-no-indicator className="hidden md:flex h-screen md:w-[100px] 2lg:w-[var(--dashboard-sidebar-width)] flex-col p-3">
       <div className="h-full bg-white rounded-md">
         {/* Logo */}
         <div className="flex justify-center pt-2 pb-1 items-center border-b-3 border-[var(--surface-border-gray-subtle)] px-4">

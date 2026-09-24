@@ -165,7 +165,7 @@ export default function SettingsSidebarNav({ activeTab, onTabChange }: Props) {
     });
 
   return (
-    <div className={clsx("p-3", SPACE_Y)}>
+    <div data-nav-no-indicator className={clsx("p-3", SPACE_Y)}>
       {renderItems(SECTION_1)}
 
       <div className={clsx("block md:hidden", SPACE_Y)}>

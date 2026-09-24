@@ -123,7 +123,7 @@ const BottomNavigation = memo(function BottomNavigation({
   const t = useTranslations("Sidebar");
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200">
+    <nav data-nav-no-indicator className="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200">
       <div className="flex items-center justify-around py-2">
         {items.map((item) => (
           <BottomNavItem

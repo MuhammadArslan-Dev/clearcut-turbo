@@ -24,7 +24,8 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@clearcut/ui/button";
 import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
-import { useCourseProgressSummary } from "@/hooks/course/useCourseProgressSummary";
+import { useCoursesProgressSummary } from "@/hooks/course/useCourseProgressSummary";
+import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
 
 // These modals are only ever visible after a user action (edit/buy/payment
 // result) — loading them as separate chunks instead of bundling them into
@@ -60,16 +61,19 @@ const MainPaywall = dynamic(() => import("../../PayWalls/MainPaywall"), {
 
 function CourseSlideCard({
   exam,
+  progress,
   onContinue,
   onEdit,
   onUnlock,
 }: {
   exam: ExamEnrollmentWithExam;
+  // Passed in from MyCoursesWrapTwo's single batched query — this card used
+  // to run its own per-course request (N+1, Sentry CLEARCUTOFF-NEXTJS-APP-56).
+  progress?: CourseProgressSummary;
   onContinue: () => void;
   onEdit: () => void;
   onUnlock?: () => void;
 }) {
-  const { data: progress } = useCourseProgressSummary(exam.group_code);
   return (
     <MyCourseCard
       cardClasses="!rounded-2xl !md:rounded-xl"
@@ -110,7 +114,6 @@ export default function MyCoursesWrapTwo({
   const setFocusedCourse = useSwiperCourseStore((s) => s.setFocusedCourse);
   const setOnAddExamSlide = useSwiperCourseStore((s) => s.setOnAddExamSlide);
   const resetFocusedCourse = useSwiperCourseStore((s) => s.reset);
-  const { data: progressSummary } = useCourseProgressSummary(activeCourse?.group_code);
 
   // Always reset when the component unmounts (user leaves dashboard).
   useEffect(() => () => resetFocusedCourse(), []);
@@ -133,6 +136,14 @@ export default function MyCoursesWrapTwo({
   const orderedCourses = activeExam
     ? [activeExam, ...courses.filter((course) => course?.id !== activeExam.id)]
     : courses;
+
+  // ONE request for every card's progress (was one per card — N+1).
+  const { data: progressByCourse } = useCoursesProgressSummary(
+    orderedCourses.map((course) => course?.group_code),
+  );
+  const progressSummary = activeCourse?.group_code
+    ? progressByCourse?.[activeCourse.group_code]
+    : undefined;
 
   // ✅ Shared card props (no duplication)
   const cardProps = {
@@ -230,6 +241,7 @@ export default function MyCoursesWrapTwo({
                 {exam && (
                   <CourseSlideCard
                     exam={exam}
+                    progress={exam.group_code ? progressByCourse?.[exam.group_code] : undefined}
                     onContinue={() => {
                       if (exam.stage_id) {
                         (async () => {

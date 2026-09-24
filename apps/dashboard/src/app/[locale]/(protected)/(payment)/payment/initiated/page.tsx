@@ -307,18 +307,35 @@ export default function InitiatedPage() {
             // responseBody wasn't JSON — fall through to generic handling.
           }
 
-          if (existingSubscription?.status === "active") {
+          // SubscriptionController::create blocks a new subscribe for ANY of
+          // authenticated/active/paused (not just active) — handling only
+          // "active" left the other two falling through to logger.error
+          // below, which is what kept CLEARCUTOFF-NEXTJS-APP-7E regressing:
+          // a user whose mandate is authorized but not yet charged
+          // ("authenticated"), or who paused, re-clicking buy is the same
+          // expected duplicate-subscribe case, not a defect.
+          const existingStatus = existingSubscription?.status;
+          if (existingStatus === "active" || existingStatus === "authenticated" || existingStatus === "paused") {
             // Breadcrumb only, not warn(): handled gracefully right below
             // (redirect + alert telling the user why) — not a defect, so it
             // shouldn't page anyone as its own Sentry issue
             // (CLEARCUTOFF-NEXTJS-APP-7J).
-            logger.breadcrumb("Subscribe attempted for an already-active subscription", {
+            logger.breadcrumb("Subscribe attempted for an already-existing subscription", {
               tags: { module: "subscription-payment" },
-              extra: { course_id: courseId, user_id: authUser?.id },
+              extra: { course_id: courseId, user_id: authUser?.id, status: existingStatus },
             });
-            alert("You already have an active subscription for this course.");
             setRedirecting(true);
-            router.push(`/preparation/${courseId}`);
+            if (existingStatus === "paused") {
+              alert("Your subscription for this course is paused. You can resume it from your Profile.");
+              router.push("/dashboard/profile");
+            } else {
+              alert(
+                existingStatus === "authenticated"
+                  ? "Your subscription is being activated for this course."
+                  : "You already have an active subscription for this course.",
+              );
+              router.push(`/preparation/${courseId}`);
+            }
             return;
           }
         }

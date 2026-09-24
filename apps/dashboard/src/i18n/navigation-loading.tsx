@@ -5,6 +5,12 @@ import { useCallback, useMemo } from "react";
 import { Link as BaseLink, useRouter as useBaseRouter } from "./navigation-base";
 import { markNavPending, useNavLoadingStore } from "@/store/navigation/useNavLoadingStore";
 
+// Nav menus (dashboard sidebar, mobile bottom bar) mark themselves with this
+// attribute: clicking an item there still starts the global top progress bar,
+// but the item itself doesn't dim/spin/swap to a loader — a menu entry
+// spinning in place looks wrong; the top bar is the only indicator wanted.
+const NO_INDICATOR = "[data-nav-no-indicator]";
+
 /**
  * Drop-in replacement for next-intl's Link: same props, same rendering,
  * plus marking the clicked element as navigation-pending (see
@@ -20,7 +26,7 @@ export function Link({ onClick, ...props }: ComponentProps<typeof BaseLink>) {
     <BaseLink
       {...props}
       onClick={(e) => {
-        markNavPending(e.currentTarget);
+        if (!e.currentTarget.closest(NO_INDICATOR)) markNavPending(e.currentTarget);
         start();
         onClick?.(e);
       }}
@@ -42,7 +48,7 @@ export function useRouter(): ReturnType<typeof useBaseRouter> {
 
   const push = useCallback<typeof router.push>(
     (...args) => {
-      markNavPending(document.activeElement);
+      if (!document.activeElement?.closest(NO_INDICATOR)) markNavPending(document.activeElement);
       start();
       return router.push(...args);
     },
@@ -51,7 +57,7 @@ export function useRouter(): ReturnType<typeof useBaseRouter> {
 
   const replace = useCallback<typeof router.replace>(
     (...args) => {
-      markNavPending(document.activeElement);
+      if (!document.activeElement?.closest(NO_INDICATOR)) markNavPending(document.activeElement);
       start();
       return router.replace(...args);
     },

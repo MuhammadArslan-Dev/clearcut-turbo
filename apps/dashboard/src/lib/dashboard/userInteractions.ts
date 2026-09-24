@@ -175,6 +175,29 @@ export async function getCourseProgressSummary(
 }
 
 /**
+ * Progress summaries for several courses in ONE request (keyed by course
+ * id) — the My Courses carousel used to fire one getCourseProgressSummary()
+ * per card (Sentry CLEARCUTOFF-NEXTJS-APP-56, "N+1 API Call").
+ */
+export async function getCoursesProgressSummary(
+  courseIds: (string | number)[],
+): Promise<{ data: Record<string, CourseProgressSummary> }> {
+  const qs = courseIds
+    .map((id) => `course_ids[]=${encodeURIComponent(String(id))}`)
+    .join("&");
+  return apiFetch<{ data: Record<string, CourseProgressSummary> }>(
+    `/v2/interactions/progress-summary?${qs}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token()}`,
+      },
+    },
+  );
+}
+
+/**
  * Fetch active resume state for a course (enriched with topic/chapter/section names)
  */
 export async function getResumeState(examId: number | string): Promise<{ data: ResumeStateData | null }> {
