@@ -31,9 +31,7 @@ export default function Footer({ alternatives }: { alternatives?: AlternativeSum
         // Absolute URL, deliberately not I18nLink's relative internal-route
         // form — /tools is a separate deployment (apps/tools), not a route
         // in this app, so it must render as a plain external-style link.
-        // Also the only internal backlink from clearcutoff.in's main domain
-        // into the age calculator, which otherwise has none at all.
-        { href: "https://clearcutoff.in/tools/age-eligibility-calculator", label: t("ageCalculator") },
+        { href: "https://clearcutoff.in/tools", label: t("tools") },
       ]}
     />
   );

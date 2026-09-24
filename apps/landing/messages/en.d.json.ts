@@ -20,7 +20,7 @@ declare const messages: {
     "refund": "Refund",
     "contact": "Contact",
     "faq": "FAQ",
-    "ageCalculator": "Age Eligibility Calculator",
+    "tools": "Tools",
     "rights": "All rights reserved!"
   }
 };
