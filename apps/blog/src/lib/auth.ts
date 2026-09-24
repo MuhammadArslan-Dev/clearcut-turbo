@@ -34,4 +34,10 @@ export const {
   apiBaseUrl: API_BASE,
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
+  // The internal (admin)/admin panel lives inside this otherwise-public
+  // marketing app — without this, AuthProvider's mount-time "already logged
+  // in? bounce to the dashboard app" effect (meant for a customer browsing
+  // blog content) fires on every admin page too, making the panel
+  // unreachable for any logged-in staff member.
+  skipRedirectPathSegments: ["/admin"],
 });

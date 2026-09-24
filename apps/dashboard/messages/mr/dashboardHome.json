@@ -1,0 +1,13 @@
+{
+  "greetingMorning": "सुप्रभात, {name}!",
+  "greetingAfternoon": "नमस्कार, {name}!",
+  "greetingEvening": "शुभ संध्या, {name}!",
+  "defaultName": "विद्यार्थी",
+  "subtitle": "शिकत राहा. दररोजची छोटी पावले मोठे यश देतात.",
+  "quote": "\"आजची शिस्त उद्याचे यश घडवते ज्याचा तुम्हाला अभिमान वाटेल.\" — Clear Cutoff",
+  "milestoneSubtitle": "पुढे चालू ठेवा! तुम्ही ध्येयाच्या जवळ आहात.",
+  "streakSubtitle": "रोज या आणि तुमची सवय घडवा.",
+  "qrNotes": "नोट्स",
+  "qrPyqs": "PYQs",
+  "qrImportant": "महत्त्वाचे टॉपिक्स"
+}

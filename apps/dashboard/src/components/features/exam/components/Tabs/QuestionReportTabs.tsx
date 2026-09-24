@@ -27,8 +27,8 @@ export default function QuestionReportTabs({
         layoutScopeId={layoutId ?? "question-report-tabs"}
         scrollable
         items={[
-          { id: "summary-view", label: "Summary View" },
-          { id: "question-view", label: "Question View" },
+          { id: "summary-view", label: "Summary" },
+          { id: "question-view", label: "Question" },
         ]}
         value={activeTab!}
         onChange={(id) => {
@@ -43,7 +43,7 @@ export default function QuestionReportTabs({
         activeTabFontWeight="!font-semibold"
         containerBg="bg-[var(--color-brand-dark)]"
         containerRadius="rounded-full"
-        className="!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1  md:w-fit"
+        className="!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1 w-full [&>button]:flex-1"
         activeTabBg="bg-white"
       />
     </div>

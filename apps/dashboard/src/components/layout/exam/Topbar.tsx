@@ -1,178 +1,121 @@
 "use client";
 
-import { memo, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { Menu } from "lucide-react";
+import { memo, useCallback, useMemo } from "react";
 
 import { Button } from "@clearcut/ui/button";
+import AttemptTopbar from "@/components/features/attempt-ui/AttemptTopbar";
+import FullscreenButton from "@/components/features/attempt-ui/FullscreenButton";
 
-import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
-
-import Text from "@clearcut/ui/text";
-import SandTimerIcon from "@/components/ui/icons/sand-timer-icon";
-import SectionsTab from "@/components/features/exam/components/Tabs/SectionsTab";
-import CountDownTimer from "@/components/features/exam/components/countdown/CountDownTimer";
-import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
+import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { useExamStore } from "@/components/features/exam/store/useExamStore";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
-import { courseLanguageToLocale } from "@/utils/text/contentLocale";
-import {
-  LanguageIcon,
-  LearningInsightIllustration,
-  LogoutDoorIcon,
-} from "@/components/ui/icons";
-
-/* -------------------------------------------------------------------------- */
-/* Types */
-/* -------------------------------------------------------------------------- */
-
-type TopbarProps = {
-  className?: string;
-};
+import { useExamSummary } from "@/components/features/exam/hooks/useExamSummary";
+import { LanguageIcon, LogoutDoorIcon } from "@/components/ui/icons";
 
 /* -------------------------------------------------------------------------- */
 /* Sub Components */
 /* -------------------------------------------------------------------------- */
 
-const TimerSection = memo(function TimerSection({
-  timeLeft,
-}: {
-  timeLeft: number;
-}) {
-  const { exam } = useGetCurrentCourseStore();
+const EMPTY_LOCALES: string[] = [];
 
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#90a5bb]">
-        <SandTimerIcon size={24} />
-      </div>
-
-      {/* TODO: Replace with real timer */}
-      <div className="h-full lg:w-[150px] w-[100px] rounded">
-        <CountDownTimer duration={timeLeft} />
-        <TestInfo
-          title={exam?.short_name}
-          className="body-small !font-normal lg:hidden"
-        />
-      </div>
-    </div>
+const LanguageToggle = memo(function LanguageToggle() {
+  const setLanguage = useExamStore((s) => s.setLanguage);
+  const language = useExamStore((s) => s.language);
+  // Toggle among the locales the CURRENT QUESTION actually has translations
+  // for — not a locale derived from the course enrollment's `language`
+  // field. That field reflects the learner's chosen instruction medium and
+  // can be "english" even though the question bank still carries a real
+  // Hindi translation (translations are attached per-question, not per
+  // course), so deriving the toggle target from it made the button a no-op
+  // (en → en) for every English-enrolled learner. Exam content translations
+  // are only ever en/hi (see contentLocale.ts) so this stays a plain toggle.
+  // Select the raw (stable) translations array reference — mapping it to a
+  // locales array inside the selector itself would return a brand-new array
+  // every call, which zustand's useSyncExternalStore treats as "the snapshot
+  // changed" on every render and throws into an infinite render loop
+  // ("Maximum update depth exceeded"), same as the fix documented for
+  // QuestionNavigatorSheet's EMPTY_SECTIONS.
+  const translations = useExamStore((s) => {
+    const q = s.exam?.sections[s.currentSection]?.questions[s.currentQuestion];
+    return q?.question?.translations;
+  });
+  const locales = useMemo(
+    () => translations?.map((t: { locale: string }) => t.locale) ?? EMPTY_LOCALES,
+    [translations],
   );
-});
 
-const TestInfo = memo(function TestInfo({
-  title,
-  className,
-}: {
-  title: string | React.ReactNode;
-  className?: string;
-}) {
+  const toggleLocale = locales.find((l) => l !== language) ?? locales[0];
+
+  if (locales.length < 2 || !toggleLocale) return null;
+
   return (
-    <Text
-      as="p"
-      variant="body-medium"
-      weight="semibold"
-      color="gray-normal"
-      className={className}
+    <button
+      type="button"
+      aria-label="Change question language"
+      onClick={() => setLanguage(toggleLocale)}
+      className="cursor-pointer"
     >
-      {title}
-    </Text>
+      <LanguageIcon size={30} />
+    </button>
   );
 });
 
-const Actions = memo(function Actions({
-  onEndTest,
-}: {
-  onEndTest: () => void;
-}) {
-  const { setLanguage, getExamContext, language } = useExamStore();
-  const { open, closeModal, stack } = useExamModalStore();
-  const { course } = useGetCurrentCourseStore();
-  const active = stack[stack.length - 1];
-  const { currentQuestion } = getExamContext();
-  const hasMultipleTranslations = (currentQuestion?.question?.translations?.length ?? 0) > 1;
+const ExamFullscreenButton = memo(function ExamFullscreenButton() {
+  const toggle = useCallback(() => {
+    if (typeof document === "undefined") return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }, []);
 
-  // Toggle between English and the enrolled course's own content language
-  // (Hindi/Marathi/Punjabi) — not a hardcoded "hi". A Marathi-enrolled
-  // course only ever has en/mr translations synced for it, so blindly
-  // switching to "hi" (as this used to) landed on a locale that doesn't
-  // exist for the question, silently fell back to the first translation
-  // (English), and made the button look like it did nothing.
-  const contentLocale = courseLanguageToLocale(course?.language);
-  const toggleLocale = language === "en" ? contentLocale : "en";
+  return <FullscreenButton onClick={toggle} compact />;
+});
+
+// Below `lg` the question navigator lives in a bottom sheet — this opens it.
+// The two-shade pill + hamburger/X glyph is the original icon this button
+// had before the 2026-09-23 refactor swapped it for plain lucide icons —
+// restored verbatim (including the off-token #2B7EFF closed-state blue,
+// which predates the design-token system) per direct request.
+const NavigatorToggle = memo(function NavigatorToggle() {
+  const open = useExamModalStore((s) => s.open);
+  const isOpen = useExamModalStore((s) => s.stack[s.stack.length - 1] === "exam-navigation-panel");
 
   return (
-    <div className="flex items-center gap-6">
-      {hasMultipleTranslations && (
-        <div onClick={() => setLanguage(toggleLocale)} className="cursor-pointer">
-          <LanguageIcon size={30} />
-        </div>
+    <button
+      type="button"
+      aria-label="Progress and questions"
+      onClick={() => open("exam-navigation-panel")}
+      className="cursor-pointer lg:hidden"
+    >
+      {isOpen ? (
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="32" rx="16" fill="var(--color-brand)" />
+          <path
+            d="M18.7098 11.1219L28.6093 21.0214C28.9998 21.4119 29.633 21.4119 30.0235 21.0214C30.414 20.6309 30.414 19.9977 30.0235 19.6072L20.124 9.7077C19.7335 9.31718 19.1003 9.31718 18.7098 9.7077C18.3193 10.0982 18.3193 10.7314 18.7098 11.1219Z"
+            fill="white"
+          />
+          <path
+            d="M28.6066 9.70785L18.7071 19.6073C18.3166 19.9979 18.3166 20.631 18.7071 21.0216C19.0976 21.4121 19.7308 21.4121 20.1213 21.0216L30.0208 11.1221C30.4113 10.7315 30.4113 10.0984 30.0208 9.70785C29.6303 9.31733 28.9971 9.31733 28.6066 9.70785Z"
+            fill="white"
+          />
+        </svg>
+      ) : (
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="32" rx="16" fill="#2B7EFF" />
+          <path
+            d="M31 19H17C16.4477 19 16 19.4477 16 20C16 20.5523 16.4477 21 17 21H31C31.5523 21 32 20.5523 32 20C32 19.4477 31.5523 19 31 19Z"
+            fill="white"
+          />
+          <path
+            d="M31 15H17C16.4477 15 16 15.4477 16 16C16 16.5523 16.4477 17 17 17H31C31.5523 17 32 16.5523 32 16C32 15.4477 31.5523 15 31 15Z"
+            fill="white"
+          />
+          <path
+            d="M31 11H17C16.4477 11 16 11.4477 16 12C16 12.5523 16.4477 13 17 13H31C31.5523 13 32 12.5523 32 12C32 11.4477 31.5523 11 31 11Z"
+            fill="white"
+          />
+        </svg>
       )}
-
-      <div className="md:w-[120px] lg:block hidden">
-        <Button
-          sx={{
-            borderRadius: "50px",
-          }}
-          variant="soft"
-          color="gray"
-          fullWidth
-          size="sm"
-          onClick={onEndTest}
-        >
-          <div className="flex items-center gap-[6px]">
-            <span> End Test</span>
-
-            <LogoutDoorIcon size={16} />
-          </div>
-        </Button>
-      </div>
-      <div onClick={() => open("exam-navigation-panel")} className="lg:hidden block cursor-pointer">
-        {active === "exam-navigation-panel" ? (
-          <svg
-            width="48"
-            height="32"
-            viewBox="0 0 48 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="48" height="32" rx="16" fill="#0083FF" />
-            <path
-              d="M18.7098 11.1219L28.6093 21.0214C28.9998 21.4119 29.633 21.4119 30.0235 21.0214C30.414 20.6309 30.414 19.9977 30.0235 19.6072L20.124 9.7077C19.7335 9.31718 19.1003 9.31718 18.7098 9.7077C18.3193 10.0982 18.3193 10.7314 18.7098 11.1219Z"
-              fill="white"
-            />
-            <path
-              d="M28.6066 9.70785L18.7071 19.6073C18.3166 19.9979 18.3166 20.631 18.7071 21.0216C19.0976 21.4121 19.7308 21.4121 20.1213 21.0216L30.0208 11.1221C30.4113 10.7315 30.4113 10.0984 30.0208 9.70785C29.6303 9.31733 28.9971 9.31733 28.6066 9.70785Z"
-              fill="white"
-            />
-          </svg>
-        ) : (
-          <svg
-            width="48"
-            height="32"
-            viewBox="0 0 48 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="48" height="32" rx="16" fill="#2B7EFF" />
-            <path
-              d="M31 19H17C16.4477 19 16 19.4477 16 20C16 20.5523 16.4477 21 17 21H31C31.5523 21 32 20.5523 32 20C32 19.4477 31.5523 19 31 19Z"
-              fill="white"
-            />
-            <path
-              d="M31 15H17C16.4477 15 16 15.4477 16 16C16 16.5523 16.4477 17 17 17H31C31.5523 17 32 16.5523 32 16C32 15.4477 31.5523 15 31 15Z"
-              fill="white"
-            />
-            <path
-              d="M31 11H17C16.4477 11 16 11.4477 16 12C16 12.5523 16.4477 13 17 13H31C31.5523 13 32 12.5523 32 12C32 11.4477 31.5523 11 31 11Z"
-              fill="white"
-            />
-          </svg>
-        )}
-
-
-      </div>
-    </div>
+    </button>
   );
 });
 
@@ -180,53 +123,49 @@ const Actions = memo(function Actions({
 /* Main Component */
 /* -------------------------------------------------------------------------- */
 
-function Topbar({ className }: TopbarProps) {
-  const router = useRouter();
-  const t = useTranslations("Sidebar");
-  const { getExamContext, timeLeft } = useExamStore();
+// The exam short name ("CTET") comes from the enrolled course. Loading it here
+// (cached React Query, same key the test-series pages use) keeps the title
+// complete even when /exam is opened directly. A component, not a bare hook
+// call, so it only mounts once the exam (and its course code) is known —
+// useGetCurrentCourse has no `enabled` guard of its own.
+function CourseLoader({ courseId }: { courseId: string }) {
+  useGetCurrentCourse({ courseId });
+  return null;
+}
 
-  const { course } = usePreparationStore();
-  const { exam } = useGetCurrentCourseStore();
-  const { sections } = getExamContext();
-
-  const { open, stack } = useExamModalStore();
-
-  /* ------------------------------------------------------------------------ */
-  /* Derived Data */
-  /* ------------------------------------------------------------------------ */
-
-  /* ------------------------------------------------------------------------ */
-  /* Handlers */
-  /* ------------------------------------------------------------------------ */
-
-  const handleEndTest = useCallback(() => {
-    open("end-exam");
-  }, []);
-
-  /* ------------------------------------------------------------------------ */
-  /* Render */
-  /* ------------------------------------------------------------------------ */
+function Topbar() {
+  const open = useExamModalStore((s) => s.open);
+  const courseCode = useExamStore((s) => s.exam?.course?.group_code as string | undefined);
+  const handleEndTest = useCallback(() => open("end-exam"), [open]);
+  const { title, meta } = useExamSummary();
 
   return (
-    <header className={`border-b border-slate-200 bg-white ${className ?? ""}`}>
-      <div className="flex lg:flex-row  flex-col w-full items-center justify-center lg:items-center lg:justify-between lg:gap-3 lg:pl-3">
-        {/* Left Section */}
-        <div className="flex w-full justify-between lg:justify-start items-center gap-12 py-1 lg:py-0 px-3 lg:px-0">
-          <TimerSection timeLeft={timeLeft} />
+    <>
+    {courseCode && <CourseLoader courseId={courseCode} />}
+    <AttemptTopbar
+      compact
+      title={title}
+      meta={meta}
+      quote={`"Small steps every day lead to big results." \u2014 Clear Cutoff`}
+      actions={
+        <>
+          <LanguageToggle />
 
-          <TestInfo title={exam?.short_name} className="lg:block hidden" />
-
-          <Actions onEndTest={handleEndTest} />
-        </div>
-
-        {/* Right Section */}
-        {sections.length > 1 && (
-          <div className="lg:flex justify-end items-center max-w-[770px] lg:bg-[var(--color-brand-dark)] w-full lg:rounded-l-full overflow-hidden">
-            <SectionsTab />
+          <div className="hidden lg:block">
+            <Button variant="soft" color="gray" size="sm" sx={{ borderRadius: "10px" }} onClick={handleEndTest}>
+              <div className="flex items-center gap-[6px]">
+                <span>End Test</span>
+                <LogoutDoorIcon size={16} />
+              </div>
+            </Button>
           </div>
-        )}
-      </div>
-    </header>
+
+          <ExamFullscreenButton />
+          <NavigatorToggle />
+        </>
+      }
+    />
+    </>
   );
 }
 

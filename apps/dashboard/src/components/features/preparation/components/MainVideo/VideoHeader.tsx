@@ -40,7 +40,7 @@ export default function VideoHeader({
             weight="bold"
             className="whitespace-nowrap !text-[#00a251]"
           >
-            Easy
+            {selectedTopic?.difficulty_level || "Easy"}
           </Text>
         </div>
       </div>

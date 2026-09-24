@@ -1,0 +1,13 @@
+{
+  "greetingMorning": "सुप्रभात, {name}!",
+  "greetingAfternoon": "नमस्कार, {name}!",
+  "greetingEvening": "शुभ संध्या, {name}!",
+  "defaultName": "विद्यार्थी",
+  "subtitle": "सीखते रहें। हर दिन के छोटे कदम बड़े नतीजे देते हैं।",
+  "quote": "\"आज का अनुशासन वो सफलता बनाता है जिस पर आप कल गर्व करेंगे।\" — Clear Cutoff",
+  "milestoneSubtitle": "आगे बढ़ते रहें! आप लक्ष्य के करीब हैं।",
+  "streakSubtitle": "रोज़ आएं और अपनी आदत बनाएं।",
+  "qrNotes": "नोट्स",
+  "qrPyqs": "PYQs",
+  "qrImportant": "महत्वपूर्ण टॉपिक्स"
+}

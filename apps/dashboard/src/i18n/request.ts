@@ -9,8 +9,17 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ? requested
     : routing.defaultLocale;
   const baseMessages = (await import(`../../messages/${locale}.json`)).default;
+  // A missing/corrupt namespace file must never take down every page on the
+  // site — this runs in next-intl's global request config, so an unhandled
+  // throw here 500s the entire app for every route and every locale, not
+  // just whichever screen uses that namespace.
   const load = async (locale: string, path?: string) => {
-    return (await import(`../../messages/${locale}/${path}.json`)).default;
+    try {
+      return (await import(`../../messages/${locale}/${path}.json`)).default;
+    } catch (err) {
+      console.error(`Missing/invalid message namespace "${path}" for locale "${locale}"`, err);
+      return {};
+    }
   };
 
   const messages = {
@@ -21,6 +30,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
     Onboarding: await load(locale, "onboarding"),
     modals: await load(locale, "modals"),
     payment: await load(locale, "payment"),
+    DailyTests: await load(locale, "dailyTests"),
+    DashboardHome: await load(locale, "dashboardHome"),
   };
 
   return {

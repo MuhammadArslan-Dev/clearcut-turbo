@@ -3,12 +3,10 @@
 import React, { memo, useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
-import MainContainer from "@/components/ui/main-container";
+import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
 import MathJax from "../../mathjax/Math";
 import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
-import { Button } from "@clearcut/ui/button";
 import QOption from "@/components/ui/cards/QuestionMaterial/Qoption/QOption";
 
 import { useGetExam } from "../hooks/useGetExam";
@@ -18,12 +16,20 @@ import { submitAnswer } from "@/lib/exam";
 import { apiFetch } from "@/lib/api/client";
 import { useRouter } from "@/i18n/navigation";
 import CounterCard from "@/components/ui/cards/CounterCard";
-import { ChevronIcon, TrashIcon } from "@/components/ui/icons";
 import { useExamModalStore } from "../store/useExamModalStore";
 import ExamSkeleton from "./ExamSkeleton";
 import useExamTimer from "../hooks/useExamTimer";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import { Maximize } from "lucide-react";
+import QuestionMetaBar from "@/components/features/attempt-ui/QuestionMetaBar";
+import InfoStrip from "@/components/features/attempt-ui/InfoStrip";
+import AttemptActionBar from "@/components/features/attempt-ui/AttemptActionBar";
+import { WarningCircleIcon } from "@/components/ui/icons";
+import { useModalStore } from "@/store/modal/useModalStore";
+import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
+import QuestionsDock, { type QuestionDockItem } from "@/components/features/attempt-ui/QuestionsDock";
+import type { AttemptQuestion } from "../types/exam";
 
 // ===============================
 // SLIDE ANIMATION
@@ -44,13 +50,13 @@ const slideVariants = {
 export default function MainContent({ examId }: { examId: string }) {
   const [draftAnswer, setDraftAnswer] = useState<string | null>(null);
   const [direction, setDirection] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
 
   const timerRef          = useRef<NodeJS.Timeout | null>(null);
   const isFirstRender     = useRef(true);
-  // Stable ref so callbacks always read the latest elapsed without stale closures
+  // Per-question seconds. A ref (not state) so the once-a-second tick doesn't
+  // re-render the whole page — <ElapsedClock/> polls it for display, and the
+  // save/mark handlers read the latest value without stale closures.
   const elapsedRef        = useRef(0);
-  useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
   // Per-question elapsed map: question.id → seconds spent (pause/resume across navigation)
   const elapsedMapRef     = useRef<Map<number, number>>(new Map());
   const prevQuestionIdRef = useRef<number | null>(null);
@@ -70,9 +76,16 @@ export default function MainContent({ examId }: { examId: string }) {
   const clear = useExamStore((s) => s.clear);
   const answer = useExamStore((s) => s.answer);
   const toggleReview = useExamStore((s) => s.toggleReview);
+  const jumpTo = useExamStore((s) => s.jumpTo);
   const getExamContext = useExamStore((s) => s.getExamContext);
+  // Subscribed for re-render only — `getExamContext()` below reads the
+  // language itself, but nothing else in this selector list changes when the
+  // Topbar's translate button calls `setLanguage`, so without this the
+  // component never re-renders and the shown translation stays stale.
+  useExamStore((s) => s.language);
 
   const { open } = useExamModalStore();
+  const openGlobalModal = useModalStore((s) => s.open);
 
   // ===============================
   // ALREADY ATTEMPTED GUARD
@@ -123,7 +136,7 @@ export default function MainContent({ examId }: { examId: string }) {
   const remaining = useExamTimer({ examId, initialRemaining: 0, onExpire: handleAutoExpire });
 
   // ===============================
-  // CONTEXT (safe — recalculates only when exam changes)
+  // CONTEXT (recalculates when exam or language changes)
   // ===============================
 
   const ctx = getExamContext();
@@ -150,7 +163,7 @@ export default function MainContent({ examId }: { examId: string }) {
 
     // Restore elapsed for the question we're entering (0 on first visit)
     const saved = newId != null ? (elapsedMapRef.current.get(newId) ?? 0) : 0;
-    setElapsed(saved);
+    elapsedRef.current = saved;
 
     setDraftAnswer(question?.user_option ?? null);
   }, [ctx.sectionIndex, ctx.questionIndex]);
@@ -188,7 +201,7 @@ export default function MainContent({ examId }: { examId: string }) {
     if (!question) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+      elapsedRef.current += 1;
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [question]);
@@ -241,6 +254,12 @@ export default function MainContent({ examId }: { examId: string }) {
   // ===============================
   // CLEAR RESPONSE
   // ===============================
+
+  // Client-side only for now (same as the Daily Test): there is no exam
+  // question-report endpoint yet, so this just acknowledges the tap.
+  const handleReportQuestion = useCallback(() => {
+    toast.success("Question reported. Our team will review it.");
+  }, []);
 
   const handleClearResponse = useCallback(() => {
     if (!question || !exam) return;
@@ -325,390 +344,256 @@ export default function MainContent({ examId }: { examId: string }) {
 
   const isLastInSection = currentQNo === totalInSection;
   const isFirstInSection = currentQNo === 1;
+  const isVeryLast = isLastInSection && ctx.sectionIndex === ctx.sections.length - 1;
+  // Whole-test numbering ("Question 31 / 150"), matching the progress strip;
+  // the navigator grid keeps per-section numbers.
+  let totalQuestions = 0;
+  let questionsBefore = 0;
+  ctx.sections.forEach((s, i) => {
+    totalQuestions += s.questions.length;
+    if (i < ctx.sectionIndex) questionsBefore += s.questions.length;
+  });
+  const overallQNo = questionsBefore + currentQNo;
+
+  // Active-section questions for the mobile QuestionsDock — plain (not
+  // memoized): this runs after the early-return guard above, so a hook here
+  // would violate the Rules of Hooks (see the comment on that guard).
+  const dockQuestions: QuestionDockItem[] = section.questions.map((q: AttemptQuestion, index: number) => ({
+    status: q.marked_for_review ? "review" : q.user_option ? "answered" : q.visited ? "notAnswered" : "notVisited",
+    isActive: index === ctx.questionIndex,
+  }));
 
   // ===============================
   // RENDER
   // ===============================
 
   return (
-    <div className="max-h-screen mt-2 lg:mt-0">
-      <MainContainer maxWidth="max-w-[800px]" padding="p-0 lg:p-4">
-        <div className="flex flex-col gap-3">
-          <div className="bg-white lg:h-[calc(100vh-240px)] h-[calc(100vh-205px)] flex flex-col gap-4 py-5 relative overflow-y-auto">
-            <AnimatePresence mode="wait" custom={direction}>
-              <motion.div
-                key={`${ctx.sectionIndex}-${ctx.questionIndex}`}
-                custom={direction}
-                variants={slideVariants}
-                initial={isFirstRender.current ? false : "enter"}
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: "spring", stiffness: 1200, damping: 90 },
-                  opacity: { duration: 0.15 },
-                }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.15}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x < -80) goNext();
-                  if (info.offset.x > 80) goPrev();
-                }}
-                className="w-full flex flex-col gap-4 px-4"
-              >
-                <ProgressBlock
-                  total={totalInSection}
-                  current={currentQNo}
-                  timeLeft={elapsed}
-                />
+    <div className="flex h-full flex-col gap-3 py-3 lg:p-3 lg:pl-3">
+      {/* Question card — mobile: full width, flush against the screen edges
+          (no side padding on the wrapper, square corners); desktop: the
+          inset rounded card, unchanged. */}
+      <Card
+        bgcolor="white"
+        border="border-none"
+        padding={0}
+        borderRadius={12}
+        className="relative flex flex-1 flex-col !h-auto !min-h-0 max-lg:!rounded-none max-lg:!mb-3"
+      >
+        {/* Scrolling question area (bottom padding clears the fixed action bar below `lg`) */}
+        {/* pb-40 clears the fixed footer's three stacked rows (action bar +
+            collapsed QuestionsDock header + "Need help?"). */}
+        <div className="flex-1 overflow-y-auto pb-40 lg:pb-0">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={`${ctx.sectionIndex}-${ctx.questionIndex}`}
+              custom={direction}
+              variants={slideVariants}
+              initial={isFirstRender.current ? false : "enter"}
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 1200, damping: 90 },
+                opacity: { duration: 0.15 },
+              }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.15}
+              onDragEnd={(e, info) => {
+                if (info.offset.x < -80) goNext();
+                if (info.offset.x > 80) goPrev();
+              }}
+              className="flex min-h-full w-full flex-col gap-4 p-4 lg:p-5"
+            >
+              <QuestionMetaBar
+                chip={section.section?.name}
+                hideChipOnMobile
+                isMarked={!!question.marked_for_review}
+                onToggleMark={handleMarkForReviewAndNext}
+                onReport={handleReportQuestion}
+                trailing={
+                  <QuestionStats elapsedRef={elapsedRef} resetKey={`${ctx.sectionIndex}-${ctx.questionIndex}`} />
+                }
+              />
 
-                <MathJax content={translation?.text}>
-                  <Text as="div" variant="body-large">
-                    <TextMarkDown>{translation?.text ?? ""}</TextMarkDown>
-                  </Text>
-                </MathJax>
-                {translation?.image && (
-                  <div className="w-full flex justify-center">
-                    <div className="relative h-[160px] w-[160px] aspect-video overflow-hidden rounded-md">
-                      <Image src={translation.image} alt="" fill />
-                    </div>
+              <Text as="p" variant="heading-large" weight="semibold" color="gray-normal">
+                Question {overallQNo}{" "}
+                <Text as="span" variant="body-large" color="gray-subtle">
+                  / {totalQuestions}
+                </Text>
+              </Text>
+
+              <MathJax content={translation?.text}>
+                <Text as="div" variant="body-large">
+                  <TextMarkDown>{translation?.text ?? ""}</TextMarkDown>
+                </Text>
+              </MathJax>
+              {translation?.image && (
+                <div className="flex w-full justify-center">
+                  <div className="relative aspect-video h-[160px] w-[160px] overflow-hidden rounded-md">
+                    <Image src={translation.image} alt="" fill />
                   </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {translation?.options?.map((opt: any, index: number) => {
-                    const value = String(index);
-                    const isSelected = draftAnswer === value;
-
-                    return (
-                      <QOption
-                        key={index}
-                        value={{
-                          text: opt.text,
-                          index,
-                          image: opt.image,
-                        }}
-                        mainContainer={{
-                          borderwidth: 2,
-                          bgcolor: isSelected ? "!bg-brand/9" : "",
-                          bordercolor: isSelected ? "!border-brand" : "",
-                        }}
-                        counter={{
-                          backgroundColor: isSelected ? "!bg-brand/9" : "",
-                          borderColor: isSelected ? "!border-brand" : "",
-                        }}
-                        onClick={() => setDraftAnswer(value)}
-                      />
-                    );
-                  })}
                 </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              )}
 
-          {/* ===============================
-              ACTIONS
-          =============================== */}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {translation?.options?.map((opt: any, index: number) => {
+                  const value = String(index);
+                  const isSelected = draftAnswer === value;
 
-          <div className="fixed md:sticky flex justify-center w-full bottom-0 lg:h-[140px] h-[80px] bg-white">
-            <ExamAction
-              goPrev={goPrev}
-              goNext={goNext}
-              draftAnswer={draftAnswer}
-              isFirstInSection={isFirstInSection}
-              isLastInSection={isLastInSection}
-              ctx={ctx}
-              handleSaveAndNext={handleSaveAndNext}
-              handleSaveAndEndTest={handleSaveAndEndTest}
-              selectedOption={selectedOption}
-              onClear={handleClearResponse}
-              onMarkForReview={handleMarkForReviewAndNext}
-            />
+                  return (
+                    <QOption
+                      key={index}
+                      value={{
+                        text: opt.text,
+                        index,
+                        image: opt.image,
+                      }}
+                      mainContainer={{
+                        borderwidth: 2,
+                        padding: "14px 16px",
+                        bgcolor: isSelected ? "!bg-brand/9" : "",
+                        bordercolor: isSelected ? "!border-brand" : "",
+                      }}
+                      counter={{
+                        backgroundColor: isSelected ? "!bg-brand/9" : "",
+                        borderColor: isSelected ? "!border-brand" : "",
+                      }}
+                      onClick={() => setDraftAnswer(value)}
+                    />
+                  );
+                })}
+              </div>
+
+              <InfoStrip>Select the best answer from the options above. Tap the selected option again to clear it.</InfoStrip>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+      </Card>
+
+      {/* Footer. Below `lg` it's a flush, full-width fixed block at the very
+          bottom — the action-bar row and the "Need help?" row stacked in one
+          fixed container (not two independently-fixed bars) so they touch
+          with zero gap between them regardless of either row's exact height.
+          The question card above reserves a small bottom margin
+          (`max-lg:!mb-3`) so the page's gray background shows as a real gap
+          above this block instead of the card butting straight into it. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col lg:static lg:inset-auto lg:z-auto lg:shrink-0 lg:gap-3">
+        <div className="border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:rounded-xl lg:border-0 lg:px-5 lg:py-4 lg:shadow-none">
+          <AttemptActionBar
+            legacy
+            compactMobile
+            onPrevious={goPrev}
+            previousDisabled={isFirstInSection && ctx?.sectionIndex === 0}
+            onPrimary={isVeryLast ? handleSaveAndEndTest : handleSaveAndNext}
+            primaryDisabled={!draftAnswer}
+            primaryLabel={isVeryLast ? "Save and End Test" : "Save and Next"}
+            onClear={handleClearResponse}
+            clearDisabled={!selectedOption && !draftAnswer}
+          />
+        </div>
+
+        {/* Collapsible questions dock — between the action bar and "Need
+            help?", not a bottom-sheet modal. Shows the ACTIVE SECTION's
+            questions only. */}
+        <div className="border-t border-gray-200 bg-white lg:hidden">
+          <QuestionsDock questions={dockQuestions} onSelect={(index) => jumpTo(ctx.sectionIndex, index)} />
+        </div>
+
+        {/* "Need help?" bar — same as the Daily Test attempt page's own footer. */}
+        <div className="border-t border-gray-200 bg-white px-4 py-2 lg:rounded-xl lg:border-0 lg:shadow-none">
+          <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => openGlobalModal("helpsport")}
+              className="body-small flex items-center gap-1.5 text-surface-gray-muted"
+            >
+              <WarningCircleIcon variant="help" size={16} />
+              <span>
+                Need help? <span className="!font-semibold text-brand">Contact Support</span>
+              </span>
+            </button>
+            <div className="hidden items-center gap-1.5 body-small text-surface-gray-muted sm:flex">
+              <Maximize size={14} />
+              <span>Press F to toggle fullscreen</span>
+            </div>
           </div>
         </div>
-      </MainContainer>
+      </div>
+      <ContactUsModal />
     </div>
   );
 }
 
-interface ProgressBlockProps {
-  current: number;
-  total: number;
-  timeLeft?: string | number;
-}
-const ProgressBlock = memo(
-  ({ current, total, timeLeft }: ProgressBlockProps) => {
-    const formatTime = (seconds: number) => {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
+/* -------------------------------------------------------------------------- */
+/* Question header: subject chip · Mark for Review · per-question clock · marks */
+/* -------------------------------------------------------------------------- */
 
-      const minutes = String(m).padStart(2, "0");
-      const secs = String(s).padStart(2, "0");
+const formatClock = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+};
 
-      return `${minutes}:${secs}`;
-    };
+// The per-question clock ticks in the ref owned by MainContent; this small
+// component polls it, so the once-a-second update re-renders ONLY this text —
+// not the question, options or panels (it used to re-render the whole page).
+const ElapsedClock = memo(function ElapsedClock({
+  elapsedRef,
+  resetKey,
+}: {
+  elapsedRef: React.MutableRefObject<number>;
+  resetKey: string;
+}) {
+  const [secs, setSecs] = useState(elapsedRef.current);
 
-    return (
-      <div className="flex justify-between  items-center gap-4 px-3 py-2">
-        <div className="w-full flex  justify-between items-center">
-          <Text
-            as="p"
-            variant="heading-medium"
-            weight="semibold"
-            color="gray-normal"
-          >
-            Question {current} /{" "}
-            <Text variant="body-medium" color="gray-subtle">
-              {total}
-            </Text>
-          </Text>
+  useEffect(() => {
+    setSecs(elapsedRef.current);
+    const id = setInterval(() => setSecs(elapsedRef.current), 500);
+    return () => clearInterval(id);
+  }, [resetKey, elapsedRef]);
 
-          <div className="flex gap-1 items-center">
-            <div></div>
-            <Text as="p" variant="body-small" color="primary-normal">
-              {formatTime(timeLeft as number)}
-            </Text>
-          </div>
+  return <>{formatClock(secs)}</>;
+});
 
-          <div className="flex items-center gap-1">
-            <CounterCard
-              textClass="!text-[var(--icon-positive-normal)] !font-semibold"
-              value="+ 1"
-              fontFamily="body-medium"
-              rounded="rounded-sm"
-              border="border-none"
-              bgColor="!bg-[var(--icon-positive-subtle)]/12"
-              width="w-9"
-              height="h-6"
-            />
-            <CounterCard
-              textClass="!text-[var(--icon-negative-normal)] !font-semibold"
-              value="- 0"
-              fontFamily="body-medium"
-              rounded="rounded-sm"
-              border="border-none"
-              bgColor="!bg-[var(--icon-negative-normal)]/12"
-              width="w-9"
-              height="h-6"
-            />
-          </div>
-        </div>
+// Per-question clock + the (+1 / -0) marking chips.
+const QuestionStats = memo(function QuestionStats({
+  elapsedRef,
+  resetKey,
+}: {
+  elapsedRef: React.MutableRefObject<number>;
+  resetKey: string;
+}) {
+  return (
+    <div className="flex items-center gap-4">
+      <div className="hidden h-6 w-px bg-gray-200 sm:block" />
+
+      <Text as="p" variant="body-medium" color="primary-normal">
+        <ElapsedClock elapsedRef={elapsedRef} resetKey={resetKey} />
+      </Text>
+
+      <div className="flex items-center gap-1">
+        <CounterCard
+          textClass="!text-[var(--icon-positive-normal)] !font-semibold"
+          value="+1"
+          fontFamily="body-medium"
+          rounded="rounded-sm"
+          border="border-none"
+          bgColor="!bg-[var(--icon-positive-subtle)]/12"
+          width="w-9"
+          height="h-6"
+        />
+        <CounterCard
+          textClass="!text-[var(--icon-negative-normal)] !font-semibold"
+          value="-0"
+          fontFamily="body-medium"
+          rounded="rounded-sm"
+          border="border-none"
+          bgColor="!bg-[var(--icon-negative-normal)]/12"
+          width="w-9"
+          height="h-6"
+        />
       </div>
-    );
-  },
-);
-
-interface ExamActionProps {
-  goPrev: () => void;
-  goNext: () => void;
-
-  draftAnswer: string | null;
-
-  isFirstInSection: boolean;
-  isLastInSection: boolean;
-
-  ctx: {
-    sectionIndex: number;
-    sections: any[];
-  };
-
-  handleSaveAndNext: () => void;
-  handleSaveAndEndTest: () => void;
-
-  selectedOption: string | null;
-
-  onClear: () => void;
-  onMarkForReview: () => void;
-}
-
-const ExamAction = memo(
-  ({
-    goPrev,
-    goNext,
-    draftAnswer,
-    isFirstInSection,
-    ctx,
-    handleSaveAndNext,
-    handleSaveAndEndTest,
-    isLastInSection,
-    selectedOption,
-    onClear,
-    onMarkForReview,
-  }: ExamActionProps) => {
-    return (
-      <div className="max-w-[600px] flex flex-col gap-3 w-full py-2 px-3">
-        {/* NAV */}
-        <div className=" items-center justify-between gap-12 lg:flex hidden">
-          <Button
-            sx={{ borderRadius: "50px", paddingX: "30px" }}
-            size="lg"
-            variant="soft"
-            color="gray"
-            disabled={isFirstInSection && ctx?.sectionIndex === 0}
-            onClick={goPrev}
-          >
-            <div className="flex items-center gap-2">
-              <ChevronIcon
-                size={20}
-                type="double"
-                variant="left"
-                color={
-                  isFirstInSection && ctx?.sectionIndex === 0
-                    ? "rgb(107 114 128 / 50%)"
-                    : "black"
-                }
-              />{" "}
-              <span className="">Back</span>
-            </div>{" "}
-          </Button>
-
-          <div className="w-full">
-            {isLastInSection &&
-            ctx?.sectionIndex === ctx?.sections.length - 1 ? (
-              <Button
-                size="lg"
-                sx={{ borderRadius: "50px" }}
-                disabled={!draftAnswer}
-                onClick={handleSaveAndEndTest}
-                fullWidth
-              >
-                Save and End Test
-              </Button>
-            ) : (
-              <Button
-                size="lg"
-                sx={{ borderRadius: "50px" }}
-                disabled={!draftAnswer}
-                onClick={handleSaveAndNext}
-                fullWidth
-              >
-                Save and Next
-              </Button>
-            )}
-          </div>
-
-          <Button
-            sx={{ borderRadius: "50px", paddingX: "30px" }}
-            size="lg"
-            variant="soft"
-            color="gray"
-            disabled={
-              isLastInSection && ctx?.sectionIndex === ctx?.sections.length - 1
-            }
-            onClick={goNext}
-          >
-            <div className="flex items-center gap-2">
-              <span className="">Next</span>
-              <ChevronIcon
-                size={20}
-                type="double"
-                variant="right"
-                color={
-                  isLastInSection &&
-                  ctx?.sectionIndex === ctx?.sections.length - 1
-                    ? "rgb(107 114 128 / 50%)"
-                    : "black"
-                }
-              />{" "}
-            </div>{" "}
-          </Button>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <div className=" items-center gap-6 lg:flex hidden">
-            <Button
-              sx={{ borderRadius: "50px", paddingX: "40px" }}
-              variant="soft"
-              color="gray"
-              disabled={!selectedOption && !draftAnswer}
-              onClick={onClear}
-            >
-              <div className="flex items-center gap-2">
-                <TrashIcon
-                  size={20}
-                  color={!selectedOption && !draftAnswer ? "rgb(107 114 128 / 50%)" : "black"}
-                />{" "}
-                <span className=""> Clear Response</span>
-              </div>{" "}
-            </Button>
-            <Button
-              sx={{ borderRadius: "50px", paddingX: "40px" }}
-              variant="soft"
-              color="gray"
-              onClick={onMarkForReview}
-            >
-              <div className="flex items-center gap-2">
-                <span className=""> Mark this for review and next</span>
-                <ChevronIcon
-                  size={20}
-                  type="double"
-                  variant="right"
-                  color={"black"}
-                />{" "}
-              </div>{" "}
-            </Button>
-          </div>
-          <div className=" items-center justify-between flex  lg:hidden">
-            <Button
-              sx={{ borderRadius: "50px", paddingX: "12px" }}
-              variant="soft"
-              color="gray"
-              disabled={!selectedOption && !draftAnswer}
-              onClick={onClear}
-            >
-              <div className="flex items-center gap-1">
-                <TrashIcon
-                  size={20}
-                  color={!selectedOption && !draftAnswer ? "rgb(107 114 128 / 50%)" : "black"}
-                />{" "}
-                <span className="body-small"> Clear</span>
-              </div>{" "}
-            </Button>
-            <Button
-              sx={{ borderRadius: "50px", paddingX: "11px" }}
-              variant="soft"
-              color="gray"
-              onClick={onMarkForReview}
-            >
-              <div className="flex items-center gap-1">
-                <span className="body-small">Mark and next</span>
-                <ChevronIcon
-                  size={20}
-                  type="double"
-                  variant="right"
-                  color={"black"}
-                />{" "}
-              </div>{" "}
-            </Button>
-            {isLastInSection &&
-            ctx?.sectionIndex === ctx?.sections?.length - 1 ? (
-              <Button
-                sx={{ borderRadius: "50px" }}
-                disabled={!draftAnswer}
-                onClick={handleSaveAndEndTest}
-              >
-                <span className="body-small"> Save & End Test</span>
-              </Button>
-            ) : (
-              <Button
-                sx={{ borderRadius: "50px" }}
-                disabled={!draftAnswer}
-                onClick={handleSaveAndNext}
-              >
-                <span className="body-small"> Save and Next</span>
-              </Button>
-            )}
-          </div>
-          {/* INFO */}
-          <div className="flex gap-2 items-center justify-center w-full">
-            <WarningCirleIcon />
-
-            <Text as="p" variant="body-small">
-              To clear answer, tap the selected option again
-            </Text>
-          </div>
-        </div>
-      </div>
-    );
-  },
-);
+    </div>
+  );
+});

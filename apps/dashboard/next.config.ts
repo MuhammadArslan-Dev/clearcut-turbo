@@ -16,6 +16,17 @@ const config: NextConfig = {
   //   ignoreDuringBuilds: true, // allows build even with lint errors
   // },
   experimental: {
+    // The deploy host is a single 4-vCPU box that also runs ~18 other
+    // services (including the production MySQL/Postgres databases) — it is
+    // NOT dedicated build hardware. Next's default worker pool for build
+    // tasks (page-data collection, static generation) auto-sizes off the
+    // container's *visible* CPU count and had been spawning 7 workers here,
+    // oversubscribing the 4 real cores. That drove host CPU past 300% during
+    // every deploy (confirmed via the host's own CPU graph), starving the
+    // co-located databases and leaving the whole box unresponsive enough to
+    // need a manual restart. Capping at 2 trades a slower build for never
+    // starving the rest of the host again.
+    cpus: 2,
     // optimizeCss (critters) was here before and did nothing — confirmed
     // empirically (built + served + inspected raw HTML): critters is a
     // Pages Router mechanism (no streaming support) and is a documented
@@ -54,6 +65,11 @@ const config: NextConfig = {
     ],
   },
   webpack: (config) => {
+    // Same reasoning as experimental.cpus above: cap webpack's own internal
+    // compilation parallelism so a production build never tries to use every
+    // core on this shared host.
+    config.parallelism = 2;
+
     // Handle MathJax static assets
     config.module.rules.push({
       test: /\.woff2$/,
