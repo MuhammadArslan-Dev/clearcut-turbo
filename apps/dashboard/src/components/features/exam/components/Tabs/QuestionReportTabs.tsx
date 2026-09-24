@@ -27,8 +27,8 @@ export default function QuestionReportTabs({
         layoutScopeId={layoutId ?? "question-report-tabs"}
         scrollable
         items={[
-          { id: "summary-view", label: "Summary View" },
-          { id: "question-view", label: "Question View" },
+          { id: "summary-view", label: "Summary" },
+          { id: "question-view", label: "Question" },
         ]}
         value={activeTab!}
         onChange={(id) => {

@@ -2,23 +2,39 @@
 
 import Text from "@clearcut/ui/text";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import QuestionStatusLegend from "../cards/QuestionStatusLegend";
 import QuestionReportTabs from "../Tabs/QuestionReportTabs";
-import QuestionNavigationPanel from "../QuestionNavigationPanel";
+import QuestionNavigationPanel, { computeQuestionStatusCounts } from "../QuestionNavigationPanel";
 import QuestionViewPanel from "../QuestionViewPanel";
 import { useExamModalStore } from "../../store/useExamModalStore";
+import { useExamStore } from "../../store/useExamStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import ModalHeader from "@/components/features/test-series/components/ModalHeader";
 import { Button } from "@clearcut/ui/button";
+import StatusCountRow from "@/components/features/attempt-ui/StatusCountRow";
 import { ArrowIcon, ChevronIcon, LogoutDoorIcon } from "@/components/ui/icons";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
+import type { AttemptSection } from "../../types/exam";
+
+// Stable fallback reference — `s.exam?.sections ?? []` would create a brand
+// new array on every selector call, and zustand's useSyncExternalStore
+// treats that as "the snapshot changed" on every render, which threw this
+// into an infinite render loop ("Maximum update depth exceeded").
+const EMPTY_SECTIONS: AttemptSection[] = [];
 
 export default function QuestionNavigatorSheet() {
   const { isOpen, closeModal, stack, open } = useExamModalStore();
   const isMobile = useIsMobile(1020);
   const active = stack[stack.length - 1];
+  const exam = useExamStore((s) => s.exam);
+  const sections = exam?.sections ?? EMPTY_SECTIONS;
+  // Depend on `exam` (not `sections`): answering/marking a question mutates
+  // the question in place and only replaces the top-level `exam` object, so
+  // `sections` keeps the same array reference and a memo keyed on it alone
+  // would never recompute after the first answer.
+  const counts = useMemo(() => computeQuestionStatusCounts(sections), [exam, sections]);
 
   const { get, set } = useQueryParams();
 
@@ -30,18 +46,37 @@ export default function QuestionNavigatorSheet() {
     open("end-exam");
   }, [closeModal]);
 
+  // Desktop right-panel header — a "Questions" title over a vertical legend
+  // with live counts, matching the Daily Test attempt page's right sidebar
+  // (see DailyTestAttemptPage's CountRow). The mobile bottom sheet below
+  // keeps its own horizontal QuestionStatusLegend unchanged.
   const header = () => {
     return (
-      <div className="flex flex-col gap-2 ">
-        <Text
-          as="p"
-          variant="heading-medium"
-          weight="semibold"
-          color="gray-normal"
-        >
-          Progress and Questions
+      <div className="flex flex-col gap-3">
+        <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+          Questions
         </Text>
-        <QuestionStatusLegend />
+        <div className="flex flex-col gap-2">
+          <StatusCountRow label="Not Visited" count={counts.notVisited} color="bg-gray-300" textColor="text-surface-gray-muted" />
+          <StatusCountRow
+            label="Answered"
+            count={counts.answered}
+            color="bg-[var(--icon-positive-subtle)]"
+            textColor="text-[var(--icon-positive-normal)]"
+          />
+          <StatusCountRow
+            label="Not Answered"
+            count={counts.notAnswered}
+            color="bg-[var(--icon-negative-normal)]"
+            textColor="text-[var(--icon-negative-normal)]"
+          />
+          <StatusCountRow
+            label="Marked for Review"
+            count={counts.review}
+            color="bg-[var(--icon-notice-subtle)]"
+            textColor="text-[var(--icon-notice-normal)]"
+          />
+        </div>
       </div>
     );
   };

@@ -71,6 +71,11 @@ export default function MainContent({ examId }: { examId: string }) {
   const answer = useExamStore((s) => s.answer);
   const toggleReview = useExamStore((s) => s.toggleReview);
   const getExamContext = useExamStore((s) => s.getExamContext);
+  // Subscribed for re-render only — `getExamContext()` below reads the
+  // language itself, but nothing else in this selector list changes when the
+  // Topbar's translate button calls `setLanguage`, so without this the
+  // component never re-renders and the shown translation stays stale.
+  useExamStore((s) => s.language);
 
   const { open } = useExamModalStore();
 
@@ -123,7 +128,7 @@ export default function MainContent({ examId }: { examId: string }) {
   const remaining = useExamTimer({ examId, initialRemaining: 0, onExpire: handleAutoExpire });
 
   // ===============================
-  // CONTEXT (safe — recalculates only when exam changes)
+  // CONTEXT (recalculates when exam or language changes)
   // ===============================
 
   const ctx = getExamContext();

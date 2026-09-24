@@ -8,6 +8,7 @@ import Text from "@clearcut/ui/text";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useExamStore } from "../store/useExamStore";
+import type { AttemptQuestion } from "../types/exam";
 
 /* -------------------------------------------------------------------------- */
 /* Types */
@@ -27,6 +28,33 @@ type SectionData = {
   totalQuestions: number;
   statusSummary: StatusSummary[];
 };
+
+/* -------------------------------------------------------------------------- */
+/* Aggregate status counts (used by the right-panel legend) */
+/* -------------------------------------------------------------------------- */
+
+export type QuestionStatusCounts = {
+  notVisited: number;
+  answered: number;
+  notAnswered: number;
+  review: number;
+};
+
+// Same precedence as QuestionGrid's per-cell coloring below (review >
+// answered > notAnswered > notVisited), so the legend counts always sum to
+// the total and agree with what's actually highlighted in the grid.
+export function computeQuestionStatusCounts(sections: { questions: AttemptQuestion[] }[]): QuestionStatusCounts {
+  const counts: QuestionStatusCounts = { notVisited: 0, answered: 0, notAnswered: 0, review: 0 };
+  sections.forEach((section) => {
+    section.questions.forEach((q) => {
+      if (q.marked_for_review) counts.review++;
+      else if (q.user_option) counts.answered++;
+      else if (q.visited) counts.notAnswered++;
+      else counts.notVisited++;
+    });
+  });
+  return counts;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Constants */
@@ -248,11 +276,11 @@ export const QuestionGrid = memo(function QuestionGrid({
   jumpTo: (s: number, q: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-6 gap-2.5 pb-2">
+    <div className="grid grid-cols-5 gap-2 pb-2">
       {questions.map((q, index) => {
-        let bg = "!bg-[var(--background-gray-subtle)]";
-        let border = "!border-[var(--background-gray-subtle)]";
-        let text = null;
+        let bg = "!bg-white";
+        let border = "!border-gray-200";
+        let text: string | null = null;
 
         // Only the CURRENT section's grid highlights the current question
         // (this used to compare sectionIndex with itself, so every opened
@@ -272,7 +300,7 @@ export const QuestionGrid = memo(function QuestionGrid({
           border = "!border-[var(--icon-positive-subtle)]";
           text = "!text-white";
         } else if (q.visited) {
-          bg = "!bg-[var(--icon-negative-normal)] !text-white border-red-400";
+          bg = "!bg-[var(--icon-negative-normal)]";
           border = "!border-[var(--icon-negative-normal)]";
           text = "!text-white";
         }
@@ -288,10 +316,10 @@ export const QuestionGrid = memo(function QuestionGrid({
               border={`border-2 ${border}`}
               fontFamily="body-medium"
               bgColor={bg}
-              rounded="rounded-lg"
+              rounded="rounded-md"
               width="w-full"
               height="h-9"
-              textClass={`!font-semibold ${text}`}
+              textClass={`!font-semibold ${text ?? ""}`}
             />
           </div>
         );

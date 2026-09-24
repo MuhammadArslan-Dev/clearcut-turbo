@@ -55,9 +55,11 @@ function TimerStrip() {
       progress={<Progress />}
       tip={
         hasSections ? (
-          // Mobile: edge to edge (cancels the card padding), no radius. Desktop: 700px pill.
-          <div className="-mx-4 lg:mx-0 lg:w-[700px] lg:shrink-0">
-            <SectionsTab wrapperClassName="overflow-hidden lg:rounded-full" />
+          // Mobile: edge to edge (cancels the card padding), no radius. Desktop:
+          // 700px, right edge flush with the card's own right edge (cancels the
+          // card's 16px right padding the same way `-mx-4` cancels it on mobile).
+          <div className="-mx-4 lg:ml-0 lg:mr-[-16px] lg:w-[700px] lg:shrink-0">
+            <SectionsTab wrapperClassName="overflow-hidden lg:rounded-l-full" />
           </div>
         ) : undefined
       }

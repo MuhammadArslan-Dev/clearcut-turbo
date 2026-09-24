@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useMemo, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
+import TestInfoSidebar from "./TestInfoSidebar";
 import Topbar from "./Topbar";
 import TimerStrip from "./TimerStrip";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
@@ -43,12 +44,17 @@ export default function ExamShell({ children }: { children: ReactNode }) {
 
       <TimerStrip />
 
-      {/* Main column */}
+      {/* Main column — Test Information (left) / question (center) / question
+          navigator (right), matching the Daily Test attempt page's 3-column
+          layout instead of the navigator-on-the-left arrangement this used
+          to have. */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar />
+        <TestInfoSidebar />
 
         {/* Only this part scrolls */}
         <main className="flex-1 overflow-y-auto">{children}</main>
+
+        <Sidebar />
         {/* <Footer /> */}
       </div>
       {isOpen && activeModal === "end-exam" && <ExamEndConfirmationSheet />}

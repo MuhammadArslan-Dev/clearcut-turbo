@@ -138,21 +138,39 @@ export const useExamStore = create<ExamStore>()(
         if (!exam) return;
 
         const state = get();
+        const incomingExamId = exam.id.toString();
+        // Compare against `examId`, not `exam?.uuid` — `exam` itself is
+        // deliberately not persisted (see `partialize` below), so after a
+        // page refresh `state.exam` is always null and a uuid comparison
+        // always looked like "a different exam", wiping the learner's
+        // section/question position back to 0 on every reload even though
+        // it was the same in-progress attempt. `examId` IS persisted, so it
+        // survives the refresh and correctly detects "same exam, resuming".
+        const isSameExam = state.examId === incomingExamId;
 
-        // If different exam, reset first
-        if (state.examId && state?.exam?.uuid !== exam?.uuid) {
+        // If genuinely a different exam, reset first
+        if (state.examId && !isSameExam) {
           state.reset();
         }
 
         const remainT = Number(exam?.total_duration_seconds) - Number(exam?.time_used_seconds);
 
+        // Resuming the same exam keeps the current position instead of
+        // snapping back to Q1; a genuinely different exam (or first load)
+        // starts at the beginning. Indices are clamped defensively in case
+        // the section/question counts changed under a persisted position.
+        const sectionCount = exam.sections.length;
+        const nextSection = isSameExam ? Math.min(state.currentSection, Math.max(sectionCount - 1, 0)) : 0;
+        const questionCount = exam.sections[nextSection]?.questions.length ?? 0;
+        const nextQuestion = isSameExam ? Math.min(state.currentQuestion, Math.max(questionCount - 1, 0)) : 0;
+
         set({
           exam,
-          examId: exam.id.toString()!,
+          examId: incomingExamId,
           started: true,
           isFinished: false,
-          currentSection: 0,
-          currentQuestion: 0,
+          currentSection: nextSection,
+          currentQuestion: nextQuestion,
           timeLeft: remainT ?? 0,
         });
       },
