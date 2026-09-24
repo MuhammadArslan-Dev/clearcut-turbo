@@ -18,6 +18,7 @@ import GlobalModalReset from "@/components/thirdparties/GlobalModalReset";
 import ChunkErrorReload from "@/components/thirdparties/ChunkErrorReload";
 import { SoundProvider } from "@/context/SoundContext";
 import { Agentation } from "agentation";
+import NavigationProgress from "@/components/layout/NavigationProgress";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -123,6 +124,9 @@ export default async function LocaleLayout({
           <AuthProvider>
             <SoundProvider>
               <NextIntlClientProvider>
+                {/* Needs next-intl's usePathname(), so it must be inside
+                    NextIntlClientProvider — not a sibling above it. */}
+                <NavigationProgress />
                 <ReactQueryProvider>
                   {/* <AuthProvider> */}
                   <ThemeProvider>

@@ -213,4 +213,44 @@ body {
 .markdown-content ol {
   margin-left: 20px;
   margin-bottom: 12px;
+}
+
+/* Navigation loading — see src/store/navigation/useNavLoadingStore.ts and
+   NavigationProgress.tsx. The top bar's own sliding animation. */
+@keyframes nav-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+/* The one element the user actually clicked, marked imperatively (not via
+   React props) so this works on a <Button>, a plain card <div>, anything —
+   no per-component wiring needed. Dims it, blocks further clicks on it, and
+   draws a small spinner centered over it. */
+[data-nav-pending="true"] {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+[data-nav-pending="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: nav-pending-spin 0.6s linear infinite;
+}
+
+@keyframes nav-pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
 } 

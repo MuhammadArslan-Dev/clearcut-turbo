@@ -1,5 +1,6 @@
-import {createNavigation} from 'next-intl/navigation';
-import {routing} from './routing';
+export {getPathname, redirect, usePathname} from './navigation-base';
 
-export const {Link, getPathname, redirect, usePathname, useRouter} =
-  createNavigation(routing);
+// Link and useRouter are wrapped here (not exported from navigation-base
+// directly) to mark the clicked element + trigger the top progress bar on
+// every navigation — see store/navigation/useNavLoadingStore.ts for why.
+export {Link, useRouter} from './navigation-loading';
