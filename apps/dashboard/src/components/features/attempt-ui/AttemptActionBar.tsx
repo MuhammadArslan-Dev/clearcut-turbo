@@ -110,7 +110,12 @@ function AttemptActionBar({
           disabled={previousDisabled}
           onClick={onPrevious}
         >
-          <ChevronIcon size={18} type="double" variant="left" color={previousDisabled ? muted : normal} />
+          {/* Short label here only — this row is mobile-only; desktop keeps
+              the full `previousLabel` prop via `layout` below. */}
+          <div className="flex items-center gap-1.5">
+            <ChevronIcon size={18} type="double" variant="left" color={previousDisabled ? muted : normal} />
+            <span className="whitespace-nowrap">Pre</span>
+          </div>
         </Button>
         <div className="min-w-0 flex-1">
           <Button
@@ -131,7 +136,10 @@ function AttemptActionBar({
           disabled={clearDisabled}
           onClick={onClear}
         >
-          <TrashIcon size={18} color={clearDisabled ? muted : normal} />
+          <div className="flex items-center gap-1.5">
+            <TrashIcon size={18} color={clearDisabled ? muted : normal} />
+            <span className="whitespace-nowrap">Clear</span>
+          </div>
         </Button>
       </div>
       <div className="hidden lg:block">{layout}</div>

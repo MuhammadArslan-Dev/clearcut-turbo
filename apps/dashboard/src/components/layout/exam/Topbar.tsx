@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useCallback, useMemo } from "react";
-import { ListChecks, X } from "lucide-react";
 
 import { Button } from "@clearcut/ui/button";
 import AttemptTopbar from "@/components/features/attempt-ui/AttemptTopbar";
@@ -72,6 +71,10 @@ const ExamFullscreenButton = memo(function ExamFullscreenButton() {
 });
 
 // Below `lg` the question navigator lives in a bottom sheet — this opens it.
+// The two-shade pill + hamburger/X glyph is the original icon this button
+// had before the 2026-09-23 refactor swapped it for plain lucide icons —
+// restored verbatim (including the off-token #2B7EFF closed-state blue,
+// which predates the design-token system) per direct request.
 const NavigatorToggle = memo(function NavigatorToggle() {
   const open = useExamModalStore((s) => s.open);
   const isOpen = useExamModalStore((s) => s.stack[s.stack.length - 1] === "exam-navigation-panel");
@@ -81,9 +84,37 @@ const NavigatorToggle = memo(function NavigatorToggle() {
       type="button"
       aria-label="Progress and questions"
       onClick={() => open("exam-navigation-panel")}
-      className="flex h-9 w-12 cursor-pointer items-center justify-center rounded-full bg-brand text-white lg:hidden"
+      className="cursor-pointer lg:hidden"
     >
-      {isOpen ? <X size={18} /> : <ListChecks size={18} />}
+      {isOpen ? (
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="32" rx="16" fill="var(--color-brand)" />
+          <path
+            d="M18.7098 11.1219L28.6093 21.0214C28.9998 21.4119 29.633 21.4119 30.0235 21.0214C30.414 20.6309 30.414 19.9977 30.0235 19.6072L20.124 9.7077C19.7335 9.31718 19.1003 9.31718 18.7098 9.7077C18.3193 10.0982 18.3193 10.7314 18.7098 11.1219Z"
+            fill="white"
+          />
+          <path
+            d="M28.6066 9.70785L18.7071 19.6073C18.3166 19.9979 18.3166 20.631 18.7071 21.0216C19.0976 21.4121 19.7308 21.4121 20.1213 21.0216L30.0208 11.1221C30.4113 10.7315 30.4113 10.0984 30.0208 9.70785C29.6303 9.31733 28.9971 9.31733 28.6066 9.70785Z"
+            fill="white"
+          />
+        </svg>
+      ) : (
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="32" rx="16" fill="#2B7EFF" />
+          <path
+            d="M31 19H17C16.4477 19 16 19.4477 16 20C16 20.5523 16.4477 21 17 21H31C31.5523 21 32 20.5523 32 20C32 19.4477 31.5523 19 31 19Z"
+            fill="white"
+          />
+          <path
+            d="M31 15H17C16.4477 15 16 15.4477 16 16C16 16.5523 16.4477 17 17 17H31C31.5523 17 32 16.5523 32 16C32 15.4477 31.5523 15 31 15Z"
+            fill="white"
+          />
+          <path
+            d="M31 11H17C16.4477 11 16 11.4477 16 12C16 12.5523 16.4477 13 17 13H31C31.5523 13 32 12.5523 32 12C32 11.4477 31.5523 11 31 11Z"
+            fill="white"
+          />
+        </svg>
+      )}
     </button>
   );
 });

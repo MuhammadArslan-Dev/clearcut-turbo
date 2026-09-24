@@ -21,9 +21,15 @@ import ExamSkeleton from "./ExamSkeleton";
 import useExamTimer from "../hooks/useExamTimer";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import { Maximize } from "lucide-react";
 import QuestionMetaBar from "@/components/features/attempt-ui/QuestionMetaBar";
 import InfoStrip from "@/components/features/attempt-ui/InfoStrip";
 import AttemptActionBar from "@/components/features/attempt-ui/AttemptActionBar";
+import { WarningCircleIcon } from "@/components/ui/icons";
+import { useModalStore } from "@/store/modal/useModalStore";
+import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
+import QuestionsDock, { type QuestionDockItem } from "@/components/features/attempt-ui/QuestionsDock";
+import type { AttemptQuestion } from "../types/exam";
 
 // ===============================
 // SLIDE ANIMATION
@@ -70,6 +76,7 @@ export default function MainContent({ examId }: { examId: string }) {
   const clear = useExamStore((s) => s.clear);
   const answer = useExamStore((s) => s.answer);
   const toggleReview = useExamStore((s) => s.toggleReview);
+  const jumpTo = useExamStore((s) => s.jumpTo);
   const getExamContext = useExamStore((s) => s.getExamContext);
   // Subscribed for re-render only — `getExamContext()` below reads the
   // language itself, but nothing else in this selector list changes when the
@@ -78,6 +85,7 @@ export default function MainContent({ examId }: { examId: string }) {
   useExamStore((s) => s.language);
 
   const { open } = useExamModalStore();
+  const openGlobalModal = useModalStore((s) => s.open);
 
   // ===============================
   // ALREADY ATTEMPTED GUARD
@@ -347,22 +355,34 @@ export default function MainContent({ examId }: { examId: string }) {
   });
   const overallQNo = questionsBefore + currentQNo;
 
+  // Active-section questions for the mobile QuestionsDock — plain (not
+  // memoized): this runs after the early-return guard above, so a hook here
+  // would violate the Rules of Hooks (see the comment on that guard).
+  const dockQuestions: QuestionDockItem[] = section.questions.map((q: AttemptQuestion, index: number) => ({
+    status: q.marked_for_review ? "review" : q.user_option ? "answered" : q.visited ? "notAnswered" : "notVisited",
+    isActive: index === ctx.questionIndex,
+  }));
+
   // ===============================
   // RENDER
   // ===============================
 
   return (
-    <div className="flex h-full flex-col gap-3 lg:p-3 lg:pl-3">
-      {/* Question card */}
+    <div className="flex h-full flex-col gap-3 py-3 lg:p-3 lg:pl-3">
+      {/* Question card — mobile: full width, flush against the screen edges
+          (no side padding on the wrapper, square corners); desktop: the
+          inset rounded card, unchanged. */}
       <Card
         bgcolor="white"
         border="border-none"
         padding={0}
         borderRadius={12}
-        className="relative flex flex-1 flex-col !h-auto !min-h-0"
+        className="relative flex flex-1 flex-col !h-auto !min-h-0 max-lg:!rounded-none max-lg:!mb-3"
       >
         {/* Scrolling question area (bottom padding clears the fixed action bar below `lg`) */}
-        <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
+        {/* pb-40 clears the fixed footer's three stacked rows (action bar +
+            collapsed QuestionsDock header + "Need help?"). */}
+        <div className="flex-1 overflow-y-auto pb-40 lg:pb-0">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={`${ctx.sectionIndex}-${ctx.questionIndex}`}
@@ -451,21 +471,56 @@ export default function MainContent({ examId }: { examId: string }) {
 
       </Card>
 
-      {/* Footer card — separate from the question card, with a gap between them.
-          Below `lg` it stays a fixed bottom bar. */}
-      <div className="fixed inset-x-2 bottom-2 z-20 rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md lg:static lg:inset-auto lg:z-auto lg:shrink-0 lg:border-0 lg:px-5 lg:py-4 lg:shadow-none">
-        <AttemptActionBar
-          legacy
-          compactMobile
-          onPrevious={goPrev}
-          previousDisabled={isFirstInSection && ctx?.sectionIndex === 0}
-          onPrimary={isVeryLast ? handleSaveAndEndTest : handleSaveAndNext}
-          primaryDisabled={!draftAnswer}
-          primaryLabel={isVeryLast ? "Save and End Test" : "Save and Next"}
-          onClear={handleClearResponse}
-          clearDisabled={!selectedOption && !draftAnswer}
-        />
+      {/* Footer. Below `lg` it's a flush, full-width fixed block at the very
+          bottom — the action-bar row and the "Need help?" row stacked in one
+          fixed container (not two independently-fixed bars) so they touch
+          with zero gap between them regardless of either row's exact height.
+          The question card above reserves a small bottom margin
+          (`max-lg:!mb-3`) so the page's gray background shows as a real gap
+          above this block instead of the card butting straight into it. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col lg:static lg:inset-auto lg:z-auto lg:shrink-0 lg:gap-3">
+        <div className="border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:rounded-xl lg:border-0 lg:px-5 lg:py-4 lg:shadow-none">
+          <AttemptActionBar
+            legacy
+            compactMobile
+            onPrevious={goPrev}
+            previousDisabled={isFirstInSection && ctx?.sectionIndex === 0}
+            onPrimary={isVeryLast ? handleSaveAndEndTest : handleSaveAndNext}
+            primaryDisabled={!draftAnswer}
+            primaryLabel={isVeryLast ? "Save and End Test" : "Save and Next"}
+            onClear={handleClearResponse}
+            clearDisabled={!selectedOption && !draftAnswer}
+          />
+        </div>
+
+        {/* Collapsible questions dock — between the action bar and "Need
+            help?", not a bottom-sheet modal. Shows the ACTIVE SECTION's
+            questions only. */}
+        <div className="border-t border-gray-200 bg-white lg:hidden">
+          <QuestionsDock questions={dockQuestions} onSelect={(index) => jumpTo(ctx.sectionIndex, index)} />
+        </div>
+
+        {/* "Need help?" bar — same as the Daily Test attempt page's own footer. */}
+        <div className="border-t border-gray-200 bg-white px-4 py-2 lg:rounded-xl lg:border-0 lg:shadow-none">
+          <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => openGlobalModal("helpsport")}
+              className="body-small flex items-center gap-1.5 text-surface-gray-muted"
+            >
+              <WarningCircleIcon variant="help" size={16} />
+              <span>
+                Need help? <span className="!font-semibold text-brand">Contact Support</span>
+              </span>
+            </button>
+            <div className="hidden items-center gap-1.5 body-small text-surface-gray-muted sm:flex">
+              <Maximize size={14} />
+              <span>Press F to toggle fullscreen</span>
+            </div>
+          </div>
+        </div>
       </div>
+      <ContactUsModal />
     </div>
   );
 }

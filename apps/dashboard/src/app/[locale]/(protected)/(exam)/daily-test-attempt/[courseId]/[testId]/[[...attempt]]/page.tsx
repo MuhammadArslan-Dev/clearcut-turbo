@@ -45,6 +45,7 @@ import QuestionMetaBar from "@/components/features/attempt-ui/QuestionMetaBar";
 import InfoStrip from "@/components/features/attempt-ui/InfoStrip";
 import InfoRow from "@/components/features/daily-tests/InfoRow";
 import AttemptActionBar from "@/components/features/attempt-ui/AttemptActionBar";
+import QuestionsDock from "@/components/features/attempt-ui/QuestionsDock";
 import FullscreenButton from "@/components/features/attempt-ui/FullscreenButton";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import ModalHeader from "@/components/features/test-series/components/ModalHeader";
@@ -474,9 +475,13 @@ export default function DailyTestAttemptPage() {
       />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4">
+        {/* Mobile: full width, flush against the screen edges (no side
+            padding, square-cornered cards) — matching the full exam page.
+            Desktop: unchanged, the inset centered column. */}
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-4 py-4 lg:px-4">
           {/* Time left / progress / focus-tip strip — shared with the full exam page */}
           <AttemptSummaryStrip
+            className="max-lg:!rounded-none"
             time={
               <LiveTimeLeft
                 duration={totalDuration}
@@ -524,7 +529,7 @@ export default function DailyTestAttemptPage() {
 
             {/* Center column */}
             <div className="flex flex-1 flex-col gap-4">
-              <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
+              <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12} className="max-lg:!rounded-none">
                 <div className="mb-3">
                   <QuestionMetaBar
                     chip={`${history?.exam.short_name ?? t("list.defaultExam")} \u2022 ${t("list.defaultExam")}`}
@@ -608,23 +613,10 @@ export default function DailyTestAttemptPage() {
                 </div>
               </Card>
 
-              {/* Bottom action bar (shared with the full exam page) */}
-              <div className="rounded-xl bg-white p-3">
-                <AttemptActionBar
-                  onPrevious={() => goToIndex(currentIndex - 1)}
-                  previousDisabled={currentIndex === 0}
-                  onPrimary={handleSaveAndNext}
-                  primaryDisabled={draftOption == null || submitting}
-                  primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
-                  onClear={handleClear}
-                  clearDisabled={draftOption == null}
-                  previousLabel={t("attempt.previous")}
-                  clearLabel={t("attempt.clearResponse")}
-                />
-              </div>
-
               {/* Collapsed questions summary — mobile only, opens the same
-                  navigator content in a bottom sheet instead of a sidebar. */}
+                  navigator content in a bottom sheet instead of a sidebar.
+                  Placed before the sticky action bar below so it scrolls
+                  normally instead of ending up underneath the pinned bar. */}
               <button
                 onClick={() => setNavSheetOpen(true)}
                 className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 lg:hidden"
@@ -642,6 +634,30 @@ export default function DailyTestAttemptPage() {
                 </div>
                 <ChevronIcon size={16} variant="up" />
               </button>
+
+              {/* Bottom action bar (shared with the full exam page) — same
+                  legacy/compactMobile button styling as that page too. Below
+                  `lg` it's a flush bar, `sticky` (not `fixed`) to the bottom
+                  of this scroll container — since the "Need help?" bar below
+                  is a real sibling OUTSIDE this scroll container, sticky
+                  naturally stops flush against it with zero gap, however
+                  tall either bar ends up, without a hardcoded pixel offset
+                  or extra scroll-clearance padding. */}
+              <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:static lg:z-auto lg:rounded-xl lg:border-0 lg:p-3 lg:shadow-none">
+                <AttemptActionBar
+                  legacy
+                  compactMobile
+                  onPrevious={() => goToIndex(currentIndex - 1)}
+                  previousDisabled={currentIndex === 0}
+                  onPrimary={handleSaveAndNext}
+                  primaryDisabled={draftOption == null || submitting}
+                  primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
+                  onClear={handleClear}
+                  clearDisabled={draftOption == null}
+                  previousLabel={t("attempt.previous")}
+                  clearLabel={t("attempt.clearResponse")}
+                />
+              </div>
             </div>
 
             {/* Right sidebar — desktop only */}
@@ -679,6 +695,18 @@ export default function DailyTestAttemptPage() {
             </aside>
           </div>
         </div>
+      </div>
+
+      {/* Collapsible questions dock — a real flex child (not sticky/inside
+          the scroll area), placed between the sticky action bar above and
+          the "Need help?" bar below so the sticky bar naturally stops flush
+          against its top with no gap, same as it does against "Need help?"
+          when this is collapsed. */}
+      <div className="shrink-0 border-t border-gray-200 bg-white lg:hidden">
+        <QuestionsDock
+          questions={questions.map((q, index) => ({ status: getStatus(q), isActive: index === currentIndex }))}
+          onSelect={(index) => goToIndex(index)}
+        />
       </div>
 
       {/* Footer — a normal flex child after the scrollable area (not inside

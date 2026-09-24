@@ -42,20 +42,25 @@ export default function ExamShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
       <Topbar />
 
-      <TimerStrip />
+      {/* Capped at the same 1280px the Daily Test attempt page uses for its
+          own strip + 3-column row, so full-length papers don't stretch
+          full-bleed on wide screens while Daily Test stays centered. */}
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden lg:max-w-[1280px]">
+        <TimerStrip />
 
-      {/* Main column — Test Information (left) / question (center) / question
-          navigator (right), matching the Daily Test attempt page's 3-column
-          layout instead of the navigator-on-the-left arrangement this used
-          to have. */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <TestInfoSidebar />
+        {/* Main column — Test Information (left) / question (center) / question
+            navigator (right), matching the Daily Test attempt page's 3-column
+            layout instead of the navigator-on-the-left arrangement this used
+            to have. */}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <TestInfoSidebar />
 
-        {/* Only this part scrolls */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+          {/* Only this part scrolls */}
+          <main className="flex-1 overflow-y-auto">{children}</main>
 
-        <Sidebar />
-        {/* <Footer /> */}
+          <Sidebar />
+          {/* <Footer /> */}
+        </div>
       </div>
       {isOpen && activeModal === "end-exam" && <ExamEndConfirmationSheet />}
       {isOpen && activeModal === "exam-navigation-panel" && (
