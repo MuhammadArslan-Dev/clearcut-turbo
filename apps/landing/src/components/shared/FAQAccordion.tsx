@@ -53,8 +53,16 @@ export default function Accordion({ items, defaultOpenId, onOpenChange }: Props)
 
           {/* CONTENT — pure CSS grid-template-rows accordion (0fr <-> 1fr),
               keyed off the native [open] attribute via group-open:. No JS
-              height measurement, no mount/unmount step. */}
-          <div className="grid grid-rows-[0fr] group-open:grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 ease-in-out opacity-0 group-open:opacity-100">
+              height measurement, no mount/unmount step.
+              `starting:` (@starting-style) is required for the OPEN
+              direction specifically: a closed <details>' non-summary
+              children are `display: none` per the UA stylesheet, so on
+              open the browser has no prior computed value to transition
+              FROM and would otherwise snap straight to grid-rows-[1fr]
+              instead of animating — @starting-style supplies that value.
+              CLOSE doesn't need it (the element is already rendered with a
+              real computed value the moment [open] is removed). */}
+          <div className="grid grid-rows-[0fr] group-open:grid-rows-[1fr] group-open:starting:grid-rows-[0fr] transition-[grid-template-rows,opacity] duration-300 ease-in-out opacity-0 group-open:opacity-100 group-open:starting:opacity-0">
             <div className="overflow-hidden">
               <Content>{item.content}</Content>
             </div>

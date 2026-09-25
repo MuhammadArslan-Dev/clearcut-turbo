@@ -1,8 +1,4 @@
-"use client";
-
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import clsx from "clsx";
 import AccordionIcon from "./icons/accordion-icon";
 import Text from "@clearcut/ui/text";
 
@@ -17,72 +13,67 @@ type Props = {
   defaultOpenId?: string;
 };
 
+// No client component needed — the whole open/close/exclusive-group
+// interaction is native <details>/<summary> + CSS (same pattern as
+// apps/landing/src/components/shared/FAQAccordion.tsx, which this mirrors
+// for visual/animation consistency across apps). Previously a "use client"
+// component driving open state + the expand/collapse animation through
+// framer-motion (useState, AnimatePresence, a layout-measuring effect) for
+// behavior the browser already provides for free.
 export default function Accordion({ items, defaultOpenId }: Props) {
-  const [openId, setOpenId] = React.useState<string | null>(defaultOpenId ?? null);
+  const groupName = React.useId();
 
   return (
     <div className="flex flex-col gap-3 max-w-[900px] mx-auto w-full">
-      {items.map((item) => {
-        const isOpen = openId === item.id;
+      {items.map((item) => (
+        <details
+          key={item.id}
+          id={item.id}
+          name={groupName}
+          open={item.id === defaultOpenId}
+          className="group rounded-xl border-2 border-gray-200 open:border-brand px-5 py-4 bg-white transition-colors duration-200"
+        >
+          {/* HEADER — native disclosure triangle removed, replaced by the
+              chevron icon below, rotated purely via the `group-open:` CSS
+              variant (no JS animation driver). */}
+          <summary className="list-none [&::-webkit-details-marker]:hidden w-full flex items-center justify-between gap-4 cursor-pointer">
+            <Text as="p" variant="heading-small" weight="semibold">
+              {item.title}
+            </Text>
 
-        return (
-          <motion.div
-            key={item.id}
-            layout
-            className={clsx(
-              "rounded-xl border-2 px-5 py-4 cursor-pointer bg-white",
-              isOpen ? "border-brand" : "border-gray-200",
-            )}
-            onClick={() => setOpenId(isOpen ? null : item.id)}
-          >
-            <button aria-expanded={isOpen} className="w-full flex items-center justify-between text-left cursor-pointer">
-              <Text as="p" variant="heading-small" weight="semibold">
-                {item.title}
-              </Text>
+            <span className="heading-small !font-semibold shrink-0 rotate-180 transition-transform duration-300 ease-out group-open:rotate-0">
+              <AccordionIcon />
+            </span>
+          </summary>
 
-              <motion.span
-                animate={{ rotate: isOpen ? 0 : 180 }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                className="heading-small !font-semibold"
-              >
-                <AccordionIcon />
-              </motion.span>
-            </button>
-
-            <AnimatePresence initial={false}>{isOpen && <Content>{item.content}</Content>}</AnimatePresence>
-          </motion.div>
-        );
-      })}
+          {/* CONTENT — pure CSS grid-template-rows accordion (0fr <-> 1fr),
+              keyed off the native [open] attribute via group-open:. No JS
+              height measurement, no mount/unmount step.
+              `starting:` (@starting-style) is required for the OPEN
+              direction specifically: a closed <details>' non-summary
+              children are `display: none` per the UA stylesheet, so on
+              open the browser has no prior computed value to transition
+              FROM and would otherwise snap straight to grid-rows-[1fr]
+              instead of animating — @starting-style supplies that value.
+              CLOSE doesn't need it (the element is already rendered with a
+              real computed value the moment [open] is removed). */}
+          <div className="grid grid-rows-[0fr] group-open:grid-rows-[1fr] group-open:starting:grid-rows-[0fr] transition-[grid-template-rows,opacity] duration-300 ease-in-out opacity-0 group-open:opacity-100 group-open:starting:opacity-0">
+            <div className="overflow-hidden">
+              <Content>{item.content}</Content>
+            </div>
+          </div>
+        </details>
+      ))}
     </div>
   );
 }
 
 function Content({ children }: { children: React.ReactNode }) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [height, setHeight] = React.useState(0);
-
-  React.useLayoutEffect(() => {
-    if (ref.current) {
-      setHeight(ref.current.scrollHeight);
-    }
-  }, [children]);
-
   return (
-    <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height, opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{
-        height: { type: "spring", stiffness: 120, damping: 18 },
-        opacity: { duration: 0.2 },
-      }}
-      style={{ overflow: "hidden" }}
-    >
-      <div ref={ref} className="pt-2">
-        <Text as="div" variant="body-medium" className="whitespace-pre-line">
-          {children}
-        </Text>
-      </div>
-    </motion.div>
+    <div className="pt-2">
+      <Text as="div" variant="body-medium" className="whitespace-pre-line">
+        {children}
+      </Text>
+    </div>
   );
 }
