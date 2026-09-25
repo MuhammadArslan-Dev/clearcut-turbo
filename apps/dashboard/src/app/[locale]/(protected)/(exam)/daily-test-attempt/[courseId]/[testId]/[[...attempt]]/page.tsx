@@ -72,6 +72,12 @@ import {
   DailyTestResultQuestion,
 } from "@/lib/api/dailyTests";
 import { isApiError } from "@/lib/api/api-error";
+import {
+  saveDailyTestState,
+  loadDailyTestState,
+  clearDailyTestState,
+  clearStaleDailyTestState,
+} from "@/lib/dashboard/dailyTestLocalState";
 import { useInvalidateDailyTestExams } from "@/components/features/daily-tests/hooks/useDailyTestExams";
 import { useInvalidateDailyTestHistory, useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { useInvalidateDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
@@ -165,8 +171,41 @@ export default function DailyTestAttemptPage() {
             sectionName: data.topic_meta?.section_name ?? null,
             questions: data.questions,
           });
-          const first = data.questions[0];
-          if (first) setVisited(new Set([first.question_id]));
+
+          // Any OTHER saved attempt of this same test (abandoned mid-way,
+          // then superseded by this one — a retake or a new day) is no
+          // longer resumable; sweep it before touching this attempt's key.
+          clearStaleDailyTestState(courseId, testId, data.attempt_id);
+
+          // Resume in-progress local answers for THIS exact attempt (same
+          // attempt_id the backend just handed back — see loadDailyTestState's
+          // docblock for why that's a safe match). Deliberately NOT gated on
+          // `retake`: the backend's resolveAttempt() checks "is the latest
+          // attempt still in_progress?" BEFORE it even looks at the retake
+          // flag, so a `/new` URL's refresh (retake=true is sent on every
+          // load of that URL, not just the first) still resumes the SAME
+          // attempt_id as long as it hasn't been submitted yet — matching
+          // that exact behavior is why keying strictly off attempt_id (never
+          // off the URL's retake segment) is correct here. Falls through to
+          // the normal "first question visited" default when there's
+          // nothing saved (first load of this attempt, or a genuine new
+          // attempt row whose fresh attempt_id can't match an old key).
+          const saved = loadDailyTestState(courseId, testId, data.attempt_id);
+          const validIds = new Set(data.questions.map((q) => q.question_id));
+
+          if (saved) {
+            setAnswers(
+              Object.fromEntries(
+                Object.entries(saved.answers).filter(([qId]) => validIds.has(Number(qId))),
+              ),
+            );
+            setVisited(new Set(saved.visited.filter((id) => validIds.has(id))));
+            setMarkedForReview(new Set(saved.markedForReview.filter((id) => validIds.has(id))));
+            setCurrentIndex(Math.min(Math.max(saved.currentIndex, 0), data.questions.length - 1));
+          } else {
+            const first = data.questions[0];
+            if (first) setVisited(new Set([first.question_id]));
+          }
         }
       })
       .catch((err) => {
@@ -180,6 +219,25 @@ export default function DailyTestAttemptPage() {
 
   const questions = state.phase === "attempting" ? state.questions : [];
   const currentQuestion = questions[currentIndex] ?? null;
+  const activeAttemptId = state.phase === "attempting" ? state.attemptId : null;
+
+  // Mirror progress to localStorage as the user answers/navigates — see
+  // dailyTestLocalState's docblock. Runs only once the attempt is actually
+  // restored/established (the restore above and this effect can never race:
+  // the restore's setAnswers/setVisited/etc. are batched into the SAME
+  // render that first flips `activeAttemptId` non-null, so this effect never
+  // fires against the pre-restore empty defaults for an attempt that has
+  // saved data). A no-op write when nothing changed since the last save is
+  // harmless — localStorage, not a network call.
+  useEffect(() => {
+    if (!activeAttemptId) return;
+    saveDailyTestState(courseId, testId, activeAttemptId, {
+      answers,
+      visited: Array.from(visited),
+      markedForReview: Array.from(markedForReview),
+      currentIndex,
+    });
+  }, [activeAttemptId, answers, visited, markedForReview, currentIndex, courseId, testId]);
 
   // Toggle between English and the test's other language — derived from the
   // translations the questions actually carry, so it never offers a locale
@@ -219,6 +277,11 @@ export default function DailyTestAttemptPage() {
       try {
         const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers);
         setCachedResult(state.attemptId, res.data);
+        // Backend submission is the source of truth from here on — the
+        // local draft for this attempt would otherwise sit in storage
+        // forever (this test only ever reaches "completed" through this
+        // call, never a separate "mark resumed as done" step).
+        clearDailyTestState(courseId, testId, state.attemptId);
         invalidateDailyTestAttempts(courseId, testId);
         // The course list's "Attempted"/streak/avg-score, and this exam's
         // own history (score/best-score/avg-time), are now stale.
@@ -638,29 +701,6 @@ export default function DailyTestAttemptPage() {
                 <ChevronIcon size={16} variant="up" />
               </button>
 
-              {/* Bottom action bar (shared with the full exam page) — same
-                  legacy/compactMobile button styling as that page too. Below
-                  `lg` it's a flush bar, `sticky` (not `fixed`) to the bottom
-                  of this scroll container — since the "Need help?" bar below
-                  is a real sibling OUTSIDE this scroll container, sticky
-                  naturally stops flush against it with zero gap, however
-                  tall either bar ends up, without a hardcoded pixel offset
-                  or extra scroll-clearance padding. */}
-              <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:static lg:z-auto lg:rounded-xl lg:border-0 lg:p-3 lg:shadow-none">
-                <AttemptActionBar
-                  legacy
-                  compactMobile
-                  onPrevious={() => goToIndex(currentIndex - 1)}
-                  previousDisabled={currentIndex === 0}
-                  onPrimary={handleSaveAndNext}
-                  primaryDisabled={draftOption == null || submitting}
-                  primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
-                  onClear={handleClear}
-                  clearDisabled={draftOption == null}
-                  previousLabel={t("attempt.previous")}
-                  clearLabel={t("attempt.clearResponse")}
-                />
-              </div>
             </div>
 
             {/* Right sidebar — desktop only */}
@@ -700,11 +740,50 @@ export default function DailyTestAttemptPage() {
         </div>
       </div>
 
+      {/* Bottom action bar (shared with the full exam page, same
+          legacy/compactMobile button styling) — a real flex child AFTER the
+          scroll area (see the "Footer" comment below for why), not `sticky`
+          inside it. `sticky` was the original approach, but this page's
+          scroll container wraps the ENTIRE content column (summary strip +
+          both sidebars + question card), unlike the full exam page where
+          only the question's own text scrolls inside an otherwise-static
+          shell — so a `sticky` element in here only reaches the bottom of
+          that (very tall) scrollable box after scrolling nearly all the way
+          through it, reading as "the footer scrolls with the page" instead
+          of staying pinned. Moving it out of the scroll area entirely (this
+          page's shell is `h-screen overflow-hidden`, same trick already
+          used below for the QuestionsDock/"Need help?" bars) pins it
+          unconditionally, on both mobile and desktop, with no sticky/fixed
+          math needed. The two empty `w-[260px]` columns replicate the
+          left/right sidebar gutters so the bar's card still lines up under
+          the center question column on desktop, matching how it looked
+          when it was still a flex child of that column. */}
+      <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none">
+        <div className="mx-auto flex max-w-[1280px] flex-col lg:flex-row lg:items-start lg:gap-4 lg:px-4">
+          <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
+          <div className="flex-1 lg:rounded-xl lg:border lg:border-gray-200 lg:bg-white lg:p-3">
+            <AttemptActionBar
+              legacy
+              compactMobile
+              onPrevious={() => goToIndex(currentIndex - 1)}
+              previousDisabled={currentIndex === 0}
+              onPrimary={handleSaveAndNext}
+              primaryDisabled={draftOption == null || submitting}
+              primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
+              onClear={handleClear}
+              clearDisabled={draftOption == null}
+              previousLabel={t("attempt.previous")}
+              clearLabel={t("attempt.clearResponse")}
+            />
+          </div>
+          <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
+        </div>
+      </div>
+
       {/* Collapsible questions dock — a real flex child (not sticky/inside
-          the scroll area), placed between the sticky action bar above and
-          the "Need help?" bar below so the sticky bar naturally stops flush
-          against its top with no gap, same as it does against "Need help?"
-          when this is collapsed. */}
+          the scroll area), placed between the action bar above and the
+          "Need help?" bar below so it stops flush against both with no
+          gap, same as before. */}
       <div className="shrink-0 border-t border-gray-200 bg-white lg:hidden">
         <QuestionsDock
           questions={questions.map((q, index) => ({ status: getStatus(q), isActive: index === currentIndex }))}
