@@ -61,6 +61,7 @@ Every package uses a `"./subpath": "./src/file.ts"` `exports` map (no barrel fil
 | `packages/assets` | `image-registry` — shared image path/asset constants |
 | `packages/auth` | `createAuthFeature(config)` — a factory each app calls once (in its own `src/lib/auth.ts`) with app-specific `apiClient`/`apiBaseUrl`/`redirectBaseUrl`/`onEvent`, returning `AuthProvider`, `AuthModal`, `useAuthStore`, `useAuthModal`, `InlineAuthFlow`, `authApi`. Never import `@clearcut/auth` directly from app code — always through that app's `lib/auth.ts`. Used by blog + landing only. |
 | `packages/design-tokens` | `tokens.css` — the single source for colors, typography scale, spacing, radius, shadows, z-index, breakpoints. All four apps `@import` it into their own `globals.css`. `tokens.css` requires each consumer to define `--font-latin` itself (and `--font-hindi` too, unless — like `apps/tools` — it has no Hindi content). |
+| `packages/error-reporting` | SDK-agnostic page-error reporting: `redact` (token/OTP scrubbing for Sentry events), `not-found` (404 classification), `page-errors` (`createPageErrorReporter`). Used by blog, landing, tools — see "Error tracking" |
 | `packages/hooks` | Generic React hooks: `useIsMobile`, `useLockBodyScroll`, `useBackHandler`, `useScrollShadow` |
 | `packages/i18n` | `routing.ts` (canonical `next-intl` locale config — `en`/`hi`, `localePrefix: "as-needed"`) and `navigation.ts` (locale-aware `Link`, `useRouter`, etc.) |
 | `packages/react-query` | `createQueryClient()` (SSR-tuned staleTime/gcTime/retry) and `ReactQueryProvider` (one client per component lifetime via `useState`) |
@@ -167,7 +168,9 @@ Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not
 
 `SENTRY_AUTH_TOKEN` is only needed for production/CI builds; without it, production stack traces stay minified.
 
-`apps/blog` and `apps/landing` have Sentry scaffolded but inert (empty DSN in their `.env.example`).
+**Page-level 404/500 reporting is shared across dashboard, blog, landing and tools** (`packages/error-reporting`, no Sentry dependency — each app passes its own SDK). Rules: a 404 becomes a Sentry event only when it points at a defect (in-app navigation / same-site referrer → warning, external referrer → info; typed URLs, bookmarks and scanner paths like `/wp-login.php` are ignored; one issue per route shape); every event is scrubbed of `token`/`otp`/`code`/`password`… query values (`redact.ts`, applied in `beforeSend` and to `contexts.nextjs.request_path`); `error.tsx`/`global-error.tsx` report the ORIGINAL error. Dashboard keeps its own copy (`src/lib/sentry/report-not-found.ts`, `sentry-shared.ts`) — it is a deliberate partial consumer.
+
+Blog/landing/tools are **inert until `NEXT_PUBLIC_SENTRY_DSN` is set** (blog/landing: server env; tools: a static export, so it must be set at BUILD time in the Pages build env; add `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production` too). Once set, blog/landing's `instrumentation-client.ts` loads the full browser SDK on every page (the documented bundle-size trade-off); page-error reporting also lazy-loads the SDK on its own the first time a 404/crash happens. **`instrumentation.ts` must live in `src/`** when the app dir is `src/app` — Next ignores a project-root copy (landing's sat at the root, so its server errors were never reported; fixed). `global-error.tsx` must be `src/app/global-error.tsx` (blog's copy under `[locale]/` was never picked up).
 
 Note: `@sentry/nextjs` declares peer support for Next 13–15, not Next 16 (which blog, dashboard, and landing all run). It builds and typechecks clean regardless — re-verify after any Sentry version bump.
 

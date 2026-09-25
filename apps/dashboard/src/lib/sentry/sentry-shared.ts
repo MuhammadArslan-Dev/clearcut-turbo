@@ -91,8 +91,64 @@ export const DENY_URLS: RegExp[] = [
 ];
 
 /**
+ * Query params that carry credentials. The cross-host login handoff lands on
+ * `/dashboard?token=<sanctum token>` (see AuthProvider), so that token is in
+ * `window.location`, the request URL and any navigation breadcrumb for as
+ * long as the landing URL is live — Sentry's own scrubbing only looks at
+ * header/body field names, not URL query strings.
+ */
+const SENSITIVE_PARAMS = new Set([
+  "token",
+  "access_token",
+  "auth_token",
+  "refresh_token",
+  "id_token",
+  "api_key",
+  "apikey",
+  "key",
+  "secret",
+  "password",
+  "pass",
+  "otp",
+  "code",
+  "session",
+  "signature",
+]);
+
+/** Replaces the value of any sensitive query param in a URL/path; returns other input untouched. */
+export function redactUrl<T extends string | undefined>(raw: T): T {
+  if (!raw || !raw.includes("?")) return raw;
+  try {
+    const url = new URL(raw, "http://redact.local");
+    let changed = false;
+    for (const key of [...url.searchParams.keys()]) {
+      if (SENSITIVE_PARAMS.has(key.toLowerCase())) {
+        url.searchParams.set(key, "[redacted]");
+        changed = true;
+      }
+    }
+    if (!changed) return raw;
+    const absolute = /^[a-z][a-z0-9+.-]*:/i.test(raw);
+    return (absolute ? url.toString() : url.pathname + url.search + url.hash) as T;
+  } catch {
+    return raw;
+  }
+}
+
+/** Same as redactUrl, for a bare `?a=b` search string (window.location.search). */
+export function redactSearch<T extends string | undefined>(search: T): T {
+  if (!search) return search;
+  const hadPrefix = search.startsWith("?");
+  const redacted = redactUrl(`/${hadPrefix ? search : `?${search}`}`) as string;
+  // Keep the caller's shape: window.location.search has the "?", a
+  // request.query_string does not.
+  return redacted.slice(hadPrefix ? 1 : 2) as T;
+}
+
+/**
  * Strips credentials from an event before it leaves the process. Sentry's own
- * scrubbing does not know about our header/body shapes.
+ * scrubbing does not know about our header/body shapes, nor about tokens in
+ * URL query strings (see SENSITIVE_PARAMS).
  */
 export function scrubSensitiveData<T extends Record<string, any>>(event: T): T {
   const headers = event?.request?.headers;
@@ -101,6 +157,43 @@ export function scrubSensitiveData<T extends Record<string, any>>(event: T): T {
     delete headers.Authorization;
     delete headers.cookie;
     delete headers.Cookie;
+    if (typeof headers.referer === "string") headers.referer = redactUrl(headers.referer);
+    if (typeof headers.Referer === "string") headers.Referer = redactUrl(headers.Referer);
   }
+
+  if (event?.request) {
+    if (typeof event.request.url === "string") event.request.url = redactUrl(event.request.url);
+    if (typeof event.request.query_string === "string") {
+      event.request.query_string = redactSearch(event.request.query_string);
+    }
+  }
+
+  if (event?.extra) {
+    for (const key of ["url", "referrer"]) {
+      if (typeof event.extra[key] === "string") event.extra[key] = redactUrl(event.extra[key]);
+    }
+    if (typeof event.extra.search === "string") event.extra.search = redactSearch(event.extra.search);
+  }
+
+  // Contexts carry URLs under assorted keys — `url`, and `request_path` from
+  // Next's captureRequestError (which includes the raw query string).
+  if (event?.contexts) {
+    for (const ctx of Object.values(event.contexts) as Record<string, any>[]) {
+      if (!ctx || typeof ctx !== "object") continue;
+      for (const [key, value] of Object.entries(ctx)) {
+        if (typeof value === "string" && /^(\/|https?:)/.test(value)) ctx[key] = redactUrl(value);
+      }
+    }
+  }
+
+  // Navigation/fetch breadcrumbs record full URLs (`to`/`from`/`url`).
+  for (const crumb of event?.breadcrumbs ?? []) {
+    const data = crumb?.data;
+    if (!data) continue;
+    for (const key of ["url", "to", "from"]) {
+      if (typeof data[key] === "string") data[key] = redactUrl(data[key]);
+    }
+  }
+
   return event;
 }

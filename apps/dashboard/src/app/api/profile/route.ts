@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 
 // Same fallback as lib/api/client.ts — unset in production would otherwise
@@ -36,6 +37,12 @@ export async function GET() {
       data = JSON.parse(text)
     } catch {
       console.error('[API/profile] Invalid JSON from backend:', text)
+      // Handled response, so onRequestError never sees it — report it here.
+      Sentry.captureMessage('API /profile: invalid JSON from backend', {
+        level: 'error',
+        tags: { route: 'api/profile', upstream_status: String(res.status) },
+        extra: { bodyPreview: text.slice(0, 200) },
+      })
       return NextResponse.json(
         { message: 'Invalid backend response' },
         { status: 502 }
@@ -46,6 +53,8 @@ export async function GET() {
 
   } catch (err) {
     console.error('[API/profile] Server error:', err)
+    // Caught and turned into a JSON 500, so onRequestError never sees it.
+    Sentry.captureException(err, { tags: { route: 'api/profile' } })
 
     return NextResponse.json(
       { message: 'Internal server error' },

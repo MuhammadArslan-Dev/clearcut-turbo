@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import NotFoundContent from '@/components/not-found-content'
+import { ReportNotFound } from '@/components/page-error-reporter'
 
 export const metadata: Metadata = {
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className="flex items-center justify-center min-h-screen w-full">
+      <ReportNotFound />
       <NotFoundContent />
     </div>
   )

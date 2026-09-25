@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -22,6 +24,8 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
+    // Swallowed into a 200 {success:false} below, so onRequestError never sees it.
+    Sentry.captureException(error, { tags: { route: "api/payment-init" } });
     return Response.json({
       success: false,
       message: error.message || "Webhook failed",

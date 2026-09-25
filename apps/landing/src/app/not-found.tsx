@@ -1,6 +1,7 @@
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import "@/styles/globals.css";
 import NotFoundContentRoot from "@/components/not-found-content-root";
+import { ReportNotFound } from "@/components/page-error-reporter";
 
 // Root-level fallback for paths that don't match the [locale] segment at
 // all (e.g. malformed/deeply-nested URLs) — Next.js falls through all the
@@ -34,6 +35,7 @@ export default function NotFound() {
   return (
     <html className={`${notoSans.variable} ${notoSansDevanagari.variable}`}>
       <body>
+        <ReportNotFound />
         <div className="min-h-screen w-full flex justify-center items-center">
           <NotFoundContentRoot />
         </div>

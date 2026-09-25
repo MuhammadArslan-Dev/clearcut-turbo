@@ -30,6 +30,8 @@
  * The dynamic `import()` rather than a top-level import is what permits the
  * elimination — a static import is unconditional by definition.
  */
+import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+
 const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (DSN) {
@@ -43,6 +45,13 @@ if (DSN) {
       tracesSampleRate: Number(
         process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1,
       ),
+      sendDefaultPii: false,
+      // Tokens/OTPs in URLs (login handoffs, reset links) must never reach Sentry.
+      beforeSend(event) {
+        scrubSensitiveData(event);
+        event.tags = { ...event.tags, runtime: "browser", app: "blog" };
+        return event;
+      },
     });
   });
 }

@@ -20,6 +20,7 @@
     "@clearcut/assets": "workspace:*",
     "@clearcut/auth": "workspace:*",
     "@clearcut/design-tokens": "workspace:*",
+    "@clearcut/error-reporting": "workspace:*",
     "@clearcut/hooks": "workspace:*",
     "@clearcut/i18n": "workspace:*",
     "@clearcut/react-query": "workspace:*",

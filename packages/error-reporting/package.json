@@ -1,0 +1,18 @@
+{
+  "name": "@clearcut/error-reporting",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "exports": {
+    "./redact": "./src/redact.ts",
+    "./not-found": "./src/not-found.ts",
+    "./page-errors": "./src/page-errors.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

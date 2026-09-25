@@ -32,6 +32,9 @@ importers:
       '@clearcut/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@clearcut/error-reporting':
+        specifier: workspace:*
+        version: link:../../packages/error-reporting
       '@clearcut/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
@@ -367,6 +370,9 @@ importers:
       '@clearcut/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@clearcut/error-reporting':
+        specifier: workspace:*
+        version: link:../../packages/error-reporting
       '@clearcut/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
@@ -512,9 +518,15 @@ importers:
       '@clearcut/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@clearcut/error-reporting':
+        specifier: workspace:*
+        version: link:../../packages/error-reporting
       '@clearcut/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@sentry/browser':
+        specifier: ^10.62.0
+        version: 10.67.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -647,6 +659,15 @@ importers:
         version: 5.9.3
 
   packages/design-tokens: {}
+
+  packages/error-reporting:
+    devDependencies:
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(yaml@2.9.0)
 
   packages/hooks:
     dependencies:
@@ -16641,7 +16662,7 @@ snapshots:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.5)
       picomatch: 4.0.5
-      postcss: 8.5.19
+      postcss: 8.5.23
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:

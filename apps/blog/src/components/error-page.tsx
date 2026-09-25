@@ -15,7 +15,7 @@ import { IMAGES } from "@/constants/images";
 // using the locale-aware router here crashes at build time (no i18n
 // context to read from). PageNotFound's own default HomeLinkComponent
 // (next/link) is exactly right for this case — no override needed.
-export default function ErrorPage() {
+export default function ErrorPage({ variant = "404" }: { variant?: "404" | "500" }) {
   const router = useRouter();
 
   return (
@@ -30,16 +30,24 @@ export default function ErrorPage() {
       />
       <PageNotFound
         onGoBack={() => router.back()}
-        illustration={
-          <Image
-            src={IMAGES.error404}
-            alt=""
-            width={626}
-            height={370}
-            className="h-auto max-w-[626px] w-full"
-            priority
-          />
-        }
+        {...(variant === "500"
+          ? {
+              code: "500",
+              title: "Something went wrong",
+              description: "An unexpected error occurred on our side. Please try again in a moment.",
+            }
+          : {
+              illustration: (
+                <Image
+                  src={IMAGES.error404}
+                  alt=""
+                  width={626}
+                  height={370}
+                  className="h-auto max-w-[626px] w-full"
+                  priority
+                />
+              ),
+            })}
       />
     </div>
   );

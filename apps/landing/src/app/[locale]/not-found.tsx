@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import NotFoundContent from '@/components/not-found-content'
+import { ReportNotFound } from '@/components/page-error-reporter'
 
 export const metadata: Metadata = {
   title: 'Page Not Found | Clear Cutoff',
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className='min-h-screen w-full flex justify-center items-center'>
+      <ReportNotFound />
       <NotFoundContent />
     </div>
   )

@@ -11,6 +11,8 @@ import {
   SENTRY_DSN,
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
+  redactSearch,
+  redactUrl,
   scrubSensitiveData,
 } from "@/lib/sentry/sentry-shared";
 
@@ -69,10 +71,11 @@ Sentry.init({
     if (typeof window !== "undefined") {
       event.extra = {
         ...event.extra,
-        url: window.location.href,
+        // Redacted: the login handoff puts `?token=<sanctum token>` in the URL.
+        url: redactUrl(window.location.href),
         pathname: window.location.pathname,
-        search: window.location.search,
-        referrer: document.referrer || undefined,
+        search: redactSearch(window.location.search),
+        referrer: redactUrl(document.referrer) || undefined,
         viewport: `${window.innerWidth}x${window.innerHeight}`,
       };
     }

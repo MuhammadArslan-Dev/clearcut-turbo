@@ -2,6 +2,7 @@ import { Noto_Sans } from "next/font/google";
 import "@/app/globals.css";
 
 import ErrorPage from '@/components/error-page'
+import { ReportNotFound } from '@/components/page-error-reporter'
 
 
 
@@ -27,6 +28,7 @@ export default function NotFound() {
   return (
     <html>
       <body className={`${notoSans.variable} antialiased`}>
+        <ReportNotFound />
         <div className="flex items-center justify-center min-h-screen w-full">
           <ErrorPage />
         </div>
