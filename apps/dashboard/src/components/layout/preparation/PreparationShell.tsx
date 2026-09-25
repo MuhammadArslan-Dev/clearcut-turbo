@@ -15,6 +15,8 @@ import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStor
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useParams } from "next/navigation";
 import { changeCourse, MyCoursesResponse } from "@/lib/dashboard/learning";
+import { isApiError } from "@/lib/api/api-error";
+import { logger } from "@/lib/sentry/sentry-logger";
 import { useQueryClient } from "@tanstack/react-query";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import dynamic from "next/dynamic";
@@ -88,9 +90,24 @@ export default function PreparationShell({
     const cachedCourses = queryClient.getQueryData<MyCoursesResponse>(MY_COURSES_KEY);
     if (cachedCourses?.active_course?.group_code === courseId) return;
 
-    changeCourse(courseId).then(() => {
-      queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY });
-    });
+    changeCourse(courseId)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY });
+      })
+      .catch((err) => {
+        // Nothing handled this rejection, so a failed switch (backend 500, a
+        // dropped mobile connection) surfaced as an *unhandled* rejection
+        // (Sentry CLEARCUTOFF-NEXTJS-APP-97). The page itself keeps working —
+        // it's driven by the courseId in the URL, not by this call's result —
+        // so this only means the server's "active course" wasn't switched.
+        // A network drop/navigation-away isn't actionable; a real API failure
+        // is still reported, now as a handled error with context.
+        if (isApiError(err) && err.isNetworkError) return;
+        logger.error(err, {
+          tags: { type: "background_sync", module: "preparation-shell" },
+          extra: { action: "changeCourse", courseId },
+        });
+      });
   }, [params?.courseId]);
 
   useStreakTracker();

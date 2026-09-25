@@ -36,9 +36,16 @@ export async function getStreak(): Promise<StreakResponse> {
 /**
  * Log learning minutes
  */
-export async function logMinutes(minutes: number): Promise<void> {
+export async function logMinutes(
+  minutes: number,
+  // keepalive lets the request outlive a page close/navigation — the tracker
+  // flushes on tab-hide and unmount, exactly when a plain fetch gets
+  // cancelled by the browser and reported as "API unreachable".
+  options?: { keepalive?: boolean },
+): Promise<void> {
   await apiFetch<void>("/v2/streak/log-minutes", {
     method: "POST",
+    keepalive: options?.keepalive,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token()}`,

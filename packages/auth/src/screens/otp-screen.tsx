@@ -175,6 +175,8 @@ export function createOtpScreen({
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 422 || status === 401) {
           setError("Invalid or expired OTP. Please try again.");
+        } else if (status === 429) {
+          setError("Too many attempts. Please wait a minute and try again.");
         } else if (status && status >= 500) {
           setError("Server error. Please try again.");
         } else if (!navigator.onLine) {

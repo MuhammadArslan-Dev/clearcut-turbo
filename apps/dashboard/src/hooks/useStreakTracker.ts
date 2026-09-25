@@ -1,6 +1,8 @@
 'use client';
 
 import { logMinutes } from '@/lib/dashboard/streak';
+import { isApiError } from '@/lib/api/api-error';
+import { logger } from '@/lib/sentry/sentry-logger';
 import { useEffect, useRef } from 'react';
 
 type Options = {
@@ -14,7 +16,7 @@ export function useStreakTracker({ intervalMinutes = 5 }: Options = {}) {
   useEffect(() => {
     const intervalMs = intervalMinutes * 60 * 1000;
 
-    const sendBatch = () => {
+    const sendBatch = (keepalive = false) => {
       const now = Date.now();
       const diff = now - lastTracked.current;
 
@@ -26,18 +28,31 @@ export function useStreakTracker({ intervalMinutes = 5 }: Options = {}) {
       const minutes = Math.min(Math.floor(diff / 60000), 1440);
 
       if (minutes > 0) {
-        logMinutes(minutes);
         lastTracked.current = now;
+        logMinutes(minutes, { keepalive }).catch((err) => {
+          // Fire-and-forget, so nothing else was handling this rejection —
+          // it surfaced as an unhandled "API unreachable" on every offline
+          // blip / navigation. A network failure just means these minutes
+          // weren't delivered: hand them back so the next flush (if the
+          // tracker is still mounted) sends them, instead of reporting an
+          // error for something nobody can act on. Any real API failure
+          // (4xx/5xx) is still reported.
+          if (isApiError(err) && err.isNetworkError) {
+            lastTracked.current -= minutes * 60000;
+            return;
+          }
+          logger.error(err, { tags: { module: 'streak-tracker', endpoint: '/streak/log-minutes' } });
+        });
       }
     };
 
     // Start interval batching
-    intervalRef.current = setInterval(sendBatch, intervalMs);
+    intervalRef.current = setInterval(() => sendBatch(), intervalMs);
 
     // Handle tab visibility
     const handleVisibility = () => {
       if (document.hidden) {
-        sendBatch(); // send remaining before pause
+        sendBatch(true); // send remaining before pause
       } else {
         lastTracked.current = Date.now(); // reset when back
       }
@@ -52,7 +67,7 @@ export function useStreakTracker({ intervalMinutes = 5 }: Options = {}) {
       document.removeEventListener('visibilitychange', handleVisibility);
 
       // Final flush on unmount
-      sendBatch();
+      sendBatch(true);
     };
   }, [intervalMinutes]);
 }
