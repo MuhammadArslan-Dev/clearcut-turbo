@@ -15,6 +15,7 @@ import { useSingleTab } from "../hooks/useSingleTab";
 import { submitAnswer } from "@/lib/exam";
 import { apiFetch } from "@/lib/api/client";
 import { useRouter } from "@/i18n/navigation";
+import { useExamFinishNavigation } from "@/components/features/exam/hooks/useExamFinishNavigation";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { useExamModalStore } from "../store/useExamModalStore";
 import ExamSkeleton from "./ExamSkeleton";
@@ -62,6 +63,7 @@ export default function MainContent({ examId }: { examId: string }) {
   const prevQuestionIdRef = useRef<number | null>(null);
 
   const router = useRouter();
+  const goToReport = useExamFinishNavigation();
 
   useSingleTab(examId);
   const { isLoading } = useGetExam({ examId });
@@ -124,14 +126,8 @@ export default function MainContent({ examId }: { examId: string }) {
     } catch (error) {
       console.error(error);
     }
-    const testTypeParam =
-      examType === "chapter"   ? "chapter-tests"    :
-      examType === "sectional" ? "sectional-tests"  :
-      "full-length-papers";
-    router.replace(
-      `/test-series/${exam.course?.group_code}?showReport=true&examId=${exam.uuid}&testType=${testTypeParam}`
-    );
-  }, [exam, router]);
+    goToReport(exam.course?.group_code, exam.uuid, examType);
+  }, [exam, goToReport]);
 
   const remaining = useExamTimer({ examId, initialRemaining: 0, onExpire: handleAutoExpire });
 

@@ -20,7 +20,7 @@ import {
 } from "@/lib/tests/getExam";
 
 import { useParams } from "next/navigation";
-import { useRouter } from "@/i18n/navigation";
+import { useFlowNavigation } from "@/hooks/navigation/useFlowNavigation";
 
 /* -------------------------------------------------------------------------- */
 /*                                  CONFIG                                    */
@@ -40,7 +40,7 @@ export default function CountDownModal() {
 
   const t = useTranslations("modals.countDownModal");
 
-  const router = useRouter();
+  const flow = useFlowNavigation();
   const { get } = useQueryParams();
   const { courseId } = useParams();
 
@@ -153,8 +153,8 @@ export default function CountDownModal() {
     closeModal("pre-test-confirmation");
     closeModal("test-start-countdown");
 
-    router.push(`/exam/${attempt.uuid}`);
-  }, [readyToStart, attempt?.uuid, closeModal, router]);
+    flow.push(`/exam/${attempt.uuid}`);
+  }, [readyToStart, attempt?.uuid, closeModal, flow]);
 
   /* -------------------------------------------------------------------------- */
   /*                         RESET WHEN MODAL CLOSES                            */

@@ -28,7 +28,7 @@ import {
   VideoCamIcon,
 } from "@/components/ui/icons";
 
-import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
+import { useFlowNavigation } from "@/hooks/navigation/useFlowNavigation";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
 import { useSearchParams } from "next/navigation";
@@ -75,7 +75,7 @@ const TOPBAR_MAX_HIDE_OFFSET = 150;
 export default function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations();
-  const { set } = useQueryParams();
+  const flow = useFlowNavigation();
   const isMobile = useIsMobile();
   const [expandedTopics, setExpandedTopics] = React.useState<
     Record<number, boolean>
@@ -211,11 +211,14 @@ export default function Sidebar() {
       setChapter(chapter);
       setTopic(topic);
 
+      // Mobile topic view is a real history layer (swipe-back closes it), but
+      // opened through the flow hook so ChapterDetailHeader's back button can
+      // pop it instead of pushing a duplicate list entry.
       if (isMobile) {
-        set({ topic: true }, { replace: false });
+        flow.pushQuery({ topic: true });
       }
     },
-    [isMobile, set, setChapter, setTopic],
+    [isMobile, flow, setChapter, setTopic],
   );
 
   // Hydrating into a section fires this 2-3+ times in quick succession

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/icons";
 import Text from "@clearcut/ui/text";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
-import { useRouter } from "@/i18n/navigation";
+import { useExamFinishNavigation } from "@/components/features/exam/hooks/useExamFinishNavigation";
 import { useExamStore } from "../../store/useExamStore";
 import { apiFetch } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
@@ -33,7 +33,7 @@ export default function ExamEndConfirmationSheet() {
   const { isOpen, closeModal, stack } = useExamModalStore();
   const isMobile = useIsMobile();
   const t = useTranslations("modals.examSubmission");
-  const router = useRouter();
+  const goToReport = useExamFinishNavigation();
 
   const active = stack[stack.length - 1];
   const { exam, language, getStats } = useExamStore();
@@ -65,14 +65,8 @@ export default function ExamEndConfirmationSheet() {
     } catch (error) {
       console.error("End exam failed:", error);
     }
-    const testTypeParam =
-      examType === "chapter" ? "chapter-tests" :
-      examType === "sectional" ? "sectional-tests" :
-      "full-length-papers";
-    router.replace(
-      `/test-series/${exam?.course?.group_code}?showReport=true&examId=${exam?.uuid}&testType=${testTypeParam}`,
-    );
-  }, [handleClose, router, exam]);
+    goToReport(exam?.course?.group_code, exam?.uuid, examType);
+  }, [handleClose, goToReport, exam]);
 
   return (
     <AnimatePresence>

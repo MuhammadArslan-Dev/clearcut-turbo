@@ -9,6 +9,7 @@ import { Button } from "@clearcut/ui/button";
 import ProgressCard from "../components/cards/ProgressCard";
 import { useTestSeriesModalStore } from "../store/useTestSeriesModalStore";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
+import { takeExamReportIntent } from "@/components/features/test-series/util/examReportIntent";
 import { getFullLengthTestList } from "@/lib/tests/getExam";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -49,8 +50,35 @@ export default function TestListPage({ courseId }: { courseId?: string }) {
   // Auto open after exam submit
   const hasOpenedRef = useRef(false);
 
+  // Exam finished and popped back to this list entry (see
+  // useExamFinishNavigation): no showReport params in the URL, the request
+  // arrives as a one-shot intent instead.
+  const intentTakenRef = useRef(false);
+  const intentExamIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (hasOpenedRef.current) return;
+
+    // Taken in the effect (not during render) so StrictMode's double render
+    // can't consume the one-shot intent and then throw the result away.
+    if (!intentTakenRef.current) {
+      intentTakenRef.current = true;
+      intentExamIdRef.current = takeExamReportIntent();
+    }
+
+    const intentExamId = intentExamIdRef.current;
+    if (intentExamId && testType) {
+      queryClient.invalidateQueries({
+        queryKey: [
+          testType === "chapter-tests" ? "chapter-test" :
+          testType === "sectional-tests" ? "sectional-test" :
+          "full-test",
+        ],
+      });
+      open("exam-report", { examId: intentExamId }, true);
+      hasOpenedRef.current = true;
+      return;
+    }
 
     if (showReport === "true" && examId) {
       // Invalidate stale test list so is_attempted updates immediately

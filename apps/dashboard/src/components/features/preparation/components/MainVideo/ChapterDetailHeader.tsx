@@ -6,7 +6,7 @@ import {
   VideoCamIcon,
 } from "@/components/ui/icons";
 import { Button } from "@clearcut/ui/button";
-import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
+import { useFlowNavigation } from "@/hooks/navigation/useFlowNavigation";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import Text from "@clearcut/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +18,7 @@ import { getLocalizedName } from "../../util/getLocalizedName";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 export default function ChapterDetailHeader() {
-  const { set } = useQueryParams();
+  const flow = useFlowNavigation();
   const t = useTranslations();
 
   const { selectedTopic, selectedChapter, progressByTopicId, course } =
@@ -67,7 +67,7 @@ export default function ChapterDetailHeader() {
                 height: "36px",
                 width: "36px",
               }}
-              onClick={() => set({ topic: "" }, { replace: false })}
+              onClick={() => flow.popQuery({ topic: null })}
             >
               <ChevronIcon variant="left" size={16} color="#192839" />
             </Button>

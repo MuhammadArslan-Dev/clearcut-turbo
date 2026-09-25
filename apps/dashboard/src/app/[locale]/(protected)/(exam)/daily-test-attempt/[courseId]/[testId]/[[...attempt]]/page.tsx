@@ -28,7 +28,7 @@ import MathRender from "@/components/features/mathjax/Math";
 import OptionCard from "@/components/features/exam-report/OptionCard";
 import QuestionText from "@/components/ui/cards/QuestionMaterial/Question/QuestionText";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
-import { useRouter } from "@/i18n/navigation";
+import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
 import { Card } from "@clearcut/ui/card";
@@ -102,7 +102,7 @@ type ViewState =
   | { phase: "error"; message: "loadFailed" | "submitFailed" };
 
 export default function DailyTestAttemptPage() {
-  const router = useRouter();
+  const flow = useDailyTestFlowNavigation();
   const t = useTranslations("DailyTests");
   const locale = useLocale();
   const params = useParams<{ courseId: string; testId: string; attempt?: string[] }>();
@@ -225,14 +225,17 @@ export default function DailyTestAttemptPage() {
         invalidateDailyTestExams();
         invalidateDailyTestHistory(courseId);
         // Submit lands on this test's Attempt History (View Result there).
-        router.replace(`/daily-tests/${courseId}/${testId}`);
+        // goUp pops back to it when the attempt was opened from there
+        // ("Attempt again"), else swaps the attempt entry — never stacks a
+        // second History entry.
+        flow.goUp(`/daily-tests/${courseId}/${testId}`);
       } catch {
         setState({ phase: "error", message: "submitFailed" });
       } finally {
         setSubmitting(false);
       }
     },
-    [state, answers, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, router, courseId, testId],
+    [state, answers, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, flow, courseId, testId],
   );
 
   const goToIndex = useCallback(
@@ -368,7 +371,7 @@ export default function DailyTestAttemptPage() {
         <p className="body-medium text-surface-gray-muted">
           {t("attempt.lockedDesc")}
         </p>
-        <Button onClick={() => router.push(`/daily-tests/${courseId}`)}>{t("attempt.backToHistory")}</Button>
+        <Button onClick={() => flow.goUp(`/daily-tests/${courseId}`)}>{t("attempt.backToHistory")}</Button>
       </div>
     );
   }
@@ -1165,7 +1168,7 @@ function DailyTestResultView({
   courseId: string;
   testId: string;
 }) {
-  const router = useRouter();
+  const flow = useDailyTestFlowNavigation();
   const { history } = useDailyTestHistory(courseId);
   const [filter, setFilter] = useState<ReviewFilter>("all");
 
@@ -1396,7 +1399,7 @@ function DailyTestResultView({
           color={result.is_paid ? undefined : "gray"}
           sx={{ borderRadius: "50px" }}
           fullWidth
-          onClick={() => router.push(`/daily-tests/${courseId}/${testId}`)}
+          onClick={() => flow.goUp(`/daily-tests/${courseId}/${testId}`)}
         >
           <div className="flex items-center gap-2">
             <ArrowLeft size={16} />

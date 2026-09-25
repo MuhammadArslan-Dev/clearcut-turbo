@@ -129,9 +129,14 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
     }
 
     if (changed) {
-      window.history.replaceState(null, "", `?${params.toString()}`);
+      // Keep the current history.state: passing null dropped the flow-origin
+      // tag (see useFlowNavigation) from the entry being rewritten.
+      window.history.replaceState(window.history.state, "", `?${params.toString()}`);
     }
-  }, [selectedSectionId, selectedChapter?.id, selectedTopic?.id]);
+    // searchParams: after browser-back onto an older entry (e.g. closing the
+    // mobile topic view) the URL can carry a stale chapter/topic - re-assert
+    // the store's selection into it (replace, never a new entry).
+  }, [selectedSectionId, selectedChapter?.id, selectedTopic?.id, searchParams]);
 
   const steps: TourStep[] = [
     {

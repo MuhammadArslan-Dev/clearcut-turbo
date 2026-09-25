@@ -13,6 +13,7 @@ import DailyTestHistoryRow from "@/components/features/daily-tests/DailyTestHist
 import PremiumUpsell from "@/components/features/daily-tests/PremiumUpsell";
 import InfoStrip from "@/components/features/attempt-ui/InfoStrip";
 import Pagination from "@/components/ui/widgets/pagination/Pagination";
+import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
@@ -25,6 +26,7 @@ const PAGE_SIZE = 5;
 
 export default function DailyTestHistoryPage() {
   const router = useRouter();
+  const flow = useDailyTestFlowNavigation();
   const t = useTranslations("DailyTests");
   const params = useParams<{ courseId: string }>();
   const courseId = params.courseId;
@@ -51,7 +53,7 @@ export default function DailyTestHistoryPage() {
     }
     // Full-screen attempt experience lives outside daily-tests' own
     // DashboardShell-wrapped layout — see daily-test-attempt/layout.tsx.
-    router.push(`/daily-test-attempt/${courseId}/${test.test_id}`);
+    flow.push(`/daily-test-attempt/${courseId}/${test.test_id}`);
   };
 
   const course = useEnrollmentForCourse(courseId);
@@ -143,8 +145,8 @@ export default function DailyTestHistoryPage() {
                         title={testTitle(test.test_date, t)}
                         isToday={test.test_date === dateKey(new Date())}
                         onAttempt={() => handleAttempt(test)}
-                        onViewHistory={() => router.push(`/daily-tests/${courseId}/${test.test_id}`)}
-                        onAttemptAgain={() => router.push(`/daily-test-attempt/${courseId}/${test.test_id}/new`)}
+                        onViewHistory={() => flow.push(`/daily-tests/${courseId}/${test.test_id}`)}
+                        onAttemptAgain={() => flow.push(`/daily-test-attempt/${courseId}/${test.test_id}/new`)}
                       />
                     ))}
                   </div>

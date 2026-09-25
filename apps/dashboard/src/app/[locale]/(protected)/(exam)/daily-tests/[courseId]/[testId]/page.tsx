@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, CalendarDays, Clock, Eye, FileText, Info, Lightbulb, RefreshCw, Target, TrendingUp, Trophy } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { useRouter } from "@/i18n/navigation";
 import { Card } from "@clearcut/ui/card";
 import { Button } from "@clearcut/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import { useDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
 import InfoRow from "@/components/features/daily-tests/InfoRow";
@@ -36,7 +36,7 @@ const TONE_CLASS: Record<ResultTone, string> = {
 };
 
 export default function DailyTestAttemptHistoryPage() {
-  const router = useRouter();
+  const flow = useDailyTestFlowNavigation();
   const t = useTranslations("DailyTests");
   const locale = useLocale();
   const params = useParams<{ courseId: string; testId: string }>();
@@ -96,9 +96,9 @@ export default function DailyTestAttemptHistoryPage() {
   const testDate = data?.test_date ? dateFmt.format(new Date(data.test_date)) : "";
   const title = data?.is_today ? t("history.titleToday") : testDate ? t("history.titleDated", { date: testDate }) : t("list.defaultExam");
 
-  const backToList = () => router.push(`/daily-tests/${courseId}`);
-  const attemptAgain = () => router.push(`/daily-test-attempt/${courseId}/${testId}/new`);
-  const viewResult = (attemptId: string) => router.push(`/daily-test-attempt/${courseId}/${testId}/${attemptId}`);
+  const backToList = () => flow.goUp(`/daily-tests/${courseId}`);
+  const attemptAgain = () => flow.push(`/daily-test-attempt/${courseId}/${testId}/new`);
+  const viewResult = (attemptId: string) => flow.push(`/daily-test-attempt/${courseId}/${testId}/${attemptId}`);
 
   if (isError) {
     return (
