@@ -408,7 +408,11 @@ export default function CoursrMarketingPage({ data }: any) {
               weight="semibold"
               color="gray-normal"
             >
-              {data === 'ugcnet' ? '₹149' : '₹99'} 
+              {/* hptet priced at ₹149 instead of ₹99 (business request) — same
+                  rule as apps/go-marketing's exam/[slug].astro and
+                  dashboard's EXAM_PRICE_OVERRIDES; this file only had
+                  ugcnet's ₹149 case, HPTET's own page was still showing ₹99. */}
+              {data === 'ugcnet' || data === 'hptet' ? '₹149' : '₹99'}
             </Text>
           </div>
           <div className="flex-1 md:hidden">

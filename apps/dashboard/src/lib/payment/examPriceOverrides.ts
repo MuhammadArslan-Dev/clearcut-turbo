@@ -29,6 +29,14 @@ export const EXAM_PRICE_OVERRIDES: Record<
   }
 > = {
   HPTET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
+  // Deliberately identical to HPTET, including `planId: 2` — course access on
+  // subscribe is granted by `course_id` (sent alongside `plan_id` in the
+  // createSubscription call, see payment/initiated), not by which Razorpay
+  // Plan billed it, so two exams safely sharing one recurring Plan is not a
+  // fulfillment bug. The one visible side effect: that Plan's own name in
+  // Razorpay/backend records reads "HPTET Monthly" regardless of which of
+  // these two exams the subscriber actually bought.
+  MAHATET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
 };
 
 export const DEFAULT_SUBSCRIPTION_PLAN_ID = 1;
