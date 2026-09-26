@@ -198,8 +198,22 @@ export default function InitiatedPage() {
     data?.id,
   );
 
+  // The "page opened" tracking below must run ONCE per visit. It is keyed on
+  // `datacourse`, and that object is replaced whenever the my-courses query
+  // refetches with changed data — which is exactly what happens right after a
+  // payment (useRazorpayPayment invalidates that query on success/verify). The
+  // effect then fired AGAIN at the end of a payment: a second "Purchase Intent
+  // Initiated", a second Meta InitiateCheckout, a second checkout record and a
+  // second payment-initiate webhook — just before the user is sent to the
+  // success/failed page. The ref also blocks the StrictMode dev double-run.
+  const pageOpenTrackedForRef = React.useRef<string | null>(null);
+
   useEffect(() => {
     if (!datacourse) return;
+
+    const visitKey = String(datacourse.group_code ?? "");
+    if (pageOpenTrackedForRef.current === visitKey) return;
+    pageOpenTrackedForRef.current = visitKey;
 
     trackEvent("Purchase Intent Initiated", {
       entry_point: source,
