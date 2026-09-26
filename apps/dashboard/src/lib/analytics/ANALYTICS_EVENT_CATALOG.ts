@@ -385,6 +385,7 @@ trackEvent("Payment Initiated", {
 trackEvent("Payment Outcome", {
   outcome: "payment_successful",
   final_price: 999,
+  billing_type: "one_time",
   payment_session_id: "pay_xyz_12345",
 });
 

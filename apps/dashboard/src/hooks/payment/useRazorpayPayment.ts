@@ -102,6 +102,7 @@ export function useRazorpayPayment({
           if (success) {
             trackEvent("Payment Outcome", {
               outcome: "payment_successful",
+              billing_type: "one_time",
               final_price: Number(price),
               payment_session_id: response.razorpay_payment_id,
             });
@@ -114,6 +115,7 @@ export function useRazorpayPayment({
           } else {
             trackEvent("Payment Outcome", {
               outcome: "payment_failed",
+              billing_type: "one_time",
               final_price: Number(price),
               payment_session_id: response.razorpay_payment_id,
             });
@@ -153,6 +155,7 @@ export function useRazorpayPayment({
 
         trackEvent("Payment Outcome", {
           outcome: "payment_failed",
+          billing_type: "one_time",
           final_price: Number(price),
           exam_name: examName,
           failure_reason: error.reason ?? "unknown",

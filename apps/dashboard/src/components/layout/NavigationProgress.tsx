@@ -25,6 +25,19 @@ export default function NavigationProgress() {
     clearNavPending();
   }, [pathname, clear]);
 
+  // Safety net: a navigation that never changes the pathname (a same-path
+  // router.replace, a cancelled/failed request) would otherwise leave the
+  // click-shield below up forever and freeze the whole page. Same 10s
+  // guard markNavPending() already applies to the clicked element.
+  useEffect(() => {
+    if (!isPending) return;
+    const t = setTimeout(() => {
+      clear();
+      clearNavPending();
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [isPending, clear]);
+
   if (!isPending) return null;
 
   return (

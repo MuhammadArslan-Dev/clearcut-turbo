@@ -51,6 +51,9 @@ export interface MonetizationEventPayloads {
   'Payment Outcome': {
     outcome: 'payment_successful' | 'payment_failed';
     final_price: number;
+    // auto_renew = Razorpay subscription (payment/initiated "1 month" plan);
+    // one_time = a single Razorpay order (everything else, incl. useRazorpayPayment).
+    billing_type: 'auto_renew' | 'one_time';
     failure_reason?: 'insufficient_funds' | 'cancelled';
     payment_session_id: string;
   };

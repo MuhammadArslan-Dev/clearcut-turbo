@@ -425,6 +425,7 @@ export default function InitiatedPage() {
         }) => {
           trackEvent("Payment Outcome", {
             outcome: "payment_successful",
+            billing_type: "auto_renew",
             final_price: selectedPrice,
             exam_name: data?.short_name ?? "",
             payment_session_id: response.razorpay_payment_id,
@@ -475,6 +476,7 @@ export default function InitiatedPage() {
 
           trackEvent("Payment Outcome", {
             outcome: "payment_failed",
+            billing_type: "auto_renew",
             final_price: selectedPrice,
             exam_name: data?.short_name ?? "",
             failure_reason: error.reason ?? "unknown",

@@ -9,8 +9,7 @@ import { useExams } from "@/hooks/onboarding/useExams";
 import { Exam } from "@/types/Exam";
 import { StepProps } from "@/types/onboarding/onboarding";
 import MainContainer from "@/components/ui/main-container";
-import { useSearchParams } from "next/navigation";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
@@ -31,8 +30,6 @@ export default function ExamStep({
   const t = useTranslations("");
 
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,9 +37,23 @@ export default function ExamStep({
   useEffect(() => {
     updateData({ level: null });
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("level");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    // Drop a stale `?level=` from the URL. Deliberately NOT router.replace():
+    // the wrapped router (@/i18n/navigation) starts the global top progress
+    // bar + click-shield, and that is only cleared when the PATHNAME changes
+    // (NavigationProgress) — a same-path query cleanup never changes it, so
+    // the shield stayed up forever and the exam list could not be clicked
+    // ("stuck on the loader" right after Continue on the language step).
+    // history.replaceState keeps Next's useSearchParams in sync without any
+    // navigation, and uses the real location so the /hi or /mr prefix stays.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("level")) {
+      url.searchParams.delete("level");
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
