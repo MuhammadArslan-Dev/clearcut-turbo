@@ -77,6 +77,9 @@ export interface TrackedExamEntry {
    * unchecked chapter naturally stops showing a stale badge. */
   crossCompletions?: Record<string, string>;
   trackedAt: string; // ISO timestamp — stable ordering for the tracked-exams list
+  /** Only ever present on an entry that came from the server (when it was
+   * last saved to the account) — never written by local tracking. */
+  updatedAt?: string;
 }
 
 export interface SyllabusTrackerStoreV2 {
@@ -288,6 +291,64 @@ export function propagateSubjectCompletion(
       crossCompletions: { ...entry.crossCompletions, [matchName]: source.exam.shortName },
     };
   });
+}
+
+// --- Save-for-Future (account sync) helpers ------------------------------
+// Local state is the source of truth and is never overwritten by server data
+// automatically; these only let the UI tell whether a local entry and its
+// account copy differ, and remember what THIS browser last synced so a
+// stale-looking account copy isn't mistaken for a real conflict.
+
+/** Public identity of one tracked entry — same as the server's unique key
+ * (user + exam + paper; 0 = no paper). */
+export function entryKey(entry: TrackedExamEntry): string {
+  return `${entry.exam.id}:${entry.paper?.id ?? 0}`;
+}
+
+/** Order-independent summary of an entry's progress (which chapters are
+ * done, and their revision dates). Two entries with the same fingerprint are
+ * the same progress, regardless of subject order, key casing quirks in
+ * storage, or fields that only exist on one side (updatedAt, logoUrl…). */
+export function progressFingerprint(entry: TrackedExamEntry): string {
+  return Object.keys(entry.subjects)
+    .sort()
+    .map((subject) => {
+      const chapters = entry.subjects[subject];
+      const done = chapters
+        .filter((c) => c.completed)
+        .map((c) => (c.revisedAt ? `${c.id}@${c.revisedAt}` : String(c.id)))
+        .sort();
+      return `${subject}:${chapters.length}:${done.join(",")}`;
+    })
+    .join("|");
+}
+
+const STORAGE_KEY_SYNCED = "cc-syllabus-tracker-synced-v1";
+
+function readSynced(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_SYNCED);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Fingerprint of what this browser last saved to / loaded from the account
+ * for one entry, or null if it never has. */
+export function getSyncedFingerprint(key: string): string | null {
+  return readSynced()[key] ?? null;
+}
+
+export function setSyncedFingerprint(key: string, fingerprint: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY_SYNCED, JSON.stringify({ ...readSynced(), [key]: fingerprint }));
+  } catch {
+    // Same as above — swallow storage failures silently.
+  }
 }
 
 /** Overall completion percentage across every subject/chapter in one tracked exam. */

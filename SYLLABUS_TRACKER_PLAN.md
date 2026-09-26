@@ -2,7 +2,7 @@
 
 ## Context
 
-New tool inside `apps/tools` (clearcutoff.in/tools) called **Syllabus Tracker**: student picks exam → level → subjects, then checks off chapters as they study them. All tracking state lives in the browser (`localStorage`) — nothing gets written to the database, ever. Same "browser-only, no-backend" spirit as the existing resizer/age-calculator tools, with one deliberate exception: the *syllabus itself* (which exams/levels/subjects/chapters exist) comes from a new read-only API, because `apps/tools` has no dataset of its own for that.
+New tool inside `apps/tools` (clearcutoff.in/tools) called **Syllabus Tracker**: student picks exam → level → subjects, then checks off chapters as they study them. All tracking state lives in the browser (`localStorage`); nothing is sent anywhere unless the user logs in and explicitly taps **Save for Future** (added later — see "Tools: Save for Future" in the root `CLAUDE.md`; it stores the same `TrackedExamEntry` shape in `user_syllabus_trackers`). Same "browser-only, no-backend" spirit as the existing resizer/age-calculator tools, with one deliberate exception: the *syllabus itself* (which exams/levels/subjects/chapters exist) comes from a new read-only API, because `apps/tools` has no dataset of its own for that.
 
 Two things grounded this plan:
 

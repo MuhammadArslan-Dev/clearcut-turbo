@@ -7,6 +7,7 @@ import { createAuthModalStore } from "./store/auth-modal-store";
 import { createAuthModal } from "./auth-modal";
 import { createInlineAuthFlow } from "./screens/inline-auth-flow";
 import type { CreateOtpScreenOptions } from "./screens/otp-screen";
+import type { AuthScreenDeps } from "./screens/types";
 
 export interface CreateAuthFeatureConfig {
   /** The app's own axios instance (see @clearcut/api's createApiClient). */
@@ -24,6 +25,15 @@ export interface CreateAuthFeatureConfig {
   /** Same event names/properties as the original inline logAmplitudeEvent
    * calls — pass your own analytics function to preserve tracking. */
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
+  /**
+   * Stay on the current page after login instead of redirecting to
+   * `redirectBaseUrl` (see AuthScreenDeps.onAuthenticated). Only affects the
+   * modal's OTP/Truecaller screens — an app that also mounts `AuthProvider`
+   * still gets its mount-time "already logged in" redirect, so apps using
+   * this should simply not mount `AuthProvider`. `redirectBaseUrl` is then
+   * unused but still required by the type.
+   */
+  onAuthenticated?: AuthScreenDeps["onAuthenticated"];
 }
 
 /**
@@ -66,6 +76,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     useAuthModal,
     onEvent: config.onEvent,
     redirectBaseUrl: config.redirectBaseUrl,
+    onAuthenticated: config.onAuthenticated,
   };
 
   const AuthModal = createAuthModal(screenDeps);

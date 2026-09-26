@@ -5,6 +5,8 @@
    inside them. Same fix every other app in this monorepo applies for
    @clearcut/ui — see apps/landing/src/styles/globals.css. */
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
+/* The login modal (Save for Future) — see src/lib/toolsAuthFeature.ts. */
+@source "../../../../packages/auth/src/**/*.{ts,tsx}";
 
 @import "@clearcut/design-tokens/tokens.css";
 

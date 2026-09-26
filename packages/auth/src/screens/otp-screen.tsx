@@ -48,6 +48,7 @@ export function createOtpScreen({
   useAuthModal,
   onEvent,
   redirectBaseUrl,
+  onAuthenticated,
 }: CreateOtpScreenOptions) {
   function OTPScreen() {
     const isMobile = useIsMobile();
@@ -152,6 +153,22 @@ export function createOtpScreen({
           userId,
         );
         identifyClarityUser({ userId, phone });
+
+        // Stay-on-page mode (apps/tools): token is already stored above; just
+        // close the modal and hand control back to the app — no redirect, no
+        // reload, so the page/state the user was on is untouched.
+        if (onAuthenticated) {
+          setLoading(false);
+          setOtp("");
+          setScreen("register");
+          onAuthenticated({
+            token: data.token,
+            hasCourse: Boolean(data.has_course),
+            isNewUser: localStorage.getItem("is_new_user") === "true",
+            source: "otp",
+          });
+          return;
+        }
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,

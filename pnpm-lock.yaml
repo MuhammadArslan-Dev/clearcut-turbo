@@ -515,6 +515,12 @@ importers:
 
   apps/tools:
     dependencies:
+      '@clearcut/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@clearcut/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@clearcut/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens

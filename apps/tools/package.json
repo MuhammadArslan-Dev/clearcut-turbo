@@ -11,6 +11,8 @@
     "seo:check": "node scripts/validate-seo.mjs"
   },
   "dependencies": {
+    "@clearcut/api": "workspace:*",
+    "@clearcut/auth": "workspace:*",
     "@clearcut/design-tokens": "workspace:*",
     "@clearcut/error-reporting": "workspace:*",
     "@clearcut/ui": "workspace:*",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Text from "@clearcut/ui/text";
 import Skeleton from "@clearcut/ui/skeleton";
 import type { Locale } from "@/lib/dictionary";
@@ -14,9 +15,15 @@ import {
   replaceAllTrackedExams,
   findCrossExamCompletion,
   propagateSubjectCompletion,
+  entryKey,
+  progressFingerprint,
+  getSyncedFingerprint,
+  setSyncedFingerprint,
   TrackedExamEntry,
   TrackedPaper,
 } from "@/lib/syllabusTracker";
+import { fetchSavedTrackers, saveTracker, logout as logoutRequest, SessionExpiredError } from "@/lib/api/syllabusTrackerApi";
+import { useHasSession } from "@/lib/toolsSession";
 import { fetchSyllabusLevels, fetchSyllabusTree, SyllabusExam, SyllabusLevel } from "@/lib/api/syllabusApi";
 import { slugify, levelSlug, readSlugFromLocation, pushSyllabusUrl, replaceSyllabusUrl } from "@/lib/syllabusTrackerUrl";
 import ExamPickerStep from "./ExamPickerStep";
@@ -26,6 +33,13 @@ import TrackerDashboard from "./TrackerDashboard";
 import TrackedExamsList from "./TrackedExamsList";
 import Stepper from "./Stepper";
 import ConfirmDialog from "./ConfirmDialog";
+import AccountBar from "./AccountBar";
+import SavedTrackersSection from "./SavedTrackersSection";
+import type { SaveStatus } from "./SaveForFutureButton";
+
+// The login UI (OTP screens, axios, zustand...) is only fetched the first time
+// a visitor asks to save — the anonymous tracker never loads it.
+const ToolsAuthGate = dynamic(() => import("./ToolsAuthGate"), { ssr: false });
 
 type Step = "loading" | "list" | "exam" | "level" | "dashboard";
 // A minimal exam shape good enough for the wizard steps below (id + display
@@ -64,6 +78,53 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
   // the exam picker's excludeExamIds (Add More Exam). Re-read from storage
   // whenever it can change (mount, popstate, upsert/remove/toggle).
   const [trackedExams, setTrackedExams] = useState<TrackedExamEntry[]>([]);
+
+  // --- Save for Future (account sync) ---------------------------------
+  // localStorage stays the working copy and is never overwritten by server
+  // data on its own: the account copy is only ever (a) written on an explicit
+  // Save for Future click and (b) copied into local storage on an explicit
+  // Load. `savedEntries` is the last-fetched account list (null = logged out
+  // or not fetched yet).
+  const hasSession = useHasSession();
+  const [savedEntries, setSavedEntries] = useState<TrackedExamEntry[] | null>(null);
+  const [savedStatus, setSavedStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [authGateMounted, setAuthGateMounted] = useState(false);
+  const [loginRequestId, setLoginRequestId] = useState(0);
+  const [loginReason, setLoginReason] = useState<"save" | "load">("save");
+  // A Save click that needed a login first — resumed by handleAuthenticated
+  // once the OTP flow finishes, on this same page.
+  const pendingSaveRef = useRef(false);
+  const stateRef = useRef<TrackedExamEntry | null>(null);
+  // Set when saving would replace an account copy that differs from local AND
+  // that this browser didn't itself write last — needs an explicit yes.
+  const [saveConflict, setSaveConflict] = useState<TrackedExamEntry | null>(null);
+  // Set when loading an account copy would replace a different local one.
+  const [loadReplace, setLoadReplace] = useState<TrackedExamEntry | null>(null);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const refreshSaved = () => {
+    setSavedStatus("loading");
+    fetchSavedTrackers()
+      .then((list) => {
+        setSavedEntries(list);
+        setSavedStatus("idle");
+      })
+      .catch((err) => setSavedStatus(err instanceof SessionExpiredError ? "idle" : "error"));
+  };
+
+  useEffect(() => {
+    if (!hasSession) {
+      setSavedEntries(null);
+      setSavedStatus("idle");
+      return;
+    }
+    refreshSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSession]);
 
   const hasPaperTier = useMemo(
     () => (examLevels ?? []).some((l) => l.parent_id === null && l.group === "Paper"),
@@ -413,20 +474,148 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
     replaceSyllabusUrl(locale);
   };
 
+  const requestLogin = (reason: "save" | "load" = "save") => {
+    setLoginReason(reason);
+    setAuthGateMounted(true);
+    setLoginRequestId((n) => n + 1);
+  };
+
+  const attemptSave = async (entry: TrackedExamEntry, force = false) => {
+    setSaveStatus("saving");
+    try {
+      const key = entryKey(entry);
+      const fingerprint = progressFingerprint(entry);
+      // Always compared against the account's LATEST copy (one cheap GET),
+      // not whatever was fetched earlier — it may have been saved from
+      // another device since.
+      const latest = await fetchSavedTrackers();
+      const existing = latest.find((e) => entryKey(e) === key);
+      if (existing && !force) {
+        const existingFingerprint = progressFingerprint(existing);
+        if (existingFingerprint !== fingerprint && getSyncedFingerprint(key) !== existingFingerprint) {
+          setSavedEntries(latest);
+          setSaveStatus("idle");
+          setSaveConflict(entry);
+          return;
+        }
+      }
+      const savedCopy = await saveTracker(entry);
+      setSyncedFingerprint(key, progressFingerprint(savedCopy));
+      setSavedEntries(existing ? latest.map((e) => (entryKey(e) === key ? savedCopy : e)) : [...latest, savedCopy]);
+      setSaveStatus("idle");
+    } catch (err) {
+      if (err instanceof SessionExpiredError) {
+        pendingSaveRef.current = true;
+        setSaveStatus("idle");
+        requestLogin();
+      } else {
+        setSaveStatus("error");
+      }
+    }
+  };
+
+  const handleSave = () => {
+    if (!state) return;
+    if (!hasSession) {
+      pendingSaveRef.current = true;
+      requestLogin();
+      return;
+    }
+    void attemptSave(state);
+  };
+
+  // Called by the login modal on success — the page/step/state were never
+  // touched (no redirect, no reload), so this just resumes the save.
+  const handleAuthenticated = () => {
+    if (pendingSaveRef.current && stateRef.current) {
+      pendingSaveRef.current = false;
+      void attemptSave(stateRef.current);
+    }
+  };
+
+  const handleLogout = () => {
+    pendingSaveRef.current = false;
+    void logoutRequest();
+  };
+
+  const applyLoadedTracker = (entry: TrackedExamEntry) => {
+    const local: TrackedExamEntry = { ...entry };
+    delete local.updatedAt;
+    upsertTrackedExam(local);
+    setSyncedFingerprint(entryKey(local), progressFingerprint(local));
+    setTrackedExams(getAllTrackedExams());
+    handleOpenTrackedExam(local);
+  };
+
+  const handleLoadSaved = (entry: TrackedExamEntry) => {
+    const mine = getAllTrackedExams().find((e) => entryKey(e) === entryKey(entry));
+    if (mine && progressFingerprint(mine) !== progressFingerprint(entry)) {
+      setLoadReplace(entry);
+      return;
+    }
+    applyLoadedTracker(entry);
+  };
+
   if (step === "loading") return null;
+
+  const savedCopyOfCurrent = state ? savedEntries?.find((e) => entryKey(e) === entryKey(state)) : undefined;
+  const dashboardSaveStatus: SaveStatus =
+    saveStatus !== "idle"
+      ? saveStatus
+      : state && savedCopyOfCurrent && progressFingerprint(savedCopyOfCurrent) === progressFingerprint(state)
+        ? "saved"
+        : "idle";
 
   const activeStepperKey = step === "exam" || step === "dashboard" ? step : step === "level" ? (hasPaperTier && !paper ? "paper" : "level") : "exam";
 
   return (
     <div id="syllabus-tracker-app" className="max-w-[1080px] mx-auto px-3 pt-6 sm:py-6">
+      <AccountBar
+        loggedIn={hasSession}
+        showLoginPrompt={step === "list" || (step === "exam" && !exam && !pendingExamSlug)}
+        onLogin={() => {
+          pendingSaveRef.current = false;
+          requestLogin("load");
+        }}
+        onLogout={handleLogout}
+        locale={locale}
+      />
+
       {(step === "exam" || step === "level") && <Stepper activeKey={activeStepperKey} hasPaper={hasPaperTier} locale={locale} />}
 
       {step === "list" && (
-        <TrackedExamsList
-          exams={trackedExams}
-          onOpen={handleOpenTrackedExam}
-          onAddMore={handleAddMoreExam}
-          onAddPaper={handleAddPaper}
+        <>
+          <TrackedExamsList
+            exams={trackedExams}
+            onOpen={handleOpenTrackedExam}
+            onAddMore={handleAddMoreExam}
+            onAddPaper={handleAddPaper}
+            saved={savedEntries}
+            locale={locale}
+          />
+          <div className="mt-8">
+            <SavedTrackersSection
+              saved={savedEntries}
+              local={trackedExams}
+              status={savedStatus}
+              onLoad={handleLoadSaved}
+              onRetry={refreshSaved}
+              locale={locale}
+            />
+          </div>
+        </>
+      )}
+
+      {/* A logged-in visitor on a browser with no local trackers yet (fresh
+          device / cleared storage) lands here, not on the list — this is
+          where their saved trackers have to show up. */}
+      {step === "exam" && !exam && !pendingExamSlug && trackedExams.length === 0 && (
+        <SavedTrackersSection
+          saved={savedEntries}
+          local={trackedExams}
+          status={savedStatus}
+          onLoad={handleLoadSaved}
+          onRetry={refreshSaved}
           locale={locale}
         />
       )}
@@ -522,6 +711,8 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
                 onToggleChapter={handleToggleChapter}
                 onReset={() => setResetOpen(true)}
                 onTrackDifferentExam={handleTrackDifferentExam}
+                saveStatus={dashboardSaveStatus}
+                onSave={handleSave}
                 locale={locale}
               />
             )
@@ -545,6 +736,36 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
         onConfirm={handleReset}
         onCancel={() => setResetOpen(false)}
       />
+
+      <ConfirmDialog
+        open={saveConflict !== null}
+        title={t.saveConflictTitle}
+        description={t.saveConflictDescription}
+        confirmLabel={t.saveConflictConfirm}
+        cancelLabel={t.saveConflictKeep}
+        onConfirm={() => {
+          const entry = saveConflict;
+          setSaveConflict(null);
+          if (entry) void attemptSave(entry, true);
+        }}
+        onCancel={() => setSaveConflict(null)}
+      />
+
+      <ConfirmDialog
+        open={loadReplace !== null}
+        title={t.loadSavedReplaceTitle}
+        description={t.loadSavedReplaceDescription}
+        confirmLabel={t.loadSavedReplaceConfirm}
+        cancelLabel={t.resetCancelLabel}
+        onConfirm={() => {
+          const entry = loadReplace;
+          setLoadReplace(null);
+          if (entry) applyLoadedTracker(entry);
+        }}
+        onCancel={() => setLoadReplace(null)}
+      />
+
+      {authGateMounted && <ToolsAuthGate requestId={loginRequestId} reason={loginReason} locale={locale} onAuthenticated={handleAuthenticated} />}
     </div>
   );
 }

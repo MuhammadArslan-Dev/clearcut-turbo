@@ -126,6 +126,7 @@ Backend: Laravel 12 at `C:\laragon\www\clearcutoff-main-backend`, API at `http:/
 - `createPersistedStore` always uses `skipHydration: true`; hydrate via `useHydrateStore` in a mounted client component. Don't bypass.
 - New package → extend `tsconfig.base.json`.
 - Cross-cutting change → check whether dashboard needs the same change separately.
+- **Shared-package behaviour changes must be additive.** `@clearcut/auth` gained `onAuthenticated` (stay on the page after login) and `LoginCopy` (per-mount copy override) as *optional* inputs whose absence leaves blog/landing byte-for-byte on the old path — verify by running landing's login (`/dashboard?token=` redirect + original copy) after touching it. See root `CLAUDE.md` "Tools: Save for Future".
 
 ---
 
@@ -136,6 +137,8 @@ Backend: Laravel 12 at `C:\laragon\www\clearcutoff-main-backend`, API at `http:/
 - **Models:** prefixes E* (exam), S* (subject), U* (user), Mapping*; use `HasUuid`. **Never edit stale `* copy.php` files.**
 - **Public identifiers = UUIDs**; never expose numeric ids or internal ids in URLs/responses when a uuid exists.
 - **Authorization (IDOR-safe):** resolve every nested resource through ownership chain and return **404 (not 403)** on any failure. Daily tests: enrollment(uuid, own, active) → assignment(user, exam, test) → attempt(user, test, uuid).
+- **Validating maps keyed by user-visible names (e.g. `subjects`: `{ "E.V.S.": [...] }`):** never use `a.*.*.b` wildcard rules — Laravel's dot-notation expansion mis-parses keys containing `.` and silently drops them from `validated()`. Validate with a closure and rebuild the stored array from known keys.
+- **MySQL `JSON` columns re-sort object keys (length, then bytes).** If order matters (subject order drives a UI sidebar), persist it in a separate column (`subject_order`) and re-apply it on read.
 - **Sanitize responses:** whitelist fields (e.g. `publicMeta`, sanitized `topic_meta`) — no raw model dumps.
 - **Migrations:** new migration per change, reversible `down()`, never edit an already-run migration. Run locally, verify.
 - **Data:** DB timezone +05:30. Daily-test questions come from `question_new` (`QuestionNew` + `QuestionTrans`).
@@ -193,6 +196,12 @@ pnpm turbo run build --filter=dashboard   # when routes/config/i18n changed
 
 ---
 
+- **The shared OTP screen pre-fills `4321` for the dummy phone `9988776655`** (and the backend accepts it) — automated tests must press *Verify OTP*, typing extra digits is ignored by `maxLength`. The local dev backend throttles OTP sends (3/min per phone): `php artisan cache:clear` between repeated logins.
+- Backend tests: the repo's full migration chain does not run on the sqlite `:memory:` test DB (an older `daily_tests` migration breaks it) — DB-touching feature tests use `DatabaseTransactions` against a migrated MySQL DB (`DB_CONNECTION=mysql php artisan test --filter=…`).
+
+---
+
 ## 11. Changelog of this file
+- 2026-09-26 — Added Tools Save-for-Future rules (additive shared-auth options, lazy login UI, local-never-overwritten), dotted-key validation + MySQL JSON key-order backend gotchas.
 - 2026-09-25 — Added error-monitoring rules (shared `@clearcut/error-reporting`, instrumentation.ts location).
 - 2026-09-22 — Initial version (analysis of monorepo, dashboard, backend, daily-test/exam UI work).

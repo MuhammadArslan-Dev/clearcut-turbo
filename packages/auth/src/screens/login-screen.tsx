@@ -25,6 +25,7 @@ import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { useTruecallerLogin, useTruecallerAvailability } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
+import type { LoginCopy } from "./types";
 
 const FAKE_NUMBER_ERROR = "Enter only a real mobile number";
 
@@ -44,8 +45,16 @@ export function createLoginScreen({
   useAuthStore,
   onEvent,
   redirectBaseUrl,
+  onAuthenticated,
 }: CreateOtpScreenOptions) {
-  function LoginScreen() {
+  function LoginScreen({ loginCopy }: { loginCopy?: LoginCopy }) {
+    const title = loginCopy?.title ?? "Start your exam preparation";
+    const subtitle =
+      loginCopy?.subtitle === undefined ? "Videos • Notes • PYQs" : loginCopy.subtitle;
+    const submitLabel = loginCopy?.submitLabel ?? "Start FREE Preparation";
+    const showTrialBanner = loginCopy?.showTrialBanner ?? true;
+    const showTrustText = loginCopy?.showTrustText ?? true;
+
     const {
       phone,
       setPhone,
@@ -87,6 +96,19 @@ export function createLoginScreen({
 
       const tcUser = result.user as { uuid?: string; phone?: string } | undefined;
       identifyClarityUser({ userId: tcUser?.uuid, phone: tcUser?.phone });
+
+      // Stay-on-page mode — see the same branch in otp-screen.tsx.
+      if (onAuthenticated) {
+        setLoading(false);
+        setScreen("register");
+        onAuthenticated({
+          token: result.token,
+          hasCourse: result.hasCourse,
+          isNewUser: false,
+          source: "truecaller",
+        });
+        return;
+      }
 
       const lang = getCurrentLocale();
 
@@ -316,11 +338,13 @@ export function createLoginScreen({
                 <div className="flex flex-col gap-8 w-full items-center">
                   <div className="flex flex-col gap-1 w-full items-center">
                     <h6 className="heading-medium !font-semibold text-[var(--color-text-gray-normal)]">
-                      Start your exam preparation
+                      {title}
                     </h6>
-                    <p className="body-medium !font-normal text-[var(--color-text-gray-subtle)]">
-                      Videos • Notes • PYQs
-                    </p>
+                    {subtitle && (
+                      <p className="body-medium !font-normal text-[var(--color-text-gray-subtle)]">
+                        {subtitle}
+                      </p>
+                    )}
                   </div>
 
                   {/* Timer */}
@@ -423,7 +447,7 @@ export function createLoginScreen({
                             disabled={!isValidPhone || loading}
                             loading={loading}
                           >
-                            Start FREE Preparation
+                            {submitLabel}
                           </Button>
                         </div>
                       </div>
@@ -431,7 +455,7 @@ export function createLoginScreen({
 
                     {/* TRIAL — same design as /start's box (StartAuthForm.tsx),
                         so a change to either should be mirrored in the other. */}
-                    {marketing === "course-marketing" ? (
+                    {marketing === "course-marketing" || !showTrialBanner ? (
                       <></>
                     ) : (
                       <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand)]/15 bg-[var(--color-brand)]/8 px-4 py-3 w-full">
@@ -451,12 +475,14 @@ export function createLoginScreen({
                   </div>
 
                   {/* TRUST TEXT */}
-                  <div className="block md:hidden text-center body-medium !font-normal text-[var(--color-surface-gray-muted)]">
-                    {highlightTextUtil(
-                      `Trusted by 10,000+ students to clear TET exams across India`,
-                      ["10,000"],
-                    )}
-                  </div>
+                  {showTrustText && (
+                    <div className="block md:hidden text-center body-medium !font-normal text-[var(--color-surface-gray-muted)]">
+                      {highlightTextUtil(
+                        `Trusted by 10,000+ students to clear TET exams across India`,
+                        ["10,000"],
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

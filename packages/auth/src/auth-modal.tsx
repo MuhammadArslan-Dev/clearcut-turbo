@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useHydrateStore } from "@clearcut/state/use-hydrate-store";
 
 import type { CreateOtpScreenOptions } from "./screens/otp-screen";
+import type { LoginCopy } from "./screens/types";
 
 /**
  * 1:1 port of apps/landing's former AuthModals.tsx. Keeps the same
@@ -21,7 +22,7 @@ export function createAuthModal(deps: CreateOtpScreenOptions) {
     { ssr: false },
   );
 
-  function AuthModal() {
+  function AuthModal({ loginCopy }: { loginCopy?: LoginCopy } = {}) {
     const { screen } = deps.useAuthStore();
     // authStore persists `userId` (see store/auth-store.ts) — this is the
     // one always-mounted component (root layout, every app using this
@@ -30,7 +31,7 @@ export function createAuthModal(deps: CreateOtpScreenOptions) {
 
     return (
       <>
-        {screen === "login" && <LoginScreen />}
+        {screen === "login" && <LoginScreen loginCopy={loginCopy} />}
         {screen === "otp" && <OTPScreen />}
       </>
     );

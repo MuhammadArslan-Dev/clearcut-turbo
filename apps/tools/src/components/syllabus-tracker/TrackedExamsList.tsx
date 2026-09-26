@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Text from "@clearcut/ui/text";
 import type { Locale } from "@/lib/dictionary";
 import { getSyllabusStrings } from "@/lib/syllabusTrackerStrings";
-import { getOverallProgress, TrackedExamEntry } from "@/lib/syllabusTracker";
+import { entryKey, getOverallProgress, progressFingerprint, TrackedExamEntry } from "@/lib/syllabusTracker";
 import ProgressRing from "./ProgressRing";
 import TipCard from "./TipCard";
 import { ExamLogo, LightbulbIcon, TONES } from "./trackerIcons";
@@ -32,6 +32,7 @@ export default function TrackedExamsList({
   onOpen,
   onAddMore,
   onAddPaper,
+  saved = null,
   locale = "en",
 }: {
   exams: TrackedExamEntry[];
@@ -40,9 +41,32 @@ export default function TrackedExamsList({
   /** Re-enters the wizard for this exam id, excluding root-tier options
    * already tracked. Only ever called for a group that has >=1 tracked paper/level. */
   onAddPaper: (examId: number) => void;
+  /** The logged-in account's saved trackers, or null when logged out / not
+   * loaded yet — drives the Saved / Unsaved-changes chip on each entry. */
+  saved?: TrackedExamEntry[] | null;
   locale?: Locale;
 }) {
   const t = getSyllabusStrings(locale);
+
+  const savedFingerprints = useMemo(
+    () => (saved ? new Map(saved.map((e) => [entryKey(e), progressFingerprint(e)])) : null),
+    [saved],
+  );
+  const syncChip = (entry: TrackedExamEntry) => {
+    if (!savedFingerprints) return null;
+    const isSaved = savedFingerprints.get(entryKey(entry)) === progressFingerprint(entry);
+    return (
+      <span
+        className={`w-fit rounded-full px-2 py-0.5 text-xs font-medium ${
+          isSaved
+            ? "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]"
+            : "bg-[var(--color-gray-bg-soft)] text-text-gray-muted"
+        }`}
+      >
+        {isSaved ? t.savedChip : t.unsavedChip}
+      </span>
+    );
+  };
   // Same "one consistent tone, not a per-card cycle" convention as
   // SubjectIcon/ChapterCard elsewhere in this app (see trackerIcons.tsx).
   const tone = TONES[0];
@@ -130,6 +154,7 @@ export default function TrackedExamsList({
                     <Text as="p" variant="body-xsmall" color="gray-muted">
                       {t.chaptersMastered(groupOverall.completed, groupOverall.total)}
                     </Text>
+                    {syncChip(entry) && <div className="mt-1">{syncChip(entry)}</div>}
                   </div>
                   <span className="text-text-gray-muted transition-colors group-hover:text-brand">
                     <ChevronIcon />
@@ -183,6 +208,7 @@ export default function TrackedExamsList({
                         <Text as="p" variant="body-xsmall" color="gray-muted" className="mt-0.5">
                           {t.chaptersMastered(overall.completed, overall.total)}
                         </Text>
+                        {syncChip(entry) && <div className="mt-1">{syncChip(entry)}</div>}
                       </div>
                       <span className="text-text-gray-muted transition-colors group-hover:text-brand">
                         <ChevronIcon />

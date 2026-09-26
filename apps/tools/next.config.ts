@@ -1,7 +1,9 @@
 import { NextConfig } from "next";
 
-// Standalone, deliberately minimal: no CMS, no auth, no backend calls —
-// everything runs in the browser — so this can be a plain static export
+// Standalone, deliberately minimal: no CMS, no dashboard handoff — everything
+// runs in the browser (the Syllabus Tracker's public syllabus reads and its
+// optional login-to-save are the only runtime backend calls, see CLAUDE.md's
+// "Tools: Save for Future") — so this can be a plain static export
 // deployed to Cloudflare Pages independently of apps/landing, which keeps
 // running on its own VPS deployment untouched. A Cloudflare Worker in front
 // of clearcutoff.in routes /tools/* to this app's Pages deployment and

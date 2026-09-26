@@ -10,6 +10,7 @@ import ProgressRing from "./ProgressRing";
 import SubjectIcon from "./SubjectIcon";
 import SubjectSidebar from "./SubjectSidebar";
 import ChapterCard from "./ChapterCard";
+import SaveForFutureButton, { SaveStatus } from "./SaveForFutureButton";
 import { CheckIcon, CapIcon } from "./trackerIcons";
 
 type ViewMode = "cards" | "list";
@@ -47,12 +48,16 @@ export default function TrackerDashboard({
   onToggleChapter,
   onReset,
   onTrackDifferentExam,
+  saveStatus,
+  onSave,
   locale = "en",
 }: {
   state: TrackedExamEntry;
   onToggleChapter: (subject: string, chapterId: number) => void;
   onReset: () => void;
   onTrackDifferentExam: () => void;
+  saveStatus: SaveStatus;
+  onSave: () => void;
   locale?: Locale;
 }) {
   const t = getSyllabusStrings(locale);
@@ -122,6 +127,7 @@ export default function TrackerDashboard({
 
         <div className="flex flex-wrap items-center gap-2">
           <ProgressRing percent={overall.percent} complete={isComplete} size={48} stroke={4} />
+          <SaveForFutureButton status={saveStatus} onSave={onSave} locale={locale} />
           <Button variant="outlined" color="gray" size="sm" onClick={onReset}>
             {t.resetLabel}
           </Button>

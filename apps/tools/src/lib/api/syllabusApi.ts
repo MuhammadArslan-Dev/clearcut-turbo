@@ -1,12 +1,9 @@
 // Client-side fetches to clearcutoff-main-backend's public, unauthenticated
-// syllabus endpoints (routes/Apis/Tools/syllabus.php there) — the ONE
-// runtime backend call this app makes, deliberately scoped to the Syllabus
-// Tracker only. See NEXT_PUBLIC_LARAVEL_MAIN_BACKEND in .env.example for why
-// this is a NEXT_PUBLIC_ var unlike TOOLS_API_URL (build-time only,
-// everywhere else in this app).
-
-const MAIN_BACKEND_URL =
-  process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND || "https://apptest.clearcutoff.in/api";
+// syllabus endpoints (routes/Apis/Tools/syllabus.php there) — read-only "what
+// exists" data. The user-specific save/load calls live in
+// syllabusTrackerApi.ts instead. Both are the Syllabus Tracker's only
+// runtime backend calls (see mainBackend.ts).
+import { MAIN_BACKEND_URL } from "./mainBackend";
 
 export interface SyllabusExam {
   id: number;
