@@ -33,6 +33,11 @@ export interface AuthScreenDeps {
    * `logAmplitudeEvent` calls used — pass your own analytics function to
    * preserve tracking, or omit for no tracking. */
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
+  /** Associates this browser's Amplitude identity (and the first-touch UTM
+   * properties it already carries) with the backend user uuid. Called only
+   * for a brand-new signup at OTP-send time and, for everyone, after a
+   * successful verify. Omit for no identification. */
+  onIdentify?: (userId: string) => void;
   /**
    * When provided, a successful OTP/Truecaller login does NOT redirect to the
    * dashboard/onboarding app: the token is stored, the modal closes, and this

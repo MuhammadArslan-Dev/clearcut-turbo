@@ -8,7 +8,10 @@ import OtpBoxInput from "./OtpBoxInput";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { authApi } from "@/lib/auth";
-import { logAmplitudeEvent } from "@/services/analytics";
+import {
+  logAmplitudeEvent,
+  setUserId as setAmplitudeUserId,
+} from "@/services/analytics";
 import { IMAGES } from "@/constants/images";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
 import {
@@ -18,6 +21,9 @@ import {
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
 import {
+  getAuthFailureReason,
+  trackAuthFailure,
+  trackAuthSuccess,
   trackVerificationResent,
   trackVerificationSent,
 } from "@clearcut/auth/verification-events";
@@ -424,6 +430,8 @@ export default function StartAuthForm({
 
       resendCountRef.current = 0;
       trackVerificationSent(logAmplitudeEvent, number);
+      // Brand-new signup only — see packages/auth login-screen.tsx.
+      if (data?.is_new_user && data?.user_id) setAmplitudeUserId(data.user_id);
 
       localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
       setIsNewUser(Boolean(data?.is_new_user));
@@ -508,6 +516,9 @@ export default function StartAuthForm({
     setError("");
     setLoading(true);
 
+    // One Authentication Outcome per attempt (see packages/auth otp-screen.tsx).
+    let outcomeTracked = false;
+
     try {
       const lang = getCurrentLocale();
       // e.g. /start?course=htet, if this page is ever linked from a
@@ -524,6 +535,9 @@ export default function StartAuthForm({
       if (status !== "success") throw new Error("Verification failed");
 
       setToken(data.token);
+      if (userId) setAmplitudeUserId(userId);
+      trackAuthSuccess(logAmplitudeEvent);
+      outcomeTracked = true;
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
       localStorage.removeItem(PENDING_USER_ID_KEY);
@@ -541,6 +555,7 @@ export default function StartAuthForm({
 
       window.location.replace(redirectUrl);
     } catch (err: unknown) {
+      if (!outcomeTracked) trackAuthFailure(logAmplitudeEvent, getAuthFailureReason(err));
       setLoading(false);
       const status = (err as { response?: { status?: number } })?.response
         ?.status;

@@ -17,7 +17,12 @@ import { trackFacebookLead } from "../facebook-pixel";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
-import { trackVerificationResent } from "../verification-events";
+import {
+  getAuthFailureReason,
+  trackAuthFailure,
+  trackAuthSuccess,
+  trackVerificationResent,
+} from "../verification-events";
 import type { AuthScreenDeps } from "./types";
 
 const OTP_LENGTH = 4;
@@ -48,6 +53,7 @@ export function createOtpScreen({
   useAuthStore,
   useAuthModal,
   onEvent,
+  onIdentify,
   redirectBaseUrl,
   onAuthenticated,
 }: CreateOtpScreenOptions) {
@@ -142,6 +148,10 @@ export function createOtpScreen({
       setError("");
       verifyOtpStart();
 
+      // One Authentication Outcome per attempt: set once the success event is
+      // out so a later throw (analytics/redirect code) can't add a `failed`.
+      let outcomeTracked = false;
+
       try {
         const lang = getCurrentLocale();
 
@@ -151,6 +161,9 @@ export function createOtpScreen({
         if (status !== "success") throw new Error("Verification failed");
 
         setToken(data.token);
+        if (userId) onIdentify?.(userId);
+        trackAuthSuccess(onEvent);
+        outcomeTracked = true;
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update (also clears the persisted localStorage copy).
         setUserId("");
@@ -195,6 +208,7 @@ export function createOtpScreen({
         // continuously until the browser actually navigates away.
         window.location.replace(redirectUrl);
       } catch (err: unknown) {
+        if (!outcomeTracked) trackAuthFailure(onEvent, getAuthFailureReason(err));
         setLoading(false);
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 422 || status === 401) {

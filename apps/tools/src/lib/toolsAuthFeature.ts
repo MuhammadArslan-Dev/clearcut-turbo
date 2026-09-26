@@ -18,7 +18,7 @@ import { clearToken, getToken } from "@clearcut/auth/token";
 import type { AuthSuccessResult } from "@clearcut/auth/types";
 
 import { MAIN_BACKEND_URL } from "./api/mainBackend";
-import { logAmplitudeEvent } from "./toolsAnalytics";
+import { logAmplitudeEvent, setAmplitudeUserId } from "./toolsAnalytics";
 import { notifySessionChange } from "./toolsSession";
 
 let authenticatedHandler: ((result: AuthSuccessResult) => void) | null = null;
@@ -46,6 +46,7 @@ export const { AuthModal, useAuthStore } = createAuthFeature({
   redirectBaseUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in",
   // Records the auth funnel (Verification Sent / Resent, …) from Tools too.
   onEvent: logAmplitudeEvent,
+  onIdentify: setAmplitudeUserId,
   onAuthenticated: (result) => {
     notifySessionChange();
     authenticatedHandler?.(result);

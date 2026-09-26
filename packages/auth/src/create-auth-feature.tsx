@@ -25,6 +25,8 @@ export interface CreateAuthFeatureConfig {
   /** Same event names/properties as the original inline logAmplitudeEvent
    * calls — pass your own analytics function to preserve tracking. */
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
+  /** See AuthScreenDeps.onIdentify. */
+  onIdentify?: (userId: string) => void;
   /**
    * Stay on the current page after login instead of redirecting to
    * `redirectBaseUrl` (see AuthScreenDeps.onAuthenticated). Only affects the
@@ -75,6 +77,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     useAuthStore,
     useAuthModal,
     onEvent: config.onEvent,
+    onIdentify: config.onIdentify,
     redirectBaseUrl: config.redirectBaseUrl,
     onAuthenticated: config.onAuthenticated,
   };
@@ -84,6 +87,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     authApi,
     redirectBaseUrl: config.redirectBaseUrl,
     onEvent: config.onEvent,
+    onIdentify: config.onIdentify,
   });
 
   return {

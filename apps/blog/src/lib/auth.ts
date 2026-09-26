@@ -14,7 +14,7 @@
 import { createAuthFeature } from "@clearcut/auth/create-auth-feature";
 
 import api from "@/api/axios";
-import { logAmplitudeEvent } from "@/services/analytics";
+import { logAmplitudeEvent, setUserId } from "@/services/analytics";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "https://apptest.clearcutoff.in/api";
@@ -34,6 +34,7 @@ export const {
   apiBaseUrl: API_BASE,
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
+  onIdentify: setUserId,
   // The internal (admin)/admin panel lives inside this otherwise-public
   // marketing app — without this, AuthProvider's mount-time "already logged
   // in? bounce to the dashboard app" effect (meant for a customer browsing

@@ -20,6 +20,9 @@ import {
 } from "../validators";
 import type { AuthApi } from "../api";
 import {
+  getAuthFailureReason,
+  trackAuthFailure,
+  trackAuthSuccess,
   trackVerificationResent,
   trackVerificationSent,
 } from "../verification-events";
@@ -66,6 +69,7 @@ export interface CreateInlineAuthFlowOptions {
   authApi: AuthApi;
   redirectBaseUrl: string;
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
+  onIdentify?: (userId: string) => void;
 }
 
 /**
@@ -81,7 +85,7 @@ export interface CreateInlineAuthFlowOptions {
  * self-contained and doesn't participate in the modal login flow's state
  * at all, matching original behavior.
  */
-export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: CreateInlineAuthFlowOptions) {
+export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIdentify }: CreateInlineAuthFlowOptions) {
   function InlineAuthFlow({
     courseName,
     SubmitButton = DefaultSubmitButton,
@@ -177,6 +181,10 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
           resendCountRef.current = 0;
           trackVerificationSent(onEvent, number, { source: "onboarding_steps" });
         }
+        // Brand-new signup only — same reasoning as login-screen.tsx.
+        if (res?.data?.data?.is_new_user && res?.data?.data?.user_id) {
+          onIdentify?.(res.data.data.user_id);
+        }
         authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" }).catch(() => {});
 
         setSuccess(message); setLoading(false); setDisabled(true);
@@ -204,6 +212,8 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
       if (!finalOtp || finalOtp.length !== OTP_LENGTH) { setError("Enter valid OTP"); return; }
       isVerifyingRef.current = true;
       setError(""); setLoading(true); setDisabled(false);
+      // One Authentication Outcome per attempt (see otp-screen.tsx).
+      let outcomeTracked = false;
       try {
         const lang = localStorage.getItem("locale") || "";
         const course = localStorage.getItem("course");
@@ -211,6 +221,9 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         const { data, status } = res.data;
         if (status !== "success") throw new Error("Verification failed");
         setToken(data.token);
+        if (userId) onIdentify?.(userId);
+        trackAuthSuccess(onEvent);
+        outcomeTracked = true;
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update.
         localStorage.removeItem(PENDING_USER_ID_KEY);
@@ -227,6 +240,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         setLoading(true); setDisabled(false);
         window.location.replace(redirectUrl);
       } catch (err) {
+        if (!outcomeTracked) trackAuthFailure(onEvent, getAuthFailureReason(err));
         console.error(err);
         setError("Invalid OTP");
       } finally {

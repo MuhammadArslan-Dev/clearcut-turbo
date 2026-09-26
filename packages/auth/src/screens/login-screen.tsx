@@ -45,6 +45,7 @@ export function createLoginScreen({
   authApi,
   useAuthStore,
   onEvent,
+  onIdentify,
   redirectBaseUrl,
   onAuthenticated,
 }: CreateOtpScreenOptions) {
@@ -282,6 +283,11 @@ export function createLoginScreen({
 
         // fire-and-forget — don't block OTP screen on analytics
         trackVerificationSent(onEvent, number);
+        // Brand-new signup only: the row was just created for this browser, so
+        // linking it now is safe and lets first-touch UTM reach the user before
+        // the server-side Signed Up event. Existing accounts are identified only
+        // after a successful verify (see otp-screen).
+        if (data?.is_new_user && data?.user_id) onIdentify?.(data.user_id);
 
         localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
 

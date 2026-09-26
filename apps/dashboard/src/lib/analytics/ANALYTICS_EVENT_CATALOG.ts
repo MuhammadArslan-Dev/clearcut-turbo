@@ -40,7 +40,7 @@ trackEvent("Verification Resent", {
 });
 
 trackEvent("Authentication Outcome", {
-  outcome: "signup_successful",
+  outcome: "successful",
   auth_method: "phone_otp",
 });
 

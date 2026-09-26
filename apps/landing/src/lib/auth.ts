@@ -18,7 +18,7 @@
 import { createAuthFeature } from "@clearcut/auth/create-auth-feature";
 
 import api from "@/api/axios";
-import { logAmplitudeEvent } from "@/services/analytics";
+import { logAmplitudeEvent, setUserId } from "@/services/analytics";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 const REDIRECT_BASE_URL =
@@ -37,4 +37,5 @@ export const {
   apiBaseUrl: API_BASE,
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
+  onIdentify: setUserId,
 });
