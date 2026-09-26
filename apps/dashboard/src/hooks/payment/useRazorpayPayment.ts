@@ -1,5 +1,6 @@
 "use client";
 
+import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "../course/useMyActiveCourses";
 import React from "react";
@@ -79,6 +80,11 @@ export function useRazorpayPayment({
       );
 
       // 2️⃣ Razorpay options
+      // One Payment Outcome per checkout session: set as soon as a success or a
+      // failure has been reported, so closing the popup afterwards is not ALSO
+      // reported as a cancellation.
+      let outcomeReported = false;
+
       const options = {
         key: order.key,
         amount: order.order.amount,
@@ -99,6 +105,8 @@ export function useRazorpayPayment({
 
           await invalidateQuery();
 
+          outcomeReported = true;
+
           if (success) {
             trackEvent("Payment Outcome", {
               outcome: "payment_successful",
@@ -117,6 +125,7 @@ export function useRazorpayPayment({
               outcome: "payment_failed",
               billing_type: "one_time",
               final_price: Number(price),
+              failure_reason: "verification_failed",
               payment_session_id: response.razorpay_payment_id,
             });
             logger.error("Payment failed", {
@@ -139,6 +148,24 @@ export function useRazorpayPayment({
         readonly: { email: true },
 
         theme: { color: "#0083ff" },
+
+        // Popup closed by the user. Razorpay fires NO payment.failed for this, so
+        // without this handler a cancelled checkout was never reported at all.
+        modal: {
+          ondismiss: () => {
+            if (outcomeReported) return;
+            outcomeReported = true;
+
+            trackEvent("Payment Outcome", {
+              outcome: "payment_failed",
+              billing_type: "one_time",
+              final_price: Number(price),
+              exam_name: examName,
+              failure_reason: "cancelled",
+              payment_session_id: order.order.id,
+            });
+          },
+        },
       };
 
       const razorpay = new (window as any).Razorpay(options);
@@ -153,12 +180,14 @@ export function useRazorpayPayment({
       }) => {
         const { error } = errorResponse;
 
+        outcomeReported = true;
+
         trackEvent("Payment Outcome", {
           outcome: "payment_failed",
           billing_type: "one_time",
           final_price: Number(price),
           exam_name: examName,
-          failure_reason: error.reason ?? "unknown",
+          failure_reason: getPaymentFailureReason(error),
           payment_session_id: error.metadata?.payment_id ?? "",
         });
 

@@ -54,8 +54,11 @@ export interface MonetizationEventPayloads {
     // auto_renew = Razorpay subscription (payment/initiated "1 month" plan);
     // one_time = a single Razorpay order (everything else, incl. useRazorpayPayment).
     billing_type: 'auto_renew' | 'one_time';
-    failure_reason?: 'insufficient_funds' | 'cancelled';
+    // insufficient_funds / cancelled are the sheet's values; any other Razorpay
+    // `reason` (or verification_failed) is sent as-is.
+    failure_reason?: 'insufficient_funds' | 'cancelled' | (string & {});
     payment_session_id: string;
+    exam_name?: string;
   };
 
   'Subscription Status Updated': {

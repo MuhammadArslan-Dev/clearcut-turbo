@@ -29,6 +29,7 @@ import { LevelTranslation } from "@/lib/api/onboarding";
 import { createSubscription, getPaymentPricing, PaymentPricing, PaymentType } from "@/lib/payment/payment";
 import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
+import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
@@ -414,6 +415,9 @@ export default function InitiatedPage() {
         return;
       }
 
+      // One Payment Outcome per checkout session — see useRazorpayPayment.ts.
+      let outcomeReported = false;
+
       const options = {
         key: res.key,
         subscription_id: res.subscription.razorpay_subscription_id,
@@ -423,6 +427,7 @@ export default function InitiatedPage() {
           razorpay_subscription_id: string;
           razorpay_signature: string;
         }) => {
+          outcomeReported = true;
           trackEvent("Payment Outcome", {
             outcome: "payment_successful",
             billing_type: "auto_renew",
@@ -457,6 +462,23 @@ export default function InitiatedPage() {
           subscription_id: res.subscription.id,
         },
         theme: { color: "#0083ff" },
+
+        // Popup closed by the user — Razorpay fires no payment.failed for this.
+        modal: {
+          ondismiss: () => {
+            if (outcomeReported) return;
+            outcomeReported = true;
+
+            trackEvent("Payment Outcome", {
+              outcome: "payment_failed",
+              billing_type: "auto_renew",
+              final_price: selectedPrice,
+              exam_name: data?.short_name ?? "",
+              failure_reason: "cancelled",
+              payment_session_id: res.subscription.razorpay_subscription_id,
+            });
+          },
+        },
       };
 
       const razorpay = new (window as any).Razorpay(options);
@@ -474,12 +496,13 @@ export default function InitiatedPage() {
         }) => {
           const { error } = errorResponse;
 
+          outcomeReported = true;
           trackEvent("Payment Outcome", {
             outcome: "payment_failed",
             billing_type: "auto_renew",
             final_price: selectedPrice,
             exam_name: data?.short_name ?? "",
-            failure_reason: error.reason ?? "unknown",
+            failure_reason: getPaymentFailureReason(error),
             payment_session_id: error.metadata?.payment_id ?? "",
           });
 
