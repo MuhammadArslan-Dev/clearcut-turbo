@@ -18,6 +18,10 @@ import {
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
 import {
+  trackVerificationResent,
+  trackVerificationSent,
+} from "@clearcut/auth/verification-events";
+import {
   buildPostVerifyRedirectUrl,
   getCurrentLocale,
 } from "@clearcut/auth/redirect";
@@ -268,6 +272,9 @@ export default function StartAuthForm({
   const [resendTimer, setResendTimer] = useState(RESEND_INTERVAL);
 
   const hasTrackedRef = useRef(false);
+  // Successful resends for the current login flow (reset on every fresh send);
+  // sent as `resend_count` on Verification Resent.
+  const resendCountRef = useRef(0);
   const isVerifyingRef = useRef(false);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -415,12 +422,8 @@ export default function StartAuthForm({
       });
       const { data, message } = res?.data;
 
-      logAmplitudeEvent("Verification Sent", {
-        phone: number,
-        verification_method: "Number",
-        verification_mode: "SMS",
-        verification_purpose: "Login",
-      });
+      resendCountRef.current = 0;
+      trackVerificationSent(logAmplitudeEvent, number);
 
       localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
       setIsNewUser(Boolean(data?.is_new_user));
@@ -470,10 +473,8 @@ export default function StartAuthForm({
       await authApi.loginUser({ phone, user_id: userId || undefined });
       setResendTimer(RESEND_INTERVAL);
 
-      logAmplitudeEvent("Verification Resent", {
-        verification_method: "Number",
-        resend_count: 1,
-      });
+      resendCountRef.current += 1;
+      trackVerificationResent(logAmplitudeEvent, phone, resendCountRef.current);
     } catch (err) {
       console.error("Resend OTP failed", err);
     } finally {

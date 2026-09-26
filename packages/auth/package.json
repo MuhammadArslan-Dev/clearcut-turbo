@@ -17,6 +17,7 @@
     "./validators": "./src/validators.ts",
     "./create-auth-feature": "./src/create-auth-feature.tsx",
     "./types": "./src/screens/types.ts",
+    "./verification-events": "./src/verification-events.ts",
     "./icons/truecaller-icon": "./src/icons/truecaller-icon.tsx",
     "./icons/whatsapp-icon": "./src/icons/whatsapp-icon.tsx",
     "./icons/shield-check-icon": "./src/icons/shield-check-icon.tsx"

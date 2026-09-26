@@ -33,12 +33,17 @@ export interface AuthEventPayloads {
   };
 
   'Verification Sent': {
+    user_phone: string;
     verification_method: 'Number' | 'Email';
     verification_mode: 'SMS' | 'RCS' | 'WhatsApp' | 'Missed Call' | 'Voice Call';
+    verification_purpose: 'Login';
   };
 
   'Verification Resent': {
+    user_phone: string;
     verification_method: 'Number' | 'Email';
+    verification_mode: 'SMS' | 'RCS' | 'WhatsApp' | 'Missed Call' | 'Voice Call';
+    verification_purpose: 'Login';
     resend_count: number;
   };
 

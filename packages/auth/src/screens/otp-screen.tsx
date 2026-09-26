@@ -17,6 +17,7 @@ import { trackFacebookLead } from "../facebook-pixel";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
+import { trackVerificationResent } from "../verification-events";
 import type { AuthScreenDeps } from "./types";
 
 const OTP_LENGTH = 4;
@@ -72,6 +73,12 @@ export function createOtpScreen({
     const [error, setError] = useState("");
     const [resendingOtp, setResendingOtp] = useState(false);
     const [resendTimer, setResendTimer] = useState(RESEND_INTERVAL);
+    // Successful resends for THIS login flow (resets if the number changes);
+    // sent as `resend_count` on the Verification Resent event.
+    const resendCountRef = useRef(0);
+    useEffect(() => {
+      resendCountRef.current = 0;
+    }, [phone]);
 
     const isVerifyingRef = useRef(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -217,10 +224,8 @@ export function createOtpScreen({
         await authApi.loginUser({ phone });
         setResendTimer(RESEND_INTERVAL);
 
-        await onEvent?.("Verification Resent", {
-          verification_method: "Number",
-          resend_count: 1,
-        });
+        resendCountRef.current += 1;
+        trackVerificationResent(onEvent, phone, resendCountRef.current);
       } catch (err) {
         console.error("Resend OTP failed", err);
       } finally {

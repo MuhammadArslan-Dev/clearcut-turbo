@@ -19,6 +19,10 @@ import {
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
 } from "../validators";
 import type { AuthApi } from "../api";
+import {
+  trackVerificationResent,
+  trackVerificationSent,
+} from "../verification-events";
 
 const OTP_LENGTH = 4;
 // Same key/behavior as apps/landing's StartAuthForm — persists the pending
@@ -103,6 +107,8 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
     const isVerifyingRef = useRef(false);
+    // Successful resends for the current login flow — see verification-events.ts.
+    const resendCountRef = useRef(0);
 
     useEffect(() => {
       onEvent?.("Authentication Options Viewed", {
@@ -133,7 +139,9 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isValidPhone, phone]);
 
-    const handleLogin = async (phoneValue?: string) => {
+    // `isResend` only changes which analytics event is sent — the request and
+    // the UI flow are identical for a first send and a resend.
+    const handleLogin = async (phoneValue?: string, isResend = false) => {
       const number = phoneValue ?? phone;
       if (!PHONE_REGEX.test(number)) { setError("Enter valid phone number"); return; }
       setError(""); setSuccess(""); setLoading(true); setDisabled(false);
@@ -162,7 +170,13 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
         // loginUser), so there's no reason to make the user wait out 2 more
         // sequential round trips before seeing the OTP input. Matches the
         // same fix already applied in login-screen.tsx.
-        onEvent?.("Verification Sent", { phone: number, source: "onboading_steps", verification_method: "Number", verification_mode: "SMS", verification_purpose: "Login" });
+        if (isResend) {
+          resendCountRef.current += 1;
+          trackVerificationResent(onEvent, number, resendCountRef.current);
+        } else {
+          resendCountRef.current = 0;
+          trackVerificationSent(onEvent, number, { source: "onboarding_steps" });
+        }
         authApi.createCourse({ phone: number, course_name: courseName!.toLowerCase() ?? "htet" }).catch(() => {});
 
         setSuccess(message); setLoading(false); setDisabled(true);
@@ -181,7 +195,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent }: Crea
       return () => clearInterval(interval);
     }, [timer, step]);
 
-    const handleResend = async () => { if (!canResend) return; await handleLogin(phone); startTimer(); };
+    const handleResend = async () => { if (!canResend) return; await handleLogin(phone, true); startTimer(); };
     const handleEdit = () => { setStep("input"); setError(""); setSuccess(""); };
 
     const handleVerify = async (autoOtp?: string) => {

@@ -8,6 +8,7 @@ import { AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 import { DrawerSheet } from "../ui/drawer-sheet";
+import { trackVerificationSent } from "../verification-events";
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
@@ -280,12 +281,7 @@ export function createLoginScreen({
         const { data, message } = res?.data;
 
         // fire-and-forget — don't block OTP screen on analytics
-        onEvent?.("Verification Sent", {
-          phone: number,
-          verification_method: "Number",
-          verification_mode: "SMS",
-          verification_purpose: "Login",
-        });
+        trackVerificationSent(onEvent, number);
 
         localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
 

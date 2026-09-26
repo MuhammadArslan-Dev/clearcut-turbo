@@ -515,6 +515,9 @@ importers:
 
   apps/tools:
     dependencies:
+      '@amplitude/analytics-browser':
+        specifier: ^2.45.1
+        version: 2.45.1
       '@clearcut/api':
         specifier: workspace:*
         version: link:../../packages/api

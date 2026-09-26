@@ -25,12 +25,17 @@ trackEvent("Authentication Form Interacted", {
 });
 
 trackEvent("Verification Sent", {
+  user_phone: "9876543210",
   verification_method: "Number",
   verification_mode: "SMS",
+  verification_purpose: "Login",
 });
 
 trackEvent("Verification Resent", {
+  user_phone: "9876543210",
   verification_method: "Number",
+  verification_mode: "SMS",
+  verification_purpose: "Login",
   resend_count: 2,
 });
 
