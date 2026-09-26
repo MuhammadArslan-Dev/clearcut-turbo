@@ -79,7 +79,8 @@ export default function OnboardingWizard() {
     // ExamStep's "UPCOMING_COURSE" restore effect to preselect once the
     // exams list loads (see ExamStep.tsx).
     const landingLang = searchParams.get("lang");
-    const hasKnownLandingLang = landingLang === "en" || landingLang === "hi";
+    const hasKnownLandingLang =
+        landingLang === "en" || landingLang === "hi" || landingLang === "mr";
 
     const appliedLandingContextRef = useRef(false);
     useEffect(() => {

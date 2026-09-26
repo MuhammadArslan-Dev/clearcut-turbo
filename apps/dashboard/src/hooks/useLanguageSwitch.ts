@@ -11,7 +11,16 @@ export type UseLanguageSwitchReturn = {
   locale: AppLocale;
   nextLocale: AppLocale;
   isPending: boolean;
-  switchLanguage: (targetLocale?: AppLocale) => void;
+  /**
+   * `queryOverrides` are merged into the URL the page reloads to. A `lang`
+   * param already in the URL is always rewritten to the target locale, so a
+   * stale `?lang=en` can never pull the user back to the language they just
+   * switched away from.
+   */
+  switchLanguage: (
+    targetLocale?: AppLocale,
+    queryOverrides?: Record<string, string>,
+  ) => void;
 };
 
 export default function useLanguageSwitch(): UseLanguageSwitchReturn {
@@ -31,14 +40,22 @@ export default function useLanguageSwitch(): UseLanguageSwitchReturn {
   );
 
   const switchLanguage = useCallback(
-    (targetLocale?: AppLocale) => {
+    (targetLocale?: AppLocale, queryOverrides?: Record<string, string>) => {
       const next = targetLocale ?? nextLocale;
       if (next === locale) return;
 
       // Hard redirect preserves the locale across the full page load,
       // avoiding a race condition where React context still holds the old
       // locale while the client-side navigation is in flight.
-      const query = typeof window !== "undefined" ? window.location.search : "";
+      const params = new URLSearchParams(
+        typeof window !== "undefined" ? window.location.search : "",
+      );
+      if (params.has("lang")) params.set("lang", next);
+      Object.entries(queryOverrides ?? {}).forEach(([key, value]) =>
+        params.set(key, value),
+      );
+      const search = params.toString();
+      const query = search ? `?${search}` : "";
       const isDefault = next === (routing.defaultLocale as AppLocale);
       window.location.href = isDefault
         ? `${pathname}${query}`

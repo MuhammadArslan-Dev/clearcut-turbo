@@ -40,7 +40,11 @@ export default function LanguageStep({
     code: string;
     icon: React.ReactNode;
   }) => {
-    switchLanguage(lang.code);
+    // The switch is a full page reload, and OnboardingWizard starts every
+    // mount from a clean store — so the choice is carried through the reload
+    // as `?lang=` (the same param the landing pages use), which the wizard
+    // re-applies. Without it the reloaded page came back with nothing selected.
+    switchLanguage(lang.code, { lang: lang.code });
 
     updateData({ language: lang.code });
   };
