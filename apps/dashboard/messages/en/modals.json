@@ -157,6 +157,7 @@
     "buttons": {
       "start_minitest": "Start Mini Test",
       "start_topic_test": "Start Topic Test",
+      "quick_practice": "Quick topic practice",
       "previous": "Previous",
       "result": "Check Result",
       "next": "Next Question"

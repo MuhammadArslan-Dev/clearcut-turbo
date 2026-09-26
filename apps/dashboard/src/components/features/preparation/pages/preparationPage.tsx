@@ -8,7 +8,9 @@ import ChapterDetailHeader from "../components/MainVideo/ChapterDetailHeader";
 import VideoWrapper from "../components/MainVideo/VideoWrapper";
 import RelatedContentWrapper from "../components/RelatedContent/RelatedContentWrapper";
 
-import BottomBar from "@/components/layout/preparation/BottomBar";
+// Version 2 (contextual bottom navigation). To restore Version 1, import
+// "@/components/layout/preparation/BottomBar" here instead.
+import BottomBar from "@/components/layout/preparation/BottomBarV2";
 
 import { usePreparationData } from "../hooks/usePreparationData";
 import type { TourStep } from "../../tour/GlobalTour";

@@ -6,6 +6,7 @@ import { usePreparationModalStore } from "@/components/features/preparation/stor
 import { Button } from "@clearcut/ui/button";
 import Skeleton from "@clearcut/ui/skeleton";
 import React, { useMemo } from "react";
+import { Play } from "lucide-react";
 import {
   getNextTopic,
   getPrevTopic,
@@ -34,7 +35,17 @@ const pillButtonSx = {
 
 export type ParsedPaperName = Record<string, { name: string }>;
 
-export default function BottomBar() {
+type BottomBarProps = {
+  /** V2's phone tweak: Previous shows only its icon on mobile (no "Prev"). Default keeps V1. */
+  iconOnlyPrev?: boolean;
+  /** V2's phone tweak: play icon inside the Topic Test button. Default keeps V1. */
+  testButtonIcon?: boolean;
+};
+
+export default function BottomBar({
+  iconOnlyPrev = false,
+  testButtonIcon = false,
+}: BottomBarProps = {}) {
   const isMobile = useIsMobile();
   const { open } = usePreparationModalStore();
   const { goToNextTopic, goToPrevTopic } = usePreparationStore();
@@ -211,9 +222,11 @@ export default function BottomBar() {
               >
                 <div className="flex items-center gap-1.5">
                   <ChevronIcon type="double" variant="left" color="black" />
-                  <span className="body-small !font-semibold block md:hidden">
-                    Prev
-                  </span>
+                  {!iconOnlyPrev && (
+                    <span className="body-small !font-semibold block md:hidden">
+                      Prev
+                    </span>
+                  )}
                   <span className="body-small !font-semibold hidden md:block">
                     {actions("previous_topic")}
                   </span>
@@ -236,7 +249,16 @@ export default function BottomBar() {
               }}
               fullWidth
             >
-              <p>{t("miniTest.buttons.start_topic_test")}</p>
+              {testButtonIcon ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-brand">
+                    <Play size={12} fill="currentColor" />
+                  </span>
+                  <p>{t("miniTest.buttons.start_topic_test")}</p>
+                </span>
+              ) : (
+                <p>{t("miniTest.buttons.start_topic_test")}</p>
+              )}
             </Button>
           </div>
         )}
