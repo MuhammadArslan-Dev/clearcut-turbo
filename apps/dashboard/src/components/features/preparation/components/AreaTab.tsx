@@ -31,6 +31,7 @@ export default React.memo(function AreaTab() {
       <SectionSwitchUI
         layoutId="area-tab-preparation"
         items={items}
+        fillWidth={items.length <= 2}
         active={selectedArea?.id?.toString() ?? null}
         changeSection={(id) => {
           const area = areas.find((a) => a.id === Number(id));

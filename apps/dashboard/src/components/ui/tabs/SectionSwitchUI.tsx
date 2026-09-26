@@ -7,6 +7,12 @@ type Props = {
   items: TabItem[];
   active: number | string | null;
   changeSection: (id: string) => void;
+  /**
+   * Stretch the bar to the full available width and centre the tabs in it
+   * (instead of the desktop `w-fit` shrink-to-content). Meant for the few-tabs
+   * case (1–2 items), where a left-aligned short bar looks unfinished.
+   */
+  fillWidth?: boolean;
 };
 
 export default function SectionSwitchUI({
@@ -14,6 +20,7 @@ export default function SectionSwitchUI({
   items,
   active,
   changeSection,
+  fillWidth = false,
 }: Props) {
   return (
     <TabSwitch
@@ -29,7 +36,11 @@ export default function SectionSwitchUI({
       activeTabFontWeight="!font-semibold"
       containerBg="bg-[var(--color-brand-dark)]"
       containerRadius="rounded-none"
-      className="!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1  md:w-fit"
+      className={
+        fillWidth
+          ? "!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1 w-full justify-center-safe"
+          : "!min-h-10 !max-h-12 !py-2 !px-3 md:!px-3 md:!py-1  md:w-fit"
+      }
       activeTabBg="bg-white"
     />
   );
