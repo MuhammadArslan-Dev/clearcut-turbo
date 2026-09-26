@@ -28,6 +28,7 @@ import { isApiError } from "@/lib/api/api-error";
 import { LevelTranslation } from "@/lib/api/onboarding";
 import { createSubscription, getPaymentPricing, PaymentPricing, PaymentType } from "@/lib/payment/payment";
 import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
+import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
@@ -50,6 +51,10 @@ const FB_PIXEL_ID = "1126041265682766";
 // app that charges or displays a course price (MainPaywall, PreparationPaywall,
 // PaywallFloatingWidget, MyCourseCard, ...).
 
+// The plan preselected when the page loads — reported on every Plan Switched
+// as `default_plan_id`, and the starting point for detecting a switch.
+const DEFAULT_VARIANT: PaymentType = "1month";
+
 export default function InitiatedPage() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
   const { get, set } = useQueryParams();
@@ -66,7 +71,12 @@ export default function InitiatedPage() {
   //   }
   // }, [authUser, isAllowed, router]);
   const [selectVariant, setSelectVariant] =
-    React.useState<PaymentType>("1month");
+    React.useState<PaymentType>(DEFAULT_VARIANT);
+  // Plan Switched bookkeeping lives in refs, NOT in the setState updater below:
+  // updaters must be pure (StrictMode runs them twice in dev), and refs update
+  // synchronously so two fast clicks are each compared against the right plan.
+  const currentVariantRef = React.useRef<PaymentType>(DEFAULT_VARIANT);
+  const switchCountRef = React.useRef(0);
 
   const [subscriptionLoading, setSubscriptionLoading] = React.useState(false);
   const [pricing, setPricing] = React.useState<PaymentPricing | null>(null);
@@ -132,6 +142,37 @@ export default function InitiatedPage() {
 
   const handleSelectVariant = useCallback(
     (variant: PaymentType) => {
+      // Analytics: fires once per real switch — re-selecting the current plan
+      // does nothing. Deliberately outside the updater below.
+      const previousVariant = currentVariantRef.current;
+      if (variant !== previousVariant) {
+        currentVariantRef.current = variant;
+        switchCountRef.current += 1;
+
+        const planCourseName = courseName || data?.short_name || "";
+        const from = getPlanAnalytics(previousVariant, pricing, data?.short_name, planCourseName);
+        const to = getPlanAnalytics(variant, pricing, data?.short_name, planCourseName);
+        const defaultPlan = getPlanAnalytics(DEFAULT_VARIANT, pricing, data?.short_name, planCourseName);
+
+        if (from && to && defaultPlan && data?.exam_id) {
+          trackEvent("Plan Switched", {
+            exam_id: data.exam_id,
+            course_name: planCourseName,
+            from_plan_id: from.plan_id,
+            from_price: from.price,
+            from_duration_months: from.duration_months,
+            from_billing_type: from.billing_type,
+            to_plan_id: to.plan_id,
+            to_price: to.price,
+            to_duration_months: to.duration_months,
+            to_billing_type: to.billing_type,
+            default_plan_id: defaultPlan.plan_id,
+            switch_number: switchCountRef.current,
+            currency: "INR",
+          });
+        }
+      }
+
       setSelectVariant((current) => {
         if (current !== variant) {
           const variantPrice = getPriceForVariant(variant, pricing, data?.short_name);
@@ -149,7 +190,7 @@ export default function InitiatedPage() {
         return variant;
       });
     },
-    [pricing, data],
+    [pricing, data, courseName],
   );
 
   const { levels: levelsRaw = [], loading: levelsLoading } = useLevels(

@@ -354,6 +354,22 @@ trackEvent("Payment Paywall Rendered", {
   is_user_premium: false,
 });
 
+trackEvent("Plan Switched", {
+  exam_id: "teaching_CTET",
+  course_name: "CTET",
+  from_plan_id: "ctet_1m_99",
+  from_price: 99,
+  from_duration_months: 1,
+  from_billing_type: "auto_renew",
+  to_plan_id: "ctet_1m_139",
+  to_price: 139,
+  to_duration_months: 1,
+  to_billing_type: "one_time",
+  default_plan_id: "ctet_1m_99",
+  switch_number: 1,
+  currency: "INR",
+});
+
 trackEvent("Purchase Intent Initiated", {
   entry_point: "learn_dashboard",
   product_id: "CTET_2024",
