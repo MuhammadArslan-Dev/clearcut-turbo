@@ -52,12 +52,15 @@ async function authedRequest<T>(path: string, init: RequestInit = {}): Promise<T
   return body.data;
 }
 
-export function fetchSavedTrackers(): Promise<TrackedExamEntry[]> {
-  return authedRequest<TrackedExamEntry[]>("/tools/syllabus-tracker");
+// `locale` (en | hi | mr) makes the backend return names in the page's language:
+// the account copy stores only ids + progress and derives every display name
+// from the current syllabus.
+export function fetchSavedTrackers(locale: string = "en"): Promise<TrackedExamEntry[]> {
+  return authedRequest<TrackedExamEntry[]>(`/tools/syllabus-tracker?locale=${locale}`);
 }
 
 /** Create-or-update this entry on the account (identity: exam + paper). */
-export function saveTracker(entry: TrackedExamEntry): Promise<TrackedExamEntry> {
+export function saveTracker(entry: TrackedExamEntry, locale: string = "en"): Promise<TrackedExamEntry> {
   // Explicit field list rather than sending the entry as-is: the server
   // validates a fixed shape, and `updatedAt` (server-only) must not go back.
   const payload = {
@@ -68,7 +71,7 @@ export function saveTracker(entry: TrackedExamEntry): Promise<TrackedExamEntry> 
     crossCompletions: entry.crossCompletions,
     trackedAt: entry.trackedAt,
   };
-  return authedRequest<TrackedExamEntry>("/tools/syllabus-tracker", {
+  return authedRequest<TrackedExamEntry>(`/tools/syllabus-tracker?locale=${locale}`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

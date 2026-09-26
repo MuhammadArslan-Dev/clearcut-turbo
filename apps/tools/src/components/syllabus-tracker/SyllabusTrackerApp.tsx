@@ -108,7 +108,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
 
   const refreshSaved = () => {
     setSavedStatus("loading");
-    fetchSavedTrackers()
+    fetchSavedTrackers(locale)
       .then((list) => {
         setSavedEntries(list);
         setSavedStatus("idle");
@@ -488,7 +488,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
       // Always compared against the account's LATEST copy (one cheap GET),
       // not whatever was fetched earlier — it may have been saved from
       // another device since.
-      const latest = await fetchSavedTrackers();
+      const latest = await fetchSavedTrackers(locale);
       const existing = latest.find((e) => entryKey(e) === key);
       if (existing && !force) {
         const existingFingerprint = progressFingerprint(existing);
@@ -499,7 +499,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
           return;
         }
       }
-      const savedCopy = await saveTracker(entry);
+      const savedCopy = await saveTracker(entry, locale);
       setSyncedFingerprint(key, progressFingerprint(savedCopy));
       setSavedEntries(existing ? latest.map((e) => (entryKey(e) === key ? savedCopy : e)) : [...latest, savedCopy]);
       setSaveStatus("idle");
