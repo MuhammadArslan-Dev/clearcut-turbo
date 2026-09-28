@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
 import MyCourseCard from "./MyCourseCard";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperClass } from "swiper";
@@ -26,6 +27,7 @@ import { Button } from "@clearcut/ui/button";
 import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
 import { useCoursesProgressSummary } from "@/hooks/course/useCourseProgressSummary";
 import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
+import { prefetchLevels } from "@/hooks/onboarding/useLevels";
 
 // These modals are only ever visible after a user action (edit/buy/payment
 // result) — loading them as separate chunks instead of bundling them into
@@ -111,6 +113,7 @@ export default function MyCoursesWrapTwo({
   isLoading?: boolean;
 }) {
   const open = useCourseStore((s) => s.open);
+  const queryClient = useQueryClient();
   const setFocusedCourse = useSwiperCourseStore((s) => s.setFocusedCourse);
   const setOnAddExamSlide = useSwiperCourseStore((s) => s.setOnAddExamSlide);
   const resetFocusedCourse = useSwiperCourseStore((s) => s.reset);
@@ -136,6 +139,42 @@ export default function MyCoursesWrapTwo({
   const orderedCourses = activeExam
     ? [activeExam, ...courses.filter((course) => course?.id !== activeExam.id)]
     : courses;
+
+  // Warm the "New Exam Enrollment" modal's data ahead of the click. That
+  // modal (and EditCourseModal) are next/dynamic-loaded on this page on
+  // purpose (see the imports above) to keep this high-traffic page's initial
+  // bundle small, but that meant `useLevels` previously only started
+  // fetching after the modal's chunk had already downloaded and mounted —
+  // a chunk-then-fetch waterfall that was the actual source of the modal
+  // feeling slow. Prefetching here runs that request in parallel with (well
+  // before) any click, for every course that still needs a paper/subject
+  // pick — exactly the courses `continueClick`/`onContinue` below would open
+  // this modal for. See useLevels.ts's prefetchLevels for the full story.
+  // orderedCourses is a new array every render — key the memo below off this
+  // plain string instead so it only recomputes when a course id or its
+  // stage_id actually changes.
+  const coursesSelectionFingerprint = courses
+    .map((c) => `${c?.id}:${c?.stage_id}`)
+    .join(",");
+
+  const examIdsNeedingSelection = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          orderedCourses
+            .filter((course) => course && !course.stage_id && course.exam?.id)
+            .map((course) => course!.exam!.id),
+        ),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeExam?.id, activeExam?.stage_id, coursesSelectionFingerprint],
+  );
+
+  useEffect(() => {
+    examIdsNeedingSelection.forEach((examId) => {
+      prefetchLevels(queryClient, examId);
+    });
+  }, [examIdsNeedingSelection, queryClient]);
 
   // ONE request for every card's progress (was one per card — N+1).
   const { data: progressByCourse } = useCoursesProgressSummary(

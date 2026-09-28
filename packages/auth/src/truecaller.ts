@@ -404,7 +404,30 @@ const AVAILABILITY_PROBE_GRACE_MS = 6000;
  * first scroll/keypress happens, and skipped entirely once cached.
  */
 export function useTruecallerAvailability(): TruecallerAvailability {
-  const cached = getCachedTruecallerAvailability();
+  // Firefox for Android doesn't reliably support navigating a hidden iframe
+  // to a custom URL scheme — external-protocol handoffs triggered from a
+  // nested browsing context rather than the top-level page are commonly
+  // blocked/ignored there (the iframe technique below exists specifically to
+  // dodge a *different*, Chrome-only problem — see runDetection's docblock —
+  // and was never verified against Firefox's own restrictions). On Firefox
+  // the probe therefore never actually launches Truecaller, always times out
+  // "unavailable", and — because that result gets PERSISTED for 180 days via
+  // setCachedTruecallerAvailability, cross-subdomain — permanently hides the
+  // button on every future visit, in any browser on that device, even though
+  // the real login flow (a top-level `window.location.href` navigation in
+  // useTruecallerLogin.start(), not an iframe) works fine in Firefox. This
+  // is why Firefox regressed to "unsupported" despite isAndroidFirefox()
+  // correctly recognizing it below.
+  //
+  // Fix: skip the probe entirely for Firefox (and don't trust a possibly
+  // Firefox-poisoned cached value either) and trust the browser/platform
+  // check alone. An actually-missing Truecaller app is still caught by
+  // useTruecallerLogin's own reactive APP_OPEN_GRACE_MS fallback after a
+  // real click — exactly how a Chrome user without the app installed is
+  // already handled today.
+  const isFirefox = isAndroidFirefox();
+  const cached = isFirefox ? null : getCachedTruecallerAvailability();
+
   // Scoped to Android + Chrome/Firefox (by request) — covers iOS, every
   // other browser, and every in-app browser (Facebook/Instagram explicitly,
   // plus WebViews generally) in one check. Not persisted to the cross-device
@@ -413,13 +436,14 @@ export function useTruecallerAvailability(): TruecallerAvailability {
   // get a real check rather than inheriting a stale "unavailable".
   const platformSupported = isTruecallerSupportedBrowser() && !isFacebookOrInstagramInAppBrowser();
   const [state, setState] = useState<TruecallerAvailability>(
-    !platformSupported ? "unavailable" : (cached ?? "checking"),
+    !platformSupported ? "unavailable" : isFirefox ? "available" : (cached ?? "checking"),
   );
   const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!platformSupported) return; // wrong platform/browser — never probe here, see isTruecallerSupportedBrowser's docblock
+    if (isFirefox) return; // never probe on Firefox — see note above
     if (cached) return; // already resolved on a previous visit — never re-probe
 
     // Truecaller only exists as a phone app — no desktop counterpart to hand

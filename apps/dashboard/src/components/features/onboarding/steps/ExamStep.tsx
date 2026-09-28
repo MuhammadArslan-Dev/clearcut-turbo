@@ -76,6 +76,14 @@ export default function ExamStep({
     [updateData],
   );
 
+  // 🔹 One-time pin target: the exam that arrived via the `?course=`
+  // parameter (stashed as UPCOMING_COURSE by OnboardingWizard). Set exactly
+  // once, by the restore effect below, and never touched again — this is
+  // what keeps the list order frozen after the initial arrangement.
+  const [initialPinnedCode, setInitialPinnedCode] = useState<string | null>(
+    null,
+  );
+
   // 🔹 Restore upcoming course
   useEffect(() => {
     const course = localStorage.getItem("UPCOMING_COURSE");
@@ -87,26 +95,28 @@ export default function ExamStep({
 
     if (alreadySelected) {
       selectExam(alreadySelected);
+      setInitialPinnedCode(alreadySelected.short_name?.toLowerCase() ?? null);
       localStorage.removeItem("UPCOMING_COURSE");
     }
   }, [exams, selectExam]);
 
-  // 🔹 Pin whichever exam is currently selected to the top of the list —
-  // keyed off data.exam (persisted) rather than a one-shot "just arrived
-  // from landing" flag, so it stays pinned across a reload/re-visit too,
-  // not just in the same session that set it.
-  const selectedCode = data?.exam?.short_name?.toLowerCase();
+  // 🔹 Pin the parameter-selected exam to the top of the list, once, on
+  // initial load only. This is keyed off `initialPinnedCode` (set once above)
+  // rather than `data.exam` — the previous version re-pinned on every
+  // selection, so manually picking a different exam afterwards reshuffled
+  // the whole list. Selecting a different exam still updates `data.exam`
+  // (for the checkmark/highlight below) but no longer changes the order.
   const orderedExams = useMemo(() => {
-    if (!selectedCode) return filteredExams2;
+    if (!initialPinnedCode) return filteredExams2;
     const pinnedIndex = filteredExams2.findIndex(
-      (exam) => exam.short_name?.toLowerCase() === selectedCode,
+      (exam) => exam.short_name?.toLowerCase() === initialPinnedCode,
     );
     if (pinnedIndex <= 0) return filteredExams2;
     const reordered = filteredExams2.slice();
     const [pinned] = reordered.splice(pinnedIndex, 1);
     reordered.unshift(pinned);
     return reordered;
-  }, [filteredExams2, selectedCode]);
+  }, [filteredExams2, initialPinnedCode]);
 
   const isLoading = loading && !error;
 
