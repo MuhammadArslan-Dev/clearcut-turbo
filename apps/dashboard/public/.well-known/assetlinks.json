@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.shani9300.ClearCutoffApp",
+      "package_name": "com.clearcutoff.app",
       "sha256_cert_fingerprints": [
-        "PASTE_YOUR_SHA256_HERE"
+        "04:E8:C9:D3:92:DD:43:9D:BC:2B:05:5B:1F:01:1F:07:87:61:13:51:01:9E:6E:10:D9:0C:0E:F3:CF:B3:D5:D8"
       ]
     }
   }

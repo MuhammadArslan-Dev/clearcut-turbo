@@ -29,6 +29,8 @@ import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
+import { logger } from "@/lib/sentry/sentry-logger";
 
 export default function BuySigleCourseModal() {
   const { isOpen, close, mode, data } = useCourseStore();
@@ -52,6 +54,7 @@ export default function BuySigleCourseModal() {
     null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   /* ---------------------------------- container (STABLE) ---------------------------------- */
   const Container = useMemo(() => (isMobile ? DrawerSheet : Modal), [isMobile]);
@@ -108,6 +111,7 @@ export default function BuySigleCourseModal() {
     setFinalSelection(null);
     setCurrentParent(null);
     setSubmitting(false);
+    setPurchaseError(null);
   }, []);
 
   useEffect(() => {
@@ -159,6 +163,7 @@ export default function BuySigleCourseModal() {
     const selectionNames = selectedPath.map((item) => item.name);
 
     setSubmitting(true);
+    setPurchaseError(null);
     try {
       const req = await purchaseLevels({
         exam_id: data.id,
@@ -176,11 +181,44 @@ export default function BuySigleCourseModal() {
         });
         await invalidateMyCourses();
         router.push(`/preparation/${req.data.group_code}?subject_selected=1`);
+        return;
+      }
+
+      // Resolved without throwing but wasn't a success status either — was
+      // previously silent (no error shown, no report), so a user hitting
+      // this had no idea their submission didn't go through.
+      setPurchaseError(modalT("error.generic"));
+      logger.error(new Error("purchaseLevels resolved without success"), {
+        tags: { module: "buy-single-course-modal", action: "handlePurchase" },
+        extra: { examId: data.id, status: req?.status },
+      });
+    } catch (err) {
+      // A retry-exhausted mobile network blip (Instagram/Facebook in-app
+      // browsers, same recurring pattern as Sentry CLEARCUTOFF-NEXTJS-APP-74
+      // /-2T) isn't actionable on our end — still shown to the user (they're
+      // actively waiting on this submit, unlike a background sync), but kept
+      // out of the Sentry issue stream as a breadcrumb instead of an error.
+      // A genuine backend failure (4xx/5xx) is still reported as an error.
+      if (isNetworkFailure(err)) {
+        setPurchaseError(modalT("error.network"));
+        logger.breadcrumb("New exam purchase hit a network blip", {
+          tags: { module: "buy-single-course-modal" },
+          extra: { examId: data.id },
+        });
+      } else {
+        setPurchaseError(modalT("error.generic"));
+        logger.error(err, {
+          tags: { module: "buy-single-course-modal", action: "handlePurchase" },
+          extra: {
+            examId: data.id,
+            ...(err instanceof ApiError ? err.toContext() : {}),
+          },
+        });
       }
     } finally {
       setSubmitting(false);
     }
-  }, [data?.id, selectedPath, submitting]);
+  }, [data?.id, selectedPath, submitting, modalT]);
 
   const { buttonPhase } = useButtonArrowAnimation({
     data: currentChildren.length === 0,
@@ -346,7 +384,12 @@ export default function BuySigleCourseModal() {
           </motion.div>
         )}
 
-        <div className="p-4 fixed md:sticky bottom-0 w-full right-0 bg-white flex justify-center ">
+        <div className="p-4 fixed md:sticky bottom-0 w-full right-0 bg-white flex flex-col items-center gap-2">
+          {purchaseError && (
+            <p className="body-small text-center text-red-500 w-full max-w-[400px]">
+              {purchaseError}
+            </p>
+          )}
           {step === 0 ? (
             <div className="w-full max-w-[400px]">
               <ShimmerButton

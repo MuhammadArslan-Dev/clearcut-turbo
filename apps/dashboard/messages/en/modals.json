@@ -131,6 +131,11 @@
       "highlight_text": "Subjects",
 
       "startLearning": "Start Learning"
+    },
+
+    "error": {
+      "network": "Couldn't reach the server. Please check your connection and try again.",
+      "generic": "Something went wrong. Please try again."
     }
   },
 

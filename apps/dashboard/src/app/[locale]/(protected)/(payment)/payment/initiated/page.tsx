@@ -19,7 +19,7 @@ import { useLevels } from "@/hooks/onboarding/useLevels";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
-import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
+import { trackFacebookEvent, trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { recordCheckoutInitiated, recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
@@ -177,7 +177,12 @@ export default function InitiatedPage() {
       setSelectVariant((current) => {
         if (current !== variant) {
           const variantPrice = getPriceForVariant(variant, pricing, data?.short_name);
-          trackFacebookEvent("CustomizeProduct", buildMetaParams(variantPrice));
+          // Fires on the plan-toggle click, which can happen before this
+          // page's own InitiateCheckout effect (below) has finished its
+          // async setMetaUserData() — unlike that call, this one can't
+          // assume advanced-matching data is already set, so it sets its
+          // own.
+          trackFacebookEventWithUserData("CustomizeProduct", buildMetaParams(variantPrice));
 
           if (data?.id) {
             // NOTE: data.id (numeric exams.id, the real FK) — not
@@ -449,7 +454,7 @@ export default function InitiatedPage() {
             exam_name: data?.short_name ?? "",
             payment_session_id: response.razorpay_payment_id,
           });
-          trackFacebookEvent("Subscribe", {
+          trackFacebookEventWithUserData("Subscribe", {
             value: selectedPrice,
             currency: "INR",
             predicted_ltv: selectedPrice * 2,
@@ -592,7 +597,7 @@ export default function InitiatedPage() {
   }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
-    trackFacebookEvent("AddPaymentInfo", buildMetaParams(selectedPrice));
+    trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
     if (selectVariant === "1month") {
       handleSubscriptionPayment();
     } else {

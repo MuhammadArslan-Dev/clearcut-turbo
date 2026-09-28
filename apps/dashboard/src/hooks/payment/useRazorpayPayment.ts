@@ -5,7 +5,7 @@ import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "../course/useMyActiveCourses";
 import React from "react";
 import { trackEvent } from "@/lib/analytics/browser";
-import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
+import { trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import {
   createOrder,
@@ -114,7 +114,12 @@ export function useRazorpayPayment({
               final_price: Number(price),
               payment_session_id: response.razorpay_payment_id,
             });
-            trackFacebookEvent("Purchase", {
+            // Purchase can fire from paywall modals (MainPaywall,
+            // PreparationPaywall, full-course-payment-modal) that never
+            // visit /payment/initiated, so there's no earlier page-level
+            // init() to inherit advanced-matching data from — this call has
+            // to set it itself.
+            trackFacebookEventWithUserData("Purchase", {
               value: Number(price),
               currency: "INR",
             });

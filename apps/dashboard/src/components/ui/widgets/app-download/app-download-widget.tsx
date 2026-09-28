@@ -9,7 +9,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { PenIcon, TrophyIcon } from "../../icons";
 import { RotatingBadge } from "../../animation/RotatingBadge";
 import { trackEvent } from "@/lib/analytics/browser";
-import { getAuthTokenClient } from "@/lib/auth-token-client";
+import { createAppHandoffCode } from "@/lib/api/authHandoff";
 
 // Real values, confirmed against the RN app's app.json / constants/config.ts
 // (scheme registered under `expo.scheme`; Android package under `expo.android.package`).
@@ -21,10 +21,21 @@ const ANDROID_STORE_URL =
 
 // Carries the current web session into the app so a user who already has it
 // installed lands signed in instead of hitting OTP login again — see
-// AuthContext's deep-link handler on the app side (loginWithToken).
-function buildAppDeepLink(): string {
-  const token = getAuthTokenClient();
-  return token ? `${APP_SCHEME}auth?token=${encodeURIComponent(token)}` : APP_SCHEME;
+// AuthContext's deep-link handler on the app side (loginWithHandoffCode).
+//
+// Mints a short-lived, single-use code from the backend rather than putting
+// the real (long-lived) auth token in the URL — a URL can end up in browser
+// history, referrer headers, or app logs, any of which would otherwise leak
+// a permanent credential. `null` means "couldn't get a code" (logged out,
+// offline, backend hiccup); callers fall back to the plain scheme with no
+// auth payload rather than ever reusing the old raw-token shape.
+async function buildAppDeepLink(): Promise<string> {
+  try {
+    const code = await createAppHandoffCode();
+    return `${APP_SCHEME}auth?code=${encodeURIComponent(code)}`;
+  } catch {
+    return APP_SCHEME;
+  }
 }
 
 type AppDownloadWidgetProps = {
@@ -76,24 +87,41 @@ export default function AppDownloadWidget({
     // usual (this does NOT fall back to the Play Store on its own — that
     // only happens if the user explicitly taps "Continue in App").
     let settled = false;
+    let cancelled = false;
+    let cleanupListeners: (() => void) | null = null;
+
     const onVisibilityChange = () => {
       if (document.hidden && !settled) {
         settled = true;
         setHidden(true);
       }
     };
-    document.addEventListener("visibilitychange", onVisibilityChange);
 
-    const timeout = setTimeout(() => {
-      settled = true;
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    }, 1200);
+    // buildAppDeepLink() is a network round-trip now (minting the one-time
+    // code), not a synchronous read — the grace window below has to start
+    // counting from when the navigation actually fires, not from mount, or
+    // slow network would eat into the 1200ms and produce false "not
+    // installed" negatives.
+    (async () => {
+      const deepLink = await buildAppDeepLink();
+      if (cancelled) return;
 
-    window.location.href = buildAppDeepLink();
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      const timeout = setTimeout(() => {
+        settled = true;
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }, 1200);
+      cleanupListeners = () => {
+        clearTimeout(timeout);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
+
+      window.location.href = deepLink;
+    })();
 
     return () => {
-      clearTimeout(timeout);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
+      cancelled = true;
+      cleanupListeners?.();
     };
   }, []);
 
@@ -110,7 +138,7 @@ export default function AppDownloadWidget({
     const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOSDevice) {
       // No iOS store link yet — best effort is still the app scheme.
-      window.location.href = buildAppDeepLink();
+      window.location.href = await buildAppDeepLink();
       return;
     }
 
