@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { logger } from "@/lib/sentry/sentry-logger";
-import { ApiError } from "@/lib/api/api-error";
+import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
 
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
 import TopicListCardSkeleton from "@/components/ui/cards/preparation/topic-card/topic-list-card-skeleton";
@@ -246,11 +246,20 @@ export default function Sidebar() {
 
     const timeoutId = setTimeout(() => {
       // Fire-and-forget: a dead/slow backend must not reject unhandled and
-      // take the whole preparation page down with it. Swallowed for the UI,
-      // but still reported — a silently failing resume-state is exactly the
-      // kind of bug that otherwise goes unnoticed for weeks. An aborted
-      // request (superseded or unmounted) isn't a real failure, so it's not
-      // reported the same way.
+      // take the whole preparation page down with it. Swallowed for the UI.
+      // An aborted request (superseded or unmounted) isn't a real failure,
+      // so it's not reported the same way.
+      //
+      // A network-level failure (isNetworkFailure — offline, DNS blip,
+      // connection reset) is kept as a breadcrumb rather than its own
+      // reported error: this already retries up to 4 times over ~6s
+      // (setResumeState's retryOptions), and the volume of these came
+      // overwhelmingly from mobile/in-app-browser environments (Facebook,
+      // Instagram, Chrome Mobile WebView — Sentry CLEARCUTOFF-NEXTJS-APP-74,
+      // 173 events/94 users) where a transient blip on a background sync
+      // isn't actionable — the same non-actionable-network-blip reasoning
+      // useStreakTracker.ts already applies to its own background flush.
+      // A genuine backend failure (4xx/5xx) is still reported as an error.
       setResumeState(
         {
           course_id: String(course?.group_code),
@@ -264,6 +273,14 @@ export default function Sidebar() {
         controller.signal,
       ).catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
+
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("Resume-state sync hit a network blip", {
+            tags: { type: "background_sync", module: "preparation-sidebar" },
+            extra: { action: "setResumeState", courseId: course?.group_code },
+          });
+          return;
+        }
 
         logger.error(err, {
           tags: { type: "background_sync", module: "preparation-sidebar" },

@@ -1,7 +1,7 @@
 'use client';
 
 import { logMinutes } from '@/lib/dashboard/streak';
-import { isApiError } from '@/lib/api/api-error';
+import { isNetworkFailure } from '@/lib/api/api-error';
 import { logger } from '@/lib/sentry/sentry-logger';
 import { useEffect, useRef } from 'react';
 
@@ -37,8 +37,20 @@ export function useStreakTracker({ intervalMinutes = 5 }: Options = {}) {
           // tracker is still mounted) sends them, instead of reporting an
           // error for something nobody can act on. Any real API failure
           // (4xx/5xx) is still reported.
-          if (isApiError(err) && err.isNetworkError) {
+          //
+          // isNetworkFailure() (not just isApiError(err) && err.isNetworkError)
+          // because a keepalive flush on tab-hide/unmount can have its page
+          // torn down before apiFetch gets to wrap the failure into an
+          // ApiError — the raw `TypeError: Failed to fetch` was slipping past
+          // the old check and still being reported (Sentry CLEARCUTOFF-
+          // NEXTJS-APP-2T). Kept as a breadcrumb, not silent, so a genuinely
+          // sustained outage is still visible as context on some other error.
+          if (isNetworkFailure(err)) {
             lastTracked.current -= minutes * 60000;
+            logger.breadcrumb('Streak flush hit a network blip, minutes re-queued', {
+              tags: { module: 'streak-tracker' },
+              extra: { endpoint: '/streak/log-minutes', minutes },
+            });
             return;
           }
           logger.error(err, { tags: { module: 'streak-tracker', endpoint: '/streak/log-minutes' } });

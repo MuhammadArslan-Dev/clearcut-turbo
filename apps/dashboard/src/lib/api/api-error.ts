@@ -64,6 +64,25 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
+/**
+ * True for a network-level failure — the request never reached the server
+ * (offline, DNS blip, connection reset, CORS) — regardless of whether it
+ * made it through apiFetch's own ApiError wrapping.
+ *
+ * A `keepalive` request flushed on tab-hide/unmount (see useStreakTracker.ts)
+ * can have its page torn down mid-flight before apiFetch's catch block gets
+ * a chance to run and wrap the failure, so the browser's raw
+ * `TypeError: Failed to fetch` sometimes surfaces un-wrapped instead of the
+ * usual `ApiError` (Sentry CLEARCUTOFF-NEXTJS-APP-2T — reported as a bare
+ * TypeError with no ApiError in the chain, meaning the isApiError() check
+ * alone silently let it through). Checking both shapes here means callers
+ * get one reliable "was this just a network blip" check either way.
+ */
+export function isNetworkFailure(error: unknown): boolean {
+  if (isApiError(error)) return error.isNetworkError;
+  return error instanceof TypeError && /fetch/i.test(error.message);
+}
+
 /** Response bodies can be whole HTML error pages; keep events small. */
 export function truncateBody(body: string, max = 1000): string {
   return body.length > max ? `${body.slice(0, max)}… (truncated)` : body;
