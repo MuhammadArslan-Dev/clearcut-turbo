@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
@@ -65,8 +65,56 @@ export default function FacebookPixel() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Same lazy-on-first-interaction pattern as LazyGTM/LazyClarity — the
+  // pixel script was previously loaded via strategy="afterInteractive" on
+  // EVERY page, for every visitor, competing with hydration/LCP for the
+  // main thread and network on the exact pages Sentry flagged as slow.
+  // Deferring to a real interaction means a pure-bounce session (leaves
+  // without clicking/scrolling/typing) won't fire a PageView pixel event —
+  // an accepted tracking trade-off for the performance win.
+  const [loadPixel, setLoadPixel] = useState(false);
+  // Sub-events (PageView, CompleteRegistration, StartTrial) below still
+  // must not fire before the script has actually executed and defined
+  // window.fbq — onLoad (fires once Script finishes, inline or not) is the
+  // reliable signal for that, since it can lag a render behind loadPixel
+  // flipping true.
+  const [scriptReady, setScriptReady] = useState(false);
+
+  // The payment flow (payment/initiated/page.tsx) fires InitiateCheckout
+  // from a useEffect on MOUNT, not from a click — waiting for interaction
+  // would silently drop it (trackFacebookEvent no-ops when window.fbq isn't
+  // defined yet, with no queue/retry). Same reasoning for landing here with
+  // a one-shot conversion signal (user_type=new / subject_selected=1 — see
+  // the tracking effect below): those are the CompleteRegistration/
+  // StartTrial moments, too conversion-critical to risk on interaction
+  // timing. Every other page (the actual slow ones Sentry flagged) still
+  // gets the full lazy-on-interaction benefit below.
+  const needsImmediateLoad =
+    pathname?.includes("/payment") ||
+    searchParams.get("user_type") === "new" ||
+    searchParams.get("subject_selected") === "1";
+
   useEffect(() => {
-    if (!window.fbq) return;
+    if (needsImmediateLoad) setLoadPixel(true);
+  }, [needsImmediateLoad]);
+
+  useEffect(() => {
+    if (loadPixel) return;
+
+    const enable = () => setLoadPixel(true);
+    window.addEventListener("click", enable, { once: true });
+    window.addEventListener("scroll", enable, { once: true });
+    window.addEventListener("keydown", enable, { once: true });
+
+    return () => {
+      window.removeEventListener("click", enable);
+      window.removeEventListener("scroll", enable);
+      window.removeEventListener("keydown", enable);
+    };
+  }, [loadPixel]);
+
+  useEffect(() => {
+    if (!scriptReady || !window.fbq) return;
     // Captured once so the async one-shot callbacks below (which run after
     // this effect returns) don't need TS to re-narrow `window.fbq` across a
     // closure boundary — it's already known non-null here.
@@ -119,7 +167,9 @@ export default function FacebookPixel() {
         { scroll: false },
       );
     }
-  }, [pathname, searchParams, router]);
+  }, [scriptReady, pathname, searchParams, router]);
+
+  if (!loadPixel) return null;
 
   return (
     <>
@@ -127,6 +177,7 @@ export default function FacebookPixel() {
       <Script
         id={FB_PIXEL_ID}
         strategy="afterInteractive"
+        onLoad={() => setScriptReady(true)}
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s)
