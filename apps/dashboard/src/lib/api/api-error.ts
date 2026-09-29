@@ -65,22 +65,30 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 /**
- * True for a network-level failure — the request never reached the server
- * (offline, DNS blip, connection reset, CORS) — regardless of whether it
- * made it through apiFetch's own ApiError wrapping.
+ * True for a network-level failure — the request never reached the server,
+ * or a response that started but never finished (offline, DNS blip,
+ * connection reset, CORS, body read aborted mid-stream) — regardless of
+ * whether it made it through apiFetch's own ApiError wrapping.
  *
  * A `keepalive` request flushed on tab-hide/unmount (see useStreakTracker.ts)
  * can have its page torn down mid-flight before apiFetch's catch block gets
- * a chance to run and wrap the failure, so the browser's raw
- * `TypeError: Failed to fetch` sometimes surfaces un-wrapped instead of the
- * usual `ApiError` (Sentry CLEARCUTOFF-NEXTJS-APP-2T — reported as a bare
- * TypeError with no ApiError in the chain, meaning the isApiError() check
- * alone silently let it through). Checking both shapes here means callers
- * get one reliable "was this just a network blip" check either way.
+ * a chance to run and wrap the failure, so the browser's raw network-error
+ * TypeError sometimes surfaces un-wrapped instead of the usual `ApiError`
+ * (Sentry CLEARCUTOFF-NEXTJS-APP-2T — reported as a bare TypeError with no
+ * ApiError in the chain, meaning the isApiError() check alone silently let
+ * it through). Checking both shapes here means callers get one reliable
+ * "was this just a network blip" check either way.
+ *
+ * The message pattern below matches every phrasing actually seen in
+ * production for the exact same underlying condition, not just Chrome's:
+ * Chrome/Edge "Failed to fetch", Firefox "NetworkError when attempting to
+ * fetch resource", React Native "Network request failed", and — the one
+ * `/fetch/i` alone misses entirely — Safari/WebKit's plain "Load failed"
+ * (Sentry CLEARCUTOFF-NEXTJS-APP-A9, iOS Instagram in-app browser).
  */
 export function isNetworkFailure(error: unknown): boolean {
   if (isApiError(error)) return error.isNetworkError;
-  return error instanceof TypeError && /fetch/i.test(error.message);
+  return error instanceof TypeError && /fetch|network|load failed/i.test(error.message);
 }
 
 /** Response bodies can be whole HTML error pages; keep events small. */

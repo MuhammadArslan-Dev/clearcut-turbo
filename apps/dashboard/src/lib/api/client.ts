@@ -119,5 +119,41 @@ export async function apiFetch<T>(
     });
   }
 
-  return res.json() as Promise<T>;
+  try {
+    return (await res.json()) as T;
+  } catch (cause) {
+    // res.ok was already true above — headers/status arrived fine, but the
+    // body read/parse itself failed. This was previously an un-wrapped
+    // `return res.json()`, so a body-read failure (the connection dropping
+    // mid-stream, e.g. an in-app browser backgrounding the tab — Safari
+    // phrases this "Load failed", not "Failed to fetch") skipped apiFetch's
+    // own error handling entirely and reached the caller as a raw TypeError
+    // with none of the endpoint/status context below (Sentry
+    // CLEARCUTOFF-NEXTJS-APP-A9).
+    //
+    // A dropped connection mid-read throws a TypeError; a backend that sent
+    // genuinely malformed JSON throws a SyntaxError from JSON.parse — kept
+    // distinct here (isNetworkError only for the former) so a real backend
+    // bug can't get miscategorized as a shrug-worthy network blip and hidden
+    // from view by a network-failure suppression check downstream.
+    const parseDurationMs = Date.now() - startedAt;
+    const error = new ApiError({
+      status: res.status,
+      method,
+      endpoint,
+      url,
+      isNetworkError: cause instanceof TypeError,
+      cause,
+    });
+
+    Sentry.addBreadcrumb({
+      category: "api",
+      type: "http",
+      level: "error",
+      message: `${method} ${endpoint} → body read failed`,
+      data: { url, status: res.status, durationMs: parseDurationMs },
+    });
+
+    throw error;
+  }
 }
