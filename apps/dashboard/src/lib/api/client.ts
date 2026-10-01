@@ -122,6 +122,25 @@ export async function apiFetch<T>(
   try {
     return (await res.json()) as T;
   } catch (cause) {
+    // Same reasoning as the fetchWithRetry catch above: the caller's own
+    // AbortController firing while res.json() was still reading the body
+    // (status/headers had already arrived, so we're past the first catch —
+    // e.g. the user navigated away from /preparation/:courseId right as a
+    // 200 response for setResumeState was streaming in) isn't a server
+    // failure, just a cancelled request. Without this, it fell through to
+    // the generic ApiError wrap below with isNetworkError left false (an
+    // AbortError isn't a TypeError), which meant neither this function's
+    // own abort handling NOR callers' own `instanceof DOMException` abort
+    // checks (e.g. Sidebar.tsx's setResumeState catch) could recognize it —
+    // the wrapped ApiError's name is "ApiError", not "AbortError" — so it
+    // surfaced as a reported error instead of being silently ignored
+    // (Sentry CLEARCUTOFF-NEXTJS-APP-A8, the "API 200 ... AbortError"
+    // pattern — status 200 because the response itself was fine; only the
+    // body read was cut short by the abort).
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw cause;
+    }
+
     // res.ok was already true above — headers/status arrived fine, but the
     // body read/parse itself failed. This was previously an un-wrapped
     // `return res.json()`, so a body-read failure (the connection dropping
