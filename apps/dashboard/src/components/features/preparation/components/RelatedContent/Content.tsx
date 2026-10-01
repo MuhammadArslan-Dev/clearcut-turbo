@@ -105,10 +105,6 @@ export async function downloadFromBackend(
     "http://clearcutoff-main-backend.test/api";
   const authToken = getAuthTokenClient();
 
-  console.log("Downloading note with ID:", noteId);
-  console.log("Downloading note with authToken:", authToken);
-  console.log("Downloading note with filename:", filename);
-
   if (isReactNativeWebView()) {
     if (!authToken) throw new Error("Not authenticated.");
     window.open(

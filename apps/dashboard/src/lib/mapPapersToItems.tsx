@@ -17,9 +17,7 @@ export const mapPapersToItems = (
 
     try {
       parsedName = JSON.parse(paper.name);
-    } catch (e) {
-      console.warn("Invalid JSON in paper.name", paper.name);
-    }
+    } catch {}
 
     return {
       id: paper.id.toString(),

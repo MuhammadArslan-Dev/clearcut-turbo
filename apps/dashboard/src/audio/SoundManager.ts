@@ -40,9 +40,7 @@ class SoundManager {
     audio.currentTime = 0;
     audio.volume = this.volume;
 
-    audio.play().catch((err) => {
-      console.warn("Audio play failed:", err);
-    });
+    audio.play().catch(() => {});
   }
 }
 

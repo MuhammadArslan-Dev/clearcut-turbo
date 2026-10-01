@@ -39,7 +39,6 @@ export async function getInstanceSections(
   paper_id?: number | string | null,
 ): Promise<{ status: string; message: string; data: { sections: any[] } }> {
   const query = paper_id ? `?paper_id=${paper_id}` : "";
-  console.log("Fetching sections for instance", instance_id, "paper", paper_id);
   return apiFetch<{ status: string; message: string; data: { sections: any[] } }>(
     `/v2/preparation/instance-sections/${instance_id}${query}`,
     { method: "GET" },

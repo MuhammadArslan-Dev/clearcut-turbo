@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Agentation } from "agentation";
+import PageViewTracker from "@/components/analytics/PageViewTracker";
 
 // Next's Metadata API does NOT auto-prefix icons/manifest URLs with
 // basePath (unlike next/image or next/link). These files live in public/,
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="antialiased bg-white text-text-gray-normal">
         {children}
+        <PageViewTracker />
         {process.env.NODE_ENV === "development" && <Agentation />}
       </body>
     </html>
