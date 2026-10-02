@@ -340,10 +340,10 @@ export default function EditCourseModal() {
       : setSaveChangesLoading(true);
 
     // `selections` is a full re-sync, not a delta: POST /v1/exam/selectedexam
-    // DELETEs every enrollment row for this exam and recreates them from what
-    // is sent (and UExamEnrollment has no SoftDeletes trait, so that delete is
-    // permanent). Any already-enrolled paper missing from this payload is
-    // therefore destroyed, not left alone.
+    // hard-deletes every EnrollmentLevel row under this exam's enrollment and
+    // recreates them from what is sent (permanent — EnrollmentLevel rows are
+    // force-deleted, not soft-deleted, on this path). Any already-enrolled
+    // paper missing from this payload is therefore destroyed, not left alone.
     //
     // Papers the user is already enrolled in arrive via `selectedData2` and are
     // preloaded into `selectionState`. They are kept unconditionally — a

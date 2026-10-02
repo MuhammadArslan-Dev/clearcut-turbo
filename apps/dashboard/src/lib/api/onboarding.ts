@@ -34,6 +34,17 @@ export type purchaseLevelsResponse = {
   message: string;
 };
 
+// /v2/enrollment/create (EnrollmentController@enrolledToCourse) returns
+// ApiResponse::success('You have successfully enrolled...') — `data` is the
+// same plain string as `message`, not an enrollment object like
+// purchaseLevelsResponse above (that's /v1/exam/selectedexam, a different
+// endpoint that does return the enrollment).
+export type enrolledToCourseResponse = {
+  data: string;
+  status: string;
+  message: string;
+};
+
 // Example: GET /exams?language=en
 export async function fetchExams(language: string): Promise<Exam[]> {
   if (!language) return [];
@@ -77,8 +88,8 @@ export async function enrolledToCourse(formData: {
   exam_id: string | number;
   selections?: Record<number, number[]>;
   course_lang?: string | null;
-}): Promise<purchaseLevelsResponse> {
-  return apiFetch<purchaseLevelsResponse>(`/v2/enrollment/create`, {
+}): Promise<enrolledToCourseResponse> {
+  return apiFetch<enrolledToCourseResponse>(`/v2/enrollment/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
