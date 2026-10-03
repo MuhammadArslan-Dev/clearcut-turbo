@@ -14,7 +14,7 @@ import DotsLoader from "@/components/ui/loader/DotsLoader";
 import OptionCard from "./option-card";
 import { getAuthTokenClient } from "@/lib/auth-token-client";
 import { trackEvent } from "@/lib/analytics/browser";
-import { trackFacebookEvent } from "@/lib/analytics/facebook-pixel";
+import { trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
@@ -238,7 +238,7 @@ export default function FullExamSelectionCtet({ data }: { data: any }) {
     const formData = { exam_id: data?.exam?.id, selections };
     const req = await purchaseLevels(formData);
     if (req?.status === "success") {
-      trackFacebookEvent("StartTrial");
+      trackFacebookEventWithUserData("StartTrial");
       trackEvent("Onboarding Step Completed", {
         step_number: 3,
         step_name: "subject_selection",

@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Agentation } from "agentation";
+import LazyGTM from "@clearcut/analytics/lazy-gtm";
+import LazyClarity from "@clearcut/analytics/lazy-clarity";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
+
+// Same shared GTM container blog/landing use — hardcoded fallback so this
+// works with zero env setup (matching toolsAnalytics.ts's Amplitude key),
+// same "NEXT_PUBLIC_* can override per-env" pattern. Clarity has no safe
+// default to hardcode (its project ID isn't shared/public like this GTM
+// container), so it stays env-only (blank = off) until one is configured for
+// tools specifically; it also already rides along with whatever tags are
+// configured inside this GTM container once GTM itself loads.
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-WC2GWW9Z";
 
 // Next's Metadata API does NOT auto-prefix icons/manifest URLs with
 // basePath (unlike next/image or next/link). These files live in public/,
@@ -43,6 +54,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="antialiased bg-white text-text-gray-normal">
         {children}
+        <LazyGTM gtmId={GTM_ID} />
+        <LazyClarity />
         <PageViewTracker />
         {process.env.NODE_ENV === "development" && <Agentation />}
       </body>

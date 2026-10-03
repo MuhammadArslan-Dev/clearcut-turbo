@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.45.1",
+    "@clearcut/analytics": "workspace:*",
     "@clearcut/api": "workspace:*",
     "@clearcut/auth": "workspace:*",
     "@clearcut/design-tokens": "workspace:*",

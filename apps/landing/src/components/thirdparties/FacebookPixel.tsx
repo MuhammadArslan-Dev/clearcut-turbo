@@ -5,7 +5,7 @@ import Script from "next/script";
 import { useEffect, useState } from "react";
 import { getMetaGeoData } from "@clearcut/utils/meta-geo";
 
-const FB_PIXEL_ID = "1126041265682766";
+const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1126041265682766";
 
 export default function FacebookPixel() {
   const pathname = usePathname();
