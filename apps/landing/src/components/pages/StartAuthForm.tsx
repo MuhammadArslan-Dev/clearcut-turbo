@@ -541,7 +541,7 @@ export default function StartAuthForm({
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
       localStorage.removeItem(PENDING_USER_ID_KEY);
-      trackFacebookLead(isNewUser, phone, userId);
+      await trackFacebookLead(isNewUser, phone, userId);
       identifyClarityUser({ userId, phone });
 
       const redirectUrl = buildPostVerifyRedirectUrl({

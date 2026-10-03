@@ -167,7 +167,7 @@ export function createOtpScreen({
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update (also clears the persisted localStorage copy).
         setUserId("");
-        trackFacebookLead(
+        await trackFacebookLead(
           localStorage.getItem("is_new_user") === "true",
           phone,
           userId,

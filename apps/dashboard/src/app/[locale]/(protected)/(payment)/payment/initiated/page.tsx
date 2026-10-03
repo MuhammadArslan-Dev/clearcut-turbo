@@ -233,7 +233,7 @@ export default function InitiatedPage() {
       await setMetaUserData();
       // Page just opened — selectVariant is still its "1month" default.
       const initiateCheckoutPrice = getPriceForVariant("1month", pricing, data?.short_name);
-      trackFacebookEvent("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
+      trackFacebookEventWithUserData("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
 
       if (data?.id) {
         // NOTE: data.id (numeric exams.id, the real FK) — not data.exam_id,
