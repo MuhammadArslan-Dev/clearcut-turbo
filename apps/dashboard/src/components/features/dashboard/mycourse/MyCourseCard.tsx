@@ -42,6 +42,9 @@ export interface MyCOurseCardProps {
 
   // CTA Action
   continueClick?: () => void;
+  // No subject/level picked yet (enrollment stage_id is null) — shows an
+  // "Add subjects" hint above the Continue button.
+  needsSubjects?: boolean;
   unlockClick?: () => void;
   editClick?: () => void;
 }
@@ -58,6 +61,7 @@ export default function MyCourseCard({
   topics,
   tests,
   continueClick,
+  needsSubjects = false,
   unlockClick,
   editClick,
   maxWidth = "400px",
@@ -215,9 +219,11 @@ export default function MyCourseCard({
                   continueClick?.();
                 }}
                 text={
-                  badge === "active"
-                    ? t("myCourses.continueLearningActive")
-                    : t("myCourses.continueLearning")
+                  needsSubjects
+                    ? t("myCourses.addSubjects")
+                    : badge === "active"
+                      ? t("myCourses.continueLearningActive")
+                      : t("myCourses.continueLearning")
                 }
                 showShimmer
                 rightIcon={<ChevronIcon size={20} />}

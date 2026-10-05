@@ -237,6 +237,7 @@ declare const messages: {
     "testSeriesLabel": "Test Series",
     "continueLearning": "Continue Free Learning",
     "continueLearningActive": "Continue Learning",
+    "addSubjects": "Add Subjects",
     "unlockFullAccess": "Unlock Full Access",
     "buyFullCourse": "Buy Full Course",
     "priceNote": "₹{price} only • Subscription per month",

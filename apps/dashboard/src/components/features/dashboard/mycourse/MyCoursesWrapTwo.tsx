@@ -95,6 +95,7 @@ function CourseSlideCard({
         total: progress?.tests_total ?? 0,
       }}
       continueClick={onContinue}
+      needsSubjects={!exam.stage_id}
       editClick={onEdit}
       unlockClick={onUnlock}
     />
@@ -204,6 +205,7 @@ export default function MyCoursesWrapTwo({
 
     maxWidth: "350px",
 
+    needsSubjects: !activeExam?.stage_id,
     continueClick: activeExam?.stage_id
       ? async () => {
           await trackEvent("Content Started", {

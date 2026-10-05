@@ -913,7 +913,7 @@ export default function ResizeImageTool({
   // and skip the crop step entirely, rather than forcing it into a fixed
   // size the way every other preset does.
   const [resizeEnabled, setResizeEnabled] = useState(false);
-  const [signatureMode, setSignatureMode] = useState<"draw" | "upload">("draw");
+  const [signatureMode, setSignatureMode] = useState<"draw" | "upload">("upload");
 
   // Live on Column 1 (not inside the crop screen) so they're visible — and
   // adjustable — the moment an image is selected, matching the reference
@@ -989,7 +989,7 @@ export default function ResizeImageTool({
     setBrightness(0);
     setContrast(0);
     setCleanup(0);
-    setSignatureMode("draw");
+    setSignatureMode("upload");
     if (key !== "signature") {
       setStampName("");
       setStampDate("");
@@ -1589,17 +1589,6 @@ export default function ResizeImageTool({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setSignatureMode("draw")}
-                    className={`flex-1 rounded-full px-4 py-1.5 body-small !font-semibold transition-colors ${
-                      signatureMode === "draw"
-                        ? "bg-brand text-white"
-                        : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
-                    }`}
-                  >
-                    {t.drawSignature}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setSignatureMode("upload")}
                     className={`flex-1 rounded-full px-4 py-1.5 body-small !font-semibold transition-colors ${
                       signatureMode === "upload"
@@ -1608,6 +1597,17 @@ export default function ResizeImageTool({
                     }`}
                   >
                     {t.uploadImage}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignatureMode("draw")}
+                    className={`flex-1 rounded-full px-4 py-1.5 body-small !font-semibold transition-colors ${
+                      signatureMode === "draw"
+                        ? "bg-brand text-white"
+                        : "bg-brand/5 text-text-gray-normal hover:bg-brand/10"
+                    }`}
+                  >
+                    {t.drawSignature}
                   </button>
                 </div>
               )}
