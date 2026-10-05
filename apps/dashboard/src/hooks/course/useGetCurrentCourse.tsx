@@ -14,8 +14,11 @@ import { useEffect, useState } from "react";
 import { set } from "zod";
 
 // queryKeys.ts
+// Prefix shared by every per-course current-course query; invalidating it
+// refreshes the course store (and everything reading it) for any course.
+export const CURRENT_COURSE_QUERY_KEY = ["get-current-course"];
 export const MY_COURSES_KEY = (courseId: number | string) => [
-  "get-current-course",
+  ...CURRENT_COURSE_QUERY_KEY,
   courseId,
 ];
 export function useGetCurrentCourse({

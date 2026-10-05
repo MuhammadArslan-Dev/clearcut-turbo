@@ -921,7 +921,7 @@ export default function ResizeImageTool({
   // sit with the rest of the configuration.
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
-  const [cleanup, setCleanup] = useState(60);
+  const [cleanup, setCleanup] = useState(0);
 
   const [file, setFile] = useState<File | null>(null);
   const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string | null>(null);
@@ -988,7 +988,7 @@ export default function ResizeImageTool({
     setUnit("px");
     setBrightness(0);
     setContrast(0);
-    setCleanup(60);
+    setCleanup(0);
     setSignatureMode("draw");
     if (key !== "signature") {
       setStampName("");
@@ -1084,7 +1084,7 @@ export default function ResizeImageTool({
       setOriginalPreviewUrl(previewUrl);
       setBrightness(0);
       setContrast(0);
-      setCleanup(60);
+      setCleanup(0);
 
       if (skipCrop) {
         try {

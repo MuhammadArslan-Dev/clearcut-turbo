@@ -3,7 +3,9 @@
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "../course/useMyActiveCourses";
+import { CURRENT_COURSE_QUERY_KEY } from "../course/useGetCurrentCourse";
 import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { loadRazorpay } from "@/lib/loadRazorpay";
@@ -42,6 +44,7 @@ export function useRazorpayPayment({
   onClose,
 }: UseRazorpayPaymentProps) {
   const invalidateQuery = useInvalidateQuery(MY_COURSES_KEY);
+  const queryClient = useQueryClient();
   const [loading, setLoading] = React.useState(false);
   const { user: authUser } = useAuth();
 
@@ -104,6 +107,14 @@ export function useRazorpayPayment({
           );
 
           await invalidateQuery();
+          // The page's current-course query feeds the course store that
+          // PaywallFloatingWidget reads. Refresh it here so the widget hides
+          // as soon as the course is active, instead of after its 15-min staleTime.
+          if (success) {
+            await queryClient.invalidateQueries({
+              queryKey: CURRENT_COURSE_QUERY_KEY,
+            });
+          }
 
           outcomeReported = true;
 
