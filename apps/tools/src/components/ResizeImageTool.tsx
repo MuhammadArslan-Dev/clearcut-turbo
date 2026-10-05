@@ -6,6 +6,7 @@ import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
 import { getDict, Locale } from "@/lib/dictionary";
+import { encodeJpegWithinBudget } from "@/lib/jpegBudget";
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
 
@@ -112,6 +113,9 @@ function buildPresets(
   };
 }
 
+// Exam portals' KB limits are binary (1 KB = 1024 bytes). Every size check and
+// display in this file converts through this one constant.
+const KB = 1024;
 const MAX_UPLOAD_MB = 10;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const HEIC_EXTENSIONS = [".heic", ".heif"];
@@ -295,18 +299,11 @@ async function resizeAndCompress(
       drawNameDateStamp(ctx, trimmedName ?? "", stampDate ?? "", width, imageAreaHeight);
     }
 
-    let quality = 0.92;
-    let blob = await canvasToJpegBlob(canvas, quality);
-    let attempts = 0;
-
-    while (blob && blob.size / 1024 > maxKB && quality > 0.1 && attempts < 15) {
-      quality -= 0.06;
-      blob = await canvasToJpegBlob(canvas, quality);
-      attempts++;
-    }
-
-    if (!blob) throw new Error(messages.processError);
-    return blob;
+    return encodeJpegWithinBudget(
+      (quality) => canvasToJpegBlob(canvas, quality),
+      maxKB * KB,
+      messages.processError,
+    );
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -937,6 +934,11 @@ export default function ResizeImageTool({
   const [shareCopied, setShareCopied] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Bumped whenever the workspace is cleared. Async work (HEIC decode, image
+  // load, compression) captures the value when it starts and drops its result
+  // if the value changed, so a slow job from a previous document type can't
+  // write its image into the current one.
+  const workspaceVersionRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -960,7 +962,24 @@ export default function ResizeImageTool({
     return () => clearInterval(interval);
   }, [step]);
 
+  // Drops the uploaded/processed image and everything derived from it. Used
+  // when switching document type and by "Process Another", so each document
+  // type's workspace starts empty instead of showing the previous one's image.
+  const clearImageState = () => {
+    workspaceVersionRef.current += 1;
+    if (originalPreviewUrl) URL.revokeObjectURL(originalPreviewUrl);
+    if (result) URL.revokeObjectURL(result.url);
+    setFile(null);
+    setOriginalPreviewUrl(null);
+    setResult(null);
+    setLastCrop(null);
+    setError(null);
+    setStep("configure");
+  };
+
   const applyPreset = (key: PresetKey) => {
+    if (key === preset) return;
+    clearImageState();
     setPreset(key);
     setWidth(PRESETS[key].width);
     setHeight(PRESETS[key].height);
@@ -970,13 +989,13 @@ export default function ResizeImageTool({
     setBrightness(0);
     setContrast(0);
     setCleanup(60);
+    setSignatureMode("draw");
     if (key !== "signature") {
       setStampName("");
       setStampDate("");
       setIncludeDate(false);
       setResizeEnabled(false);
     }
-    if (key === "draw") setSignatureMode("draw");
   };
 
   const runCompress = useCallback(
@@ -987,6 +1006,7 @@ export default function ResizeImageTool({
     async (targetFile: File, crop: CropRect, dims?: { width: number; height: number }) => {
       const outWidth = dims?.width ?? width;
       const outHeight = dims?.height ?? height;
+      const version = workspaceVersionRef.current;
       setStep("processing");
       setError(null);
       try {
@@ -1004,12 +1024,14 @@ export default function ResizeImageTool({
           ),
           delay(MIN_PROCESSING_MS),
         ]);
+        if (version !== workspaceVersionRef.current) return;
         setResult((prev) => {
           if (prev) URL.revokeObjectURL(prev.url);
           return { url: URL.createObjectURL(blob), blob, width: outWidth, height: outHeight };
         });
         setStep("result");
       } catch (err) {
+        if (version !== workspaceVersionRef.current) return;
         setError(err instanceof Error ? err.message : t.errorGeneric);
         setStep("configure");
       }
@@ -1020,17 +1042,20 @@ export default function ResizeImageTool({
   const selectFile = useCallback(
     async (selected: File) => {
       setError(null);
+      const version = workspaceVersionRef.current;
       let workingFile = selected;
 
       if (isHeicFile(selected)) {
         try {
           const heic2any = (await import("heic2any")).default;
           const converted = await heic2any({ blob: selected, toType: "image/jpeg", quality: 0.92 });
+          if (version !== workspaceVersionRef.current) return;
           const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
           workingFile = new File([convertedBlob], selected.name.replace(/\.(heic|heif)$/i, ".jpg"), {
             type: "image/jpeg",
           });
         } catch {
+          if (version !== workspaceVersionRef.current) return;
           setError(t.errorHeic);
           return;
         }
@@ -1064,6 +1089,7 @@ export default function ResizeImageTool({
       if (skipCrop) {
         try {
           const img = await loadImage(previewUrl, t.errorReadImage);
+          if (version !== workspaceVersionRef.current) return;
           const dims = { width: img.naturalWidth, height: img.naturalHeight };
           const crop: CropRect = { sx: 0, sy: 0, sw: dims.width, sh: dims.height };
           setWidth(dims.width);
@@ -1071,6 +1097,7 @@ export default function ResizeImageTool({
           setLastCrop(crop);
           await runCompress(workingFile, crop, dims);
         } catch (err) {
+          if (version !== workspaceVersionRef.current) return;
           setError(err instanceof Error ? err.message : t.errorReadImage);
           setStep("configure");
         }
@@ -1123,14 +1150,7 @@ export default function ResizeImageTool({
   };
 
   const handleReset = () => {
-    if (originalPreviewUrl) URL.revokeObjectURL(originalPreviewUrl);
-    if (result) URL.revokeObjectURL(result.url);
-    setFile(null);
-    setOriginalPreviewUrl(null);
-    setResult(null);
-    setLastCrop(null);
-    setError(null);
-    setStep("configure");
+    clearImageState();
   };
 
   // Matches the reference tool's "auto-renamed for error-free portal
@@ -1171,15 +1191,22 @@ export default function ResizeImageTool({
     }
   };
 
-  const originalSizeKB = file ? Math.round(file.size / 1024) : 0;
-  const resultSizeKB = result ? Math.round(result.blob.size / 1024) : 0;
+  // Size checks compare exact bytes against KB × 1024. Display rounds DOWN to
+  // one decimal, so the shown figure never exceeds the real size the check used.
+  const formatKB = (bytes: number) => `${Math.floor(bytes / KB * 10) / 10}KB`;
+  const originalSizeLabel = file ? formatKB(file.size) : "";
+  const resultSizeLabel = result ? formatKB(result.blob.size) : "";
   // Add Name & Date has no Min/Max KB fields to be "outside the range" of —
   // there's nothing on screen for that warning to point the user back to.
-  const withinTarget = result ? (preset === "signature" || (resultSizeKB <= maxKB && resultSizeKB >= minKB)) : false;
+  const withinTarget = result
+    ? preset === "signature" || (result.blob.size >= minKB * KB && result.blob.size <= maxKB * KB)
+    : false;
 
-  // "signature" (Add Name & Date) has its own bespoke Column 1 layout below
-  // instead of the shared editable-fields block custom/draw use.
-  const isEditablePreset = preset === "custom" || preset === "draw";
+  // Only "custom" (unreachable from any tile today) keeps editable dimension
+  // and size fields. Signature and Photo both show the read-only requirements
+  // box, since their specs come from the exam and must not be changed here.
+  // "signature" (Add Name & Date) has its own bespoke Column 1 layout below.
+  const isEditablePreset = preset === "custom";
   const hasStamp = preset === "signature" && Boolean(stampName.trim() || (includeDate && stampDate));
   const cropTargetHeight = hasStamp ? height - getStampStripHeight(height) : height;
 
@@ -1689,7 +1716,7 @@ export default function ResizeImageTool({
                     />
                   </div>
                   <Text as="p" variant="body-small" color="gray-muted" className="text-center">
-                    {`${originalSizeKB}KB`}
+                    {originalSizeLabel}
                   </Text>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -1709,7 +1736,7 @@ export default function ResizeImageTool({
                     <img src={result.url} alt="Optimized" className="w-full aspect-square object-contain" />
                   </div>
                   <Text as="p" variant="body-small" color="gray-muted" className="text-center">
-                    {`${width}×${height}px • ${resultSizeKB}KB`}
+                    {`${width}×${height}px • ${resultSizeLabel}`}
                   </Text>
                 </div>
               </div>
