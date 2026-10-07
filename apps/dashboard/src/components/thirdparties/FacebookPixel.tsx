@@ -3,11 +3,31 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
+import { trackEvent } from "@/lib/analytics/browser";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 
 const FB_PIXEL_ID = "1126041265682766";
+
+// Pixel failures used to be silent: a broken script just meant missing events
+// for days before anyone noticed. Report once per page load so a drop shows up
+// in Sentry. Ad-blockers also block fbevents.js, so expect some of this noise.
+const PIXEL_READY_TIMEOUT_MS = 10000;
+
+function reportPixelFailure(reason: string) {
+  Sentry.captureMessage("Meta Pixel not running", {
+    level: "warning",
+    tags: { integration: "meta-pixel", reason },
+  });
+}
+
+// The inline stub defines window.fbq immediately, even when fbevents.js is
+// blocked, so only the real SDK (which adds callMethod) proves it loaded.
+function isPixelSdkLoaded() {
+  return typeof window.fbq === "function" && "callMethod" in window.fbq;
+}
 
 // Re-sends Meta's advanced-matching data via `init` (the base pixel script
 // below already called it once, without user data, on page load) — never
@@ -82,6 +102,23 @@ export default function FacebookPixel() {
   // would otherwise re-run this effect on the same page and count PageView
   // a second time.
   const lastPageViewPath = useRef<string | null>(null);
+
+  // If the script never reaches onReady (blocked, failed, or broken), nothing
+  // else will tell us. Check once after the timeout: Sentry on failure, and an
+  // Amplitude canary on every page load (loaded true/false).
+  // TEMPORARY: the Amplitude canary is for monitoring until the Meta graph is
+  // stable; the client has approved removing it then.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const loaded = isPixelSdkLoaded();
+      if (!loaded) reportPixelFailure("sdk_not_loaded_after_timeout");
+      trackEvent("Meta Pixel Status", {
+        pixel_loaded: loaded,
+        page_context: window.location.pathname,
+      });
+    }, PIXEL_READY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!scriptReady || !window.fbq) return;
