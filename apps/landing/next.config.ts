@@ -1,3 +1,4 @@
+import path from "node:path";
 import { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 import createNextIntlPlugin from "next-intl/plugin";
@@ -16,6 +17,29 @@ const withNextIntl = createNextIntlPlugin({
 const config: NextConfig = {
   compress: true,
   reactStrictMode: true,
+
+  // Only this app opts into standalone output — it's what the GHCR Docker
+  // image (repo-root Dockerfile) copies into the runtime stage. Nixpacks
+  // ignores this field entirely (it runs `next start` against the full
+  // build), so the existing Coolify deployment is unaffected by this change.
+  // See Dockerfile / docs/DEVELOPMENT_RULES.md for the migration this is part of.
+  output: "standalone",
+
+  // Pins the monorepo root explicitly instead of Next's own lockfile-sniffing
+  // heuristic. Confirmed necessary by an actual build: run from inside a
+  // nested copy (e.g. a `turbo prune` output sitting under the real repo,
+  // which is how this was validated locally without Docker), Next picks the
+  // OUTER repo as the root — "Next.js inferred your workspace root, but it
+  // may not be correct... detected multiple lockfiles" — which puts the
+  // standalone server at the wrong relative path
+  // (.next/standalone/<nested-path>/apps/landing/server.js instead of
+  // .next/standalone/apps/landing/server.js), breaking the Dockerfile's
+  // fixed COPY paths. Docker's isolated /app filesystem doesn't nest like
+  // that, but pinning this removes the ambiguity (and the build warning)
+  // unconditionally rather than relying on there being no sibling lockfile.
+  turbopack: {
+    root: path.join(__dirname, "../.."),
+  },
 
   experimental: {
     optimizeCss: true,
