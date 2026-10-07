@@ -14,7 +14,10 @@ export function trackFacebookEvent(
   window.fbq("track", eventName, params);
 }
 
-type MetaUserData = { ph?: string; external_id?: string } & Partial<MetaGeoData>;
+type MetaUserData = {
+  ph?: string;
+  external_id?: string;
+} & Partial<MetaGeoData>;
 
 // Same phone/external_id shape as packages/auth/src/facebook-pixel.ts and
 // components/thirdparties/FacebookPixel.tsx's getCachedUserData — reads the
@@ -33,6 +36,31 @@ function getCachedMetaUserIdentifiers(): { ph?: string; external_id?: string } {
   if (cachedUser?.id) userData.external_id = String(cachedUser.id);
 
   return userData;
+}
+
+// Same race AuthProvider's own comment documents and
+// components/thirdparties/FacebookPixel.tsx's waitForCachedUserData already
+// works around: StartTrial (onboarding's full-exam-selection*.tsx /
+// single-level-selection.tsx) and the payment-page events below can all fire
+// on a user's FIRST-EVER dashboard load, right after the OTP-verify redirect
+// — exactly when AuthProvider's /v1/auth-user round trip (measured
+// 2.6-4.2s) hasn't written the auth cache yet, so the synchronous read above
+// returns nothing and the event ships with no phone/external_id. For an
+// already-cached (returning) user this resolves on the very first check, so
+// no delay is added to Purchase/Subscribe/AddPaymentInfo etc. on a normal
+// session — same bounded budget (4s poll, 250ms interval) as the existing
+// landing fix, applied here since this helper had never been polled before.
+async function waitForCachedMetaUserIdentifiers(
+  maxWaitMs = 4000,
+  intervalMs = 250,
+): Promise<{ ph?: string; external_id?: string }> {
+  const deadline = Date.now() + maxWaitMs;
+  let identifiers = getCachedMetaUserIdentifiers();
+  while (Object.keys(identifiers).length === 0 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    identifiers = getCachedMetaUserIdentifiers();
+  }
+  return identifiers;
 }
 
 /**
@@ -59,7 +87,7 @@ export async function trackFacebookEventWithUserData(
 ) {
   if (typeof window === "undefined" || !window.fbq) return;
 
-  const userData: MetaUserData = getCachedMetaUserIdentifiers();
+  const userData: MetaUserData = await waitForCachedMetaUserIdentifiers();
   Object.assign(userData, await getMetaGeoData());
 
   if (Object.keys(userData).length > 0) {
