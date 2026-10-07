@@ -6,7 +6,27 @@ export interface MetaGeoData {
 }
 
 const CACHE_KEY = "meta_geo_data";
-const GEO_TIMEOUT_MS = 2500;
+// One budget for the WHOLE lookup (all providers together). Callers await this
+// right before a Meta event that is often followed by a hard navigation
+// (StartTrial, Purchase, Lead before redirect), so it must stay short. The
+// old per-provider 2.5s timeouts, run one after another, could hold an event
+// for ~5s and lose it to the redirect.
+const GEO_TOTAL_BUDGET_MS = 1500;
+
+/**
+ * Synchronous read of the geo data cached earlier in this session, or null.
+ * Use it where waiting is not acceptable (e.g. PageView on page load) and fall
+ * back to sending without city/state/zip.
+ */
+export function readCachedMetaGeoData(): MetaGeoData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    return cached ? (JSON.parse(cached) as MetaGeoData) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Meta's advanced-matching city/state/zip come from IP geolocation — none of
@@ -18,20 +38,16 @@ const GEO_TIMEOUT_MS = 2500;
  * Formatting follows Meta's advanced-matching docs: `ct` lowercase with
  * spaces removed, `st` lowercase two-letter code (ipapi's `region_code`, not
  * the full `region` name), `zp` as a string, `country` lowercase two-letter.
- * The lookup is time-boxed so a slow/blocked geo provider can never hold up
- * the caller (Lead/Purchase fire right before a redirect).
+ * Never rejects: on timeout/block it resolves with country only.
  */
 export async function getMetaGeoData(): Promise<MetaGeoData> {
   if (typeof window === "undefined") return { country: "in" };
 
-  try {
-    const cached = sessionStorage.getItem(CACHE_KEY);
-    if (cached) return JSON.parse(cached);
-  } catch {
-    // sessionStorage unavailable (private browsing, etc.) — fall through
-  }
+  const cached = readCachedMetaGeoData();
+  if (cached) return cached;
 
   const data: MetaGeoData = { country: "in" };
+  const deadline = Date.now() + GEO_TOTAL_BUDGET_MS;
 
   // Both providers are free and keyless. ipwho.is is primary (open CORS, not
   // behind a bot challenge); ipapi.co is kept as a fallback — it returns 403
@@ -51,8 +67,11 @@ export async function getMetaGeoData(): Promise<MetaGeoData> {
   ];
 
   for (const provider of providers) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GEO_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), remaining);
     try {
       const res = await fetch(provider.url, { signal: controller.signal });
       if (!res.ok) continue;
@@ -62,7 +81,7 @@ export async function getMetaGeoData(): Promise<MetaGeoData> {
       if (postal) data.zp = String(postal);
       if (data.ct || data.st || data.zp) break;
     } catch {
-      // Timed out or blocked — try the next provider
+      // Timed out or blocked — try the next provider (if budget is left)
     } finally {
       clearTimeout(timer);
     }

@@ -3,65 +3,47 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
-import { getMetaGeoData } from "@clearcut/utils/meta-geo";
+import { getMetaGeoData, readCachedMetaGeoData } from "@clearcut/utils/meta-geo";
 
 const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1126041265682766";
 
 export default function FacebookPixel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [loadPixel, setLoadPixel] = useState(false);
+
+  // Loads as soon as the app mounts, on every page. This used to wait for the
+  // first click/scroll/keydown, which silently dropped PageView for bounced
+  // visitors. The client requires the pixel to be live on page load.
+  //
+  // `onReady` (not `onLoad`) is the signal: for an inline <Script> next/script
+  // only calls onReady once the code has run; onLoad is never called for inline
+  // scripts.
+  const [scriptReady, setScriptReady] = useState(false);
 
   useEffect(() => {
-    const enablePixel = () => setLoadPixel(true);
+    if (!scriptReady || !window.fbq) return;
 
-    window.addEventListener("click", enablePixel, { once: true });
-    window.addEventListener("scroll", enablePixel, { once: true });
-    window.addEventListener("keydown", enablePixel, { once: true });
+    // PageView is never held back by the geo lookup (it can take up to its
+    // time budget, and a visitor can leave at any moment). If geo is already
+    // cached for this session, re-init with it first so PageView carries
+    // city/state/zip; otherwise send PageView now with country only. Meta only
+    // auto-hashes these fields when they're passed to `init`, never inside a
+    // `track()` call's own custom-data object.
+    const cachedGeo = readCachedMetaGeoData();
+    if (cachedGeo) window.fbq("init", FB_PIXEL_ID, cachedGeo);
+    window.fbq("track", "PageView");
 
-    return () => {
-      window.removeEventListener("click", enablePixel);
-      window.removeEventListener("scroll", enablePixel);
-      window.removeEventListener("keydown", enablePixel);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!loadPixel) return;
-
-    // Landing has no logged-in user (no ph/external_id to add), but its
-    // PageView is the highest-volume event across the whole funnel — the
-    // inline script below used to `init` with only `{ country: 'in' }` and
-    // fire PageView immediately, so city/state/zip (Meta's `ct`/`st`/`zp`
-    // advanced-matching fields, IP-geolocated — see packages/utils/src/
-    // meta-geo.ts) never went out on it. This effect is now the *only* place
-    // that fires PageView (the inline script only sets up the SDK + the
-    // country-only base init, see below) — re-initializing with the fuller
-    // geo data right before it, same pattern already used for the
-    // dashboard's events (apps/dashboard/src/lib/analytics/facebook-pixel.ts
-    // and components/thirdparties/FacebookPixel.tsx). Meta only auto-hashes
-    // these fields when set via `init`, never inside a `track()` call's own
-    // custom-data object.
-    //
-    // `window.fbq` is checked only after the geo fetch resolves, not before
-    // it — the inline script's fbq stub is created synchronously as soon as
-    // it runs, well within the time an external geo lookup takes, so this
-    // avoids a startup race against `next/script`'s own load timing without
-    // needing a retry loop.
-    getMetaGeoData().then((geo) => {
-      if (!window.fbq) return;
-      window.fbq("init", FB_PIXEL_ID, geo);
-      window.fbq("track", "PageView");
-    });
-  }, [pathname, searchParams, loadPixel]);
-
-  if (!loadPixel) return null;
+    // Warm the session cache so the next PageView / conversion event on this
+    // visit carries geo without waiting for the lookup.
+    void getMetaGeoData();
+  }, [pathname, searchParams, scriptReady]);
 
   return (
     <>
       <Script
         id="fb-pixel"
         strategy="afterInteractive"
+        onReady={() => setScriptReady(true)}
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s)
@@ -76,9 +58,8 @@ export default function FacebookPixel() {
           `,
         }}
       />
-      {/* No inline fbq('track', 'PageView') here — the effect above fires
-          it once the geo lookup resolves (re-init'd with city/state/zip
-          first), so it isn't sent twice. */}
+      {/* No inline fbq('track', 'PageView') here — the effect above fires it
+          once the script is ready, so it isn't sent twice. */}
       <noscript>
         <img
           height="1"

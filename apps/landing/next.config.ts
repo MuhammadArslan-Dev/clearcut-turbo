@@ -81,11 +81,10 @@ const config: NextConfig = {
             // Dropped (were preconnect, now cheap dns-prefetch only):
             //   connect.facebook.net, www.googletagmanager.com,
             //   www.google-analytics.com
-            // All three are INTERACTION-GATED in this codebase — LazyGTM and
-            // FacebookPixel render nothing until the first click/scroll/keydown,
-            // and google-analytics is loaded by GTM, so it is doubly deferred.
-            // Preconnecting for scripts that may never load on a bouncing visit
-            // is pure waste. dns-prefetch keeps the DNS win at ~no cost.
+            // All three are still cheap dns-prefetch only: LazyGTM is
+            // interaction-gated, google-analytics is loaded by GTM so it is
+            // doubly deferred, and FacebookPixel now loads on page load but
+            // is not on the LCP path. dns-prefetch keeps the DNS win at ~no cost.
             value: [
               "<https://cc-teaching-content-ind.s3.dualstack.ap-south-1.amazonaws.com>; rel=preconnect",
               "<https://connect.facebook.net>; rel=dns-prefetch",

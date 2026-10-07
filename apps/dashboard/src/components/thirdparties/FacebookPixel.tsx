@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
@@ -65,53 +65,23 @@ export default function FacebookPixel() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Same lazy-on-first-interaction pattern as LazyGTM/LazyClarity — the
-  // pixel script was previously loaded via strategy="afterInteractive" on
-  // EVERY page, for every visitor, competing with hydration/LCP for the
-  // main thread and network on the exact pages Sentry flagged as slow.
-  // Deferring to a real interaction means a pure-bounce session (leaves
-  // without clicking/scrolling/typing) won't fire a PageView pixel event —
-  // an accepted tracking trade-off for the performance win.
-  const [loadPixel, setLoadPixel] = useState(false);
-  // Sub-events (PageView, CompleteRegistration, StartTrial) below still
-  // must not fire before the script has actually executed and defined
-  // window.fbq — onLoad (fires once Script finishes, inline or not) is the
-  // reliable signal for that, since it can lag a render behind loadPixel
-  // flipping true.
+  // Loads as soon as the app mounts, on every page, for every visitor. This
+  // used to wait for the first click/scroll/keydown, which silently dropped
+  // PageView for bounced sessions and any one-shot event fired before the
+  // visitor interacted. Analytics now starts with the page, as the client
+  // requires; the cost is the extra script on first paint.
+  //
+  // `onReady` (not `onLoad`) is the signal: for an inline <Script> next/script
+  // only calls onReady once the code has run. onLoad is never called for
+  // inline scripts, which left the old `scriptReady` flag stuck at false and
+  // kept every effect-driven event below from firing at all.
   const [scriptReady, setScriptReady] = useState(false);
 
-  // The payment flow (payment/initiated/page.tsx) fires InitiateCheckout
-  // from a useEffect on MOUNT, not from a click — waiting for interaction
-  // would silently drop it (trackFacebookEvent no-ops when window.fbq isn't
-  // defined yet, with no queue/retry). Same reasoning for landing here with
-  // a one-shot conversion signal (user_type=new / subject_selected=1 — see
-  // the tracking effect below): those are the CompleteRegistration/
-  // StartTrial moments, too conversion-critical to risk on interaction
-  // timing. Every other page (the actual slow ones Sentry flagged) still
-  // gets the full lazy-on-interaction benefit below.
-  const needsImmediateLoad =
-    pathname?.includes("/payment") ||
-    searchParams.get("user_type") === "new" ||
-    searchParams.get("subject_selected") === "1";
-
-  useEffect(() => {
-    if (needsImmediateLoad) setLoadPixel(true);
-  }, [needsImmediateLoad]);
-
-  useEffect(() => {
-    if (loadPixel) return;
-
-    const enable = () => setLoadPixel(true);
-    window.addEventListener("click", enable, { once: true });
-    window.addEventListener("scroll", enable, { once: true });
-    window.addEventListener("keydown", enable, { once: true });
-
-    return () => {
-      window.removeEventListener("click", enable);
-      window.removeEventListener("scroll", enable);
-      window.removeEventListener("keydown", enable);
-    };
-  }, [loadPixel]);
+  // PageView is sent once per route, not on every query-string change: the
+  // one-shot signal handling below strips a param with router.replace, which
+  // would otherwise re-run this effect on the same page and count PageView
+  // a second time.
+  const lastPageViewPath = useRef<string | null>(null);
 
   useEffect(() => {
     if (!scriptReady || !window.fbq) return;
@@ -120,13 +90,14 @@ export default function FacebookPixel() {
     // closure boundary — it's already known non-null here.
     const fbq = window.fbq;
 
-    fbq("track", "PageView");
-
-    // Kicked off in parallel with waitForCachedUserData below (not awaited
-    // until the Promise.all pairs below) so the geo lookup's network round
-    // trip doesn't serialize after the user-data poll — both must still
-    // resolve, and init() must still run, before the track() calls beneath.
-    const geoPromise = getMetaGeoData();
+    // Sent immediately, never after a geo lookup — PageView is the highest
+    // volume event and a visitor can leave at any moment. Geo is fetched in
+    // the background so the later events in this session carry it from cache.
+    if (lastPageViewPath.current !== pathname) {
+      lastPageViewPath.current = pathname;
+      fbq("track", "PageView");
+    }
+    void getMetaGeoData();
 
     // One-shot signals appended by the navigation that lands the user here.
     // Each is stripped after firing so a refresh/back-navigation to this URL
@@ -137,7 +108,7 @@ export default function FacebookPixel() {
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
-      Promise.all([waitForCachedUserData(), geoPromise]).then(([userData, geo]) => {
+      Promise.all([waitForCachedUserData(), getMetaGeoData()]).then(([userData, geo]) => {
         const merged = { ...(userData ?? {}), ...geo };
         if (Object.keys(merged).length > 0) setMetaUserData(merged);
         // No value/currency — registration has no monetary amount, and
@@ -152,7 +123,7 @@ export default function FacebookPixel() {
     // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
     // here is the "start trial" moment for that subject.
     if (params.get("subject_selected") === "1") {
-      Promise.all([waitForCachedUserData(), geoPromise]).then(([userData, geo]) => {
+      Promise.all([waitForCachedUserData(), getMetaGeoData()]).then(([userData, geo]) => {
         const merged = { ...(userData ?? {}), ...geo };
         if (Object.keys(merged).length > 0) setMetaUserData(merged);
         fbq("track", "StartTrial");
@@ -169,15 +140,15 @@ export default function FacebookPixel() {
     }
   }, [scriptReady, pathname, searchParams, router]);
 
-  if (!loadPixel) return null;
-
   return (
     <>
-      {/* Script tag with Facebook Pixel code */}
+      {/* Script tag with Facebook Pixel code. The base init (country only) runs
+          here; PageView is sent by the effect above once onReady flips
+          scriptReady, so it isn't sent twice. */}
       <Script
         id={FB_PIXEL_ID}
         strategy="afterInteractive"
-        onLoad={() => setScriptReady(true)}
+        onReady={() => setScriptReady(true)}
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s)
@@ -188,8 +159,7 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '1126041265682766', { country: 'in' });
-            fbq('track', 'PageView');
+            fbq('init', '${FB_PIXEL_ID}', { country: 'in' });
           `,
         }}
       />
@@ -199,7 +169,7 @@ export default function FacebookPixel() {
           height="1"
           width="1"
           style={{ display: "none" }}
-          src={`www.facebook.com${FB_PIXEL_ID}&ev=PageView&noscript=1`}
+          src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
         />
       </noscript>
     </>

@@ -224,3 +224,8 @@ pnpm turbo run build --filter=dashboard   # when routes/config/i18n changed
 - 2026-09-26 — Added Tools Save-for-Future rules (additive shared-auth options, lazy login UI, local-never-overwritten), dotted-key validation + MySQL JSON key-order backend gotchas.
 - 2026-09-25 — Added error-monitoring rules (shared `@clearcut/error-reporting`, instrumentation.ts location).
 - 2026-09-22 — Initial version (analysis of monorepo, dashboard, backend, daily-test/exam UI work).
+- **Meta Pixel (dashboard + landing `FacebookPixel.tsx`, `@clearcut/auth/facebook-pixel`, `lib/analytics/facebook-pixel.ts`)**:
+  - The pixel loads on page load, not on first interaction (client requirement). Gate effects on `scriptReady`, set from `Script`'s **`onReady`**. `onLoad` is never called for an inline `<Script>` in next/script, so using it leaves the flag `false` and silently kills every effect-driven event.
+  - Never block an event on the geo lookup. `getMetaGeoData()` has one total budget (1.5s) and caches per session; use `readCachedMetaGeoData()` where waiting is not acceptable (PageView).
+  - An event fired right before a **hard** navigation (`window.location.href = …`) must be `await`ed, or the page tears down before `fbq('track')` runs. SPA `router.push` is safe.
+  - PageView is per route (ref keyed on `pathname`), not per query change, so one-shot params stripped with `router.replace` don't send it twice. Don't add an inline `fbq('track','PageView')` to the script body as well.

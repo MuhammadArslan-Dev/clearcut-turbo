@@ -112,7 +112,9 @@ export default function SingleLevelSelection({ data }: { data: any }) {
     const req = await purchaseLevels(formData);
     if (req?.status === "success") {
       setSubmiting(false);
-      trackFacebookEventWithUserData("StartTrial");
+      // Awaited: the next line is a hard redirect (window.location), which
+      // would otherwise tear down the page before the pixel event is sent.
+      await trackFacebookEventWithUserData("StartTrial");
       trackEvent("Onboarding Step Completed", {
         step_number: 3,
         step_name: "subject_selection",
