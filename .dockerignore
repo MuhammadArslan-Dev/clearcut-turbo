@@ -1,0 +1,30 @@
+# Keeps the Docker build context (sent to the daemon before `turbo prune`
+# even runs) to source only. turbo prune / pnpm install regenerate every
+# excluded-below directory inside the image themselves, so none of this is
+# needed — and .env*/*.pem would otherwise ship local secrets into the build
+# context even though no layer ultimately keeps them.
+
+**/node_modules
+**/.next
+**/.open-next
+**/out
+**/dist
+**/build
+**/.turbo
+.git
+.github
+
+# Local env files — real values come from --build-arg / --secret in CI and
+# from Coolify's runtime env, never from a committed or locally-present file.
+.env
+.env.*
+!.env.example
+
+**/*.tsbuildinfo
+**/.DS_Store
+**/npm-debug.log*
+**/pnpm-debug.log*
+
+# Scratch/ad-hoc output directories seen elsewhere in this repo — not part of
+# any app's source.
+lhout
