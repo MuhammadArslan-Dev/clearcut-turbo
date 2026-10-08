@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
-import { getMetaGeoData, readCachedMetaGeoData } from "@clearcut/utils/meta-geo";
+import { getMetaGeoData } from "@clearcut/utils/meta-geo";
 
 const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1126041265682766";
 
@@ -24,13 +24,17 @@ export default function FacebookPixel() {
     if (!scriptReady || !window.fbq) return;
 
     // PageView is never held back by the geo lookup (it can take up to its
-    // time budget, and a visitor can leave at any moment). If geo is already
-    // cached for this session, re-init with it first so PageView carries
-    // city/state/zip; otherwise send PageView now with country only. Meta only
-    // auto-hashes these fields when they're passed to `init`, never inside a
-    // `track()` call's own custom-data object.
-    const cachedGeo = readCachedMetaGeoData();
-    if (cachedGeo) window.fbq("init", FB_PIXEL_ID, cachedGeo);
+    // time budget, and a visitor can leave at any moment). No re-init here:
+    // confirmed via live network inspection against the real pixel, Meta's
+    // SDK only ever reads advanced-matching fields (ct/st/zp/ph/external_id)
+    // from the FIRST `fbq('init', PIXEL_ID, ...)` call it sees for a pixel ID
+    // on the page — a field that wasn't present in that first call can never
+    // be added by a later init() call, regardless of timing relative to the
+    // first track(). The Script tag below's inline bootstrap is that first
+    // call and already bakes in cached geo if this session has it; re-init
+    // here would be a no-op for a visitor whose first page load this session
+    // had no cached geo yet, and only risks the SDK's own "Duplicate Pixel
+    // ID" console warning.
     window.fbq("track", "PageView");
 
     // Warm the session cache so the next PageView / conversion event on this
@@ -40,6 +44,17 @@ export default function FacebookPixel() {
 
   return (
     <>
+      {/* The init() call below is THE only place advanced-matching geo data
+          (ct/st/zp) can ever be attached for this pixel instance — Meta's SDK
+          only reads these fields from the FIRST init() call it sees for a
+          pixel ID (confirmed via live network inspection), never a later
+          one. It reads meta_geo_data (packages/utils/src/meta-geo.ts)
+          synchronously, in plain JS, before React/fbevents.js even run, so a
+          geo lookup already cached earlier this session is baked in from the
+          start. Landing has no reliable synchronous phone/user-id cache at
+          this point (visitors are anonymous pre-login, and a logged-in
+          visitor is redirected to the dashboard — see root CLAUDE.md "Tools:
+          Save for Future"), so only geo is read here. */}
       <Script
         id="fb-pixel"
         strategy="afterInteractive"
@@ -54,7 +69,18 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${FB_PIXEL_ID}', { country: 'in' });
+
+            var ccUd = { country: 'in' };
+            try {
+              var ccGeoRaw = sessionStorage.getItem('meta_geo_data');
+              var ccGeo = ccGeoRaw ? JSON.parse(ccGeoRaw) : null;
+              if (ccGeo) {
+                if (ccGeo.ct) ccUd.ct = ccGeo.ct;
+                if (ccGeo.st) ccUd.st = ccGeo.st;
+                if (ccGeo.zp) ccUd.zp = ccGeo.zp;
+              }
+            } catch (e) {}
+            fbq('init', '${FB_PIXEL_ID}', ccUd);
           `,
         }}
       />

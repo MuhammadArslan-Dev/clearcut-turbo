@@ -29,14 +29,23 @@ function isPixelSdkLoaded() {
   return typeof window.fbq === "function" && "callMethod" in window.fbq;
 }
 
-// Re-sends Meta's advanced-matching data via `init` (the base pixel script
-// below already called it once, without user data, on page load) — never
-// inside a track() call's custom-data object, which Meta doesn't auto-hash.
-// Same fix already applied to the "Lead" event (packages/auth/src/
-// facebook-pixel.ts) and to the payment page (setMetaUserData in
-// payment/initiated/page.tsx). Reads the auth cache directly (not useAuth())
-// because this component is mounted as a sibling of AuthProvider, not a
-// child of it — see layout.tsx.
+// Reads the auth cache directly (not useAuth()) because this component is
+// mounted as a sibling of AuthProvider, not a child of it — see layout.tsx.
+//
+// NOTE on what calling `fbq('init', ...)` with this data actually does:
+// confirmed via live network inspection against the real pixel, Meta's SDK
+// only reads advanced-matching fields (ph/external_id/ct/st/zp) from the
+// FIRST `fbq('init', PIXEL_ID, ...)` call it ever sees for that pixel ID on
+// the page — a field that wasn't present in that first call can never be
+// added by a later init()/set('userData') call, no matter the timing. The
+// Script tag's inline bootstrap below is that first call and bakes in
+// whatever's already cached. The re-init calls below (setMetaUserData, used
+// for CompleteRegistration/StartTrial) therefore only still work for
+// updating a field's VALUE if it was already present at bootstrap (e.g.
+// country) — they cannot attach ph/external_id for a user who was anonymous
+// at page load and only authenticates mid-session. Left in place as a
+// harmless no-op for that case rather than removed, since it's still
+// correct for the case where bootstrap already had partial data.
 function getCachedUserData(): { ph?: string; external_id?: string } | null {
   const cachedUser = getCachedUser<UserPreview>();
   const digits = cachedUser?.phone?.replace(/\D/g, "");
@@ -128,8 +137,16 @@ export default function FacebookPixel() {
     const fbq = window.fbq;
 
     // Sent immediately, never after a geo lookup — PageView is the highest
-    // volume event and a visitor can leave at any moment. Geo is fetched in
-    // the background so the later events in this session carry it from cache.
+    // volume event and a visitor can leave at any moment. No re-init here:
+    // Meta's SDK only ever reads advanced-matching fields (ph/external_id/
+    // ct/st/zp) from the FIRST fbq('init', ...) call it sees for a pixel ID —
+    // confirmed via live network inspection (a later init()/set('userData')
+    // never attaches a field that wasn't in that first call, even when
+    // called before the first track()). The Script tag below's inline
+    // bootstrap is that first call, and already bakes in whatever's cached
+    // from an earlier request this session — that's the only place this can
+    // be set. Re-calling init() here would be a no-op for any new field and
+    // only risks the SDK's own "Duplicate Pixel ID" console warning.
     if (lastPageViewPath.current !== pathname) {
       lastPageViewPath.current = pathname;
       fbq("track", "PageView");
@@ -179,9 +196,19 @@ export default function FacebookPixel() {
 
   return (
     <>
-      {/* Script tag with Facebook Pixel code. The base init (country only) runs
-          here; PageView is sent by the effect above once onReady flips
-          scriptReady, so it isn't sent twice. */}
+      {/* Script tag with Facebook Pixel code. PageView is sent by the effect
+          above once onReady flips scriptReady, so it isn't sent twice.
+
+          The init() call below is THE only place advanced-matching data
+          (ph/external_id/ct/st/zp) can ever be attached for this pixel
+          instance — see the NOTE above getCachedUserData(). It reads
+          auth_user_cache (apps/dashboard/src/lib/auth-token-client.ts) and
+          meta_geo_data (packages/utils/src/meta-geo.ts) synchronously,
+          in plain JS, before React/fbevents.js even run, so a returning
+          visitor's already-cached phone/user-id/geo is baked into the
+          FIRST init() call instead of a later one that Meta would ignore.
+          Only real cached values are used — never placeholders — since
+          sending fabricated PII to Meta is worse than sending none. */}
       <Script
         id={FB_PIXEL_ID}
         strategy="afterInteractive"
@@ -196,7 +223,27 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${FB_PIXEL_ID}', { country: 'in' });
+
+            var ccUd = { country: 'in' };
+            try {
+              var ccUserRaw = localStorage.getItem('auth_user_cache');
+              var ccUserEntry = ccUserRaw ? JSON.parse(ccUserRaw) : null;
+              if (ccUserEntry && ccUserEntry.data && (Date.now() - ccUserEntry.cachedAt) <= 300000) {
+                var ccDigits = String(ccUserEntry.data.phone || '').replace(/[^0-9]/g, '');
+                if (ccDigits) ccUd.ph = ccDigits.length === 10 ? ('91' + ccDigits) : ccDigits;
+                if (ccUserEntry.data.id) ccUd.external_id = String(ccUserEntry.data.id);
+              }
+            } catch (e) {}
+            try {
+              var ccGeoRaw = sessionStorage.getItem('meta_geo_data');
+              var ccGeo = ccGeoRaw ? JSON.parse(ccGeoRaw) : null;
+              if (ccGeo) {
+                if (ccGeo.ct) ccUd.ct = ccGeo.ct;
+                if (ccGeo.st) ccUd.st = ccGeo.st;
+                if (ccGeo.zp) ccUd.zp = ccGeo.zp;
+              }
+            } catch (e) {}
+            fbq('init', '${FB_PIXEL_ID}', ccUd);
           `,
         }}
       />
