@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import remarkBreaks from "remark-breaks";
 
 // Extend the default sanitize schema to allow <img> with src/alt/title and https URLs.
 const schema = {
@@ -50,9 +51,30 @@ function escapeMathForMarkdown(text: string): string {
 export default function TextMarkDown({ children }: { children: string }) {
   const normalized = escapeMathForMarkdown(normalizeImgTags(children ?? ""));
 
+  // `markdown-content` (globals.css) restores the p/ul/ol/li spacing
+  // Tailwind's Preflight strips by default — without it every block this
+  // renders collapses into one run-on paragraph regardless of how correct
+  // the underlying markdown parsing is.
+  //
+  // remarkBreaks turns a single "\n" (CommonMark "soft break" — most real
+  // explanation rows use this mid-paragraph) into an actual <br> AST node,
+  // same as typing a trailing-two-spaces hard break. An earlier version of
+  // this fix tried `white-space: pre-line` in CSS instead to make soft
+  // breaks visible — verified (via a live render) that this also makes an
+  // invisible whitespace-only text node remark-rehype inserts around block
+  // children (e.g. inside <li><p>...</p></li> for a "loose" list) become a
+  // visible blank line, pushing list-item text onto its own line below the
+  // number. remarkBreaks avoids that: it only ever adds an explicit <br>
+  // inside phrasing content, so block-level structure (<li>/<p> nesting) is
+  // never affected by it.
   return (
-    <ReactMarkdown rehypePlugins={[rehypeRaw, [rehypeSanitize, schema]]}>
-      {normalized}
-    </ReactMarkdown>
+    <div className="markdown-content">
+      <ReactMarkdown
+        remarkPlugins={[remarkBreaks]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, schema]]}
+      >
+        {normalized}
+      </ReactMarkdown>
+    </div>
   );
 }

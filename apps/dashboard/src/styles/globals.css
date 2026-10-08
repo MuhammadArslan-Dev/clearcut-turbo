@@ -184,28 +184,42 @@ body {
   display: flex !important;
   align-items: center;
 }
-/* .markdown-content {
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-} */
+/* Applied to react-markdown's output (see apps/dashboard/src/components/ui/
+   widgets/TextMarkDown.tsx) wherever question/explanation content renders.
+   Tailwind v4's Preflight zeroes default margins on p/ul/ol/etc, so without
+   this, every block react-markdown emits (separate paragraphs, list items)
+   renders with zero vertical gap and visually collapses into one run-on
+   block — the database content is correct Markdown, this is purely CSS to
+   restore the spacing Preflight strips. A prior version of this rule had
+   `margin-bottom: -50px` on p (pulled every paragraph after the first up
+   into the one above it) and forced `strong { display: block }` (broke
+   every inline **bold** span, which is how ~70% of real explanations mark
+   emphasis, onto its own line) — both were unused (this class was never
+   actually applied anywhere) and are fixed here now that it's wired up.
 
-
+   A single mid-paragraph "\n" (CommonMark "soft break", used throughout
+   real explanation rows) is handled in TextMarkDown.tsx via remarkBreaks
+   (converts it to a real <br> AST node), not here via `white-space:
+   pre-line` — that was tried first and reverted: verified live that it
+   also makes an invisible whitespace-only text node remark-rehype inserts
+   around block children (e.g. inside <li><p>...</p></li> for a "loose"
+   list, which is how multi-paragraph numbered explanations are written)
+   become a visible blank line, pushing each list item's text onto its own
+   line below the number. remarkBreaks has no such side effect since it
+   only ever touches phrasing content. */
 .markdown-content {
-  white-space: pre-wrap;
   line-height: 1.6;
 }
 
 .markdown-content p {
-  margin-bottom: -50px;
+  margin-bottom: 12px;
 }
 
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
 
 .markdown-content strong {
-  display: block;
-  margin-top: 16px;
-  margin-bottom: 6px;
   font-weight: 600;
 }
 
@@ -213,6 +227,24 @@ body {
 .markdown-content ol {
   margin-left: 20px;
   margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+}
+
+.markdown-content li {
+  margin-bottom: 4px;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Navigation loading — see src/store/navigation/useNavLoadingStore.ts and

@@ -14,7 +14,7 @@ import {
   NumberCountIcon,
   StarBadge,
 } from "@/components/ui/icons";
-import ReactMarkdown from "react-markdown";
+import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 
 import { motion } from "framer-motion";
@@ -708,9 +708,16 @@ const QuestionItem = React.memo(function QuestionItem({
                           weight="normal"
                           color="gray-normal"
                         >
-                          <ReactMarkdown>
-                            {translation?.explanation}
-                          </ReactMarkdown>
+                          {/* Previously a bare <ReactMarkdown> with no
+                              plugins — a second, inconsistent renderer from
+                              the shared one (Exaplanation.tsx) used
+                              everywhere else, missing rehype-raw/sanitize
+                              and the markdown-content spacing fix. Routed
+                              through the same shared component so this
+                              screen gets identical, correct formatting. */}
+                          <TextMarkDown>
+                            {translation?.explanation ?? ""}
+                          </TextMarkDown>
                         </Text>
                       </MathRender>
                     </div>
