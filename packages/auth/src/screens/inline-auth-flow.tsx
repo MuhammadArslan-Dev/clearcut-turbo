@@ -12,7 +12,6 @@ import FireIcon from "../icons/fire-icon";
 import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
-import { trackFacebookLead } from "../facebook-pixel";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
@@ -227,8 +226,12 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update.
         localStorage.removeItem(PENDING_USER_ID_KEY);
-        await trackFacebookLead(isNewUser, phone, userId);
         identifyClarityUser({ userId, phone });
+        // See otp-screen.tsx's comment above the same pattern: Lead can only
+        // pick up phone/external_id on the app side's first Pixel init(), so
+        // it's minted here as a one-time registration-occurrence token and
+        // threaded through the redirect instead of fired on this pixel.
+        const leadId = isNewUser ? crypto.randomUUID() : undefined;
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
           token: data.token,
@@ -236,6 +239,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
           userType: isNewUser ? "new" : "old",
           lang,
           course,
+          leadId,
         });
         setLoading(true); setDisabled(false);
         window.location.replace(redirectUrl);

@@ -12,6 +12,16 @@ export interface BuildPostVerifyRedirectUrlParams {
   userType: "new" | "old";
   lang?: string;
   course?: string | null;
+  /**
+   * A one-time registration-occurrence token — NOT the user's permanent id —
+   * minted by the caller only when this OTP verification represents a
+   * genuinely new signup. Threaded through as `meta_lead` so the app side
+   * (the only place the Meta Pixel can still attach phone/external_id to its
+   * first real `init()` call — see apps/dashboard's FacebookPixel.tsx) can
+   * fire Lead exactly once with a real `event_id`, instead of firing it here
+   * against a pixel that already initialized without user data on page load.
+   */
+  leadId?: string;
 }
 
 /**
@@ -22,7 +32,7 @@ export interface BuildPostVerifyRedirectUrlParams {
 export function buildPostVerifyRedirectUrl(
   params: BuildPostVerifyRedirectUrlParams,
 ): string {
-  const { baseUrl, token, hasCourse, userType, lang = "", course } = params;
+  const { baseUrl, token, hasCourse, userType, lang = "", course, leadId } = params;
 
   const encodedToken = encodeURIComponent(token);
   const encodedLang = encodeURIComponent(lang);
@@ -42,6 +52,10 @@ export function buildPostVerifyRedirectUrl(
 
   if (!hasCourse && selectedCourse) {
     redirectUrl += `&course=${encodeURIComponent(selectedCourse)}`;
+  }
+
+  if (leadId) {
+    redirectUrl += `&meta_lead=${encodeURIComponent(leadId)}`;
   }
 
   return redirectUrl;

@@ -16,6 +16,21 @@ const FB_PIXEL_ID = "1126041265682766";
 // in Sentry. Ad-blockers also block fbevents.js, so expect some of this noise.
 const PIXEL_READY_TIMEOUT_MS = 10000;
 
+// Bounded budget for waiting on auth_user_cache before the pixel's ONE real
+// init() call (see the docblock above the component below for why this has
+// to be the first call, not a later re-init). A returning visitor with an
+// already-warm cache resolves almost instantly; a brand-new registration's
+// first-ever cache write (measured 2.6-4.2s) is the slow path this is sized
+// for. This only delays the Pixel's own init()/PageView — never the app's
+// own rendering, which this component's effect runs independently of.
+const USER_DATA_WAIT_MS = 4000;
+const USER_DATA_POLL_INTERVAL_MS = 250;
+
+// Marks the last registration-occurrence id Lead was fired for, so a refresh
+// of the same URL (or a stale bookmark/back-navigation carrying the same
+// `meta_lead` value) never fires a second Lead for one real registration.
+const META_LEAD_FIRED_KEY = "meta_lead_fired";
+
 function reportPixelFailure(reason: string) {
   Sentry.captureMessage("Meta Pixel not running", {
     level: "warning",
@@ -31,21 +46,6 @@ function isPixelSdkLoaded() {
 
 // Reads the auth cache directly (not useAuth()) because this component is
 // mounted as a sibling of AuthProvider, not a child of it — see layout.tsx.
-//
-// NOTE on what calling `fbq('init', ...)` with this data actually does:
-// confirmed via live network inspection against the real pixel, Meta's SDK
-// only reads advanced-matching fields (ph/external_id/ct/st/zp) from the
-// FIRST `fbq('init', PIXEL_ID, ...)` call it ever sees for that pixel ID on
-// the page — a field that wasn't present in that first call can never be
-// added by a later init()/set('userData') call, no matter the timing. The
-// Script tag's inline bootstrap below is that first call and bakes in
-// whatever's already cached. The re-init calls below (setMetaUserData, used
-// for CompleteRegistration/StartTrial) therefore only still work for
-// updating a field's VALUE if it was already present at bootstrap (e.g.
-// country) — they cannot attach ph/external_id for a user who was anonymous
-// at page load and only authenticates mid-session. Left in place as a
-// harmless no-op for that case rather than removed, since it's still
-// correct for the case where bootstrap already had partial data.
 function getCachedUserData(): { ph?: string; external_id?: string } | null {
   const cachedUser = getCachedUser<UserPreview>();
   const digits = cachedUser?.phone?.replace(/\D/g, "");
@@ -62,24 +62,26 @@ function getCachedUserData(): { ph?: string; external_id?: string } | null {
 
 type MetaUserData = { ph?: string; external_id?: string } & Partial<MetaGeoData>;
 
+// Still used by CompleteRegistration/StartTrial below, re-sent via a later
+// fbq('init', ...) call immediately before their track() call — kept exactly
+// as before (client's approved scope excludes changing non-Lead events).
+// Confirmed via live network inspection against the real pixel: Meta's SDK
+// only reads advanced-matching fields from the FIRST init() call it ever
+// sees for a pixel ID on the page, so this only still updates a field's
+// VALUE if it was already present in that first call (e.g. country) — it
+// cannot attach ph/external_id for a user who was anonymous at that first
+// call and only authenticates mid-session. Left in place as a harmless
+// no-op for that case, since the real fix is the bootstrap sequence below
+// now reliably having that data available for its own first call.
 function setMetaUserData(userData: MetaUserData) {
   if (typeof window === "undefined" || !window.fbq) return;
   window.fbq("init", FB_PIXEL_ID, userData);
 }
 
-// CompleteRegistration/StartTrial fire on the FIRST-EVER dashboard load after
-// registration/a first purchase — exactly when the auth cache AuthProvider
-// writes to (after its own ~second-plus /v1/me round trip) is still empty.
-// A synchronous cache read here loses the race almost every time for a truly
-// new user, which is why Phone/External ID showed on only 53.8% of Start
-// Trial and 74.19% of Complete Registration events (vs ~100% for Lead/
-// Purchase, which fire once the cache already exists from an earlier visit).
-// Polling this same cache for a few seconds — instead of an independent
-// fetch — is deliberate: FacebookPixel mounts as AuthProvider's sibling, not
-// its child (see layout.tsx), so there's no context to await, and the token
-// AuthProvider is about to save from the URL isn't guaranteed written yet on
-// this component's very first effect run either.
-async function waitForCachedUserData(maxWaitMs = 4000, intervalMs = 250) {
+async function waitForCachedUserData(
+  maxWaitMs = USER_DATA_WAIT_MS,
+  intervalMs = USER_DATA_POLL_INTERVAL_MS,
+) {
   const deadline = Date.now() + maxWaitMs;
   let data = getCachedUserData();
   while (!data && Date.now() < deadline) {
@@ -94,23 +96,21 @@ export default function FacebookPixel() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Loads as soon as the app mounts, on every page, for every visitor. This
-  // used to wait for the first click/scroll/keydown, which silently dropped
-  // PageView for bounced sessions and any one-shot event fired before the
-  // visitor interacted. Analytics now starts with the page, as the client
-  // requires; the cost is the extra script on first paint.
-  //
   // `onReady` (not `onLoad`) is the signal: for an inline <Script> next/script
   // only calls onReady once the code has run. onLoad is never called for
-  // inline scripts, which left the old `scriptReady` flag stuck at false and
-  // kept every effect-driven event below from firing at all.
+  // inline scripts.
   const [scriptReady, setScriptReady] = useState(false);
 
-  // PageView is sent once per route, not on every query-string change: the
-  // one-shot signal handling below strips a param with router.replace, which
-  // would otherwise re-run this effect on the same page and count PageView
-  // a second time.
+  // Set on the very first run, to the pathname that run saw — lets later
+  // route changes know whether they still owe this path its PageView.
   const lastPageViewPath = useRef<string | null>(null);
+
+  // Resolves once the pixel's one real init() call + first PageView have
+  // fired. Every other event in this component (route-change PageView,
+  // CompleteRegistration/StartTrial/Lead) is chained off this instead of
+  // racing it — firing any of those before init() means there is no pixel
+  // context yet for fbq to attach them to.
+  const bootstrapRef = useRef<Promise<void> | null>(null);
 
   // If the script never reaches onReady (blocked, failed, or broken), nothing
   // else will tell us. Check once after the timeout: Sentry on failure, and an
@@ -131,59 +131,121 @@ export default function FacebookPixel() {
 
   useEffect(() => {
     if (!scriptReady || !window.fbq) return;
-    // Captured once so the async one-shot callbacks below (which run after
-    // this effect returns) don't need TS to re-narrow `window.fbq` across a
-    // closure boundary — it's already known non-null here.
+    // Captured once so the async callbacks below don't need TS to re-narrow
+    // `window.fbq` across a closure boundary — it's already known non-null.
     const fbq = window.fbq;
 
-    // Sent immediately, never after a geo lookup — PageView is the highest
-    // volume event and a visitor can leave at any moment. No re-init here:
-    // Meta's SDK only ever reads advanced-matching fields (ph/external_id/
-    // ct/st/zp) from the FIRST fbq('init', ...) call it sees for a pixel ID —
-    // confirmed via live network inspection (a later init()/set('userData')
-    // never attaches a field that wasn't in that first call, even when
-    // called before the first track()). The Script tag below's inline
-    // bootstrap is that first call, and already bakes in whatever's cached
-    // from an earlier request this session — that's the only place this can
-    // be set. Re-calling init() here would be a no-op for any new field and
-    // only risks the SDK's own "Duplicate Pixel ID" console warning.
-    if (lastPageViewPath.current !== pathname) {
+    if (!bootstrapRef.current) {
+      // ---- First run for this page load: the pixel's one real init(). ----
       lastPageViewPath.current = pathname;
-      fbq("track", "PageView");
+
+      bootstrapRef.current = (async () => {
+        let ccUd: MetaUserData = { country: "in" };
+        try {
+          const [userData, geo] = await Promise.all([
+            waitForCachedUserData(),
+            getMetaGeoData(),
+          ]);
+          ccUd = { ...geo, ...(userData ?? {}) };
+          console.log("Meta Pixel: user data ready");
+        } catch {
+          // Never block the app on a tracking failure — fall through and
+          // init with whatever's in ccUd (country-only at worst). Do not
+          // fabricate phone/zip/state here just to "fill" them.
+        }
+
+        try {
+          fbq("init", FB_PIXEL_ID, ccUd);
+          console.log("Meta Pixel: initialized");
+          fbq("track", "PageView");
+        } catch {
+          reportPixelFailure("init_or_pageview_threw");
+        }
+      })();
+    } else if (lastPageViewPath.current !== pathname) {
+      // ---- Route change after the initial load: no re-init, just PageView
+      // on the pixel the bootstrap above already initialized. ----
+      lastPageViewPath.current = pathname;
+      void bootstrapRef.current.then(() => fbq("track", "PageView"));
     }
+
+    // Warm the session geo cache so any Meta event on this page (including
+    // the one-shot signals below) doesn't re-fetch it.
     void getMetaGeoData();
 
     // One-shot signals appended by the navigation that lands the user here.
-    // Each is stripped after firing so a refresh/back-navigation to this URL
-    // doesn't double-count it.
+    // Each is stripped after being read so a refresh/back-navigation to this
+    // URL doesn't re-process it. Handled uniformly every run (meta_lead can
+    // only ever be present on the very first run — it's only ever set by the
+    // post-OTP redirect — but checking it here every time is free).
     const params = new URLSearchParams(searchParams.toString());
     let hasOneShotSignal = false;
+
+    // Set by the post-OTP-verify redirect (packages/auth/src/redirect.ts)
+    // only when that verification was a genuinely new registration — see
+    // the docblock above the component for the full ordering this enables.
+    const leadId = params.get("meta_lead");
+    if (leadId) {
+      hasOneShotSignal = true;
+      params.delete("meta_lead");
+      void bootstrapRef.current.then(() => {
+        let alreadyFired = false;
+        try {
+          alreadyFired = localStorage.getItem(META_LEAD_FIRED_KEY) === leadId;
+        } catch {
+          // Ignore storage failures (private browsing, quota, etc.) — worst
+          // case this fires Lead again rather than silently dropping it.
+        }
+
+        if (alreadyFired) {
+          console.log("Meta Lead: already handled");
+          return;
+        }
+
+        try {
+          fbq("track", "Lead", undefined, { eventID: `lead_${leadId}` });
+          console.log("Meta Lead: fired");
+        } catch {
+          reportPixelFailure("lead_track_threw");
+          return;
+        }
+        try {
+          localStorage.setItem(META_LEAD_FIRED_KEY, leadId);
+        } catch {
+          // Ignore — see above.
+        }
+      });
+    }
 
     // Set by the onboarding flow's final redirect (ExamStep.tsx) — landing
     // here is the "completed registration" moment.
     if (params.get("user_type") === "new") {
-      Promise.all([waitForCachedUserData(), getMetaGeoData()]).then(([userData, geo]) => {
-        const merged = { ...(userData ?? {}), ...geo };
-        if (Object.keys(merged).length > 0) setMetaUserData(merged);
-        // No value/currency — registration has no monetary amount, and
-        // Meta's Events Manager flagged formatting/missing-value issues on
-        // this pair, so they're left out rather than sent as a placeholder.
-        fbq("track", "CompleteRegistration");
-      });
-      params.delete("user_type");
       hasOneShotSignal = true;
+      params.delete("user_type");
+      void bootstrapRef.current
+        .then(() => Promise.all([waitForCachedUserData(), getMetaGeoData()]))
+        .then(([userData, geo]) => {
+          const merged = { ...(userData ?? {}), ...geo };
+          if (Object.keys(merged).length > 0) setMetaUserData(merged);
+          // No value/currency — registration has no monetary amount, and
+          // Meta's Events Manager flagged formatting/missing-value issues on
+          // this pair, so they're left out rather than sent as a placeholder.
+          fbq("track", "CompleteRegistration");
+        });
     }
 
     // Set by buy-sigle-course-modal.tsx after a new course purchase — landing
     // here is the "start trial" moment for that subject.
     if (params.get("subject_selected") === "1") {
-      Promise.all([waitForCachedUserData(), getMetaGeoData()]).then(([userData, geo]) => {
-        const merged = { ...(userData ?? {}), ...geo };
-        if (Object.keys(merged).length > 0) setMetaUserData(merged);
-        fbq("track", "StartTrial");
-      });
-      params.delete("subject_selected");
       hasOneShotSignal = true;
+      params.delete("subject_selected");
+      void bootstrapRef.current
+        .then(() => Promise.all([waitForCachedUserData(), getMetaGeoData()]))
+        .then(([userData, geo]) => {
+          const merged = { ...(userData ?? {}), ...geo };
+          if (Object.keys(merged).length > 0) setMetaUserData(merged);
+          fbq("track", "StartTrial");
+        });
     }
 
     if (hasOneShotSignal) {
@@ -196,19 +258,22 @@ export default function FacebookPixel() {
 
   return (
     <>
-      {/* Script tag with Facebook Pixel code. PageView is sent by the effect
-          above once onReady flips scriptReady, so it isn't sent twice.
-
-          The init() call below is THE only place advanced-matching data
-          (ph/external_id/ct/st/zp) can ever be attached for this pixel
-          instance — see the NOTE above getCachedUserData(). It reads
-          auth_user_cache (apps/dashboard/src/lib/auth-token-client.ts) and
-          meta_geo_data (packages/utils/src/meta-geo.ts) synchronously,
-          in plain JS, before React/fbevents.js even run, so a returning
-          visitor's already-cached phone/user-id/geo is baked into the
-          FIRST init() call instead of a later one that Meta would ignore.
-          Only real cached values are used — never placeholders — since
-          sending fabricated PII to Meta is worse than sending none. */}
+      {/* Script tag with Facebook Pixel code. It only defines window.fbq and
+          loads fbevents.js here — it deliberately does NOT call fbq('init',
+          ...) inline anymore. The actual init() call is the pixel's ONE real
+          first call, and now lives in the effect above, gated behind a
+          bounded wait for auth_user_cache (apps/dashboard/src/lib/
+          auth-token-client.ts) and meta_geo_data (packages/utils/src/
+          meta-geo.ts) — see that effect's docblock. Advanced-matching data
+          (ph/external_id/ct/st/zp) can ONLY ever be attached at that one
+          call — confirmed via live network inspection against the real
+          pixel, Meta's SDK never reads these fields from a later init()/
+          set('userData') call, no matter the timing — which is exactly why
+          this now waits instead of initializing synchronously and hoping a
+          later call could add them. Only real cached/fetched values are
+          used — never placeholders — since sending fabricated PII to Meta
+          is worse than sending none. Waiting here never blocks the app's
+          own rendering; it only delays this pixel's own init()/PageView. */}
       <Script
         id={FB_PIXEL_ID}
         strategy="afterInteractive"
@@ -223,27 +288,6 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-
-            var ccUd = { country: 'in' };
-            try {
-              var ccUserRaw = localStorage.getItem('auth_user_cache');
-              var ccUserEntry = ccUserRaw ? JSON.parse(ccUserRaw) : null;
-              if (ccUserEntry && ccUserEntry.data && (Date.now() - ccUserEntry.cachedAt) <= 300000) {
-                var ccDigits = String(ccUserEntry.data.phone || '').replace(/[^0-9]/g, '');
-                if (ccDigits) ccUd.ph = ccDigits.length === 10 ? ('91' + ccDigits) : ccDigits;
-                if (ccUserEntry.data.id) ccUd.external_id = String(ccUserEntry.data.id);
-              }
-            } catch (e) {}
-            try {
-              var ccGeoRaw = sessionStorage.getItem('meta_geo_data');
-              var ccGeo = ccGeoRaw ? JSON.parse(ccGeoRaw) : null;
-              if (ccGeo) {
-                if (ccGeo.ct) ccUd.ct = ccGeo.ct;
-                if (ccGeo.st) ccUd.st = ccGeo.st;
-                if (ccGeo.zp) ccUd.zp = ccGeo.zp;
-              }
-            } catch (e) {}
-            fbq('init', '${FB_PIXEL_ID}', ccUd);
           `,
         }}
       />

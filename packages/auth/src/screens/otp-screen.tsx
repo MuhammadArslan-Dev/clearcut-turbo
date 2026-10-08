@@ -13,7 +13,6 @@ import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
-import { trackFacebookLead } from "../facebook-pixel";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
@@ -167,11 +166,7 @@ export function createOtpScreen({
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update (also clears the persisted localStorage copy).
         setUserId("");
-        await trackFacebookLead(
-          localStorage.getItem("is_new_user") === "true",
-          phone,
-          userId,
-        );
+        const isNewUser = localStorage.getItem("is_new_user") === "true";
         identifyClarityUser({ userId, phone });
 
         // Stay-on-page mode (apps/tools): token is already stored above; just
@@ -184,11 +179,22 @@ export function createOtpScreen({
           onAuthenticated({
             token: data.token,
             hasCourse: Boolean(data.has_course),
-            isNewUser: localStorage.getItem("is_new_user") === "true",
+            isNewUser,
             source: "otp",
           });
           return;
         }
+
+        // Meta "Lead" can only ever pick up phone/external_id on
+        // app.clearcutoff.in's FIRST real Pixel init() call (see that app's
+        // FacebookPixel.tsx) — this landing/blog pixel already called init()
+        // without user data when this page loaded, so firing Lead here would
+        // permanently lock phone/external_id out of it. `leadId` is a
+        // one-time registration-occurrence token (never the permanent user
+        // id — a refresh/replay of this same registration must not mint a
+        // new Lead), threaded through the redirect so the app side fires
+        // Lead exactly once, with a real event_id.
+        const leadId = isNewUser ? crypto.randomUUID() : undefined;
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
@@ -197,6 +203,7 @@ export function createOtpScreen({
           userType: "old",
           lang,
           course,
+          leadId,
         });
 
         // No verifyOtpSuccess() here on purpose: it flips `loading` back to

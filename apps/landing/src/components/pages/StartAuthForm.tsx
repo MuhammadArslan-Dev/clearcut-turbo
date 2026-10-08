@@ -31,7 +31,6 @@ import {
   buildPostVerifyRedirectUrl,
   getCurrentLocale,
 } from "@clearcut/auth/redirect";
-import { trackFacebookLead } from "@clearcut/auth/facebook-pixel";
 import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import {
   useTruecallerLogin,
@@ -541,8 +540,13 @@ export default function StartAuthForm({
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
       localStorage.removeItem(PENDING_USER_ID_KEY);
-      await trackFacebookLead(isNewUser, phone, userId);
       identifyClarityUser({ userId, phone });
+
+      // See packages/auth/src/screens/otp-screen.tsx's comment above the
+      // same pattern: Lead can only pick up phone/external_id on the app
+      // side's first Pixel init(), so it's minted here as a one-time
+      // registration-occurrence token and threaded through the redirect.
+      const leadId = isNewUser ? crypto.randomUUID() : undefined;
 
       const redirectUrl = buildPostVerifyRedirectUrl({
         baseUrl: REDIRECT_BASE_URL,
@@ -551,6 +555,7 @@ export default function StartAuthForm({
         userType: "old",
         lang,
         course,
+        leadId,
       });
 
       window.location.replace(redirectUrl);
