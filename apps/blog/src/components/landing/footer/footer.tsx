@@ -19,7 +19,7 @@ export default function Footer() {
       phoneLabel={isMobile ? "Phone" : "7210708599"}
       emailAddress="hi@clearcutoff.in"
       emailLabel={isMobile ? "Email" : "hi@clearcutoff.in"}
-      whatsappNumber="7210708599"
+      whatsappNumber="917210708599"
       whatsappLabel="Whatsapp"
       policyLabel={t("links.policy")}
       termsLabel={t("links.terms")}
