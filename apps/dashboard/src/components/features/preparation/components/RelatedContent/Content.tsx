@@ -28,6 +28,7 @@ import { toLower } from "@clearcut/utils/text-format";
 import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { isNetworkFailure } from "@/lib/api/api-error";
 import PagesIcon from "@/components/ui/icons/page-icon";
 import BellIcon from "@/components/ui/icons/Bell-icon";
 import PieChartIcon from "@/components/ui/icons/pie-chart-icon";
@@ -233,12 +234,29 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
   };
 
   const markVideoWatch = async () => {
-    await updateLearningProgress({
+    // Fire-and-forget progress pings — the notes view itself must keep
+    // working even if the backend is down or slow for these.
+    updateLearningProgress({
       course_id: course?.group_code!,
       section_id: selectedSectionId!,
       chapter_id: selectedChapter?.id!,
       topic_id: selectedTopic?.id.toString()!,
       notes_taken: true,
+    }).catch((err) => {
+      if (isNetworkFailure(err)) {
+        logger.breadcrumb("updateLearningProgress hit a network blip", {
+          tags: { type: "background_sync", module: "related-content-notes" },
+          extra: { action: "updateLearningProgress", topicId: selectedTopic?.id },
+        });
+        return;
+      }
+      logger.error(err, {
+        tags: { type: "background_sync", module: "related-content-notes" },
+        extra: {
+          action: "updateLearningProgress",
+          topicId: selectedTopic?.id,
+        },
+      });
     });
 
     createLearningInteraction({
@@ -247,6 +265,13 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     })
       .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
       .catch((err) => {
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("createLearningInteraction hit a network blip", {
+            tags: { type: "background_sync", module: "related-content-notes" },
+            extra: { action: "createLearningInteraction", topicId: selectedTopic?.id },
+          });
+          return;
+        }
         logger.error(err, {
           tags: { type: "background_sync", module: "related-content-notes" },
           extra: {

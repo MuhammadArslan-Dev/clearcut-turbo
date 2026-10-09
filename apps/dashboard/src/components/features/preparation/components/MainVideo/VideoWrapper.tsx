@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Skeleton from "@clearcut/ui/skeleton";
 import { trackEvent } from "@/lib/analytics/browser";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { isNetworkFailure } from "@/lib/api/api-error";
 import { ContentItem, VideoContent } from "../../types/topic-content-type";
 import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
@@ -63,12 +64,29 @@ export default function VideoWrapper() {
   const markVideoWatch = async () => {
     if (!selectedTopic || !mainVideo) return;
 
-    await updateLearningProgress({
+    // Fire-and-forget progress pings — video playback must keep working even
+    // if the backend is down or slow for these.
+    updateLearningProgress({
       course_id: course?.group_code!,
       section_id: selectedSectionId!,
       chapter_id: selectedChapter?.id!,
       topic_id: selectedTopic.id.toString(),
       video_watched: true,
+    }).catch((err) => {
+      if (isNetworkFailure(err)) {
+        logger.breadcrumb("updateLearningProgress hit a network blip", {
+          tags: { type: "background_sync", module: "main-video" },
+          extra: { action: "updateLearningProgress", topicId: selectedTopic.id },
+        });
+        return;
+      }
+      logger.error(err, {
+        tags: { type: "background_sync", module: "main-video" },
+        extra: {
+          action: "updateLearningProgress",
+          topicId: selectedTopic.id,
+        },
+      });
     });
 
     createLearningInteraction({
@@ -77,6 +95,13 @@ export default function VideoWrapper() {
     })
       .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
       .catch((err) => {
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("createLearningInteraction hit a network blip", {
+            tags: { type: "background_sync", module: "main-video" },
+            extra: { action: "createLearningInteraction", topicId: selectedTopic.id },
+          });
+          return;
+        }
         logger.error(err, {
           tags: { type: "background_sync", module: "main-video" },
           extra: {

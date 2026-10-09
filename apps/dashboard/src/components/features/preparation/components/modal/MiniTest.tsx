@@ -37,6 +37,7 @@ import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { isNetworkFailure } from "@/lib/api/api-error";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 
 /* -------------------------------------------------------------------------- */
@@ -108,6 +109,17 @@ export default function MiniTest() {
       topic_id: selectedTopic?.id.toString()!,
       mini_quizzes_taken: true,
     }).catch((err) => {
+      if (isNetworkFailure(err)) {
+        logger.breadcrumb("updateLearningProgress hit a network blip", {
+          tags: { type: "background_sync", module: "mini-test" },
+          extra: {
+            action: "updateLearningProgress",
+            topicId: selectedTopic?.id,
+            courseId: course?.group_code,
+          },
+        });
+        return;
+      }
       logger.error(err, {
         tags: { type: "background_sync", module: "mini-test" },
         extra: {
@@ -124,6 +136,13 @@ export default function MiniTest() {
     })
       .then(() => queryClient.invalidateQueries({ queryKey: ["today-goals"] }))
       .catch((err) => {
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("createLearningInteraction hit a network blip", {
+            tags: { type: "background_sync", module: "mini-test" },
+            extra: { action: "createLearningInteraction", topicId: selectedTopic?.id },
+          });
+          return;
+        }
         logger.error(err, {
           tags: { type: "background_sync", module: "mini-test" },
           extra: {
