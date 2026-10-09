@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useNavLoadingStore, clearNavPending } from "@/store/navigation/useNavLoadingStore";
 
 /**
@@ -13,22 +14,30 @@ import { useNavLoadingStore, clearNavPending } from "@/store/navigation/useNavLo
  *      other link) can't fire a duplicate/overlapping navigation.
  * Both are driven by useNavLoadingStore, set by the wrapped Link/useRouter
  * in i18n/navigation.ts. This effect is what actually clears that state:
- * once the pathname changes, the navigation is done.
+ * once the pathname OR the search params change, the navigation is done.
  */
 export default function NavigationProgress() {
   const isPending = useNavLoadingStore((s) => s.isPending);
   const clear = useNavLoadingStore((s) => s.clear);
   const pathname = usePathname();
+  // A same-path router.replace()/push() (e.g. useFlowNavigation's goUp/
+  // replace, or any query-param-only update made through the wrapped
+  // router) never changes `pathname` — without this, isPending would only
+  // ever clear via the 10s safety timeout below for every one of those,
+  // freezing the click-shield for up to 10s after an already-finished
+  // navigation.
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     clear();
     clearNavPending();
-  }, [pathname, clear]);
+  }, [pathname, searchParams, clear]);
 
-  // Safety net: a navigation that never changes the pathname (a same-path
-  // router.replace, a cancelled/failed request) would otherwise leave the
-  // click-shield below up forever and freeze the whole page. Same 10s
-  // guard markNavPending() already applies to the clicked element.
+  // Safety net: a navigation that never changes the pathname or search
+  // params (a cancelled/failed request that silently stays put) would
+  // otherwise leave the click-shield below up forever and freeze the whole
+  // page. Same 10s guard markNavPending() already applies to the clicked
+  // element.
   useEffect(() => {
     if (!isPending) return;
     const t = setTimeout(() => {
@@ -36,6 +45,26 @@ export default function NavigationProgress() {
       clearNavPending();
     }, 10000);
     return () => clearTimeout(t);
+  }, [isPending, clear]);
+
+  // Second safety net, specifically for a navigation that fails outright
+  // (a thrown render error, a rejected data fetch) rather than just hanging
+  // — don't make the user wait out the full 10s timeout above for a
+  // navigation that very visibly already went wrong. Only attached while a
+  // navigation is actually in flight, so it can't swallow unrelated errors
+  // the rest of the app already reports to Sentry.
+  useEffect(() => {
+    if (!isPending) return;
+    const handleNavError = () => {
+      clear();
+      clearNavPending();
+    };
+    window.addEventListener("error", handleNavError);
+    window.addEventListener("unhandledrejection", handleNavError);
+    return () => {
+      window.removeEventListener("error", handleNavError);
+      window.removeEventListener("unhandledrejection", handleNavError);
+    };
   }, [isPending, clear]);
 
   if (!isPending) return null;

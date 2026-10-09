@@ -36,11 +36,23 @@ export function Link({ onClick, ...props }: ComponentProps<typeof BaseLink>) {
 
 /**
  * Drop-in replacement for next-intl's useRouter: same returned object,
- * except push()/replace() also mark the currently-focused element (clicking
- * a button focuses it, so this is almost always the element the user just
- * clicked) as navigation-pending and start the top progress bar — the same
- * feedback Link clicks get, for the imperative `router.push(...)` pattern
- * used in onClick handlers across the app.
+ * except push()/replace()/back()/forward() also mark the currently-focused
+ * element (clicking a button focuses it, so this is almost always the
+ * element the user just clicked) as navigation-pending and start the top
+ * progress bar — the same feedback Link clicks get, for the imperative
+ * `router.push(...)` pattern used in onClick handlers across the app.
+ *
+ * back()/forward() are wrapped for the same reason push()/replace() are:
+ * without this, every in-app "Back" button built on this hook (payment
+ * pages, error screens, useFlowNavigation) showed no loading feedback at
+ * all, unlike every forward navigation — inconsistent, not because
+ * backward navigation is any faster. This only covers back/forward
+ * triggered through this hook; the browser's own Back/Forward buttons fire
+ * a native popstate this hook never sees, and are deliberately left alone
+ * (see NavigationProgress.tsx) since a blanket popstate listener would
+ * also fire for the in-app modals/drawers that push a history entry purely
+ * to make hardware-back close them, which never changes the route and
+ * would leave the click-shield stuck.
  */
 export function useRouter(): ReturnType<typeof useBaseRouter> {
   const router = useBaseRouter();
@@ -64,10 +76,31 @@ export function useRouter(): ReturnType<typeof useBaseRouter> {
     [router, start],
   );
 
+  const back = useCallback<typeof router.back>(
+    (...args) => {
+      if (!document.activeElement?.closest(NO_INDICATOR)) markNavPending(document.activeElement);
+      start();
+      return router.back(...args);
+    },
+    [router, start],
+  );
+
+  const forward = useCallback<typeof router.forward>(
+    (...args) => {
+      if (!document.activeElement?.closest(NO_INDICATOR)) markNavPending(document.activeElement);
+      start();
+      return router.forward(...args);
+    },
+    [router, start],
+  );
+
   // Memoized: an inline object literal here would be a NEW reference every
   // render, and any consumer that puts the returned router in a useEffect/
   // useMemo dependency array (a common pattern) would then re-run on every
   // render of that consumer too — on components where that triggers a state
   // update, that's an infinite render loop, not just a wasted render.
-  return useMemo(() => ({ ...router, push, replace }), [router, push, replace]);
+  return useMemo(
+    () => ({ ...router, push, replace, back, forward }),
+    [router, push, replace, back, forward],
+  );
 }
