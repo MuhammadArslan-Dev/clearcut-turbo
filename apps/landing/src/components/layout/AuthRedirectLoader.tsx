@@ -16,23 +16,29 @@ import { useAuth } from "@/lib/auth";
  * after hydration, by which point the static page has already painted.
  *
  * This component's only job is the other half: once AuthProvider's verify
- * check (`useAuth().loading`) has gone true -> false, the check is done. If
- * it succeeded, the page is already navigating away
- * (`window.location.replace`) and this is moot. If it failed, the token was
- * cleared and nothing will reveal the page again — so remove the attribute
- * to reveal the already-rendered landing page underneath.
+ * check (`useAuth().loading`) has gone true -> false, the check is done.
+ *
+ * On success, `context.tsx` sets `token` to the verified value AND calls
+ * `window.location.replace(...)` — but that navigation isn't instant, and
+ * `loading` still flips back to `false` in its `finally` block right after,
+ * in the same tick. Revealing the page on *any* loading->false transition
+ * therefore showed the landing page for that gap, right before the browser
+ * actually left — so this only reveals on the FAILURE path (`token` still
+ * falsy once the check finishes, meaning nothing is navigating away and the
+ * page needs to actually be shown). On success it deliberately stays
+ * hidden/loading all the way through until the browser navigates away.
  */
 export default function AuthRedirectLoader() {
-  const { loading } = useAuth();
+  const { loading, token } = useAuth();
   const [checkStarted, setCheckStarted] = useState(false);
 
   useEffect(() => {
     if (loading) {
       setCheckStarted(true);
-    } else if (checkStarted) {
+    } else if (checkStarted && !token) {
       document.documentElement.removeAttribute("data-auth-pending");
     }
-  }, [loading, checkStarted]);
+  }, [loading, checkStarted, token]);
 
   return null;
 }
