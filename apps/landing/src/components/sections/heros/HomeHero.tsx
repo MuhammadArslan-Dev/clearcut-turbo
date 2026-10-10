@@ -50,6 +50,7 @@ export default function HomeHero({
         <div className="md:col-span-6 md:order-1 order-2">
           <div className="flex flex-col justify-center h-full gap-10">
             <HeaderBlock
+              as="h1"
               heading={{ text: t.heading }}
               description={{ text: t.description }}
               eyebrowOptions={{ alignMobile: "center", alignDesktop: "left" }}

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
 
 export const SITE_URL = "https://clearcutoff.in";
 export const SITE_NAME = "Clear Cutoff";
@@ -9,7 +10,22 @@ type SeoProps = {
   keywords?: string[];
   image?: string;
   url?: string;
+  /** The page's own locale, used to build a self-referencing canonical URL.
+   * Optional — defaults to `defaultLocale` ("en") so callers that haven't
+   * been made locale-aware keep their exact previous behavior. */
+  locale?: Locale;
 };
+
+// Default locale has NO prefix (next-intl `localePrefix: "as-needed"`).
+// Never emits a redundant trailing slash (e.g. "en" root -> SITE_URL, "hi"
+// root -> SITE_URL/hi, not SITE_URL/hi/ — the latter 30x-redirects to the
+// former, which is the wrong URL to put in canonical/hreflang tags).
+function buildLocalizedUrl(locale: Locale, path: string): string {
+  const prefix = locale === defaultLocale ? "" : `/${locale}`;
+  const suffix = path === "/" ? "" : path;
+  const combined = `${prefix}${suffix}`;
+  return combined === "" ? SITE_URL : `${SITE_URL}${combined}`;
+}
 
 export function generateSeoMetadata({
   title,
@@ -17,10 +33,11 @@ export function generateSeoMetadata({
   keywords = [],
   image = "/icons/og-image.png",
   url = "/",
+  locale = defaultLocale,
 }: SeoProps): Metadata {
   // Accept either a relative path ("/teaching") or a full URL — normalise to relative
   const path = url.startsWith("http") ? new URL(url).pathname : url;
-  const canonicalUrl = `${SITE_URL}${path}`;
+  const canonicalUrl = buildLocalizedUrl(locale, path);
 
   return {
     title,
@@ -30,11 +47,10 @@ export function generateSeoMetadata({
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        // Default locale (en) has NO prefix — localePrefix: "as-needed"
-        "en": canonicalUrl,
-        "hi": `${SITE_URL}/hi${path}`,
-        "mr": `${SITE_URL}/mr${path}`,
-        "x-default": canonicalUrl,
+        "en": buildLocalizedUrl("en", path),
+        "hi": buildLocalizedUrl("hi", path),
+        "mr": buildLocalizedUrl("mr", path),
+        "x-default": buildLocalizedUrl("en", path),
       },
     },
 

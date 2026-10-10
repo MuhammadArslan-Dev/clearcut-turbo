@@ -58,6 +58,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry("/",          1.0, "weekly"),
     entry("/teaching",  0.9, "weekly"),
     entry("/faq",       0.7, "weekly"),
+    entry("/android-app", 0.7, "monthly"),
+    entry("/ios-app",     0.7, "monthly"),
     entry("/contact-us", 0.5, "monthly"),
     entry("/privacy-policy",       0.3, "yearly", new Date("2024-01-01")),
     entry("/terms-and-conditions", 0.3, "yearly", new Date("2024-01-01")),

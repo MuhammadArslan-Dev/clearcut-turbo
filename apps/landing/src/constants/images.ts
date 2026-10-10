@@ -33,6 +33,14 @@ export const IMAGES = defineImages({
     step2: "/images/howitwork2.webp",
     step3: "/images/howitwork3.webp",
   },
+  appDownload: {
+    heroScreenshot: "/images/app-download-hero-screenshot.png",
+    showcase1: "/images/app-showcase-1.webp",
+    showcase2: "/images/app-showcase-2.webp",
+    showcase3: "/images/app-showcase-3.webp",
+    showcase4: "/images/app-showcase-4.webp",
+    showcase5: "/images/app-showcase-5.webp",
+  },
 });
 
 export type ImageKey = keyof typeof IMAGES;

@@ -25,6 +25,12 @@ interface HeaderBlockProps {
   eyebrowClassName?: string;
   headingClassName?: string;
   descriptionClassName?: string;
+
+  /** Heading element to render. Defaults to "h2" — preserves current
+   * behavior everywhere. Pass "h1" only from a page's own single primary
+   * hero (never from a section/card nested under it), so each page ends up
+   * with exactly one <h1>. */
+  as?: "h1" | "h2" | "h3";
 }
 
 const HeaderBlock: React.FC<HeaderBlockProps> = ({
@@ -38,6 +44,7 @@ const HeaderBlock: React.FC<HeaderBlockProps> = ({
   eyebrowClassName = "mb-1",
   headingClassName,
   descriptionClassName,
+  as: HeadingTag = "h2",
 }) => {
   const mergedEyebrowOptions = {
     color: "text-brand",
@@ -55,7 +62,7 @@ const HeaderBlock: React.FC<HeaderBlockProps> = ({
         />
       )}
 
-      <h2
+      <HeadingTag
         className={clsx(
           "",
           headingClassName ?? "mb-3",
@@ -68,7 +75,7 @@ const HeaderBlock: React.FC<HeaderBlockProps> = ({
         )}
       >
         {heading.text}
-      </h2>
+      </HeadingTag>
 
       {description?.text && (
         <Paragraph

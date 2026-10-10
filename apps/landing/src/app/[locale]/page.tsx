@@ -105,13 +105,15 @@ const items = [
   { label: "faqs", href: "#faqs", id: "faqs-section" },
 ];
 
-export function generateMetadata() {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return generateSeoMetadata({
     title: "Clear Cutoff — Crack HTET, CTET, UPTET & More",
     description:
       "Clear Cutoff helps you crack CTET, HTET, UPTET, REET, and HPTET with video lectures, PYQs, revision notes, and full-length test series — plus a refund guarantee.",
     keywords: ["CTET", "HTET", "UPTET", "REET", "HPTET", "teaching exam preparation", "Clear Cutoff"],
     url: "/",
+    locale: toLocale(locale),
   });
 }
 

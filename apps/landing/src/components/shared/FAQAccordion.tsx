@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Text from "@clearcut/ui/text";
 import AccordionIcon from "../icons/accordion-icon";
@@ -19,9 +21,11 @@ type Props = {
   onOpenChange?: (id: string | null) => void;
 };
 
-// No client component needed — the whole open/close/exclusive-group
-// interaction is native <details>/<summary> + CSS. `onOpenChange` is the
-// only JS involved, and it's a side-effect listener, not a state driver.
+// The open/close/exclusive-group interaction itself is native
+// <details>/<summary> + CSS, zero JS driving it — but the `onToggle` handler
+// below (needed to keep onOpenChange observing it) is a React event handler,
+// which requires this file to be a Client Component so it's usable from a
+// Server Component parent, not just from an already-client one.
 export default function Accordion({ items, defaultOpenId, onOpenChange }: Props) {
   const groupName = React.useId();
 

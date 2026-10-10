@@ -70,6 +70,7 @@ export default function CoursePageHero({ data }: { data?: Exam }) {
         <div className="md:col-span-6">
           <div className="flex flex-col justify-center h-full gap-10">
             <HeaderBlock
+              as="h1"
               heading={{ text: t.heading(examName) }}
               description={{ text: t.description }}
               eyebrowOptions={{ alignMobile: "center", alignDesktop: "left" }}
