@@ -97,16 +97,18 @@ declare const messages: {
 
     "contact": {
       "phone": "7210708599",
-      "email": "hi@clearcutoff.in",
-      "whatsapp": "Whatsapp"
+      "whatsapp": "WhatsApp"
     },
 
     "links": {
       "policy": "Policy",
-      "terms": "Terms",
+      "terms": "Terms & Conditions",
       "refund": "Refund",
       "contact": "Contact"
     },
+
+    "faq": "FAQ",
+    "tools": "Tools",
 
     "social": {
       "instagram": "Instagram",

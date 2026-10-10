@@ -81,7 +81,6 @@
 
     "contact": {
       "phone": "7210708599",
-      "email": "hi@clearcutoff.in",
       "whatsapp": "व्हाट्सऐप"
     },
 
@@ -91,6 +90,9 @@
       "refund": "रिफंड नीति",
       "contact": "संपर्क करें"
     },
+
+    "faq": "सामान्य प्रश्न",
+    "tools": "टूल्स",
 
     "social": {
       "instagram": "इंस्टाग्राम",
