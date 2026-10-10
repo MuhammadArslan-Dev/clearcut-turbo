@@ -9,6 +9,7 @@
     "./breadcrumbs": "./src/breadcrumbs.tsx",
     "./button": "./src/button.tsx",
     "./card": "./src/card.tsx",
+    "./full-screen-loader": "./src/full-screen-loader.tsx",
     "./chip": "./src/chip.tsx",
     "./input": "./src/input.tsx",
     "./json-ld": "./src/json-ld.tsx",
