@@ -589,7 +589,7 @@ export function Trends({
         <div className="space-y-4">
           <Title
             title={trends("title")}
-            subtext={trends("subtitle")}
+            subtext={trends("subtitle", { examName: examShort })}
             className="md:text-center"
           />
 

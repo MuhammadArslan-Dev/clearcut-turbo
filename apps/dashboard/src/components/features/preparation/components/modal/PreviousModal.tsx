@@ -213,10 +213,13 @@ const QuestionItem = React.memo(function QuestionItem({
     [data, language],
   );
 
-  const source =
+  // exam_instance_id comes back from the backend as "HTET_2023" — the
+  // underscore is a backend id-formatting artifact, not meant to be shown.
+  const source = (
     data?.exam_context_b?.exam_instance_id ||
     data?.exam_context_a?.exam_instance_id ||
-    "";
+    ""
+  ).replace(/_/g, " ");
   const difficulty = translation?.ai_metadata?.difficulty_level || "Easy";
   const questionText = translation?.content?.question ?? "";
   const questionImage = translation?.content?.question_image ?? null;

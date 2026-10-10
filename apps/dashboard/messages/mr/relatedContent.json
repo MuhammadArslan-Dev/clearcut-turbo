@@ -30,7 +30,7 @@
     },
     "trends": {
       "title": "मागील परीक्षांचे ट्रेंड्स",
-      "subtitle": "अलीकडील CTET परीक्षांवर आधारित",
+      "subtitle": "अलीकडील {examName} परीक्षांवर आधारित",
       "labels": {
         "topicImportance": "विषयाचे महत्त्व",
         "marksAsked": "विचारलेले मार्क्स",

@@ -36,7 +36,7 @@
 
     "trends": {
       "title": "Trends from Previous Exam",
-      "subtitle": "Based on recent CTET exams",
+      "subtitle": "Based on recent {examName} exams",
 
       "labels": {
         "topicImportance": "Topic Importance",

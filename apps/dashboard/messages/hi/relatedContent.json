@@ -30,7 +30,7 @@
     },
     "trends": {
       "title": "पिछली परीक्षाओं के ट्रेंड्स",
-      "subtitle": "रिसेंट CTET एग्ज़ाम्स पर आधारित",
+      "subtitle": "रिसेंट {examName} एग्ज़ाम्स पर आधारित",
       "labels": {
         "topicImportance": "टॉपिक इम्पोर्टेंस",
         "marksAsked": "पूछे गए मार्क्स",
