@@ -16,6 +16,7 @@
 "use client";
 
 import { createAuthFeature } from "@clearcut/auth/create-auth-feature";
+import { isFacebookOrInstagramInAppBrowser } from "@clearcut/auth/truecaller";
 
 import api from "@/api/axios";
 import { logAmplitudeEvent, setUserId } from "@/services/analytics";
@@ -38,4 +39,9 @@ export const {
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
   onIdentify: setUserId,
+  // Facebook/Instagram's in-app browser is how most ad traffic arrives —
+  // never auto-redirect it into the dashboard even with a valid session,
+  // since the silent window.location.replace + sandboxed-webview
+  // combination is exactly where this is most likely to misbehave.
+  shouldSkipRedirect: isFacebookOrInstagramInAppBrowser,
 });

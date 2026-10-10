@@ -36,6 +36,16 @@ export interface AuthContextConfig {
    * it preserves the original always-redirect behavior.
    */
   skipRedirectPathSegments?: string[];
+  /**
+   * When this returns true, the mount-time auto-redirect is skipped
+   * entirely, regardless of path — verification and context state
+   * (`token`, `loading`) still run and update normally; only the
+   * `window.location.replace(...)` step is skipped. A function rather than
+   * a boolean because the condition typically reads `navigator.userAgent`,
+   * which isn't available at config-definition time on the server. Optional;
+   * omitting it preserves the original always-redirect behavior.
+   */
+  shouldSkipRedirect?: () => boolean;
 }
 
 export interface AuthContextValue {
@@ -60,6 +70,7 @@ export function createAuthContext(config: AuthContextConfig) {
     logoutRedirectPath = "/",
     verifyTimeoutMs = 8000,
     skipRedirectPathSegments = [],
+    shouldSkipRedirect,
   } = config;
 
   const AuthContext = createContext<AuthContextValue | null>(null);
@@ -100,7 +111,8 @@ export function createAuthContext(config: AuthContextConfig) {
             const isExemptPath = skipRedirectPathSegments.some((segment) =>
               window.location.pathname.includes(segment),
             );
-            if (!isExemptPath) {
+            const isExemptVisitor = shouldSkipRedirect?.() ?? false;
+            if (!isExemptPath && !isExemptVisitor) {
               window.location.replace(redirectUrl);
             }
           } else {

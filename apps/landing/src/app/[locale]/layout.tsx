@@ -9,6 +9,7 @@ import { routing } from "@/i18n/routing";
 import { ReactQueryProvider } from "@clearcut/react-query/provider";
 import AnalyticsLoader from "@/components/global/AnalyticsLoader";
 import { AuthProvider, AuthModal } from "@/lib/auth";
+import AuthRedirectLoader from "@/components/layout/AuthRedirectLoader";
 import { Suspense } from "react";
 import AnalyticsProvider from "@clearcut/analytics/provider";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
@@ -102,11 +103,76 @@ export default async function RootLayout({
             build resolves this hint to its own staging dashboard host
             instead of hard-coding production's. */}
         <link rel="dns-prefetch" href={REDIRECT_BASE_URL} />
+        {/* Paired with the blocking script at the top of <body> and
+            AuthRedirectLoader (src/components/layout/AuthRedirectLoader.tsx):
+            this is what actually hides the static landing HTML before first
+            paint for a visitor who might be about to get redirected, instead
+            of hiding it only after React hydrates (which still showed a
+            flash of landing first). */}
+        <style>{`
+          html[data-auth-pending] body > :not(#auth-pending-loader) { visibility: hidden; }
+          html[data-auth-pending] #auth-pending-loader { display: flex !important; }
+          @keyframes auth-pending-dots {
+            20% { background-position: 0% 0%, 50% 50%, 100% 50%; }
+            40% { background-position: 0% 100%, 50% 0%, 100% 50%; }
+            60% { background-position: 0% 50%, 50% 100%, 100% 0%; }
+            80% { background-position: 0% 50%, 50% 50%, 100% 100%; }
+          }
+        `}</style>
       </head>
       <body className="font-sans">
+        {/* Runs synchronously while the HTML is still being parsed, before
+            the browser paints anything below it — same "no-flash" technique
+            commonly used for dark-mode theme detection, applied here to
+            auth state instead. Mirrors the exact conditions
+            AuthRedirectLoader and lib/auth.ts's shouldSkipRedirect check:
+            Facebook/Instagram in-app-browser visitors are never gated, and
+            a visitor with no stored session has nothing to check, so the
+            vast majority of visitors (including every crawler) never hit
+            this at all and the landing page paints exactly as fast as
+            before this feature existed. */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var ua=navigator.userAgent||"";if(/FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(ua))return;if(!localStorage.getItem("CSRF_TOKEN"))return;document.documentElement.setAttribute("data-auth-pending","");}catch(e){}})();`,
+          }}
+        />
+        {/* Static, always-rendered (so it's there for the blocking script to
+            reveal above) — hidden by default via inline style so it costs
+            nothing for the visitors who never trigger data-auth-pending.
+            Same look as apps/dashboard's FullScreenLoader (ring spinner +
+            "Clear Cutoff" wordmark + pulsing dots), rebuilt as static
+            markup/CSS since this has to render before any React mounts. */}
+        <div id="auth-pending-loader" style={{ display: "none" }}>
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-white">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative h-16 w-16">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
+                <div className="absolute inset-0 animate-spin rounded-full border-4 border-[var(--color-brand)] border-t-transparent" />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Clear Cutoff
+              </p>
+              <div
+                style={{
+                  width: "56px",
+                  height: "27px",
+                  background:
+                    "radial-gradient(circle closest-side, var(--color-brand) 90%, transparent) 0% 50%, radial-gradient(circle closest-side, var(--color-brand) 90%, transparent) 50% 50%, radial-gradient(circle closest-side, var(--color-brand) 90%, transparent) 100% 50%",
+                  backgroundSize: "calc(100% / 3) 13.5px",
+                  backgroundRepeat: "no-repeat",
+                  animation: "auth-pending-dots 1s infinite linear",
+                }}
+              />
+            </div>
+          </div>
+        </div>
         <ReactQueryProvider>
           <NextIntlClientProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <AuthRedirectLoader />
+              {children}
+            </AuthProvider>
           </NextIntlClientProvider>
 
           <AnalyticsProvider />

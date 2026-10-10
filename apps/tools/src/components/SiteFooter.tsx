@@ -24,6 +24,9 @@ export default function ToolsFooter({ locale = "en" }: { locale?: Locale }) {
       termsLabel={t.terms}
       refundLabel={t.refund}
       contactLabel={t.contact}
+      // No self-link to Tools (this app already IS the tools pages); FAQ
+      // lives on the main site, same reasoning as the four links above.
+      extraLinks={[{ href: "https://clearcutoff.in/faq", label: t.faq }]}
     />
   );
 }

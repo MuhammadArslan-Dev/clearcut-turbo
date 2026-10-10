@@ -31,7 +31,10 @@ export default function Footer({ alternatives }: { alternatives?: AlternativeSum
         // Absolute URL, deliberately not I18nLink's relative internal-route
         // form — /tools is a separate deployment (apps/tools), not a route
         // in this app, so it must render as a plain external-style link.
-        { href: "https://clearcutoff.in/tools", label: t("tools") },
+        // Bare /tools 404s: apps/tools has no page at its basePath root,
+        // only subroutes (confirmed in dev — only /tools/resizer,
+        // /tools/syllabus-tracker, etc. actually render).
+        { href: "https://clearcutoff.in/tools/resizer", label: t("tools") },
       ]}
     />
   );
