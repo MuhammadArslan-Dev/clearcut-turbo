@@ -88,7 +88,7 @@ export default function DailyTestWidget({
       </div>
 
       {/* Three quick reasons — reuses the icons already on this page. */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="hidden md:grid grid-cols-1 gap-2 sm:grid-cols-3">
         <FeatureChip icon={<Target size={20} className="text-brand" />} text={t("widget.chipTopics")} />
         <FeatureChip icon={<BarChart3 size={20} className="text-[var(--color-success-strong)]" />} text={t("widget.chipProgress")} />
         <FeatureChip icon={<Brain size={20} className="text-purple-500" />} text={t("widget.chipConsistency")} />

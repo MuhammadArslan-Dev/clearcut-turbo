@@ -7,7 +7,7 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { getStreak, StreakResponse } from "@/lib/dashboard/streak";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Check, Flame } from "lucide-react";
+import { Check, Flame, X } from "lucide-react";
 
 interface LearningStreakProps {
   title?: React.ReactNode;
@@ -89,41 +89,54 @@ const LearningStreak: React.FC<LearningStreakProps> = ({
       </div>
 
       <div ref={scrollContainerRef} className="flex justify-between gap-2 overflow-x-auto -mx-2 px-2 sm:px-4 sm:-mx-4 scrollbar-hide">
-        {streak.week.map((item, index) => (
-          <div
-            key={index}
-            ref={item.day.toLowerCase() === "today" ? todayRef : undefined}
-            className="flex flex-col items-center gap-1 flex-shrink-0"
-          >
-            {item.completed && item.day.toLowerCase() === "today" ? (
-              // Today, done: brand-blue ring with a tick (the past days keep the green tick).
-              <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full border-[3px] border-brand bg-white text-brand">
-                <Check size={20} strokeWidth={3} />
-              </div>
-            ) : item.completed ? (
-              <CircleTickIcon size={40} />
-            ) : (
-              <div
-                className={clsx(
-                  "w-[40px] h-[40px] rounded-full border",
-                  // Today (not completed yet) gets the brand ring, per the reference.
-                  item.day.toLowerCase() === "today" ? "border-2 border-brand" : "border-gray-300",
-                )}
-              />
-            )}
+        {(() => {
+          const todayIndex = streak.week.findIndex((d) => d.day.toLowerCase() === "today");
+          return streak.week.map((item, index) => {
+            const isToday = item.day.toLowerCase() === "today";
+            // A day only counts as "missed" (yellow cross) once it's actually
+            // in the past — a future day in the strip hasn't happened yet, so
+            // it stays a plain neutral circle instead of looking like a miss.
+            const isFuture = todayIndex !== -1 && index > todayIndex;
 
-            <div
-              className={clsx(
-                item.completed
-                  ? "body-small !font-semibold text-surface-gray-subtle"
-                  : "body-small font-normal text-surface-gray-muted",
-                item?.day.toLocaleLowerCase() === "today" ? "!text-brand !font-semibold" : "",
-              )}
-            >
-              {item.day}
-            </div>
-          </div>
-        ))}
+            return (
+              <div
+                key={index}
+                ref={isToday ? todayRef : undefined}
+                className="flex flex-col items-center gap-1 flex-shrink-0"
+              >
+                {item.completed && isToday ? (
+                  // Today, done: brand-blue ring with a tick (the past days keep the green tick).
+                  <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full border-[3px] border-brand bg-white text-brand">
+                    <Check size={20} strokeWidth={3} />
+                  </div>
+                ) : item.completed ? (
+                  <CircleTickIcon size={40} />
+                ) : isToday ? (
+                  // Not completed yet, but today isn't a missed day yet — plain brand ring.
+                  <div className="w-[40px] h-[40px] rounded-full border-2 border-brand" />
+                ) : isFuture ? (
+                  // Hasn't happened yet — plain neutral circle, not a miss.
+                  <div className="w-[40px] h-[40px] rounded-full border border-gray-300" />
+                ) : (
+                  <div className="w-[40px] h-[40px] rounded-full border border-yellow-400 bg-yellow-50 flex items-center justify-center">
+                    <X size={18} strokeWidth={2.5} className="text-yellow-600" />
+                  </div>
+                )}
+
+                <div
+                  className={clsx(
+                    item.completed
+                      ? "body-small !font-semibold text-surface-gray-subtle"
+                      : "body-small font-normal text-surface-gray-muted",
+                    isToday ? "!text-brand !font-semibold" : "",
+                  )}
+                >
+                  {item.day}
+                </div>
+              </div>
+            );
+          });
+        })()}
       </div>
 
       <div className="flex flex-col items-center">
