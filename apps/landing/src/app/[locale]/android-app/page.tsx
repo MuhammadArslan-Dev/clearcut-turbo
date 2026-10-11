@@ -4,6 +4,7 @@ import AppDownloadPage from "@/components/pages/app-download/AppDownloadPage";
 import AppDownloadFloatingButton from "@/components/sections/app-download/AppDownloadFloatingButton";
 import { generateSeoMetadata } from "@/lib/seo/metadata";
 import { toLocale, type Locale } from "@/lib/i18n/config";
+import { getAppDownloadFaqItems } from "@/lib/data/appDownloadFaq";
 import JsonLd from "@clearcut/ui/json-ld";
 
 export const dynamic = "force-static";
@@ -57,9 +58,20 @@ export default async function AndroidAppPage({ params }: { params: Promise<{ loc
   const { locale } = await params;
   const resolvedLocale = toLocale(locale);
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: getAppDownloadFaqItems("android", resolvedLocale).map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
   return (
     <>
       <JsonLd data={softwareAppSchema} />
+      <JsonLd data={faqSchema} />
       <Header items={items} />
       <AppDownloadPage platform="android" locale={resolvedLocale} />
       <AppDownloadFloatingButton platform="android" locale={resolvedLocale} />
