@@ -20,10 +20,11 @@ import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
 export default function CategoryPage({ category, locale = "en" }: { category: ResizerCategory; locale?: Locale }) {
   const t = getDict(locale).category;
   const label = getCategoryLabel(category.label, locale);
-  const searchableExams = category.exams.map(({ slug, shortName, fullName, photoSpec }) => ({
+  const searchableExams = category.exams.map(({ slug, shortName, fullName, icon, photoSpec }) => ({
     slug,
     shortName,
     fullName,
+    icon,
     photoSpec,
   }));
 

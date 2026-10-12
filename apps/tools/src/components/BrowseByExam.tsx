@@ -92,10 +92,11 @@ function CategoryCard({
 export default async function BrowseByExam({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).browse;
   const [categories, exams] = await Promise.all([getResizerCategories(), getResizerExams()]);
-  const searchableExams = exams.map(({ slug, shortName, fullName, photoSpec }) => ({
+  const searchableExams = exams.map(({ slug, shortName, fullName, icon, photoSpec }) => ({
     slug,
     shortName,
     fullName,
+    icon,
     photoSpec,
   }));
 

@@ -14,6 +14,7 @@ export interface SearchableExam {
   slug: string;
   shortName: string;
   fullName: string;
+  icon: string | null;
   photoSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
 }
 
