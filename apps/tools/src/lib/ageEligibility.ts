@@ -42,6 +42,8 @@ export type AgeEligibilityExam = {
   slug: string;
   shortName: string;
   fullName: string;
+  /** Logo URL from the backend's exams.icon, or null when the sheet hasn't set one. */
+  icon: string | null;
   conductingBody: string;
   group: ExamGroup;
   year: number;

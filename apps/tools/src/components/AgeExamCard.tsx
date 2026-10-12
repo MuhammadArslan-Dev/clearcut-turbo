@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import Text from "@clearcut/ui/text";
 import type { AgeEligibilityExam } from "@/lib/ageEligibility";
@@ -45,9 +46,21 @@ export default function AgeExamCard({
           </span>
         )}
       </div>
-      <Text as="p" variant="heading-small" weight="bold" color="gray-normal" className="group-hover:text-brand transition-colors">
-        {exam.shortName}
-      </Text>
+      <div className="flex items-center gap-2">
+        {exam.icon && (
+          <Image
+            src={exam.icon}
+            alt=""
+            width={28}
+            height={28}
+            unoptimized
+            className="h-7 w-7 shrink-0 rounded-md object-contain"
+          />
+        )}
+        <Text as="p" variant="heading-small" weight="bold" color="gray-normal" className="group-hover:text-brand transition-colors">
+          {exam.shortName}
+        </Text>
+      </div>
       <Text as="p" variant="body-small" color="gray-muted">
         {exam.fullName}
       </Text>

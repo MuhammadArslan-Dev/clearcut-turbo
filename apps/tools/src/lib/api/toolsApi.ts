@@ -21,6 +21,7 @@ interface ApiEnvelope<T> {
 
 interface ApiExamRef {
   exam_slug: string;
+  icon: string | null;
   short_name: string;
   full_name: string;
   conducting_body: string | null;
@@ -241,6 +242,7 @@ async function loadResizerData(): Promise<ResizerData> {
       slug: detail.public_slug,
       shortName: detail.exam.short_name,
       fullName: detail.exam.full_name,
+      icon: detail.exam.icon,
       category: categoryLabel,
       photoSpec,
       signatureSpec,
@@ -410,6 +412,7 @@ async function loadAgeEligibilityData(): Promise<AgeEligibilityData> {
       slug: detail.public_slug,
       shortName: detail.exam.short_name,
       fullName: detail.exam.full_name,
+      icon: detail.exam.icon,
       conductingBody: detail.exam.conducting_body ?? "",
       // The exam's category in the backend is the source of truth for its
       // group; data.group (a display name) is only a fallback.

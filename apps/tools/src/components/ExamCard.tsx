@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Text from "@clearcut/ui/text";
 import { ResizerExamSpec } from "@/lib/resizerExams";
 import { Locale } from "@/lib/dictionary";
@@ -31,7 +32,10 @@ function ArrowIcon() {
 // reuse this exact card from the small {slug, shortName, photoSpec} record
 // it keeps in localStorage, without needing an exam's fullName/category/
 // signatureSpec/faqs just to satisfy the type.
-type ExamCardData = Pick<ResizerExamSpec, "slug" | "shortName" | "photoSpec">;
+// `icon` is optional (not part of the Pick) because the recent-exams feature
+// reuses this card from its small localStorage record (RecentExamEntry),
+// which predates the icon field and never stored one.
+type ExamCardData = Pick<ResizerExamSpec, "slug" | "shortName" | "photoSpec"> & { icon?: string | null };
 
 // Every exam has its own photo dimensions — surfacing them right on the card
 // (not just after a click) is the point: it tells a candidate at a glance
@@ -47,8 +51,12 @@ export default function ExamCard({ exam, locale = "en" }: { exam: ExamCardData; 
       className="group relative flex flex-col gap-3 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:border-brand hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] hover:-translate-y-1"
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/8 text-brand transition-colors duration-200 group-hover:bg-brand group-hover:text-white">
-          <ExamCardIcon />
+        <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-brand/8 text-brand transition-colors duration-200 group-hover:bg-brand group-hover:text-white">
+          {exam.icon ? (
+            <Image src={exam.icon} alt="" width={36} height={36} unoptimized className="h-full w-full object-contain" />
+          ) : (
+            <ExamCardIcon />
+          )}
         </div>
         <span className="text-brand opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
           <ArrowIcon />

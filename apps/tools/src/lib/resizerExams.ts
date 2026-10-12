@@ -38,6 +38,8 @@ export interface ResizerExamSpec {
   slug: string;
   shortName: string;
   fullName: string;
+  /** Logo URL from the backend's exams.icon, or null when the sheet hasn't set one. */
+  icon: string | null;
   /** Groups exams for the hub page's browse list — purely presentational. */
   category: string;
   photoSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
