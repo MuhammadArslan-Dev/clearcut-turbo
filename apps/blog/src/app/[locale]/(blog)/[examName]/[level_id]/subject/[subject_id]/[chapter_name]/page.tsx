@@ -40,8 +40,7 @@ export async function generateMetadata({
     locale,
     path,
     title: `${chapterLabel} - ${subjectLabel} ${examLabel} ${levelLabel} Questions`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description: `${chapterLabel} practice questions from ${subjectLabel} for ${examLabel} Exam ${levelLabel}, free on Clear Cutoff.`,
   });
 }
 

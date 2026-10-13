@@ -36,8 +36,7 @@ export async function generateMetadata({
     locale,
     path,
     title: `${subjectLabel} - ${examLabel} ${levelLabel} Questions`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description: `${subjectLabel} practice questions for ${examLabel} Exam ${levelLabel}, free on Clear Cutoff.`,
   });
 }
 export default async function page({

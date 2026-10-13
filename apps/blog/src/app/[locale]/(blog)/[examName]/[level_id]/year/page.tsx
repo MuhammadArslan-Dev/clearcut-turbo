@@ -44,8 +44,7 @@ export async function generateMetadata({
     locale,
     path,
     title: `${examLabel} Exam ${levelLabel} - Year Wise Papers`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description: `${examLabel} Exam ${levelLabel} year-wise previous papers and practice questions, free on Clear Cutoff.`,
   });
 }
 

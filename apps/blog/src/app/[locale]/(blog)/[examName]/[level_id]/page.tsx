@@ -52,8 +52,7 @@ export async function generateMetadata({
 
   return {
     title: `${examLabel} Exam ${levelLabel}`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description: `${examLabel} exam ${levelLabel} — practice questions, test series, and year-wise papers, free on Clear Cutoff.`,
 
     alternates: {
       canonical: canonicalUrl,

@@ -23,7 +23,7 @@ export async function generateMetadata({
     path,
     title: "Teaching Exam Preparation - CTET, HTET & More",
     description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+      "Prepare for CTET, HTET and other teaching exams with free practice questions, test series, and previous year papers on Clear Cutoff.",
   });
 }
 

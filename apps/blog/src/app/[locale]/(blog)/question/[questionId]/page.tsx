@@ -10,7 +10,7 @@ import { siteConfig } from "@/lib/metadata";
 import { apiFetch } from "@/lib/api/api2";
 import { permanentRedirect } from "@/i18n/navigation";
 import { formatToSlug, formatStageLabel, sanitizeAiSlug } from "@/utils/slugify";
-import { limitWords } from "@clearcut/utils/text-limit";
+import { limitChars, limitWords } from "@clearcut/utils/text-limit";
 import { capitalizeFirst } from "@clearcut/utils/text-format";
 import { AppLocale } from "@/types/components/language";
 
@@ -54,15 +54,26 @@ export async function generateMetadata({
     ? `${questionTitleText} - ${examTitlePart}`
     : questionTitleText;
 
+  // Per-question description, built from the actual question text so each
+  // page's description/OG tags differ — a shared generic string across
+  // thousands of question pages is what caused Search Console to flag these
+  // as duplicates without a user-selected canonical and discard the
+  // self-referencing canonical above.
+  const slugTranslation = selectedQuestion?.translations?.[0];
+  const plainQuestion = (slugTranslation?.question || "").replace(/<[^>]*>/g, "").trim();
+  const fallbackDescription =
+    "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.";
+  const description = plainQuestion
+    ? limitChars(plainQuestion, 155)
+    : fallbackDescription;
+
   return {
     title,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description,
 
     openGraph: {
-      title: siteConfig.name,
-      description:
-        "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+      title,
+      description,
       url: canonicalUrl,
       siteName: siteConfig.name,
       images: [

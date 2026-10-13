@@ -80,15 +80,16 @@ export async function generateMetadata({
   // bare title here to avoid a doubled site name.
   const examLabel = unFormatSlug(examName ?? "").toUpperCase();
 
+  const title = `${examLabel} Exam`;
+  const description = `${examLabel} exam preparation — practice questions, test series, and previous year papers, free on Clear Cutoff.`;
+
   return {
-    title: `${examLabel} Exam`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    title,
+    description,
 
     openGraph: {
-      title: siteConfig.name,
-      description:
-        "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+      title,
+      description,
       url: canonicalUrl,
       siteName: siteConfig.name,
       images: [

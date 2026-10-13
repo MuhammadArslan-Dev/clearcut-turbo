@@ -39,8 +39,7 @@ export async function generateMetadata({
     locale,
     path,
     title: `${examLabel} Exam ${levelLabel} ${year_id ?? ""} - Questions & Answers`,
-    description:
-      "Explore Complete Courses & Test Series for Teaching Exams and get started for FREE.",
+    description: `${examLabel} Exam ${levelLabel} ${year_id ?? ""} previous year questions and answers, free on Clear Cutoff.`,
   });
 }
 
