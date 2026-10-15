@@ -39,6 +39,12 @@ export function createApiClient(config: ApiClientConfig): AxiosInstance {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      // Lets the backend attribute server-side analytics events (e.g. the
+      // Login event, AuthController::varifyOtp) to "web" — the RN app's own
+      // client sets this to "ios"/"android" instead (Services/apiService.ts,
+      // separate repo). Every app using this factory gets it automatically;
+      // no per-app wiring needed.
+      "X-Platform": "web",
       ...config.headers,
     },
   });
