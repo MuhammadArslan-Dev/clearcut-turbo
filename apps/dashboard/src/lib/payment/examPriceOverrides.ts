@@ -37,6 +37,15 @@ export const EXAM_PRICE_OVERRIDES: Record<
   // Razorpay/backend records reads "HPTET Monthly" regardless of which of
   // these two exams the subscriber actually bought.
   MAHATET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
+  // Same sharing pattern as MAHATET/HPTET above — HTET reuses the existing
+  // planId 2 ("HPTET Monthly", ₹149/mo) rather than a new subscription_plans
+  // row, since the amount matches exactly.
+  HTET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
+  // Key is "UGC", matching this exam's actual DB short_name (confirmed via
+  // the exams table — it's "UGC", not "UGCNET"/"UGC NET"). planId 3 is a
+  // new subscription_plans row (₹249/mo, "UGC NET Monthly") since no
+  // existing plan matched this amount.
+  UGC: { onetime1Month: 449, oneYear: 1999, planId: 3, recurringMonthly: 249 },
 };
 
 export const DEFAULT_SUBSCRIPTION_PLAN_ID = 1;
