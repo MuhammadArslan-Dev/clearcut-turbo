@@ -165,7 +165,7 @@ Each app imports the shared tokens **first** so its own later definitions win th
 
 ## Testing
 
-Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not a single root test runner. Currently only `packages/utils` and `packages/state` have tests; every other package and all four apps have none. `pnpm test` (via `turbo run test`) runs whichever packages define the script and skips the rest — this is expected, not a misconfiguration.
+Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not a single root test runner. `packages/utils` and `packages/state` have tests; `apps/blog` gained a minimal Vitest setup 2026-10-16 (its own `vitest.config.ts` with a `"@"` alias, since Vite doesn't read `tsconfig.json` paths) for `lib/sitemap/build-questions-sitemap-xml.test.ts` — see `docs/DEVELOPMENT_RULES.md` §10 before adding a second test file there. Every other package and the other three apps still have none. `pnpm test` (via `turbo run test`) runs whichever packages define the script and skips the rest — this is expected, not a misconfiguration.
 
 ## CI
 

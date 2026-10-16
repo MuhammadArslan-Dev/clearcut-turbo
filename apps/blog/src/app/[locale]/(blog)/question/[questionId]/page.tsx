@@ -30,9 +30,13 @@ export async function generateMetadata({
 
   // Same query the page component itself fetches — Next's request
   // memoization collapses this into a single network call per request.
+  // `revalidate: 3600` matches every sibling blog route (chapter, year,
+  // subject, exam pages): this is a public, unauthenticated read that's
+  // identical for every visitor, so there's nothing to invalidate per-request.
   const numericId = (questionId ?? "").split("-").pop();
   const metaData = await apiFetch(
     `/blog/get-questions?id=${numericId}&limit_q=2`,
+    { revalidate: 3600 },
   );
   const selectedQuestion = metaData?.data?.find(
     (item: any) => item.id === parseInt(numericId || ""),
@@ -108,7 +112,11 @@ export default async function page({
   const questionId = str.split("-").pop();
   const query = `id=${questionId}&limit_q=2`;
 
-  const data = await apiFetch(`/blog/get-questions?${query}`);
+  // Same cache window as generateMetadata's fetch above and every sibling
+  // blog route — see the comment there for why this is safe to cache.
+  const data = await apiFetch(`/blog/get-questions?${query}`, {
+    revalidate: 3600,
+  });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const homeUrl = siteUrl;

@@ -18,6 +18,8 @@ async function fetchJson(url: string): Promise<any> {
   }
 }
 
+type SitemapUrl = { loc: string; lastmod?: string };
+
 // Walks exam -> level -> subject -> chapter -> question and returns the full
 // <urlset> XML for every question page (en + hi) under that exam. Shared by
 // sitemaps/ctet-questions.xml/route.ts and the "-questions" branch of
@@ -27,7 +29,7 @@ export async function buildQuestionsSitemapXml(
   examSlug: string,
   baseUrl: string,
 ): Promise<string> {
-  const urls: string[] = [];
+  const urls: SitemapUrl[] = [];
   const seenIds = new Set<number>();
 
   try {
@@ -89,7 +91,19 @@ export async function buildQuestionsSitemapXml(
               formatToSlug(limitWords(plain, 4));
             const param = `${slug}-${q.id}`;
 
-            urls.push(`${baseUrl}/question/${param}`, `${baseUrl}/hi/question/${param}`);
+            // Genuine value only — never Date.now()/new Date() as a stand-in.
+            // A question with no real translation.updated_at (not yet
+            // backfilled, or absent from this particular payload) gets no
+            // <lastmod> at all rather than a fabricated one.
+            const lastmod =
+              typeof translation.updated_at === "string" && translation.updated_at
+                ? translation.updated_at
+                : undefined;
+
+            urls.push(
+              { loc: `${baseUrl}/question/${param}`, lastmod },
+              { loc: `${baseUrl}/hi/question/${param}`, lastmod },
+            );
           }
         }
       }
@@ -108,7 +122,11 @@ export async function buildQuestionsSitemapXml(
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
   .slice(0, MAX_SITEMAP_URLS)
-  .map((url) => `  <url>\n    <loc>${url}</loc>\n  </url>`)
+  .map((url) =>
+    url.lastmod
+      ? `  <url>\n    <loc>${url.loc}</loc>\n    <lastmod>${url.lastmod}</lastmod>\n  </url>`
+      : `  <url>\n    <loc>${url.loc}</loc>\n  </url>`,
+  )
   .join("\n")}
 </urlset>`;
 }

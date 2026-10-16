@@ -17,6 +17,7 @@ import CourseCard from "../ui/exam/CourseCard";
 import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import CheckIcon from "../ui/icons/check-icon";
+import { ALLOWED_EXAMS } from "@/lib/exams";
 
 const ExamCourseCard = ({
   item,
@@ -133,12 +134,21 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
     router.push(`/${formattedId}`);
   };
 
-  const centralExams = data?.filter(
+  // Only show exams that have a real exam page to land on. `onSelect` below
+  // routes to `/${formatToSlug(short_name)}`, and that route redirects home
+  // for anything outside `ALLOWED_EXAMS` (see [examName]/page.tsx) — without
+  // this filter, exams like REET render a card here whose only destination
+  // is a dead-end bounce back to this same page.
+  const allowedData = data?.filter((item) =>
+    ALLOWED_EXAMS.includes(formatToSlug(item.short_name)),
+  );
+
+  const centralExams = allowedData?.filter(
     (item) =>
       item.state.toLowerCase().includes("india") &&
       item.status.toLowerCase().includes("active"),
   );
-  const stateExams = data
+  const stateExams = allowedData
     ?.filter(
       (item) =>
         !item.state.toLowerCase().includes("india") &&
