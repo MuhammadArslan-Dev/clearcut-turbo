@@ -327,6 +327,7 @@ export function createOtpScreen({
                       }}
                       inputType="phone"
                       maxLength={OTP_LENGTH}
+                      autoComplete="one-time-code"
                     />
                   </div>
                   {/* error or success */}

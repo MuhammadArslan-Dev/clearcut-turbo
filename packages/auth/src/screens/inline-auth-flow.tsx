@@ -299,7 +299,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
               <div className="w-[240px]">
                 <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)] mb-1">4-digit OTP</p>
                 <div className="w-full">
-                  <MainInput error={error} showError={false} value={otp} placeholder="4 digit OTP" onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); setOtp(val); if (val.length === OTP_LENGTH) handleVerify(val); }} inputType="phone" maxLength={4} className="w-full" />
+                  <MainInput error={error} showError={false} value={otp} placeholder="4 digit OTP" onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); setOtp(val); if (val.length === OTP_LENGTH) handleVerify(val); }} inputType="phone" maxLength={4} autoComplete="one-time-code" className="w-full" />
                 </div>
                 {error && <p className={`text-sm w-full text-left max-w-[335px] ${error ? "text-red-600" : "text-green-600"}`}>{error}</p>}
                 <Text as="p" variant="body-small" color="gray-muted" className="text-center mt-2">

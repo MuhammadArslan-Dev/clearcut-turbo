@@ -60,7 +60,18 @@ export default function OtpBoxInput({
   };
 
   const handleChange = (index: number, raw: string) => {
-    const digit = raw.replace(/\D/g, "").slice(-1);
+    const digits = raw.replace(/\D/g, "");
+
+    // Keyboard OTP suggestions (iOS "From Messages", Android keyboard chip)
+    // insert the whole code into the focused box at once — treat it like a
+    // paste. Boxes carry no maxLength so the browser doesn't truncate it first.
+    if (digits.length >= length) {
+      onChange(digits.slice(-length));
+      inputRefs.current[length - 1]?.focus();
+      return;
+    }
+
+    const digit = digits.slice(-1);
 
     if (!digit) {
       // Cleared via selection/delete rather than Backspace-on-empty.
@@ -132,7 +143,6 @@ export default function OtpBoxInput({
             }}
             type="tel"
             inputMode="numeric"
-            maxLength={1}
             autoComplete="one-time-code"
             value={value[i] ?? ""}
             disabled={disabled}

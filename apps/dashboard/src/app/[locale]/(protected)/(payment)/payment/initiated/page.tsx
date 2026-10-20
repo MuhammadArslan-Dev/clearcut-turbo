@@ -20,6 +20,7 @@ import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEvent, trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
+import { computeMetaPurchaseValue } from "@/lib/payment/metaPurchaseConfig";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { recordCheckoutInitiated, recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
@@ -454,10 +455,29 @@ export default function InitiatedPage() {
             exam_name: data?.short_name ?? "",
             payment_session_id: response.razorpay_payment_id,
           });
+          // selectedPrice is the real, final charged amount (never a list
+          // price) — the Razorpay subscription's own order amount. Both
+          // Subscribe's `value`/`predicted_ltv` and the Purchase below use
+          // the same rounded, SUBSCRIPTION_VALUE_MULTIPLIER-scaled number
+          // (configurable in metaPurchaseConfig.ts) rather than a separate
+          // hardcoded ×2 for predicted_ltv.
+          const subscribeValue = computeMetaPurchaseValue(selectedPrice, "1month");
           trackFacebookEventWithUserData("Subscribe", {
-            value: selectedPrice,
+            value: subscribeValue,
             currency: "INR",
-            predicted_ltv: selectedPrice * 2,
+            predicted_ltv: subscribeValue,
+          });
+          // Ads optimize on Purchase only — Subscribe alone never fired
+          // Purchase for autopay subscriptions, so every paid plan now
+          // sends one. This `handler` only runs for the browser Razorpay
+          // checkout popup on the user's FIRST payment; autopay renewals
+          // are charged server-side via webhook and never reach this code,
+          // so no separate "first payment only" guard is needed here.
+          trackFacebookEventWithUserData("Purchase", {
+            value: subscribeValue,
+            currency: "INR",
+            amount_paid: selectedPrice,
+            plan: "monthly_autopay",
           });
           setRedirecting(true);
           router.push(
