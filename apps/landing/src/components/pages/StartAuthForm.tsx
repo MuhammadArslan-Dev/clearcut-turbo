@@ -568,7 +568,7 @@ export default function StartAuthForm({
       if (status === 422 || status === 401) {
         setError(t.errOtpInvalid);
         // Most often the keyboard chip's code from a previous login — clear
-        // it and refocus so the chip picks up the new SMS.
+        // it and remount the boxes (OtpBoxInput refocusKey).
         setOtp("");
         setOtpRefocusKey((k) => k + 1);
       } else if (status && status >= 500) {

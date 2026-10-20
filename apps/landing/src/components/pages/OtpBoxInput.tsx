@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { refocusForNewOtpChip } from "@clearcut/auth/otp-chip-refresh";
 
 // Same colour tokens @clearcut/ui/main-input uses, so this reads as the same
 // input style, just laid out as separate boxes instead of one field.
@@ -21,9 +20,10 @@ interface OtpBoxInputProps {
   error?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
-  /** Bump after a wrong/expired OTP: the first box is blurred and focused
-   * again so the keyboard's OTP chip is rebuilt from the newest SMS
-   * (@clearcut/auth/otp-chip-refresh). */
+  /** Bump after a wrong/expired OTP: the boxes remount as new elements (so
+   * Chrome builds a fresh keyboard OTP chip instead of re-offering the code
+   * it already filled) and the first box is focused. No blur(): on Android
+   * that closes the keyboard and a scripted focus() can't reopen it. */
   refocusKey?: number;
 }
 
@@ -53,7 +53,7 @@ export default function OtpBoxInput({
 
   useEffect(() => {
     if (refocusKey === 0) return;
-    refocusForNewOtpChip(() => inputRefs.current[0]);
+    inputRefs.current[0]?.focus();
   }, [refocusKey]);
 
   const setDigitAt = (index: number, digit: string) => {
@@ -148,7 +148,11 @@ export default function OtpBoxInput({
 
         return (
           <input
-            key={i}
+            key={`${refocusKey}-${i}`}
+            // A new name too: Chrome's autofill identifies a field by its
+            // name/id, not only the DOM element.
+            name={`otp-${refocusKey}-${i}`}
+            id={`otp-${refocusKey}-${i}`}
             ref={(el) => {
               inputRefs.current[i] = el;
             }}
