@@ -2,6 +2,7 @@
 import Header from "@/components/layout/headers/Header";
 import SectionBlock from "@/components/sectionblock";
 import { Metadata } from "next";
+import { pageTitle } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -35,7 +36,7 @@ const data = `How to Delete Your Clear Cutoff Account<br />Clear Cutoff allows u
 
 // SEO for this page
 export const metadata: Metadata = {
-  title: "Account & Data Deletion Request | Clear Cutoff",
+  title: pageTitle("Account & Data Deletion Request | Clear Cutoff"),
   description:
     "Request permanent deletion of your Clear Cutoff account and personal data. Delete via the app or email hi@clearcutoff.in. Data is removed within 7–30 days.",
   keywords: [

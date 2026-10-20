@@ -10,7 +10,7 @@
 |---|---|---|---|
 | `apps/blog` | Next.js 16 App Router, Tailwind v4, next-intl | Learner-facing content: exam question banks by exam/year/section, CMS blog posts. Also has an `(admin)/admin` route group | Cloudflare Worker `clearcut-blog` via OpenNext (`apps/blog/wrangler.jsonc`, `.github/workflows/deploy-blog-cloudflare.yml`, manual trigger). Domain: `academy.clearcutoff.in` |
 | `apps/dashboard` | Next.js 16, Tailwind v4, next-intl, Amplitude, Sentry | Logged-in product: onboarding, preparation, test series/exams, payments, profile, downloadable content | `nixpacks.toml` at repo root (build: `pnpm turbo run build --filter=dashboard`) |
-| `apps/landing` | Next.js 16, Tailwind v4, Radix UI + CVA, next-intl | Public marketing site: home, `exam/[slug]`, `compare`, `alternatives`, `faq`, `start`, `teaching`, `resize-image`, legal pages | No deploy config in this repo |
+| `apps/landing` | Next.js 16, Tailwind v4, Radix UI + CVA, next-intl | Public marketing site: home, `exam/[slug]`, `compare`, `alternatives`, `faq`, `start`, `teaching`, `htet/*` info pages, legal pages | No deploy config in this repo |
 | `apps/tools` | Next.js 16, `output: "export"`, `basePath: "/tools/resizer"` | Static browser tools: photo/signature resizer (`resizer/*`), `age-eligibility-calculator`, `syllabus-tracker`; own `en`/`hi`/`mr` route folders | Cloudflare Pages project `clearcut-tools`, fronted by Worker `clearcut-tools-router` (`apps/tools/worker`) on `clearcutoff.in/tools/*` |
 
 ## Shared packages (`packages/*`, consumed as TypeScript source, no build)

@@ -247,6 +247,18 @@
   --color-danger-subtle: #f04438;
   --color-danger-muted: #f96c62;
 
+  /* Exact literals apps/dashboard's exam-report OptionCard.tsx already uses to
+     mark a revealed correct/incorrect answer option (hardcoded hex at that
+     call site, not yet tokenised there). Added here so apps/blog's Academy
+     section page can match that exact visual language via var() instead of
+     introducing its own new hardcoded literals — --color-success/-danger
+     above are the general-purpose status palette and are NOT byte-identical
+     to these (different, slightly different-looking green/red). */
+  --color-answer-correct-border: #15803d;
+  --color-answer-correct-bg: #dcfce7;
+  --color-answer-incorrect-border: #b91c1c;
+  --color-answer-incorrect-bg: #fee2e2;
+
   --color-warning: #c65c10;
   --color-warning-strong: #9a5b13;
   --color-warning-subtle: #e9690c;
@@ -343,6 +355,13 @@
   --color-gray-bg-soft: #edf0f3;
   --color-neutral-bg-soft: rgba(159, 166, 173, 0.12);
   --color-warning-bg-soft: rgba(154, 91, 19, 0.12);
+
+  /* Light-yellow highlight for attention-but-not-error actions (blog
+     "Report a mistake"). The warning family above reads amber/beige on
+     white, not yellow. Text on bg is ~7:1 contrast. */
+  --color-highlight-yellow-bg: #fef9c3;
+  --color-highlight-yellow-border: #facc15;
+  --color-highlight-yellow-text: #854d0e;
 
   /* ================= Form-control palette (legacy Bootstrap-derived) =========
      packages/ui/src/main-input.tsx carried its own local `colors` map with

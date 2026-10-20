@@ -33,9 +33,14 @@ export const dynamicParams = true;
 /** Normalise an exam short_name into a URL code, e.g. "UP PGT" -> "uppgt". */
 const examCode = (shortName: string) => shortName.toLowerCase().replace(/\s+/g, "");
 
-/** Resolve the exam referenced by a slug like "htet-preparation" from the course data. */
+/** Resolve the exam referenced by a slug like "htet-preparation" from the course data.
+ * Only the exact "<code>-preparation" slug resolves: matching on the first
+ * segment alone rendered the same page (self-canonical) at /exam/htet,
+ * /exam/htet-anything, … The old "<code>-<year>" and bare "<code>" URLs 301
+ * here from next.config.ts. */
 function resolveExam(slug: string) {
   const code = slug.split("-")[0].toLowerCase();
+  if (slug.toLowerCase() !== `${code}-preparation`) return undefined;
   return STATIC_EXAMS.find((e) => examCode(e.short_name) === code);
 }
 
@@ -53,6 +58,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: copy.description(full),
     keywords: [name, full, "teaching exam", "Clear Cutoff", `${name} preparation`, `${name} 2026`],
     url: `/exam/${slug}`,
+    // The marketing page is fully translated on /hi and /mr — self-canonical.
+    locale: resolvedLocale,
   });
 }
 

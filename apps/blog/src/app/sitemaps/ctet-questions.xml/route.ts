@@ -1,22 +1,19 @@
-import { NextResponse } from "next/server";
-import { buildQuestionsSitemapXml } from "@/lib/sitemap/build-questions-sitemap-xml";
+import { buildExamChaptersSitemapXml } from "@/lib/sitemap/exam-sitemaps";
+import { sitemapUnavailable, xmlResponse } from "@/lib/sitemap/xml";
 
-const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
-
-// Isolated from sitemap.ts / sitemaps/[examName] on purpose: CTET's question
-// bank runs into the thousands (a single chapter can hold 400+ questions),
-// so this walks exam -> paper -> subject -> chapter -> question, meaning
-// dozens of backend round trips. Keeping it in its own route means a slow or
-// failed run here can never take down the main sitemap.xml, which every
-// other already-indexed page depends on.
-export const revalidate = 86400;
-// Extends the Vercel function timeout for this route specifically (only
-// takes effect on plans that allow it — ignored elsewhere).
-export const maxDuration = 300;
-
+// Kept at its original URL (already listed in the sitemap index). It used to
+// list every /question/<slug>-<id> URL; those now 301 to their chapter page,
+// so it lists the canonical chapter pages instead.
+//
+// No `revalidate` export on purpose: with one, this was pre-rendered during
+// `next build` (the slowest build step), and a backend failure at that moment
+// would have been baked in. Rendered on request; the backend reads underneath
+// are still cached (see load-exam-index.ts).
 export async function GET() {
-  const xml = await buildQuestionsSitemapXml("ctet", BASE_URL);
-  return new NextResponse(xml, {
-    headers: { "Content-Type": "application/xml" },
-  });
+  try {
+    return xmlResponse(await buildExamChaptersSitemapXml("ctet"));
+  } catch (error) {
+    console.error("ctet-questions sitemap generation failed:", error);
+    return sitemapUnavailable();
+  }
 }

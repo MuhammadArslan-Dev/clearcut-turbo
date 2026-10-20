@@ -1,10 +1,17 @@
 import { Metadata } from "next";
+import { localeAlternates } from "./locale-alternates";
 
 type LocaleSEOOptions = {
   locale?: string;
   path: string; // e.g. "ctet/level-1/year"
   title: string;
   description: string;
+  /** Valid but empty pages stay reachable but out of the index. */
+  noindex?: boolean;
+  /** Whether /hi renders genuinely Hindi main content. Off for every current
+   * caller (home + question-bank pages show the English questions on /hi),
+   * so /hi canonicalizes to English — see localeAlternates. */
+  hiTranslated?: boolean;
 };
 
 export function generateLocaleMetadata({
@@ -12,23 +19,20 @@ export function generateLocaleMetadata({
   path,
   title,
   description,
+  noindex = false,
+  hiTranslated = false,
 }: LocaleSEOOptions): Metadata {
-  // Trim a trailing slash off the base and normalise `path` to a single
-  // leading slash. Previously this built `${base}/${cleanPath}` where
-  // cleanPath already began with "/", emitting a double slash
-  // ("https://site//ctet") — Lighthouse scored `canonical` 0 on every page
-  // because that URL isn't the page's own address.
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
-  const cleanPath = path ? `/${path.replace(/^\/+/, "")}` : "";
-
-  const enUrl = `${base}${cleanPath}` || "/";
-  const hiUrl = `${base}/hi${cleanPath}`;
-
-  const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
+  const { canonical: canonicalUrl, languages } = localeAlternates({
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
+    path,
+    locale,
+    hiTranslated,
+  });
 
   return {
     title,
     description,
+    ...(noindex ? { robots: { index: false, follow: true } } : {}),
 
     openGraph: {
       title,
@@ -48,11 +52,7 @@ export function generateLocaleMetadata({
 
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        en: enUrl,
-        hi: hiUrl,
-        "x-default": enUrl,
-      },
+      ...(languages ? { languages } : {}),
     },
   };
 }

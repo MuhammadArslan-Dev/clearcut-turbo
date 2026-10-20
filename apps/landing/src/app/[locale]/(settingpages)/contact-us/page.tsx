@@ -2,6 +2,7 @@
 import Header from "@/components/layout/headers/Header";
 import SectionBlock from "@/components/sectionblock";
 import { Metadata } from "next";
+import { pageTitle } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -32,7 +33,7 @@ const data = `<p>We'd love to hear from you! Whether you have a question, feedba
 
 // SEO for this page
 export const metadata: Metadata = {
-  title: "Contact Us | Clear Cutoff",
+  title: pageTitle("Contact Us | Clear Cutoff"),
   description:
     "Get in touch with Clear Cutoff. Reach us by phone, email, or WhatsApp — Monday to Friday, 9 AM–5 PM IST. We respond within 24 business hours.",
   keywords: ["contact Clear Cutoff", "Clear Cutoff support", "teaching exam help"],

@@ -439,3 +439,12 @@ body {
   max-width: 100%;
   height: auto;
 }
+
+/* Question-bank pages render a question's English and Hindi translations
+   (when they differ) on the server, each tagged data-tr="en" | "hi";
+   CourseLangScope sets data-course-lang from the visitor's course language
+   and this hides the other one. data-tr="both" always shows. */
+[data-course-lang="en"] [data-tr="hi"],
+[data-course-lang="hi"] [data-tr="en"] {
+  display: none !important;
+}

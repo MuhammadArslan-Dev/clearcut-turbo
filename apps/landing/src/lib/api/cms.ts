@@ -64,6 +64,30 @@ export async function getComparisonSlugs(): Promise<string[]> {
   return data?.docs?.map((doc) => doc.slug) ?? [];
 }
 
+/**
+ * Whether a comparison/alternatives page has its own Hindi copy. The CMS
+ * localizes en + hi only (clearcut-cms payload.config.ts) with `fallback:
+ * true`, so a `locale=hi` read silently returns English for untranslated
+ * fields — and "mr" isn't a CMS locale at all. Reading hi with fallback
+ * disabled shows whether the page's headline (`hero.title`, required in the
+ * English copy) was actually translated.
+ */
+export async function hasHindiTranslation(collection: "comparisons" | "alternatives", slug: string): Promise<boolean> {
+  const query = new URLSearchParams({
+    "where[slug][equals]": slug,
+    locale: "hi",
+    "fallback-locale": "none",
+    depth: "0",
+    limit: "1",
+    "select[hero]": "true",
+  });
+
+  const data = await payloadFetch<PayloadListResponse<{ hero?: { title?: string | null } }>>(
+    `/api/${collection}?${query.toString()}`,
+  );
+  return Boolean(data?.docs?.[0]?.hero?.title?.trim());
+}
+
 export async function getMarketingProof(locale: string = "en"): Promise<MarketingProof | null> {
   const query = new URLSearchParams({ locale, depth: "2" });
   return payloadFetch<MarketingProof>(`/api/globals/marketing-proof?${query.toString()}`);

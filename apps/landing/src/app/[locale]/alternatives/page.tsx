@@ -29,6 +29,8 @@ export function generateMetadata() {
       "See how Clear Cutoff compares to other CTET, HTET, and UPTET prep apps on courses, test series, pricing, and PYQ coverage — pick the right one for you.",
     keywords: ["Clear Cutoff alternatives", "teaching exam prep", "CTET app comparison", "HTET app comparison"],
     url: "/alternatives",
+    // The index's own copy is hardcoded English on every locale.
+    languages: ["en"],
   });
 }
 

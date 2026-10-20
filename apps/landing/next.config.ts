@@ -49,6 +49,38 @@ const config: NextConfig = {
     ],
   },
 
+  // Old URLs Search Console reports as 404 whose content moved: the tools now
+  // live under /tools/* (Cloudflare Worker, see TOOLS_DEPLOY.md) and the exam
+  // pages became /exam/<code>-preparation. Each target was checked to return
+  // 200 in production. A true 301 (not Next's default 308 for `permanent`);
+  // query strings (e.g. ?group=banking) are carried over by Next.
+  async redirects() {
+    const locale = ":locale(hi|mr)";
+    const resizerTools = "image-compressor|signature-compressor|add-name-date|75-face-coverage";
+    const exams = "ctet|htet|reet|uptet|hptet";
+    // Every /exam/<code>-preparation page (STATIC_EXAMS short names).
+    const examPages = "htet|ctet|reet|uptet|hptet|uppgt|uptgt|ugcnet|ugc";
+    return [
+      { source: "/resizer/:path*", destination: "/tools/resizer/:path*", statusCode: 301 },
+      { source: `/${locale}/resizer/:path*`, destination: "/:locale/tools/resizer/:path*", statusCode: 301 },
+      { source: "/age-eligibility-calculator/:path*", destination: "/tools/age-eligibility-calculator/:path*", statusCode: 301 },
+      { source: `/${locale}/age-eligibility-calculator/:path*`, destination: "/:locale/tools/age-eligibility-calculator/:path*", statusCode: 301 },
+      { source: `/:tool(${resizerTools})`, destination: "/tools/resizer/:tool", statusCode: 301 },
+      { source: `/${locale}/:tool(${resizerTools})`, destination: "/:locale/tools/resizer/:tool", statusCode: 301 },
+      { source: `/exam/:code(${exams})-:year(\\d{4})`, destination: "/exam/:code-preparation", statusCode: 301 },
+      { source: `/${locale}/exam/:code(${exams})-:year(\\d{4})`, destination: "/:locale/exam/:code-preparation", statusCode: 301 },
+      // Bare exam codes (the go-marketing HTET page links to /exam/htet) used
+      // to render a second copy of the course page with its own canonical.
+      { source: `/exam/:code(${examPages})`, destination: "/exam/:code-preparation", statusCode: 301 },
+      { source: `/${locale}/exam/:code(${examPages})`, destination: "/:locale/exam/:code-preparation", statusCode: 301 },
+      // /resize-image was an older copy of the same photo/signature resizer
+      // (same title, description and tool) as the Tools app's /tools/resizer,
+      // which is the page that ranks — one URL for one tool.
+      { source: "/resize-image", destination: "/tools/resizer", statusCode: 301 },
+      { source: `/${locale}/resize-image`, destination: "/:locale/tools/resizer", statusCode: 301 },
+    ];
+  },
+
   async headers() {
     return [
       {

@@ -6,20 +6,23 @@ interface DetailsSectionCardProps {
     yearId?: string;
     Labels?: { lable: string; value: string }[];
     totalQuestions?: any[];
+    /** The count itself — pass this instead of `totalQuestions` so the whole
+     * question array isn't serialized to the client just to be counted. */
+    questionCount?: number;
     sourceLabel?: string;
     sources?: { lable: string; value: string }[];
     solveTime?: string;
 }
 
-export default function DetailsSectionCard({ yearId, Labels, totalQuestions, sourceLabel, sources, solveTime }: DetailsSectionCardProps) {
-    const { courseLanguage } = useLanguageStore();
+export default function DetailsSectionCard({ yearId, Labels, totalQuestions, questionCount, sourceLabel, sources, solveTime }: DetailsSectionCardProps) {
+    const courseLanguage = useLanguageStore((s) => s.courseLanguage);
 
     // Derived, not `useState(0)` + `useEffect(setCount)`: that pattern rendered
     // "0" (so the chip was hidden entirely) during SSR and only filled in after
     // hydration, making the count a post-hydration DOM change on every load.
-    const totalQuestionsCount = Array.isArray(totalQuestions) && totalQuestions.length > 0
+    const totalQuestionsCount = questionCount ?? (Array.isArray(totalQuestions) && totalQuestions.length > 0
         ? getQuestionsByLanguage(totalQuestions, courseLanguage).length
-        : 0;
+        : 0);
 
     return (
         <div>
@@ -44,7 +47,7 @@ export default function DetailsSectionCard({ yearId, Labels, totalQuestions, sou
                     })}
 
                 </div>
-                <div className='col-span-1 flex flex-col items-start gap-2 '>
+                <div className='col-span-1 flex flex-col items-start gap-2 border-l border-[var(--color-border-gray-subtle)] pl-6'>
                     {sources?.map((item, index) => {
                         return (
                             <div key={index}>

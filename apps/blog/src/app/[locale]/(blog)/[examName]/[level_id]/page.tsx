@@ -3,7 +3,9 @@ import { Metadata } from "next";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import TestByYears from "@/components/blog/assessment-question/test-by-years";
 import TestBySubjects from "@/components/blog/assessment-question/test-by-subjects";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { findLevel } from "@/lib/seo/exam-index";
+import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { unFormatSlug } from "@/utils/slugify";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
@@ -11,6 +13,7 @@ import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
 import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
+import { localeAlternates } from "@/lib/seo/locale-alternates";
 
 /* =========================================================
    TYPES (Next.js 15/16)
@@ -38,12 +41,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, examName, level_id } = await params;
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "";
-
-  const enUrl = `${base}/${examName}/${level_id}`;
-  const hiUrl = `${base}/hi/${examName}/${level_id}`;
-
-  const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
+  // /hi shows the same English content — canonical English, no hreflang.
+  const { canonical: canonicalUrl } = localeAlternates({
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
+    path: `/${examName}/${level_id}`,
+    locale,
+    hiTranslated: false,
+  });
 
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
@@ -56,11 +60,6 @@ export async function generateMetadata({
 
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        en: enUrl,
-        hi: hiUrl,
-        "x-default": enUrl,
-      },
     },
   };
 }
@@ -112,8 +111,11 @@ export default async function Page({ params, searchParams }: Props) {
   /* ---------- Validate Exam ---------- */
 
   if (!ALLOWED_EXAMS.includes(examSlug?.toLowerCase())) {
-    redirect("/");
+    notFound();
   }
+
+  const index = await tryLoadExamIndex(String(examSlug));
+  if (index && !findLevel(index, String(level_id))) notFound();
 
   const examName = unFormatSlug(examSlug).toUpperCase();
   const levelName = unFormatSlug(level_id ?? "");

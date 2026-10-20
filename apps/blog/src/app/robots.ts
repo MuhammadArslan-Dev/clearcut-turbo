@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/"],
+        disallow: ["/admin/", "/hi/admin/", "/api/"],
       },
     ],
     // sitemaps/index.xml lists every per-exam sitemap (built from

@@ -2,8 +2,15 @@ import { notFound } from "next/navigation";
 import Header from "@/components/layout/headers/Header";
 import FooterWrap from "@/components/layout/FooterWrap";
 import FloatingButton from "@/components/global/FloatingButton";
-import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
-import { getComparisonBySlug, getComparisonSlugs, getMarketingProof, mediaUrl } from "@/lib/api/cms";
+import { cmsPageLanguages, generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
+import {
+  getComparisonBySlug,
+  getComparisonSlugs,
+  getMarketingProof,
+  hasHindiTranslation,
+  mediaUrl,
+} from "@/lib/api/cms";
+import { toLocale } from "@/lib/i18n/config";
 import JsonLd from "@clearcut/ui/json-ld";
 import CompareHero from "@/components/pages/compare/CompareHero";
 import TrustedByBar from "@/components/pages/compare/TrustedByBar";
@@ -26,19 +33,26 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; slug: string }> }) {
   const { locale, slug } = await params;
-  const comparison = await getComparisonBySlug(slug, locale);
+  const [comparison, hasHindi] = await Promise.all([
+    getComparisonBySlug(slug, locale),
+    hasHindiTranslation("comparisons", slug),
+  ]);
   if (!comparison) return {};
 
   const title = comparison.meta?.metaTitle || comparison.hero.title;
   const description = comparison.meta?.metaDescription || comparison.hero.description || "";
   const ogImage = mediaUrl(comparison.meta?.ogImage?.url);
 
+  // /hi is self-canonical only when the CMS has Hindi copy for this page;
+  // otherwise /hi and /mr render the English copy and canonicalize to it.
   return generateSeoMetadata({
     title,
     description,
     keywords: [comparison.competitorName, "Clear Cutoff", `Clear Cutoff vs ${comparison.competitorName}`],
     url: `/compare/${slug}`,
     image: ogImage,
+    locale: toLocale(locale),
+    languages: cmsPageLanguages(hasHindi),
   });
 }
 

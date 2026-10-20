@@ -10,6 +10,10 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import {
+  computeMetaPurchaseValue,
+  getMetaPurchasePlan,
+} from "@/lib/payment/metaPurchaseConfig";
+import {
   createOrder,
   PaymentType,
   pollVerifyPayment,
@@ -130,9 +134,26 @@ export function useRazorpayPayment({
             // visit /payment/initiated, so there's no earlier page-level
             // init() to inherit advanced-matching data from — this call has
             // to set it itself.
+            //
+            // amount_paid is the real, final charged amount (never a list
+            // price — `price` here is always what Razorpay actually billed).
+            // `value` applies the configurable multiplier from
+            // metaPurchaseConfig.ts (ONE_TIME_VALUE_MULTIPLIER = 1.0 for
+            // every `type` this hook is ever actually called with — `type`
+            // is only ever "1month" for the SUBSCRIPTION_VALUE_MULTIPLIER
+            // branch, and "1month" always goes through
+            // payment/initiated/page.tsx's handleSubscriptionPayment
+            // instead, never this hook — kept here anyway so the helper
+            // stays correct if that ever changes). `plan` is omitted
+            // (not guessed) for callers that don't pass `type` at all
+            // (the single-course purchase modals).
+            const amountPaid = Number(price);
+            const plan = getMetaPurchasePlan(type);
             trackFacebookEventWithUserData("Purchase", {
-              value: Number(price),
+              value: computeMetaPurchaseValue(amountPaid, type),
               currency: "INR",
+              amount_paid: amountPaid,
+              ...(plan ? { plan } : {}),
             });
 
             onSuccess();

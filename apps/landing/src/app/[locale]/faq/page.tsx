@@ -67,6 +67,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: meta.description,
     keywords: ["Clear Cutoff FAQ", "teaching exam prep questions", ...categoryLabels],
     url: "/faq",
+    // /hi/faq is translated (hero + CMS hi copy), so it is its own canonical.
+    // /mr/faq renders the English fallback, so it keeps the English canonical.
+    locale: locale === "hi" ? "hi" : "en",
   });
 
   // The CMS FAQ content only has en/hi copy — no real Marathi translation
@@ -74,7 +77,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   // an "mr" hreflang alternate would tell Google that's the Marathi version
   // when it isn't. Drop it here rather than in the shared generateSeoMetadata
   // helper, which other pages with real Marathi copy still rely on.
-  const canonicalUrl = `${SITE_URL}/faq`;
+  const englishUrl = `${SITE_URL}/faq`;
+  const canonicalUrl = locale === "hi" ? `${SITE_URL}/hi/faq` : englishUrl;
 
   // Deliberately omit `images` on openGraph/twitter (rather than pointing at
   // the sitewide default from generateSeoMetadata): this route ships its own
@@ -89,9 +93,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       ...metadata.alternates,
       languages: {
-        en: canonicalUrl,
+        en: englishUrl,
         hi: `${SITE_URL}/hi/faq`,
-        "x-default": canonicalUrl,
+        "x-default": englishUrl,
       },
     },
     openGraph: {

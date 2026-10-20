@@ -13,7 +13,8 @@ import MainContainer from "@/components/main-container";
 import { parseArticle } from "@/lib/blog/article";
 import { resolveMediaUrl } from "@/lib/blog/media";
 import { readingTime } from "@/lib/blog/reading-time";
-import { getPostBySlug, getPostsByExam } from "@/lib/api/posts";
+import { getHindiPostSlugs, getPostBySlug, getPostsByExam } from "@/lib/api/posts";
+import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExamId } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
@@ -80,10 +81,15 @@ export async function generateMetadata({
     return { title: siteConfig.name };
   }
 
-  const path = `/${examName}/blog/${slug}`;
-  const enUrl = `${SITE_URL}${path}`;
-  const hiUrl = `${SITE_URL}/hi${path}`;
-  const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
+  // /hi is this post's Hindi version only when the CMS has Hindi copy for it;
+  // otherwise /hi shows the English fallback and canonicalizes to English.
+  const hindiPosts = await getHindiPostSlugs((await resolveExamId(examName)) ?? examName);
+  const { canonical: canonicalUrl, languages } = localeAlternates({
+    siteUrl: SITE_URL,
+    path: `/${examName}/blog/${slug}`,
+    locale,
+    hiTranslated: hindiPosts.has(slug),
+  });
 
   const heroUrl =
     post.heroImage && typeof post.heroImage === "object"
@@ -99,7 +105,7 @@ export async function generateMetadata({
     description: post.excerpt || undefined,
     alternates: {
       canonical: canonicalUrl,
-      languages: { en: enUrl, hi: hiUrl, "x-default": enUrl },
+      ...(languages ? { languages } : {}),
     },
     openGraph: {
       title: post.title,

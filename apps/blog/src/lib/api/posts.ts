@@ -66,6 +66,35 @@ export async function getPostBySlug(
 }
 
 /**
+ * Slugs of an exam's posts that have their own Hindi copy. The CMS localizes
+ * en + hi with `fallback: true`, so a `locale=hi` read silently returns the
+ * English text for untranslated fields; reading hi with fallback disabled and
+ * checking the (required, localized) title tells a real Hindi post apart from
+ * an English one served under /hi. Empty set on CMS failure — the page then
+ * declares no Hindi version rather than a possibly false one.
+ */
+export async function getHindiPostSlugs(examId: string): Promise<Set<string>> {
+  const params = new URLSearchParams();
+  params.set('where[exam.exam_id][equals]', examId);
+  params.set('locale', 'hi');
+  params.set('fallback-locale', 'none');
+  params.set('depth', '0');
+  params.set('limit', '1000');
+  params.set('select[slug]', 'true');
+  params.set('select[title]', 'true');
+
+  try {
+    const data = await client.fetchJson<PayloadListResponse<{ slug: string; title?: string | null }>>(
+      `/api/posts?${params.toString()}`,
+    );
+    return new Set((data.docs ?? []).filter((d) => d.title?.trim()).map((d) => d.slug));
+  } catch (error) {
+    console.error(`Network or parsing error fetching Hindi posts for exam "${examId}":`, error);
+    return new Set();
+  }
+}
+
+/**
  * Fetch published posts for an exam (for listings / static params).
  * Returns an empty array when the CMS call fails, instead of throwing —
  * every call site (blog listing page, sitemap generation, related-posts

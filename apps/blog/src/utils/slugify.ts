@@ -24,14 +24,10 @@ export function sanitizeAiSlug(aiSlug: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
-// The single source of truth for a question's "<slug>-<id>" URL param.
-// Always uses translations[0] — never locale-matched — because that's what
-// the question detail page's own canonical redirect (app/[locale]/(blog)/
-// question/[questionId]/page.tsx) and the question sitemap builder
-// (lib/sitemap/build-questions-sitemap-xml.ts) both use. Any internal link
-// that builds its href a different way (e.g. matching the viewer's course
-// language) points at a non-canonical URL that immediately 308-redirects on
-// click, wasting crawl budget and shipping the wrong <a href> to Google.
+// The "<slug>-<id>" param of a legacy /question/ URL (translations[0], never
+// locale-matched). Those URLs now 301 to their chapter page (see
+// app/[locale]/(blog)/question/[...questionId]/route.ts), which only reads the
+// trailing id — new links should point at the chapter page directly.
 export function getQuestionUrlParam(
   id: number | string,
   translations?: { ai_slug?: string | null; question?: string | null }[] | null,

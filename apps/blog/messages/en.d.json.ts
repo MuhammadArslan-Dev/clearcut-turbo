@@ -115,6 +115,105 @@ declare const messages: {
       "facebook": "Facebook",
       "linkedin": "LinkedIn"
     }
+  },
+  "QuestionCard": {
+    "question": "Question",
+    "optionsFor": "Options for question {index}",
+    "correct": "Correct",
+    "yourPick": "Your pick",
+    "hint": "Choose an answer to reveal your result and explanation.",
+    "showExplanationResult": "Show Explanation & Result",
+    "answerExplanation": "Answer & Explanation",
+    "correctAnswer": "Correct Answer:",
+    "option": "Option {label}"
+  },
+  "ShareQuestion": {
+    "trigger": "Share",
+    "title": "Share this question",
+    "subtitle": "Send it to a friend or save the link.",
+    "linkLabel": "Question link",
+    "copyLink": "Copy Question Link",
+    "copied": "Link copied!",
+    "copyFailed": "Couldn't copy automatically. The link above is selected — press Ctrl+C, or long-press it on your phone.",
+    "whatsapp": "Share on WhatsApp",
+    "whatsappMessage": "Can you solve this question? {question}"
+  },
+  "QuestionPagination": {
+    "label": "Question pages",
+    "range": "Questions {from}–{to} of {total} · Page {page} of {pages}",
+    "previous": "Previous",
+    "next": "Next",
+    "pageN": "Page {page}"
+  },
+  "QuestionBank": {
+    "chaptersHeading": "Chapters in this subject",
+    "chapterCount": "{count} questions",
+    "loadError": "Questions couldn't be loaded right now. Please try again in a few minutes."
+  },
+  "QuestionFilter": {
+    "filter": "Filter",
+    "close": "Close",
+    "searchLabel": "Search questions in this section",
+    "searchPlaceholder": "Search questions in this chapter…",
+    "clearSearch": "Clear search",
+    "suggestionsLabel": "Matching questions",
+    "noSuggestions": "No questions match “{query}”.",
+    "suggestionNumber": "Q{index}.",
+    "textUnavailable": "(question text unavailable)",
+    "showAll": "Show all",
+    "showing": "Showing {visible} of {total} questions",
+    "empty": "No questions are available in this chapter yet.",
+    "noResults": "No questions match your search.",
+    "showAllQuestions": "Show all questions",
+    "onPage": "Page {page}",
+    "topic": {
+      "all": "All topics",
+      "ariaLabel": "Filter by topic",
+      "title": "Filter Topics",
+      "searchPlaceholder": "Search topics…",
+      "noMatch": "No topics match “{query}”."
+    },
+    "chapter": {
+      "all": "All chapters",
+      "ariaLabel": "Filter by chapter",
+      "title": "Filter Chapters",
+      "searchPlaceholder": "Search chapters…",
+      "noMatch": "No chapters match “{query}”."
+    },
+    "section": {
+      "all": "All subjects",
+      "ariaLabel": "Filter by subject",
+      "title": "Filter Subjects",
+      "searchPlaceholder": "Search subjects…",
+      "noMatch": "No subjects match “{query}”."
+    }
+  },
+  "ReportMistake": {
+    "trigger": "Report a mistake",
+    "title": "Report a Mistake",
+    "subtitle": "Spot an error in this question, answer or solution? Let us know.",
+    "questionLabel": "Question:",
+    "reasonLabel": "Reason for report",
+    "reasons": {
+      "wrongAnswer": { "title": "Wrong Answer", "description": "Official answer key marked incorrectly" },
+      "wrongSolution": { "title": "Wrong Solution", "description": "Explanation or derivation contains an error" },
+      "incorrectQuestion": { "title": "Incorrect Question", "description": "Question has typos, missing data or broken text" },
+      "wrongOptions": { "title": "Wrong Options", "description": "Options are scrambled, incorrect or mismatched" },
+      "tagging": { "title": "Tagging", "description": "Wrong year, exam, subject or topic" },
+      "duplicate": { "title": "Duplicate", "description": "The same question appears more than once" },
+      "other": { "title": "Other", "description": "Any other issue with this question" }
+    },
+    "detailsLabel": "Additional details",
+    "optional": "(optional)",
+    "otherHint": "Type details below",
+    "placeholder": "Add any extra details or corrections here…",
+    "placeholderOther": "Please describe the issue with this question…",
+    "errors": {
+      "reason": "Please choose a reason for your report.",
+      "details": "Please describe the issue."
+    },
+    "cancel": "Cancel",
+    "submit": "Submit report"
   }
 };
 export default messages;

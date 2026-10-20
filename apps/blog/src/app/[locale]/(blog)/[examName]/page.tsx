@@ -8,10 +8,11 @@ import { Metadata } from "next";
 import React, { Suspense } from "react";
 import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import Link from "next/link";
+import { localeAlternates } from "@/lib/seo/locale-alternates";
 
 /* =========================================================
    TYPES
@@ -69,12 +70,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, examName } = await params;
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-
-  const enUrl = `${baseUrl}/${examName}`;
-  const hiUrl = `${baseUrl}/hi/${examName}`;
-
-  const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
+  // /hi renders the same English level list, so it isn't a separate
+  // language version: canonical English, no hreflang (see localeAlternates).
+  const { canonical: canonicalUrl } = localeAlternates({
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
+    path: `/${examName}`,
+    locale,
+    hiTranslated: false,
+  });
 
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
@@ -105,11 +108,6 @@ export async function generateMetadata({
 
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        en: enUrl,
-        hi: hiUrl,
-        "x-default": enUrl,
-      },
     },
   };
 }
@@ -127,7 +125,7 @@ export default async function Page({ params }: Params) {
   /* ---------- Validate Allowed Exams ---------- */
 
   if (!ALLOWED_EXAMS.includes(examName.toLowerCase())) {
-    redirect("/");
+    notFound();
   }
 
   /* ---------- Fetch Data ---------- */

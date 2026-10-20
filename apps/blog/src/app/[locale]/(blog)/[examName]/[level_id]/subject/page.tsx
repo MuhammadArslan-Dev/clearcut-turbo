@@ -1,6 +1,8 @@
 import React from "react";
 import { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { findLevel, levelHasChapters } from "@/lib/seo/exam-index";
+import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
@@ -34,11 +36,15 @@ export async function generateMetadata({
   const examLabel = unFormatSlug(examName ?? "").toUpperCase();
   const levelLabel = unFormatSlug(level_id ?? "");
 
+  const index = await tryLoadExamIndex(examName);
+  const noSubjectsWithChapters = Boolean(index && !levelHasChapters(index, level_id));
+
   return generateLocaleMetadata({
     locale,
     path,
     title: `${examLabel} Exam ${levelLabel} - Subject Wise Questions`,
     description: `${examLabel} Exam ${levelLabel} subject-wise practice questions and test series, free on Clear Cutoff.`,
+    noindex: noSubjectsWithChapters,
   });
 }
 
@@ -47,8 +53,11 @@ export default async function page({ params }: Props) {
 
   // Check
   if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
-    redirect("/");
+    notFound();
   }
+
+  const index = await tryLoadExamIndex(String(examNameParam));
+  if (index && !findLevel(index, String(level_id))) notFound();
   const examName = examNameParam?.toUpperCase() ?? "";
 
   // ✅ Correct API fetch Subjects

@@ -451,8 +451,9 @@ function HeroSection({ data }: { data: string }) {
     >
       <div className="space-y-5">
         <div className="space-y-1">
+          {/* The page's only h1 (it had none): names the exam + year, unique per /exam/<code>-preparation page. */}
           <Text
-            as="h2"
+            as="h1"
             variant="heading-xlarge"
             weight="semibold"
             color="gray-normal"

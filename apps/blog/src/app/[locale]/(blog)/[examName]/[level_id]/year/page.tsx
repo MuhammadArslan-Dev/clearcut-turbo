@@ -3,7 +3,9 @@ import React from "react";
 import { Metadata } from "next";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import TestByYears from "@/components/blog/assessment-question/test-by-years";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { findLevel } from "@/lib/seo/exam-index";
+import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { formatToSlug, unFormatSlug } from "@/utils/slugify";
 import { findLeafNodes } from "@/utils/getLeafNodes";
 import TestBySubjects from "@/components/blog/assessment-question/test-by-subjects";
@@ -56,8 +58,11 @@ export default async function page({ params }: Props) {
 
   // Check
   if (!ALLOWED_EXAMS.includes(examNameParam?.toLowerCase())) {
-    redirect("/");
+    notFound();
   }
+
+  const index = await tryLoadExamIndex(String(examNameParam));
+  if (index && !findLevel(index, String(level_id))) notFound();
   // Build query string safely
   const queryYears = `exam_id=${examNameParam}`;
 

@@ -4,6 +4,7 @@ import PageJsonLd from "@/components/PageJsonLd";
 import { notFound } from "next/navigation";
 import AgeEligibilityPage from "@/components/AgeEligibilityPage";
 import { getAgeEligibilityExams, getAgeEligibilityExamBySlug } from "@/lib/ageEligibility";
+import { ageCalculatorMetaTitle } from "@/lib/ageCalculatorSeo";
 
 // Static export needs the full param set up front — an unlisted slug 404s
 // rather than resolving on demand.
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ examSlug:
   const exam = await getAgeEligibilityExamBySlug(examSlug);
   if (!exam) return {};
 
-  const title = `${exam.shortName} Age Calculator (${exam.year}) - Eligibility & Cutoff Date | Clear Cutoff`;
+  const title = ageCalculatorMetaTitle(exam.shortName, exam.year);
   const description = `Calculate your exact age for ${exam.shortName} (${exam.fullName}) and check category-wise eligibility instantly. Free tool, nothing is uploaded.`;
 
   return buildMetadata({ locale: "en", path: `/age-eligibility-calculator/${exam.slug}`, title, description });

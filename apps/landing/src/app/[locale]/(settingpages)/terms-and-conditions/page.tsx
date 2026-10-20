@@ -1,6 +1,7 @@
 import Header from "@/components/layout/headers/Header";
 import SectionBlock from "@/components/sectionblock";
 import { Metadata } from "next";
+import { pageTitle } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -168,7 +169,7 @@ const data = `<p><span style="font-weight: 400;">We at Clearcutoff.in, under Roh
 
 // SEO for this page
 export const metadata: Metadata = {
-  title: "Terms & Conditions | Clear Cutoff",
+  title: pageTitle("Terms & Conditions | Clear Cutoff"),
   description:
     "Read Clear Cutoff's terms and conditions. Understand the rules, eligibility, user conduct, intellectual property, payments, and dispute resolution for our platform.",
   keywords: ["terms and conditions", "Clear Cutoff", "user agreement", "platform terms"],

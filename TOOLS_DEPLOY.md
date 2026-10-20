@@ -38,9 +38,14 @@ Run from the repo root:
 
 ```sh
 cd apps/tools
-NODE_ENV=production NEXT_PUBLIC_LARAVEL_MAIN_BACKEND=https://apptest.clearcutoff.in/api pnpm build
+NODE_ENV=production NEXT_PUBLIC_LARAVEL_MAIN_BACKEND=https://apptest.clearcutoff.in/api TOOLS_API_URL=https://tools-api.clearcutoff.in/api/v1 pnpm build
 npx wrangler pages deploy out --project-name=clearcut-tools --branch=main --commit-message="<what changed>"
 ```
+
+`TOOLS_API_URL` is set explicitly because the local `.env` points at the
+Laragon tools backend, whose database is remote: every API call there took
+~7.6s (vs ~0.4s on the production tools API, measured 2026-10-19), and the
+build makes 100+ of them, so a build without it takes minutes.
 
 `wrangler` needs to be authenticated against the Cloudflare account that
 owns `clearcut-tools` — `npx wrangler whoami` confirms this; if it's not

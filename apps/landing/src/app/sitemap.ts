@@ -1,5 +1,8 @@
 import { MetadataRoute } from "next";
 import { courses } from "@/lib/data/courses";
+import { hreflangAlternates } from "@/lib/seo/metadata";
+import type { Locale } from "@/lib/i18n/config";
+import { CHECKED_ON, HTET_PAGE_KEYS } from "@/lib/data/htetInfo";
 
 // Revalidate the sitemap once per day — prevents it from being regenerated on
 // every request, which would cause lastModified to change constantly.
@@ -11,12 +14,21 @@ const BASE_URL = "https://clearcutoff.in";
 const SITE_LAST_UPDATED = new Date("2026-05-26");
 
 // ─── Exam marketing page slugs (pre-rendered via generateStaticParams) ────────
+// The pages live at /exam/<code>-preparation; the old /exam/<code>-2026 URLs
+// listed here before 301 to them (next.config.ts), and a sitemap should only
+// list the final, indexable URL.
 const EXAM_MARKETING_SLUGS = [
-  "htet-2026",
-  "reet-2026",
-  "uptet-2026",
-  "hptet-2026",
+  "htet-preparation",
+  "reet-preparation",
+  "uptet-preparation",
+  "hptet-preparation",
 ];
+
+// Pages whose main content is English on every locale (their /hi and /mr
+// URLs render the same English copy), so they get no hreflang alternates.
+const ENGLISH_ONLY: readonly Locale[] = ["en"];
+// The FAQ comes from the CMS, which has Hindi but no Marathi copy.
+const EN_HI: readonly Locale[] = ["en", "hi"];
 
 // ─── Exclude internal A/B test variants to prevent duplicate-content penalty ──
 const EXCLUDED_COURSE_SLUGS = new Set([
@@ -34,21 +46,18 @@ function entry(
   priority: number,
   changeFrequency: SitemapEntry["changeFrequency"],
   lastModified?: Date,
+  // Locales the page is really translated into (default: all). Same hreflang
+  // set the page itself declares — see hreflangAlternates.
+  languages?: readonly Locale[],
 ): SitemapEntry {
   const url = `${BASE_URL}${path}`;
+  const hreflang = hreflangAlternates(path, languages);
   return {
     url,
     lastModified: lastModified ?? SITE_LAST_UPDATED,
     changeFrequency,
     priority,
-    alternates: {
-      languages: {
-        "en": url,
-        "hi": `${BASE_URL}/hi${path}`,
-        "mr": `${BASE_URL}/mr${path}`,
-        "x-default": url,       // canonical = English
-      },
-    },
+    ...(hreflang ? { alternates: { languages: hreflang } } : {}),
   };
 }
 
@@ -57,13 +66,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticEntries: MetadataRoute.Sitemap = [
     entry("/",          1.0, "weekly"),
     entry("/teaching",  0.9, "weekly"),
-    entry("/faq",       0.7, "weekly"),
+    entry("/faq",       0.7, "weekly", undefined, EN_HI),
     entry("/android-app", 0.7, "monthly"),
     entry("/ios-app",     0.7, "monthly"),
-    entry("/contact-us", 0.5, "monthly"),
-    entry("/privacy-policy",       0.3, "yearly", new Date("2024-01-01")),
-    entry("/terms-and-conditions", 0.3, "yearly", new Date("2024-01-01")),
-    entry("/refund-policy",        0.3, "yearly", new Date("2024-01-01")),
+    entry("/contact-us", 0.5, "monthly", undefined, ENGLISH_ONLY),
+    entry("/privacy-policy",       0.3, "yearly", new Date("2024-01-01"), ENGLISH_ONLY),
+    entry("/terms-and-conditions", 0.3, "yearly", new Date("2024-01-01"), ENGLISH_ONLY),
+    entry("/refund-policy",        0.3, "yearly", new Date("2024-01-01"), ENGLISH_ONLY),
   ];
 
   // ── 2. Teaching / course pages ────────────────────────────────────────────
@@ -76,5 +85,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry(`/exam/${slug}`, 0.7, "monthly"),
   );
 
-  return [...staticEntries, ...courseEntries, ...examEntries];
+  // ── 4. HTET information pages (translated in every locale) ───────────────
+  const htetEntries: MetadataRoute.Sitemap = HTET_PAGE_KEYS.map((key) =>
+    entry(`/htet/${key}`, 0.7, "monthly", new Date(CHECKED_ON)),
+  );
+
+  return [...staticEntries, ...courseEntries, ...examEntries, ...htetEntries];
 }

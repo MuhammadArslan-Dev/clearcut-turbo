@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import BlogPostGrid from "@/components/blog/blog-post-grid";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import MainContainer from "@/components/main-container";
-import { getPostsByExam } from "@/lib/api/posts";
+import { getHindiPostSlugs, getPostsByExam } from "@/lib/api/posts";
+import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExam, examLabelOf } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
@@ -24,10 +25,15 @@ export async function generateMetadata({
   // URL segment (which would render "Ctet" for /ctet).
   const exam = await resolveExam(examName);
   const examLabel = examLabelOf(exam, unFormatSlug(examName));
-  const path = `/${examName}/blog`;
-  const enUrl = `${SITE_URL}${path}`;
-  const hiUrl = `${SITE_URL}/hi${path}`;
-  const canonicalUrl = locale === "hi" ? hiUrl : enUrl;
+  // /hi lists the posts' Hindi titles and excerpts — a real Hindi version only
+  // when at least one post has Hindi copy in the CMS.
+  const hindiPosts = await getHindiPostSlugs(exam?.exam_id ?? examName);
+  const { canonical: canonicalUrl, languages } = localeAlternates({
+    siteUrl: SITE_URL,
+    path: `/${examName}/blog`,
+    locale,
+    hiTranslated: hindiPosts.size > 0,
+  });
   const description = `Guides, strategy and preparation articles for ${examLabel}.`;
 
   return {
@@ -35,7 +41,7 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical: canonicalUrl,
-      languages: { en: enUrl, hi: hiUrl, "x-default": enUrl },
+      ...(languages ? { languages } : {}),
     },
     openGraph: {
       title: `${examLabel} Blog | ${siteConfig.name}`,

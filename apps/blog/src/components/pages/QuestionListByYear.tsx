@@ -4,7 +4,7 @@ import CustomizableHeader from "../customizable-header";
 import DetailsSectionCard from "../blog/assessment-question/details-section-card";
 import { unFormatSlug } from "@/utils/slugify";
 import CourseCheckBadge from "../ui/badge/course-check-badge";
-import QuestionsList from "../blog/assessment-question/questions-list";
+import SectionQuestionsExperience from "../blog/assessment-question/section-questions-experience";
 import { useQuery } from "@tanstack/react-query";
 
 const getQuestion = async (examYear: string, levelId: string) => {
@@ -27,6 +27,8 @@ export default function QuestionListByYear({
   examYear,
   initialQuestions,
   examState,
+  exam,
+  shareChapterPaths,
 }: {
   examName: string;
   level_id: string;
@@ -39,6 +41,9 @@ export default function QuestionListByYear({
   /** From the backend `exams.state` column — nullable for national exams
    * (e.g. CTET). Only render the "State" row when the exam actually has one. */
   examState?: string | null;
+  /** For question share links (see SectionQuestionsExperience). */
+  exam?: string;
+  shareChapterPaths?: Record<string, string>;
 }) {
   // Queries
   const { data, isLoading, isError } = useQuery({
@@ -52,7 +57,7 @@ export default function QuestionListByYear({
     initialData: (initialQuestions ?? undefined) as never,
   });
 
-  
+
 
   const Labels = [
     {
@@ -118,7 +123,17 @@ export default function QuestionListByYear({
           </div>
           {isLoading && <p className="flex justify-center items-center">Loading...</p>}
           {isError && <p>Error</p>}
-          <QuestionsList data={data?.data} />
+          {/* A year spans every subject at once — grouping/filtering by the
+              finer topic or chapter would mean dozens of overlapping chips
+              (confirmed: every subject's topics mixed together was
+              unusable). "section" is the backend/URL name for what this
+              page calls "subject" — the right scope for a full year. */}
+          <SectionQuestionsExperience
+            questions={Array.isArray(data?.data) ? data.data : []}
+            groupBy="section"
+            exam={exam}
+            shareChapterPaths={shareChapterPaths}
+          />
         </div>
       </div>
     </>

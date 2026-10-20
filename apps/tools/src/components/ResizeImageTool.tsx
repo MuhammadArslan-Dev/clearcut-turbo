@@ -1462,8 +1462,11 @@ export default function ResizeImageTool({
                     {t.imageRequirements}
                   </Text>
                 </div>
+                {/* Read-only info. Plain text on purpose: as white bordered tiles these
+                    looked like the editable inputs of Custom mode, and mobile users
+                    kept tapping them (Clarity: ~45% of the resizer's dead taps). */}
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
+                  <div className="space-y-0.5">
                     <Text as="p" variant="body-small" color="gray-muted">
                       {t.dimensions}
                     </Text>
@@ -1471,7 +1474,7 @@ export default function ResizeImageTool({
                       {width}×{height}
                     </Text>
                   </div>
-                  <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
+                  <div className="space-y-0.5">
                     <Text as="p" variant="body-small" color="gray-muted">
                       {t.size}
                     </Text>
@@ -1479,7 +1482,7 @@ export default function ResizeImageTool({
                       {minKB}–{maxKB}KB
                     </Text>
                   </div>
-                  <div className="rounded-lg border border-[var(--color-border-gray-subtle)] bg-white px-2 py-1.5">
+                  <div className="space-y-0.5">
                     <Text as="p" variant="body-small" color="gray-muted">
                       {t.format}
                     </Text>
@@ -1732,8 +1735,12 @@ export default function ResizeImageTool({
                     >
                       {withinTarget ? t.ready : t.checkSize}
                     </span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={result.url} alt="Optimized" className="w-full aspect-square object-contain" />
+                    {/* Tapping the finished image downloads it, same as the Download
+                        button — people tapped it expecting that (Clarity dead taps). */}
+                    <button type="button" onClick={handleDownload} aria-label={t.downloadImage} className="block w-full cursor-pointer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={result.url} alt="Optimized" className="w-full aspect-square object-contain" />
+                    </button>
                   </div>
                   <Text as="p" variant="body-small" color="gray-muted" className="text-center">
                     {`${width}×${height}px • ${resultSizeLabel}`}

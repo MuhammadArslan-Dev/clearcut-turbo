@@ -1,6 +1,7 @@
 import Header from "@/components/layout/headers/Header";
 import SectionBlock from "@/components/sectionblock";
 import { Metadata } from "next";
+import { pageTitle } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -76,7 +77,7 @@ const data = `<p><div>Account Deletion<br /><br />Users can request deletion of 
 
 // SEO for this page
 export const metadata: Metadata = {
-  title: "Privacy Policy | Clear Cutoff",
+  title: pageTitle("Privacy Policy | Clear Cutoff"),
   description:
     "Read Clear Cutoff's privacy policy. Learn how we collect, use, and protect your personal data when you use our teaching exam preparation platform.",
   keywords: ["privacy policy", "Clear Cutoff", "data protection", "personal information"],

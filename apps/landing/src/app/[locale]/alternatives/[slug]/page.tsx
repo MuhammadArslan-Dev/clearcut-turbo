@@ -5,8 +5,15 @@ import FloatingButton from "@/components/global/FloatingButton";
 import Section from "@/components/global/Section";
 import Text from "@clearcut/ui/text";
 import JsonLd from "@clearcut/ui/json-ld";
-import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
-import { getAlternativeBySlug, getAlternativesSlugs, getMarketingProof, mediaUrl } from "@/lib/api/cms";
+import { cmsPageLanguages, generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
+import {
+  getAlternativeBySlug,
+  getAlternativesSlugs,
+  getMarketingProof,
+  hasHindiTranslation,
+  mediaUrl,
+} from "@/lib/api/cms";
+import { toLocale } from "@/lib/i18n/config";
 import { slugify } from "@/lib/utils/slugify";
 import ArticleHero from "@/components/pages/alternatives/ArticleHero";
 import ArticleBody from "@/components/shared/article/ArticleBody";
@@ -32,7 +39,10 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; slug: string }> }) {
   const { locale, slug } = await params;
-  const page = await getAlternativeBySlug(slug, locale);
+  const [page, hasHindi] = await Promise.all([
+    getAlternativeBySlug(slug, locale),
+    hasHindiTranslation("alternatives", slug),
+  ]);
   if (!page) return {};
 
   const title = page.meta?.metaTitle || `Best ${page.competitorName} Alternatives | Clear Cutoff`;
@@ -45,6 +55,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     keywords: [page.competitorName, "Clear Cutoff", "alternatives"],
     url: `/alternatives/${slug}`,
     image: ogImage,
+    // Same rule as /compare: /hi is its own version only with real Hindi CMS copy.
+    locale: toLocale(locale),
+    languages: cmsPageLanguages(hasHindi),
   });
 }
 

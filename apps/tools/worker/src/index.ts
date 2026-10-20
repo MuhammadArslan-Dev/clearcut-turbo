@@ -51,6 +51,42 @@ function matchPath(pathname: string): string | null {
 	return null;
 }
 
+// A trailing slash on any of our URLs ("/tools/", "/tools/resizer/") 301s to
+// the slash-less URL, the shape every canonical, sitemap entry and link uses
+// (next.config.ts trailingSlash: false). Without this, "/tools/" mapped to
+// upstream "/" (no page there: 404), and deeper paths hit Pages' own 308,
+// whose Location lacks the "/tools" prefix (see publicLocation).
+export function withoutTrailingSlash(pathname: string): string | null {
+	if (pathname.length > 1 && pathname.endsWith("/")) return pathname.replace(/\/+$/, "") || "/";
+	return null;
+}
+
+// The Hindi/Marathi tools have no index page of their own (only /tools does),
+// so their bare roots go to the English index instead of a 404. Temporary
+// (302) so a real localized index can be added later without stale caches.
+const LOCALE_TOOL_ROOTS = new Set([HI_PREFIX, MR_PREFIX]);
+
+// Pages answers some requests with a redirect whose Location is a path on the
+// Pages origin ("/resizer", "/hi/resizer"): map it back to this site's public
+// URL ("/tools/resizer", "/hi/tools/resizer") so visitors stay inside /tools.
+export function publicLocation(location: string, requestPathname: string, pagesOrigin: string): string {
+	let path = location;
+	if (location.startsWith(pagesOrigin)) path = location.slice(pagesOrigin.length) || "/";
+	if (!path.startsWith("/") || path.startsWith("//")) return location;
+
+	for (const [prefix, upstreamRoot] of [
+		[HI_PREFIX, "/hi"],
+		[MR_PREFIX, "/mr"],
+	] as const) {
+		if (requestPathname === prefix || requestPathname.startsWith(prefix + "/")) {
+			if (path === upstreamRoot || path.startsWith(upstreamRoot + "/") || path.startsWith(upstreamRoot + "?")) {
+				return prefix + path.slice(upstreamRoot.length);
+			}
+		}
+	}
+	return path === "/" ? PREFIX : PREFIX + path;
+}
+
 // Bare "/tools" has no app behind it — this Worker owns it directly and
 // renders a tiny index card (styled to match the resizer hub's own "More
 // tools" tiles in apps/tools/src/components/MoreTools.tsx) linking into
@@ -300,6 +336,16 @@ export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
 
+		const slashless = withoutTrailingSlash(url.pathname);
+		if (slashless !== null && matchPath(url.pathname) !== null && !LOCALE_TOOL_ROOTS.has(slashless)) {
+			return Response.redirect(`${url.origin}${slashless}${url.search}`, 301);
+		}
+
+		// "/hi/tools" and "/hi/tools/" (same for /mr) — one hop to the index.
+		if (LOCALE_TOOL_ROOTS.has(slashless ?? url.pathname)) {
+			return Response.redirect(`${url.origin}${PREFIX}${url.search}`, 302);
+		}
+
 		// Bare "/tools" — serve the tools index directly, no redirect.
 		if (url.pathname === "/tools") {
 			return new Response(TOOLS_INDEX_HTML, {
@@ -365,6 +411,11 @@ export default {
 		});
 
 		const response = new Response(upstreamResponse.body, upstreamResponse);
+
+		const location = response.headers.get("Location");
+		if (location && upstreamResponse.status >= 300 && upstreamResponse.status < 400) {
+			response.headers.set("Location", publicLocation(location, url.pathname, env.PAGES_ORIGIN));
+		}
 
 		// public/_headers on the Pages side sets X-Robots-Tag: noindex so the
 		// *.pages.dev URL itself doesn't get indexed as duplicate content.

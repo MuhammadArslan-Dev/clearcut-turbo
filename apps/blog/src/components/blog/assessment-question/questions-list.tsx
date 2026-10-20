@@ -44,6 +44,11 @@ export interface Question {
 
   chapter: QuestionChapter;
   topic: Topic;
+  /** The question's subject (backend: `e_sections`, called "section" there
+   * and in its own URL segment — `/subject/[subject_id]` resolves to one of
+   * these). Only present on responses from `getQuestions()` (the year page's
+   * endpoint); omitted elsewhere, so always optional. */
+  section?: QuestionSection | null;
 }
 
 export interface Translation {
@@ -71,11 +76,21 @@ export interface Translation {
   explanation: string;
 }
 
+// The per-locale {"en":{"name":"..."},"hi":{"name":"..."}} shape chapters,
+// topics, and sections all carry their translated name in — see
+// @/utils/question-translation's getLocalizedEntityName. Chapters/topics
+// expose it as `translations` (a real DB column, array-cast by Eloquent, so
+// it arrives already parsed); sections have no such column and carry the
+// same shape inside `description` instead (arrives as a raw JSON string —
+// getLocalizedEntityName handles both).
+export type LocalizedNameBlob = Record<string, { name?: string | null }>;
+
 export interface Topic {
   id: number;
   slug: string;
   topic_id: string;
   name: string;
+  translations?: LocalizedNameBlob | null;
   children: Topic[];
   trends: unknown | null;
 }
@@ -84,6 +99,15 @@ export interface QuestionChapter {
   id: number;
   slug: string;
   chapter_id: string;
+  name: string;
+  translations?: LocalizedNameBlob | null;
+}
+
+export interface QuestionSection {
+  id: number;
+  slug: string;
+  section_id: string;
+  description?: string | null;
   name: string;
 }
 

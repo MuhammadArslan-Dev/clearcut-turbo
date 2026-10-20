@@ -1,6 +1,7 @@
 import Header from "@/components/layout/headers/Header";
 import SectionBlock from "@/components/sectionblock";
 import { Metadata } from "next";
+import { pageTitle } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -38,7 +39,7 @@ const data = `<ol>
 
 // SEO for this page
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy | Clear Cutoff",
+  title: pageTitle("Refund & Cancellation Policy | Clear Cutoff"),
   description:
     "Read Clear Cutoff's refund and cancellation policy — including eligibility criteria, how to request a refund, processing timelines, and subscription terms.",
   keywords: [

@@ -168,7 +168,7 @@ Marathi; resizer-exams 114, resizer-categories 7, age-calculators 85 — each ×
   (the language switcher is a client-side menu). Discovery relies on hreflang
   and the sitemaps.
 - Titles over ~65 characters exist on age-calculator pages
-  (`… Age Calculator (2026) - Eligibility & Cutoff Date | Clear Cutoff`).
+  (`… Age Calculator (2026) - Age Limit & Eligibility Date | Clear Cutoff`).
   Google truncates by width and may rewrite titles; they are unique and
   descriptive, so they were left as-is.
 

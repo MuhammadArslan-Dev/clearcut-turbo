@@ -26,6 +26,9 @@ export interface FetchJsonOptions extends Omit<RequestInit, "cache"> {
   /** Next.js `fetch()` cache-control extension. Pass `false` to opt out of
    * the `next: {revalidate}` object entirely (e.g. to use `cache` instead). */
   revalidate?: number | false;
+  /** Next.js cache tags (`next.tags`) for on-demand `revalidateTag()`. Only
+   * sent with a revalidate window — an uncached read has nothing to expire. */
+  tags?: string[];
   cache?: RequestCache;
 }
 
@@ -48,7 +51,7 @@ export function createFetchClient(config: FetchClientConfig): FetchClient {
   const timeout = config.timeout ?? 15_000;
 
   async function fetchJson<T>(path: string, options: FetchJsonOptions = {}): Promise<T> {
-    const { revalidate, cache, headers, ...rest } = options;
+    const { revalidate, tags, cache, headers, ...rest } = options;
     const url = `${config.baseUrl}${path}`;
 
     const controller = new AbortController();
@@ -59,7 +62,10 @@ export function createFetchClient(config: FetchClientConfig): FetchClient {
         ...rest,
         headers: { Accept: "application/json", "Content-Type": "application/json", ...headers },
         cache,
-        next: revalidate === false ? undefined : { revalidate: revalidate ?? config.defaultRevalidate },
+        next:
+          revalidate === false
+            ? undefined
+            : { revalidate: revalidate ?? config.defaultRevalidate, ...(tags?.length ? { tags } : {}) },
         signal: options.signal ?? controller.signal,
       };
       const res = await fetch(url, requestInit);

@@ -15,6 +15,7 @@ import { Question, Translation } from "./question-list-by-subject";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import Math from "@/components/ui/math";
 import TextMarkDown from "@/components/ui/text-markdown";
+import { normalizeCourseLang, selectTranslation } from "@/utils/question-translation";
 
 interface AssessmentQuestion {
   correct_option: number;
@@ -57,7 +58,7 @@ export default function AssessmentQuestionBlock({
   const params = useParams<{ questionId: string }>();
   const [showDetails, setShowDetails] = React.useState(false);
   const { courseLanguage } = useLanguageStore();
-  const courseLang = courseLanguage.toLowerCase() === "en" ? "en" : "hi";
+  const courseLang = normalizeCourseLang(courseLanguage);
 
   const selectedQuestion = data?.find(
     (item: Question) =>
@@ -69,8 +70,7 @@ export default function AssessmentQuestionBlock({
       item.id !== parseInt(params?.questionId.split("-").pop() || ""),
   );
 
-  console.log("selectedQuestion", selectedQuestion);
-
+  const selectedTranslation = selectTranslation(selectedQuestion?.translations, courseLang);
 
   return (
     <div className="space-y-5">
@@ -83,29 +83,29 @@ export default function AssessmentQuestionBlock({
           </div>
         </div>
         <div className="body-large !font-normal">
-          <Math content={selectedQuestion?.translations[0]?.question}>
+          <Math content={selectedTranslation?.question}>
             <TextMarkDown>
-              {selectedQuestion?.translations[0]?.question ?? ""}
+              {selectedTranslation?.question ?? ""}
             </TextMarkDown>
           </Math>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             {
-              text: selectedQuestion?.translations[0]?.option_1_text,
-              img: selectedQuestion?.translations[0]?.option_1_image,
+              text: selectedTranslation?.option_1_text,
+              img: selectedTranslation?.option_1_image,
             },
             {
-              text: selectedQuestion?.translations[0]?.option_2_text,
-              img: selectedQuestion?.translations[0]?.option_2_image,
+              text: selectedTranslation?.option_2_text,
+              img: selectedTranslation?.option_2_image,
             },
             {
-              text: selectedQuestion?.translations[0]?.option_3_text,
-              img: selectedQuestion?.translations[0]?.option_3_image,
+              text: selectedTranslation?.option_3_text,
+              img: selectedTranslation?.option_3_image,
             },
             {
-              text: selectedQuestion?.translations[0]?.option_4_text,
-              img: selectedQuestion?.translations[0]?.option_4_image,
+              text: selectedTranslation?.option_4_text,
+              img: selectedTranslation?.option_4_image,
             },
           ].map((opt, idx) => (
             <Card bgcolor="white" key={idx + 1} cursor="pointer">
@@ -139,7 +139,7 @@ export default function AssessmentQuestionBlock({
 
           <div className="col-span-4 justify-self-end">
             <span className="body-large !font-semibold text-brand px-3 py-1 bg-[#006bd1]/10 rounded-md">
-              Option {options[Number(selectedQuestion?.translations[0]?.correct_option) || 0]}
+              Option {options[Number(selectedTranslation?.correct_option) || 0]}
             </span>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function AssessmentQuestionBlock({
               {!showDetails ? (
                 <p className="body-large !font-normal">
                   {removeMd(
-                    limitWords(selectedQuestion?.translations[0]?.explanation || "", 70),
+                    limitWords(selectedTranslation?.explanation || "", 70),
                   )}
                   <span
                     onClick={() => setShowDetails(!showDetails)}
@@ -163,9 +163,9 @@ export default function AssessmentQuestionBlock({
                 </p>
               ) : (
                 <div className="body-large !font-normal">
-                  <Math content={selectedQuestion?.translations[0]?.explanation}>
+                  <Math content={selectedTranslation?.explanation}>
                     <TextMarkDown>
-                      {selectedQuestion?.translations[0]?.explanation ?? ""}
+                      {selectedTranslation?.explanation ?? ""}
                     </TextMarkDown>
                   </Math>
                   <span

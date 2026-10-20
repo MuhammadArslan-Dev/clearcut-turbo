@@ -97,6 +97,7 @@ export async function generateMetadata({ params }: Props) {
       title: copy.genericTitle(label),
       description: copy.genericDescription(label),
       url: `/teaching/${slug}`,
+      locale: resolvedLocale,
     });
   }
 
@@ -104,6 +105,8 @@ export async function generateMetadata({ params }: Props) {
     title: copy.examTitle(exam.short_name),
     description: copy.examDescription(exam.name, exam.short_name),
     url: `/teaching/${slug}`,
+    // The course page is fully translated on /hi and /mr — self-canonical.
+    locale: resolvedLocale,
     image: exam.logo_url ?? undefined,
     keywords: [exam.short_name, exam.name, "Clear Cutoff", "Course", "Teaching", `${exam.short_name} preparation`],
   });

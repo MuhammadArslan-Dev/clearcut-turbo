@@ -99,5 +99,104 @@
       "facebook": "फेसबुक",
       "linkedin": "लिंक्डइन"
     }
+  },
+  "QuestionCard": {
+    "question": "प्रश्न",
+    "optionsFor": "प्रश्न {index} के विकल्प",
+    "correct": "सही",
+    "yourPick": "आपका उत्तर",
+    "hint": "अपना परिणाम और व्याख्या देखने के लिए एक उत्तर चुनें।",
+    "showExplanationResult": "व्याख्या और परिणाम देखें",
+    "answerExplanation": "उत्तर और व्याख्या",
+    "correctAnswer": "सही उत्तर:",
+    "option": "विकल्प {label}"
+  },
+  "ShareQuestion": {
+    "trigger": "शेयर करें",
+    "title": "यह प्रश्न शेयर करें",
+    "subtitle": "दोस्त को भेजें या लिंक सेव करें।",
+    "linkLabel": "प्रश्न का लिंक",
+    "copyLink": "प्रश्न का लिंक कॉपी करें",
+    "copied": "लिंक कॉपी हो गया!",
+    "copyFailed": "लिंक अपने-आप कॉपी नहीं हो सका। ऊपर लिंक चुना हुआ है — Ctrl+C दबाएँ या फ़ोन पर उसे दबाकर रखें।",
+    "whatsapp": "WhatsApp पर शेयर करें",
+    "whatsappMessage": "क्या आप यह प्रश्न हल कर सकते हैं? {question}"
+  },
+  "QuestionPagination": {
+    "label": "प्रश्नों के पेज",
+    "range": "{total} में से प्रश्न {from}–{to} · पेज {page} / {pages}",
+    "previous": "पिछला",
+    "next": "अगला",
+    "pageN": "पेज {page}"
+  },
+  "QuestionBank": {
+    "chaptersHeading": "इस विषय के अध्याय",
+    "chapterCount": "{count} प्रश्न",
+    "loadError": "अभी प्रश्न लोड नहीं हो सके। कृपया कुछ मिनट बाद फिर से कोशिश करें।"
+  },
+  "QuestionFilter": {
+    "filter": "फ़िल्टर",
+    "close": "बंद करें",
+    "searchLabel": "इस भाग में प्रश्न खोजें",
+    "searchPlaceholder": "इस अध्याय में प्रश्न खोजें…",
+    "clearSearch": "खोज साफ़ करें",
+    "suggestionsLabel": "मेल खाते प्रश्न",
+    "noSuggestions": "“{query}” से मेल खाता कोई प्रश्न नहीं मिला।",
+    "suggestionNumber": "प्रश्न {index}.",
+    "textUnavailable": "(प्रश्न का पाठ उपलब्ध नहीं है)",
+    "showAll": "सभी दिखाएँ",
+    "showing": "{total} में से {visible} प्रश्न दिखाए जा रहे हैं",
+    "empty": "इस अध्याय में अभी कोई प्रश्न उपलब्ध नहीं है।",
+    "noResults": "आपकी खोज से कोई प्रश्न मेल नहीं खाता।",
+    "showAllQuestions": "सभी प्रश्न दिखाएँ",
+    "onPage": "पेज {page}",
+    "topic": {
+      "all": "सभी टॉपिक",
+      "ariaLabel": "टॉपिक के अनुसार फ़िल्टर करें",
+      "title": "टॉपिक फ़िल्टर करें",
+      "searchPlaceholder": "टॉपिक खोजें…",
+      "noMatch": "“{query}” से मेल खाता कोई टॉपिक नहीं मिला।"
+    },
+    "chapter": {
+      "all": "सभी अध्याय",
+      "ariaLabel": "अध्याय के अनुसार फ़िल्टर करें",
+      "title": "अध्याय फ़िल्टर करें",
+      "searchPlaceholder": "अध्याय खोजें…",
+      "noMatch": "“{query}” से मेल खाता कोई अध्याय नहीं मिला।"
+    },
+    "section": {
+      "all": "सभी विषय",
+      "ariaLabel": "विषय के अनुसार फ़िल्टर करें",
+      "title": "विषय फ़िल्टर करें",
+      "searchPlaceholder": "विषय खोजें…",
+      "noMatch": "“{query}” से मेल खाता कोई विषय नहीं मिला।"
+    }
+  },
+  "ReportMistake": {
+    "trigger": "गलती बताएँ",
+    "title": "गलती की रिपोर्ट करें",
+    "subtitle": "इस प्रश्न, उत्तर या हल में कोई गलती दिखी? हमें बताएँ।",
+    "questionLabel": "प्रश्न:",
+    "reasonLabel": "रिपोर्ट का कारण",
+    "reasons": {
+      "wrongAnswer": { "title": "गलत उत्तर", "description": "आधिकारिक उत्तर कुंजी गलत अंकित है" },
+      "wrongSolution": { "title": "गलत हल", "description": "व्याख्या या हल में गलती है" },
+      "incorrectQuestion": { "title": "गलत प्रश्न", "description": "प्रश्न में टाइपो, अधूरी जानकारी या टूटा हुआ टेक्स्ट है" },
+      "wrongOptions": { "title": "गलत विकल्प", "description": "विकल्प उलटे-पुलटे, गलत या बेमेल हैं" },
+      "tagging": { "title": "टैगिंग", "description": "गलत वर्ष, परीक्षा, विषय या टॉपिक" },
+      "duplicate": { "title": "डुप्लिकेट", "description": "यही प्रश्न एक से अधिक बार आया है" },
+      "other": { "title": "अन्य", "description": "इस प्रश्न से जुड़ी कोई और समस्या" }
+    },
+    "detailsLabel": "अतिरिक्त विवरण",
+    "optional": "(वैकल्पिक)",
+    "otherHint": "नीचे विवरण लिखें",
+    "placeholder": "कोई अतिरिक्त जानकारी या सुधार यहाँ लिखें…",
+    "placeholderOther": "कृपया इस प्रश्न की समस्या बताएँ…",
+    "errors": {
+      "reason": "कृपया रिपोर्ट का कारण चुनें।",
+      "details": "कृपया समस्या का विवरण लिखें।"
+    },
+    "cancel": "रद्द करें",
+    "submit": "रिपोर्ट भेजें"
   }
 }

@@ -60,9 +60,13 @@ function getCourseListSchema() {
   };
 }
 
-export function generateMetadata() {
+// /hi and /mr render a fully translated course list, so each locale is its
+// own canonical (not a duplicate of the English page).
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return generateSeoMetadata({
     title: "All Teaching Exam Courses | Clear Cutoff",
+    locale: toLocale(locale),
     description:
       "Explore all teaching exam courses on Clear Cutoff — HTET, CTET, UPTET, REET, HPTET and more. Course content, test series, PYQs, and video lectures for every state TET exam.",
     url: "/teaching",

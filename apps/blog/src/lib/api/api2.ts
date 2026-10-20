@@ -11,6 +11,7 @@ export async function apiFetch<T = any>(
     cache,
     timeout = 15000,
     revalidate = false,
+    tags,
   }: {
     method?: string;
     headers?: HeadersInit;
@@ -21,6 +22,8 @@ export async function apiFetch<T = any>(
      * keep the previous always-uncached behaviour. Pass a number for large
      * public reads so SSR doesn't re-fetch them on every request. */
     revalidate?: number | false;
+    /** Next.js cache tags for on-demand revalidateTag(); needs `revalidate`. */
+    tags?: string[];
   } = {}
 ): Promise<T | null> {
   if (!baseUrl) {
@@ -44,6 +47,7 @@ export async function apiFetch<T = any>(
       // window was requested.
       cache: revalidate === false ? (cache ?? "no-store") : undefined,
       revalidate,
+      tags,
     });
   } catch (err) {
     console.error("Fetch failed:", err, `${baseUrl}${endpoint}`);
