@@ -9,7 +9,6 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import WhatsappIcon from "../icons/whatsapp-icon";
 import FireIcon from "../icons/fire-icon";
-import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -252,10 +251,8 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
       }
     };
 
-    useWebOtpAutofill((code) => {
-      setOtp(code);
-      handleVerify(code);
-    }, true);
+    // No WebOTP call — see otp-screen.tsx: the keyboard's OTP chip
+    // (autoComplete="one-time-code") fills the input instead.
 
     return (
       <>

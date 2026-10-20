@@ -24,8 +24,8 @@ interface OtpBoxInputProps {
 
 /**
  * Controlled multi-box OTP input. `value` is the single source of truth (a
- * digit string up to `length` long) — this lets external updates, like
- * useWebOtpAutofill's setOtp(code), just work: the boxes re-render from the
+ * digit string up to `length` long) — this lets external updates, like a
+ * parent's setOtp(code), just work: the boxes re-render from the
  * new value with no extra wiring. Each box only ever reports the FULL
  * resulting string via onChange; it never manages its own independent state.
  */

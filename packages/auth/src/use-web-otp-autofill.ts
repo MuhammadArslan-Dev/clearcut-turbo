@@ -12,6 +12,13 @@ interface CredentialsContainerWithOtp {
 }
 
 /**
+ * NOT USED at the moment (removed from otp-screen, inline-auth-flow and
+ * landing's StartAuthForm, 2026-10-20). WebOTP only returns a code when the
+ * SMS's last line is "@<page host> #<code>"; our Fast2SMS DLT template ends
+ * with the Android app hash instead, so Chrome showed its "Allow" sheet and
+ * then filled nothing — and blocked the keyboard's OTP suggestion chip.
+ * Re-enable only after the SMS template carries that line for the login host.
+ *
  * WebOTP API (https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API)
  * auto-read, ported verbatim from the identical effect that was duplicated
  * in otp-screen.tsx and result-step.tsx. No-ops on browsers without

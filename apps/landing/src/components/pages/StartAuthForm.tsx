@@ -31,7 +31,6 @@ import {
   buildPostVerifyRedirectUrl,
   getCurrentLocale,
 } from "@clearcut/auth/redirect";
-import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import {
   useTruecallerLogin,
   useTruecallerAvailability,
@@ -578,10 +577,9 @@ export default function StartAuthForm({
     }
   };
 
-  useWebOtpAutofill((code) => {
-    setOtp(code);
-    handleVerify(code);
-  }, step === "otp");
+  // No WebOTP call (see @clearcut/auth otp-screen.tsx): the keyboard's OTP
+  // chip fills OtpBoxInput (autoComplete="one-time-code") and its onChange
+  // verifies once all digits are in.
 
   /* ---------------- TRUECALLER ---------------- */
 

@@ -10,7 +10,6 @@ import { DrawerSheet } from "../ui/drawer-sheet";
 import { Modal } from "../ui/modal";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
-import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -125,11 +124,11 @@ export function createOtpScreen({
     }, [screen, phone]);
 
     /* ---------------- AUTO READ OTP ---------------- */
-
-    useWebOtpAutofill((code) => {
-      setOtp(code);
-      handleVerify(code);
-    }, screen === "otp");
+    // No WebOTP call (use-web-otp-autofill.ts): our SMS has no
+    // "@<host> #<code>" last line, so Chrome's "Allow" sheet never filled the
+    // code — and while that request is pending Chrome shows the sheet instead
+    // of the keyboard's OTP chip. The input's autoComplete="one-time-code"
+    // gives the chip; tapping it fills the input and onChange verifies.
 
     /* ---------------- VERIFY ---------------- */
 
