@@ -10,7 +10,6 @@ import { DrawerSheet } from "../ui/drawer-sheet";
 import { Modal } from "../ui/modal";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
-import { useWebOtpAutofill } from "../use-web-otp-autofill";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
@@ -87,6 +86,15 @@ export function createOtpScreen({
 
     const isVerifyingRef = useRef(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
+    // Bumped after a wrong/expired OTP: the OTP input remounts as a new
+    // element, so Chrome builds a fresh keyboard OTP chip for it instead of
+    // re-offering the code it already filled into the old element. No
+    // blur(): on Android that closes the keyboard and a scripted focus()
+    // can't reopen it.
+    const [otpFieldKey, setOtpFieldKey] = useState(0);
+    useEffect(() => {
+      if (otpFieldKey) inputRef.current?.focus();
+    }, [otpFieldKey]);
 
     /* ---------------- TIMER ---------------- */
 
@@ -125,11 +133,11 @@ export function createOtpScreen({
     }, [screen, phone]);
 
     /* ---------------- AUTO READ OTP ---------------- */
-
-    useWebOtpAutofill((code) => {
-      setOtp(code);
-      handleVerify(code);
-    }, screen === "otp");
+    // No WebOTP call (use-web-otp-autofill.ts): our SMS has no
+    // "@<host> #<code>" last line, so Chrome's "Allow" sheet never filled the
+    // code — and while that request is pending Chrome shows the sheet instead
+    // of the keyboard's OTP chip. The input's autoComplete="one-time-code"
+    // gives the chip; tapping it fills the input and onChange verifies.
 
     /* ---------------- VERIFY ---------------- */
 
@@ -220,6 +228,10 @@ export function createOtpScreen({
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 422 || status === 401) {
           setError("Invalid or expired OTP. Please try again.");
+          // Most often the keyboard chip's code from a previous login —
+          // clear it and remount the input (see otpFieldKey).
+          setOtp("");
+          setOtpFieldKey((k) => k + 1);
         } else if (status === 429) {
           setError("Too many attempts. Please wait a minute and try again.");
         } else if (status && status >= 500) {
@@ -316,6 +328,11 @@ export function createOtpScreen({
 
                   <div>
                     <MainInput
+                      key={otpFieldKey}
+                      // A new name too: Chrome's autofill identifies a field by
+                      // its name/id, not only the DOM element.
+                      name={`otp-${otpFieldKey}`}
+                      id={`otp-${otpFieldKey}`}
                       ref={inputRef}
                       error={error}
                       value={otp}

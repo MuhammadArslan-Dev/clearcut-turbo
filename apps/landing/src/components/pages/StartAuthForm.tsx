@@ -31,7 +31,6 @@ import {
   buildPostVerifyRedirectUrl,
   getCurrentLocale,
 } from "@clearcut/auth/redirect";
-import { useWebOtpAutofill } from "@clearcut/auth/use-web-otp-autofill";
 import {
   useTruecallerLogin,
   useTruecallerAvailability,
@@ -262,6 +261,8 @@ export default function StartAuthForm({
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  // Bumped after a wrong/expired OTP so OtpBoxInput refocuses (fresh keyboard chip).
+  const [otpRefocusKey, setOtpRefocusKey] = useState(0);
   const [userId, setUserId] = useState(() =>
     typeof window !== "undefined"
       ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
@@ -566,6 +567,10 @@ export default function StartAuthForm({
         ?.status;
       if (status === 422 || status === 401) {
         setError(t.errOtpInvalid);
+        // Most often the keyboard chip's code from a previous login — clear
+        // it and remount the boxes (OtpBoxInput refocusKey).
+        setOtp("");
+        setOtpRefocusKey((k) => k + 1);
       } else if (status && status >= 500) {
         setError(t.errServer);
       } else if (!navigator.onLine) {
@@ -578,10 +583,9 @@ export default function StartAuthForm({
     }
   };
 
-  useWebOtpAutofill((code) => {
-    setOtp(code);
-    handleVerify(code);
-  }, step === "otp");
+  // No WebOTP call (see @clearcut/auth otp-screen.tsx): the keyboard's OTP
+  // chip fills OtpBoxInput (autoComplete="one-time-code") and its onChange
+  // verifies once all digits are in.
 
   /* ---------------- TRUECALLER ---------------- */
 
@@ -783,6 +787,7 @@ export default function StartAuthForm({
                   error={!!error}
                   disabled={loading}
                   autoFocus
+                  refocusKey={otpRefocusKey}
                   onChange={(val) => {
                     setOtp(val);
                     if (val.length === OTP_LENGTH) handleVerify(val);

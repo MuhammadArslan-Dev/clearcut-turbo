@@ -20,12 +20,17 @@ interface OtpBoxInputProps {
   error?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** Bump after a wrong/expired OTP: the boxes remount as new elements (so
+   * Chrome builds a fresh keyboard OTP chip instead of re-offering the code
+   * it already filled) and the first box is focused. No blur(): on Android
+   * that closes the keyboard and a scripted focus() can't reopen it. */
+  refocusKey?: number;
 }
 
 /**
  * Controlled multi-box OTP input. `value` is the single source of truth (a
- * digit string up to `length` long) — this lets external updates, like
- * useWebOtpAutofill's setOtp(code), just work: the boxes re-render from the
+ * digit string up to `length` long) — this lets external updates, like a
+ * parent's setOtp(code), just work: the boxes re-render from the
  * new value with no extra wiring. Each box only ever reports the FULL
  * resulting string via onChange; it never manages its own independent state.
  */
@@ -36,6 +41,7 @@ export default function OtpBoxInput({
   error = false,
   disabled = false,
   autoFocus = false,
+  refocusKey = 0,
 }: OtpBoxInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -44,6 +50,11 @@ export default function OtpBoxInput({
     if (autoFocus) inputRefs.current[0]?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (refocusKey === 0) return;
+    inputRefs.current[0]?.focus();
+  }, [refocusKey]);
 
   const setDigitAt = (index: number, digit: string) => {
     const chars = value.split("");
@@ -137,7 +148,11 @@ export default function OtpBoxInput({
 
         return (
           <input
-            key={i}
+            key={`${refocusKey}-${i}`}
+            // A new name too: Chrome's autofill identifies a field by its
+            // name/id, not only the DOM element.
+            name={`otp-${refocusKey}-${i}`}
+            id={`otp-${refocusKey}-${i}`}
             ref={(el) => {
               inputRefs.current[i] = el;
             }}
