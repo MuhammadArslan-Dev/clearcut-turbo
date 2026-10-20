@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import WhatsappIcon from "../icons/whatsapp-icon";
 import FireIcon from "../icons/fire-icon";
 import { setToken } from "../token";
+import { refocusForNewOtpChip } from "../otp-chip-refresh";
 import { buildPostVerifyRedirectUrl } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
@@ -109,6 +110,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
     const isVerifyingRef = useRef(false);
+    const otpInputRef = useRef<HTMLInputElement | null>(null);
     // Successful resends for the current login flow — see verification-events.ts.
     const resendCountRef = useRef(0);
 
@@ -246,6 +248,10 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         if (!outcomeTracked) trackAuthFailure(onEvent, getAuthFailureReason(err));
         console.error(err);
         setError("Invalid OTP");
+        // Most often the keyboard chip's code from a previous login — clear
+        // it and refocus so the chip picks up the new SMS (otp-chip-refresh.ts).
+        setOtp("");
+        refocusForNewOtpChip(() => otpInputRef.current);
       } finally {
         setLoading(true); setDisabled(false); isVerifyingRef.current = false;
       }
@@ -296,7 +302,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
               <div className="w-[240px]">
                 <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)] mb-1">4-digit OTP</p>
                 <div className="w-full">
-                  <MainInput error={error} showError={false} value={otp} placeholder="4 digit OTP" onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); setOtp(val); if (val.length === OTP_LENGTH) handleVerify(val); }} inputType="phone" maxLength={4} autoComplete="one-time-code" className="w-full" />
+                  <MainInput ref={otpInputRef} error={error} showError={false} value={otp} placeholder="4 digit OTP" onChange={(e) => { const val = e.target.value.replace(/\D/g, ""); setOtp(val); if (val.length === OTP_LENGTH) handleVerify(val); }} inputType="phone" maxLength={4} autoComplete="one-time-code" className="w-full" />
                 </div>
                 {error && <p className={`text-sm w-full text-left max-w-[335px] ${error ? "text-red-600" : "text-green-600"}`}>{error}</p>}
                 <Text as="p" variant="body-small" color="gray-muted" className="text-center mt-2">

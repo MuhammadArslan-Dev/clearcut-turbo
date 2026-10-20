@@ -11,6 +11,7 @@ import { Modal } from "../ui/modal";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { setToken } from "../token";
+import { refocusForNewOtpChip } from "../otp-chip-refresh";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
@@ -219,6 +220,10 @@ export function createOtpScreen({
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 422 || status === 401) {
           setError("Invalid or expired OTP. Please try again.");
+          // Most often the keyboard chip's code from a previous login —
+          // clear it and refocus so the chip picks up the new SMS.
+          setOtp("");
+          refocusForNewOtpChip(() => inputRef.current);
         } else if (status === 429) {
           setError("Too many attempts. Please wait a minute and try again.");
         } else if (status && status >= 500) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { refocusForNewOtpChip } from "@clearcut/auth/otp-chip-refresh";
 
 // Same colour tokens @clearcut/ui/main-input uses, so this reads as the same
 // input style, just laid out as separate boxes instead of one field.
@@ -20,6 +21,10 @@ interface OtpBoxInputProps {
   error?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** Bump after a wrong/expired OTP: the first box is blurred and focused
+   * again so the keyboard's OTP chip is rebuilt from the newest SMS
+   * (@clearcut/auth/otp-chip-refresh). */
+  refocusKey?: number;
 }
 
 /**
@@ -36,6 +41,7 @@ export default function OtpBoxInput({
   error = false,
   disabled = false,
   autoFocus = false,
+  refocusKey = 0,
 }: OtpBoxInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -44,6 +50,11 @@ export default function OtpBoxInput({
     if (autoFocus) inputRefs.current[0]?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (refocusKey === 0) return;
+    refocusForNewOtpChip(() => inputRefs.current[0]);
+  }, [refocusKey]);
 
   const setDigitAt = (index: number, digit: string) => {
     const chars = value.split("");

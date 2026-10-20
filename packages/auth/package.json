@@ -11,6 +11,7 @@
     "./redirect": "./src/redirect.ts",
     "./context": "./src/context.tsx",
     "./use-web-otp-autofill": "./src/use-web-otp-autofill.ts",
+    "./otp-chip-refresh": "./src/otp-chip-refresh.ts",
     "./truecaller": "./src/truecaller.ts",
     "./truecaller-button": "./src/ui/truecaller-button.tsx",
     "./validators": "./src/validators.ts",
