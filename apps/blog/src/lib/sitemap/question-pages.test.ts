@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fixtureIndex } from "@/lib/seo/exam-index.fixture";
+import { QUESTIONS_PER_PAGE as P } from "@/lib/question-bank/pagination";
 import { urlsetXml } from "./xml";
 import { isWellFormed } from "./xml-well-formed";
 import {
@@ -25,7 +26,7 @@ const locs = (entries: { loc: string }[]) => entries.map((e) => e.loc);
 
 const qIndex: QuestionIndex = {
   chapters: {
-    "development-theories": list(60, 1000),
+    "development-theories": list(P + 10, 1000),
     "social-development": list(5, 2000),
     "parts-of-speech": list(3, 3000, [0, 1, 2]),
     "history-basics": [],
@@ -37,16 +38,16 @@ const qIndex: QuestionIndex = {
 };
 
 describe("pagedEntries", () => {
-  it("makes one URL per 50 questions, with no /page/1", () => {
-    const urls = locs(pagedEntries(ORIGIN, "/x", list(101)));
+  it("makes one URL per QUESTIONS_PER_PAGE questions, with no /page/1", () => {
+    const urls = locs(pagedEntries(ORIGIN, "/x", list(2 * P + 1)));
     expect(urls).toEqual([`${ORIGIN}/x`, `${ORIGIN}/x/page/2`, `${ORIGIN}/x/page/3`]);
     expect(pagedEntries(ORIGIN, "/x", [])).toEqual([]);
   });
 
   it("dates each page by the newest question on that page only", () => {
-    const entries = pagedEntries(ORIGIN, "/x", list(60));
-    expect(entries[0].lastmod).toBe(iso(T0 + 49));
-    expect(entries[1].lastmod).toBe(iso(T0 + 59));
+    const entries = pagedEntries(ORIGIN, "/x", list(P + 10));
+    expect(entries[0].lastmod).toBe(iso(T0 + P - 1));
+    expect(entries[1].lastmod).toBe(iso(T0 + P + 9));
   });
 
   it("never invents a date for a page without timestamps", () => {
@@ -55,9 +56,9 @@ describe("pagedEntries", () => {
   });
 
   it("adds the /hi twin right after each page whose questions are mostly bilingual", () => {
-    // Page 1: 50 bilingual; page 2: 50 English-only; page 3: 10 bilingual.
-    const flags: (0 | 1)[] = [...Array(50).fill(1), ...Array(50).fill(0), ...Array(10).fill(1)];
-    const entries = pagedEntries(ORIGIN, "/x", list(110).map(([id, ts], i) => [id, ts, flags[i]]));
+    // Page 1: all bilingual; page 2: all English-only; page 3: 10 bilingual.
+    const flags: (0 | 1)[] = [...Array(P).fill(1), ...Array(P).fill(0), ...Array(10).fill(1)];
+    const entries = pagedEntries(ORIGIN, "/x", list(2 * P + 10).map(([id, ts], i) => [id, ts, flags[i]]));
     expect(locs(entries)).toEqual([
       `${ORIGIN}/x`,
       `${ORIGIN}/hi/x`,
@@ -70,7 +71,7 @@ describe("pagedEntries", () => {
   });
 
   it("lists no /hi URLs when the backend sends no bilingual flag", () => {
-    expect(locs(pagedEntries(ORIGIN, "/x", list(60))).some((u) => u.includes("/hi/"))).toBe(false);
+    expect(locs(pagedEntries(ORIGIN, "/x", list(P + 10))).some((u) => u.includes("/hi/"))).toBe(false);
   });
 });
 
@@ -105,8 +106,8 @@ describe("question-bank sitemap entries", () => {
     });
     const cdp = `${ORIGIN}/ctet/paper-1/subject/child-development-pedagogy`;
     expect(locs(entries)).toEqual([cdp, `${cdp}/page/2`, `${ORIGIN}/ctet/paper-1/subject/english`]);
-    // Page 2 holds development-theories' last 15 questions (5 + 60 = 65).
-    expect(entries[1].lastmod).toBe(iso(T0 + 59));
+    // Page 2 holds development-theories' last 15 questions (5 + (P + 10)).
+    expect(entries[1].lastmod).toBe(iso(T0 + P + 9));
     // A subject with no questions (social-studies) is not listed.
     expect(locs(entries).some((u) => u.includes("social-studies"))).toBe(false);
   });
@@ -114,9 +115,10 @@ describe("question-bank sitemap entries", () => {
   it("lists only level x year pages with questions, capped at what the year page serves", () => {
     const urls = locs(yearPageEntries(ORIGIN, fixtureIndex, qIndex, ["CTET_2024", "CTET_2023"]));
     const p1 = `${ORIGIN}/ctet/paper-1/year/ctet-2024`;
-    expect(urls.filter((u) => u.startsWith(p1))).toHaveLength(YEAR_PAGE_LIMIT / 50);
-    expect(urls).toContain(`${p1}/page/10`);
-    expect(urls).not.toContain(`${p1}/page/11`);
+    const lastPage = Math.ceil(YEAR_PAGE_LIMIT / P);
+    expect(urls.filter((u) => u.startsWith(p1))).toHaveLength(lastPage);
+    expect(urls).toContain(`${p1}/page/${lastPage}`);
+    expect(urls).not.toContain(`${p1}/page/${lastPage + 1}`);
     expect(urls).toContain(`${ORIGIN}/ctet/paper-2/year/ctet-2024`);
     expect(urls.some((u) => u.includes("ctet-2023"))).toBe(false);
     expect(urls.some((u) => u.includes("/paper-3/") || u.includes("/paper-4/"))).toBe(false);

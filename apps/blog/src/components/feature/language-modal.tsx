@@ -19,7 +19,7 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
     const pathname = usePathname();
     const params = useParams();
     const locale = useLocale() as AppLocale; // current locale
-    const { setAppLanguage, courseLanguage, setCourseLanguage } = useLanguageStore();
+    const { setAppLanguage, setCourseLanguage } = useLanguageStore();
 
     const locales = routing.locales;
     const currentIndex = locales.indexOf(locale);
@@ -89,13 +89,16 @@ export default function LanguageModal({ isOpen, onClose }: { isOpen: boolean, on
                                 {languages.map((item, index) => (
                                     <Card
                                         onClick={() => {
+                                            // The URL decides the question language (/hi = Hindi),
+                                            // so picking one opens the same page in that locale.
                                             setCourseLanguage(item.code)
+                                            switchLanguage(item.code as AppLocale)
                                         }}
                                         key={index}
                                         cursor="pointer"
                                         borderwidth={2}
-                                        bordercolor={courseLanguage === item.code ? '#0083ff' : '#CBD5E2'}
-                                        bgcolor={courseLanguage === item.code ? '#0084ff17' : '#ffffff'}
+                                        bordercolor={locale === item.code ? '#0083ff' : '#CBD5E2'}
+                                        bgcolor={locale === item.code ? '#0084ff17' : '#ffffff'}
                                     >
                                         <div className="space-y-1">
                                             <h3 className="body-large font-medium">{item.name}</h3>

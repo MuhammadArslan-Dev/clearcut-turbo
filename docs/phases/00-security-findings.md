@@ -18,6 +18,10 @@
    - `/razorpay-ping` is public and returns the latest live order, including the user's phone and email in the notes. **This is a PII leak.**
    - `BE/routes/Apis/V2/payment.php:13-18`: `payment/check-payment-by-user` is public. It looks up any user's enrollment by phone and can trigger a reminder.
 
+4. **Blog shared keys are in code and on GitHub** (user decision 2026-10-21: keep in code for now, change later).
+   - `BLOG_SERVER_KEY` and the revalidate secret are hardcoded in CM `apps/blog/src/lib/api/blog-server-key.ts` and BE `config/services.php` (both pushed to `main` on 2026-10-21).
+   - Later: move both to env/Worker secrets and rotate them on both sides.
+
 ## Steps
 
 - [!] 🛑 **D1:** rotate the Razorpay live key, secret and webhook secret now, and move them to env? Rotating changes webhook signature verification.

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Translation } from "@/components/blog/assessment-question/questions-list";
 import { buildCards } from "./card-model";
 import { courseLangFor, isBilingualCard, isHindiPage, isHindiPageByFlags } from "./hindi-page";
+import { QUESTIONS_PER_PAGE } from "./pagination";
 
 const t = (locale: string, question: string) => ({ locale, question, correct_option: "1" }) as Translation;
 const q = (id: number, translations: Translation[]) =>
@@ -27,9 +28,10 @@ describe("which /hi question pages are Hindi pages", () => {
     expect(isHindiPageByFlags([])).toBe(false);
   });
 
-  it("decides per page of 50 (year pages mix sections)", () => {
+  it("decides per page (year pages mix sections)", () => {
+    const P = QUESTIONS_PER_PAGE;
     const cards = buildCards(
-      [...Array.from({ length: 50 }, (_, i) => q(100 + i, bilingual.translations)), ...Array.from({ length: 50 }, (_, i) => q(200 + i, englishOnly.translations))],
+      [...Array.from({ length: P }, (_, i) => q(100 + i, bilingual.translations)), ...Array.from({ length: P }, (_, i) => q(200 + i, englishOnly.translations))],
       "section",
     );
     expect(isHindiPage(cards, 1)).toBe(true);
@@ -39,17 +41,8 @@ describe("which /hi question pages are Hindi pages", () => {
 });
 
 describe("course language shown on a question page", () => {
-  it("follows the URL until the visitor picks one", () => {
-    expect(courseLangFor("hi", "en", false)).toBe("hi");
-    expect(courseLangFor("en", "en", false)).toBe("en");
-  });
-
-  it("keeps the visitor's own pick on either site", () => {
-    expect(courseLangFor("hi", "en", true)).toBe("en");
-    expect(courseLangFor("en", "hi", true)).toBe("hi");
-  });
-
-  it("treats a stored non-default language from before the flag existed as a pick", () => {
-    expect(courseLangFor("en", "hi", false)).toBe("hi");
+  it("always follows the URL: /hi shows Hindi, English URLs show English", () => {
+    expect(courseLangFor("hi")).toBe("hi");
+    expect(courseLangFor("en")).toBe("en");
   });
 });

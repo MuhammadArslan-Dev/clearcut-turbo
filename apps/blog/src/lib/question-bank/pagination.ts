@@ -2,7 +2,7 @@
 // the existing URL; page N >= 2 lives at "<base>/page/N". Pure, so the page
 // routes, the search index route and the tests all agree on page boundaries.
 
-export const QUESTIONS_PER_PAGE = 50;
+export const QUESTIONS_PER_PAGE = 20;
 
 export function pageCount(total: number, perPage = QUESTIONS_PER_PAGE): number {
   return Math.max(1, Math.ceil(Math.max(0, total) / perPage));

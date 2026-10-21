@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { QUESTIONS_PER_PAGE } from "@/lib/question-bank/pagination";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -25,9 +26,10 @@ describe("question-bank page params", () => {
   });
 
   it("404s a page past the last one, once the questions loaded", () => {
-    expect(() => assertPageExists(2, 100, true)).not.toThrow();
-    expect(() => assertPageExists(3, 101, true)).not.toThrow();
-    expect(() => assertPageExists(3, 100, true)).toThrow("NEXT_NOT_FOUND");
+    const P = QUESTIONS_PER_PAGE;
+    expect(() => assertPageExists(2, 2 * P, true)).not.toThrow();
+    expect(() => assertPageExists(3, 2 * P + 1, true)).not.toThrow();
+    expect(() => assertPageExists(3, 2 * P, true)).toThrow("NEXT_NOT_FOUND");
     // An empty chapter still has its page 1 (showing the empty state).
     expect(() => assertPageExists(1, 0, true)).not.toThrow();
   });

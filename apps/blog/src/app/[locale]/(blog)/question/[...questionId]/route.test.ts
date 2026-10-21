@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fixtureIndex } from "@/lib/seo/exam-index.fixture";
+import { QUESTIONS_PER_PAGE } from "@/lib/question-bank/pagination";
 
 vi.mock("@/lib/seo/load-exam-index", () => ({ loadExamIndex: async () => fixtureIndex }));
 
@@ -77,8 +78,8 @@ describe("legacy /question/* URLs", () => {
   });
 
   it("sends a question to the chapter page that shows it", async () => {
-    // 161 is the 76th rendered question -> page 2 (50 per page).
-    stubBackend({ chapterIds: [...Array.from({ length: 75 }, (_, i) => 1000 + i), 161, 2000] });
+    // 161 is rendered question P + 6 -> page 2.
+    stubBackend({ chapterIds: [...Array.from({ length: QUESTIONS_PER_PAGE + 5 }, (_, i) => 1000 + i), 161, 2000] });
     const res = await call("en", ["161"], "?utm_source=wa");
     expect(res.status).toBe(301);
     expect(res.headers.get("location")).toBe(`${CHAPTER}/page/2?utm_source=wa#q-161`);
@@ -86,8 +87,8 @@ describe("legacy /question/* URLs", () => {
   });
 
   it("counts only rendered questions, like the chapter page", async () => {
-    // 50 before it, but one has no translation (no card) -> 161 is the 50th card -> page 1.
-    const before = Array.from({ length: 50 }, (_, i) => 1000 + i);
+    // P before it, but one has no translation (no card) -> 161 is card P -> page 1.
+    const before = Array.from({ length: QUESTIONS_PER_PAGE }, (_, i) => 1000 + i);
     stubBackend({ chapterIds: [...before, 161], untranslated: [1000] });
     expect((await call("en", ["161"])).headers.get("location")).toBe(`${CHAPTER}#q-161`);
   });

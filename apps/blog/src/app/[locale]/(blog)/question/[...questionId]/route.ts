@@ -68,7 +68,7 @@ export async function GET(
   }
   if (!path) return notFoundResponse(locale);
 
-  // Chapter pages show 50 questions per page: send the visitor to the page
+  // Chapter pages show QUESTIONS_PER_PAGE (20) questions per page: send the visitor to the page
   // that holds this question, using the same data and order the chapter page
   // renders. A question that doesn't render there (no translation) falls back
   // to page 1. If the chapter can't be loaded, don't guess: a wrong 301 would

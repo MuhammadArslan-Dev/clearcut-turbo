@@ -44,6 +44,9 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 11 | [Payment page loads twice](11-cc61-payment-double-load.md) | CC-61 | CM-dashboard | Not Started | D1, C1 |
 | 12 | [Trial copy on landing + in-app](12-cc67-trial-copy.md) | CC-67 | ASTRO, CM-landing, CM-dashboard, CMS admin | Not Started | C1–C3 (copy from RD) |
 | 13 | [HPTET landing-page-view tracking (parked)](13-cc115b-hptet-lpv.md) | CC-115 Part B | ASTRO | Not Started | Not in Arslan's list — confirm whether to do it |
+| 14 | [Blog Worker CPU limit (503 / error 1102)](14-blog-worker-limit.md) | — (prod incident 2026-10-21) | CM-blog, Cloudflare | Superseded by 15 (rolled back to Oct 13 build; prerender work parked on `blog-worker-cpu`) | — |
+| 15 | [Move blog to Vercel](15-blog-vercel-migration.md) | — | CM-blog, Vercel, Cloudflare DNS | Not Started | D1–D5, C1–C2 |
+| 16 | [Question rendering: 20/page, render-once HTML, page-only fetch](16-question-rendering-and-page-size.md) | — | CM-blog, (BE for part C) | In Progress | C gated on index check |
 
 ## Cross-phase dependencies
 

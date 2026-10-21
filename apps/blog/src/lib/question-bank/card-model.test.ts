@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Question, Translation } from "@/components/blog/assessment-question/questions-list";
 import { buildCards, cardBlocks, cardLabels, groupsByLang, labelFor, searchIndexItems } from "./card-model";
+import { QUESTIONS_PER_PAGE } from "./pagination";
 
 function tr(locale: string, over: Partial<Translation> = {}): Translation {
   return {
@@ -101,7 +102,7 @@ describe("buildCards", () => {
   });
 
   it("derives each question's chapter page from its chapter index", () => {
-    const cards = buildCards([q(10, [tr("en")]), q(12, [tr("en")])], "chapter", new Map([[10, 0], [12, 75]]));
+    const cards = buildCards([q(10, [tr("en")]), q(12, [tr("en")])], "chapter", new Map([[10, 0], [12, QUESTIONS_PER_PAGE + 5]]));
     expect(cards.map((c) => c.chapterPage)).toEqual([1, 2]);
     expect(buildCards([q(10, [tr("en")])], "section")[0].chapterPage).toBeNull();
   });
@@ -115,10 +116,10 @@ describe("buildCards", () => {
 
 describe("searchIndexItems", () => {
   it("indexes plain question/option text with its page", () => {
-    const many = Array.from({ length: 51 }, (_, i) => q(100 + i, [tr("en")]));
+    const many = Array.from({ length: QUESTIONS_PER_PAGE + 1 }, (_, i) => q(100 + i, [tr("en")]));
     const items = searchIndexItems(buildCards(many, "topic"));
     expect(items[0]).toEqual({ id: 100, n: 1, p: 1, g: "Play", t: ["en question", "en A en B"] });
-    expect(items[50].p).toBe(2);
+    expect(items[QUESTIONS_PER_PAGE].p).toBe(2);
   });
 
   it("adds Hindi text only when it differs", () => {

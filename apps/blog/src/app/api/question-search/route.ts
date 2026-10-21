@@ -4,7 +4,7 @@ import { parseScopeQuery, type QuestionScope } from "@/lib/question-bank/scope";
 import { findLevel, type ExamIndex } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 
-// The question-bank pages show 50 questions per page; their search box still
+// The question-bank pages show QUESTIONS_PER_PAGE (20) questions per page; their search box still
 // searches every page. On the first meaningful query (or a #q-<id> link to a
 // question on another page) the page fetches this compact index: plain
 // question/option text, group label and page number per question — no

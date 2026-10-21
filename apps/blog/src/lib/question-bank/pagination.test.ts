@@ -11,30 +11,33 @@ import {
 } from "./pagination";
 
 describe("question-bank pagination", () => {
-  it("uses 50 questions per page", () => {
-    expect(QUESTIONS_PER_PAGE).toBe(50);
+  // Product decision 2026-10-21 (docs/phases/16): 20 questions per page.
+  it("uses 20 questions per page", () => {
+    expect(QUESTIONS_PER_PAGE).toBe(20);
   });
+
+  const P = QUESTIONS_PER_PAGE;
 
   it("counts pages, never fewer than one", () => {
     expect(pageCount(0)).toBe(1);
     expect(pageCount(1)).toBe(1);
-    expect(pageCount(50)).toBe(1);
-    expect(pageCount(51)).toBe(2);
-    expect(pageCount(480)).toBe(10);
-    expect(pageCount(993)).toBe(20);
+    expect(pageCount(P)).toBe(1);
+    expect(pageCount(P + 1)).toBe(2);
+    expect(pageCount(10 * P)).toBe(10);
+    expect(pageCount(19 * P + 3)).toBe(20);
   });
 
   it("maps a 0-based index to its page", () => {
     expect(pageOfIndex(0)).toBe(1);
-    expect(pageOfIndex(49)).toBe(1);
-    expect(pageOfIndex(50)).toBe(2);
-    expect(pageOfIndex(479)).toBe(10);
+    expect(pageOfIndex(P - 1)).toBe(1);
+    expect(pageOfIndex(P)).toBe(2);
+    expect(pageOfIndex(10 * P - 1)).toBe(10);
   });
 
   it("slices exactly one page", () => {
-    const items = Array.from({ length: 120 }, (_, i) => i);
-    expect(pageSlice(items, 1)).toEqual(items.slice(0, 50));
-    expect(pageSlice(items, 3)).toEqual(items.slice(100, 120));
+    const items = Array.from({ length: 2 * P + 20 }, (_, i) => i);
+    expect(pageSlice(items, 1)).toEqual(items.slice(0, P));
+    expect(pageSlice(items, 3)).toEqual(items.slice(2 * P, 2 * P + 20));
     expect(pageSlice(items, 4)).toEqual([]);
   });
 
@@ -48,8 +51,8 @@ describe("question-bank pagination", () => {
   });
 
   it("checks a page against the total", () => {
-    expect(pageExists(10, 480)).toBe(true);
-    expect(pageExists(11, 480)).toBe(false);
+    expect(pageExists(10, 10 * P)).toBe(true);
+    expect(pageExists(11, 10 * P)).toBe(false);
     expect(pageExists(1, 0)).toBe(true);
   });
 
