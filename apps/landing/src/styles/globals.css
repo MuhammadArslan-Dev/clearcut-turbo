@@ -20,7 +20,7 @@
 @theme static {
   /* Font families — bound to the next/font loaded faces (hashed family names
      exposed via the CSS variables), with the literal names as a fallback. */
-  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-latin: "Local Rupee", var(--font-noto-sans), "Noto Sans", sans-serif; /* "Local Rupee": tokens.css */
   --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
 }
 

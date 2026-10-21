@@ -82,7 +82,7 @@
      Measured the hard way: declaring them in the inline block above left
      --font-latin EMPTY and blog fell back to Times New Roman on every page.
      Matches apps/landing, which declares both in `@theme static`. */
-  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-latin: "Local Rupee", var(--font-noto-sans), "Noto Sans", sans-serif; /* "Local Rupee": tokens.css */
   --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
 
   /* --color-brand intentionally NOT redeclared here — @clearcut/design-tokens

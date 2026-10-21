@@ -446,6 +446,32 @@
   --font-sans: var(--font-latin);
 }
 
+/* ================= Rupee sign (₹) from the device's own font =================
+   Noto Sans keeps ₹ (U+20B9) in its "latin-ext" file, a 168 KB variable font.
+   A page whose only latin-ext character is ₹ (prices) downloaded that whole
+   file on the critical path just for the symbol (Lighthouse "Network
+   dependency tree", landing home, 2026-10-21). Apps put "Local Rupee" FIRST in
+   --font-latin: these faces cover only U+20B9 and come from fonts already on
+   the device, so nothing is downloaded. A device with none of them falls
+   through to the next family in the stack (Noto) exactly as before. Hindi
+   pages are unaffected (the Devanagari face has its own ₹). */
+@font-face {
+  font-family: "Local Rupee";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Roboto"), local("Roboto-Regular"), local("Segoe UI"), local("SegoeUI"), local("Noto Sans"),
+    local("NotoSans-Regular"), local("Arial"), local("ArialMT");
+  unicode-range: U+20B9;
+}
+@font-face {
+  font-family: "Local Rupee";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Roboto Bold"), local("Roboto-Bold"), local("Segoe UI Bold"), local("SegoeUI-Bold"),
+    local("Noto Sans Bold"), local("NotoSans-Bold"), local("Arial Bold"), local("Arial-BoldMT");
+  unicode-range: U+20B9;
+}
+
 @theme static inline {
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);

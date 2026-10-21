@@ -50,7 +50,7 @@
      `--font-mono: var(--font-geist-mono)` — both dead, since --font-geist-sans and
      --font-geist-mono are defined nowhere in this repo. --font-mono is not
      redeclared: `font-mono` has zero consumers in the codebase. */
-  --font-latin: var(--font-noto-sans), "Noto Sans", sans-serif;
+  --font-latin: "Local Rupee", var(--font-noto-sans), "Noto Sans", sans-serif; /* "Local Rupee": tokens.css */
   --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
 
   /* ── Removed: self-referential declarations ────────────────────────────────
