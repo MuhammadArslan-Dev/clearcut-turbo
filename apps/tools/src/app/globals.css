@@ -80,6 +80,28 @@
 	}
 }
 
+/* FadeIn (components/motion.tsx): hero/heading entrance. Same `backwards`
+   fill reasoning as .cc-step-in above. */
+@keyframes cc-fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+.cc-fade-in {
+	animation: cc-fade-in 0.5s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cc-fade-in {
+		animation: none;
+	}
+}
+
 /* Tailwind's preflight resets <button> cursor to "default" (matching native
    OS button chrome), but every button in the Syllabus Tracker is used as a
    clickable card/toggle/pill where a pointer cursor is the expected

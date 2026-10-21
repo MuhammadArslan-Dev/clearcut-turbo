@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findLevel, levelHasChapters } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
-import { formatToSlug, unFormatSlug } from "@/utils/slugify";
+import { unFormatSlug } from "@/utils/slugify";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
@@ -13,6 +13,7 @@ import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 type Props = {
   params: {
     locale: string;
@@ -56,10 +57,6 @@ export default async function page({ params }: Props) {
     notFound();
   }
 
-  const index = await tryLoadExamIndex(String(examNameParam));
-  if (index && !findLevel(index, String(level_id))) notFound();
-  const examName = examNameParam?.toUpperCase() ?? "";
-
   // ✅ Correct API fetch Subjects
   // `revalidate: 3600` rather than `no-store`: the subject list is public,
   // identical for every visitor and changes on a content-editing cadence, not
@@ -67,12 +64,20 @@ export default async function page({ params }: Props) {
   // cache entirely, so every crawler hit re-rendered the page and re-queried
   // the backend. 3600s matches the window used by the other blog content
   // routes.
-  const resSubjects = await fetch(
+  // Started together with the exam index check below (it doesn't depend on
+  // it). The no-op catch only keeps an early notFound() from leaving an
+  // unhandled rejection; awaiting it later still throws as before.
+  const subjectsPromise = fetch(
     `${process.env.BACKEND_URL}/blog/get-subject?exam_id=${examNameParam}&slug=${level_id ?? ""}`,
-    { next: { revalidate: 3600 } },
-  );
+    { headers: backendServerHeaders(), next: { revalidate: 3600 } },
+  ).then((res) => res.json());
+  subjectsPromise.catch(() => {});
 
-  const dataSubjects = await resSubjects.json();
+  const index = await tryLoadExamIndex(String(examNameParam));
+  if (index && !findLevel(index, String(level_id))) notFound();
+  const examName = examNameParam?.toUpperCase() ?? "";
+
+  const dataSubjects = await subjectsPromise;
 
   // if (dataSubjects?.data?.length === 0) {
   //   return notFound;
@@ -138,7 +143,10 @@ export default async function page({ params }: Props) {
                     key={index}
                     index={index + 1}
                     title={item?.name}
-                    pathname={`subject/${formatToSlug(item?.slug)}`}
+                    // The backend slug is already the URL slug; formatToSlug
+                    // dropped its hyphens ("child-development-pedagogy" ->
+                    // "childdevelopmentpedagogy"), so every link took a 301.
+                    pathname={`subject/${item?.slug}`}
                   />
                 ))}
             </div>

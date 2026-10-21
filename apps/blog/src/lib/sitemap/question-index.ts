@@ -1,3 +1,4 @@
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { mapLimit } from "@/lib/async/map-limit";
 import { questionTags } from "@/lib/question-bank/cache-tags";
 import { loadSubjectChapterSlugs } from "@/lib/question-bank/load";
@@ -12,7 +13,10 @@ const REVALIDATE_SECONDS = 3600;
 const CONCURRENCY = 2;
 
 function isEntryList(value: unknown): value is IndexEntry[] {
-  return Array.isArray(value) && value.every((e) => Array.isArray(e) && typeof e[0] === "number");
+  return (
+    Array.isArray(value) &&
+    value.every((e) => Array.isArray(e) && typeof e[0] === "number" && (e[2] === undefined || e[2] === 0 || e[2] === 1))
+  );
 }
 
 /** /blog/question-index for one exam (see the backend's getQuestionIndex). */
@@ -20,7 +24,10 @@ export async function fetchQuestionIndex(exam: string): Promise<QuestionIndex> {
   const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
   if (!base) throw new Error("BACKEND_URL is not set");
   const path = `/blog/question-index?exam_name=${encodeURIComponent(exam)}`;
-  const res = await fetch(`${base}${path}`, { next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) } });
+  const res = await fetch(`${base}${path}`, {
+    headers: backendServerHeaders(),
+    next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) },
+  });
   if (!res.ok) throw new Error(`GET ${path} -> HTTP ${res.status}`);
   const data = (await res.json())?.data;
   const chapters = data?.chapters;

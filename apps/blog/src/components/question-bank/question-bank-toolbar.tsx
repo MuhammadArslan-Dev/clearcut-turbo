@@ -6,8 +6,7 @@ import { cn } from "@clearcut/ui/utils";
 import { Button } from "@clearcut/ui/button";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { CustomBottomSheet } from "@/components/modals-bottom-sheet";
-import { useLanguageStore } from "@/store/useLanguageStore";
-import { normalizeCourseLang } from "@/utils/question-translation";
+import { useCourseLang } from "@/lib/question-bank/use-course-lang";
 import { matchesGroup } from "@/utils/section-search";
 import type { CourseLang, GroupBy, SearchIndexItem } from "@/lib/question-bank/card-model";
 import { pagePath } from "@/lib/question-bank/pagination";
@@ -111,7 +110,8 @@ export default function QuestionBankToolbar({
   basePath: string;
   searchIndexUrl: string;
 }) {
-  const courseLang = normalizeCourseLang(useLanguageStore((s) => s.courseLanguage));
+  // Same rule as CourseLangScope, so search/filter use the visible language.
+  const courseLang = useCourseLang();
   const copy = useGroupCopy(groupBy);
   const tFilter = useTranslations("QuestionFilter");
   const isMobile = useIsMobile();

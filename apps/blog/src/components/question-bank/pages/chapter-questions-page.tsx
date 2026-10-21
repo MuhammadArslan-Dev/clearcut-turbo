@@ -18,8 +18,10 @@ import { ALLOWED_EXAMS } from "@/lib/exams";
 import { loadExamInfo } from "@/lib/question-bank/load";
 import { loadScope, type QuestionScope } from "@/lib/question-bank/scope";
 import { pagePath, pageSlice } from "@/lib/question-bank/pagination";
+import { isHindiPage } from "@/lib/question-bank/hindi-page";
 import QuestionBankView, { localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
+import { chapterName, localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
 
 export type ChapterParams = {
   locale: string;
@@ -32,23 +34,34 @@ export type ChapterParams = {
 
 export async function chapterPageMetadata(params: ChapterParams) {
   const { locale, examName, level_id, subject_id, chapter_name } = params;
-  const canonical = await canonicalChapter(examName, level_id, subject_id, chapter_name);
-  const seo = pageSeo(metadataPage(params.page));
+  const page = metadataPage(params.page);
+  // Same React-cached loads as the page itself — no extra backend calls.
+  const [canonical, loaded, t] = await Promise.all([
+    canonicalChapter(examName, level_id, subject_id, chapter_name),
+    loadScope({ kind: "chapter", exam: examName, chapter: chapter_name }),
+    pageCopy(locale),
+  ]);
+  const seo = pageSeo(page);
+  const suffix = pageSuffixes(t, page);
   const path = `${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}${seo.pathSuffix}`;
 
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
-  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const levelLabel = unFormatSlug(level_id ?? "");
-  const subjectLabel = unFormatSlug(subject_id ?? "");
-  const chapterLabel = unFormatSlug(chapter_name ?? "");
+  const labels = {
+    exam: unFormatSlug(examName ?? "").toUpperCase(),
+    level: unFormatSlug(level_id ?? ""),
+    subject: unFormatSlug(subject_id ?? ""),
+    chapter: chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? "")),
+  };
 
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${chapterLabel} - ${subjectLabel} ${examLabel} ${levelLabel} Questions${seo.titleSuffix}`,
-    description: `${chapterLabel} practice questions from ${subjectLabel} for ${examLabel} Exam ${levelLabel}, free on Clear Cutoff.${seo.descriptionSuffix}`,
+    title: `${t("chapterTitle", labels)}${suffix.title}`,
+    description: `${t("chapterDescription", labels)}${suffix.description}`,
     noindex: canonical.empty,
+    // /hi is its own page only when this page's questions have Hindi versions.
+    hiTranslated: isHindiPage(loaded.cards, page),
   });
 }
 
@@ -58,6 +71,12 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   if (!ALLOWED_EXAMS.includes(examName?.toLowerCase())) {
     notFound();
   }
+
+  // The chapter's questions depend only on exam + chapter slug (not on the
+  // level/subject checked below), so start them alongside the index lookup.
+  const scope: QuestionScope = { kind: "chapter", exam: examName, chapter: chapter_name };
+  const dataPromise = Promise.all([loadScope(scope), loadExamInfo(examName), pageCopy(locale)]);
+  dataPromise.catch(() => {}); // see below: still awaited (and thrown) on the render path
 
   // The backend serves a chapter by exam + slug alone, so any level/subject
   // pair in the URL rendered the same page. Only listed paths render; a real
@@ -75,9 +94,10 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   const canonical: ChapterPath =
     resolved?.kind === "ok" ? resolved.canonical : { level: level_id, subject: subject_id };
 
-  const scope: QuestionScope = { kind: "chapter", exam: examName, chapter: chapter_name };
-  const [loaded, examInfo] = await Promise.all([loadScope(scope), loadExamInfo(examName)]);
+  const [loaded, examInfo, t] = await dataPromise;
   assertPageExists(page, loaded.cards.length, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
+  const chapterLabel = chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? ""));
 
   // `state` is nullable on the backend (national exams like CTET have none).
   const examState = examInfo?.state;
@@ -87,8 +107,8 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
     ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const homeUrl = siteUrl;
+  // Breadcrumbs stay on the visitor's language site (/hi links to /hi).
+  const homeUrl = localeOrigin(locale);
   const examsUrl = `${homeUrl}/${examName}`;
   const levelUrl = `${examsUrl}/${level_id}`;
   const subjectUrl = `${levelUrl}/subject`;
@@ -96,22 +116,22 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   const chapterUrl = `${subjectIdUrl}/${chapter_name}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl || "/" },
+    { name: t("home"), url: homeUrl || "/" },
     { name: examName, url: examsUrl },
     { name: unFormatSlug(level_id), url: levelUrl },
-    { name: "Subject", url: subjectUrl },
+    { name: t("subject"), url: subjectUrl },
     { name: unFormatSlug(subject_id), url: subjectIdUrl },
-    { name: unFormatSlug(chapter_name), url: chapterUrl },
+    { name: chapterLabel, url: chapterUrl },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
-  // Structured data describes this page's questions, at this page's URL.
+  // Structured data describes this page's questions, in the language the
+  // page shows, at this page's canonical URL (/hi only for a Hindi page).
   const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
     questions: loaded.raw.filter((q) => pageIds.has(q.id)),
     name: `${unFormatSlug(chapter_name)} - ${unFormatSlug(subject_id)} ${examName.toUpperCase()} ${unFormatSlug(level_id ?? "")} Quiz`,
-    url: pagePath(`${examsUrl}/${canonical.level}/subject/${canonical.subject}/${chapter_name}`, page),
-    // Questions server-render in English on /hi too (courseLanguage default).
-    courseLang: "en",
+    url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}/${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}`, page),
+    courseLang: hindiPage ? "hi" : "en",
   });
 
   return (
@@ -125,9 +145,9 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
         <div className="px-3">
           <CustomizableHeader
             showEyebrow={false}
-            heading={`${examName.toUpperCase()} Exam - ${unFormatSlug(level_id ?? "")} - ${unFormatSlug(chapter_name ?? "")}`}
+            heading={t("examHeading", { exam: examName.toUpperCase(), level: unFormatSlug(level_id ?? ""), name: chapterLabel })}
             highlightText={examName.toUpperCase()}
-            subheading={`${examName.toUpperCase()} exam ${unFormatSlug(level_id ?? "")} preparation with Clear Cutoff`}
+            subheading={t("prepSubheading", { exam: examName.toUpperCase(), level: unFormatSlug(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"
@@ -147,11 +167,11 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
         </div>
         <div className="space-y-2 px-3">
           <div className="flex justify-between items-center gap-2">
-            <div className="heading-small !font-semibold col-span-3">Chapter-wise questions</div>
+            <div className="heading-small !font-semibold col-span-3">{t("chapterWise")}</div>
             {/* --color-success-strong is #00753a, the green used here before. */}
             <div className="flex items-center gap-2 text-[var(--color-success-strong)] col-span-2 justify-self-end">
               <CourseCheckBadge size={16} fill="currentColor" />
-              <p className="body-medium !font-normal">by Clear Cutoff</p>
+              <p className="body-medium !font-normal">{t("byClearCutoff")}</p>
             </div>
           </div>
           <QuestionBankView

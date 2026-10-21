@@ -20,11 +20,7 @@
   // Backs OpenNext's R2 incremental cache (see open-next.config.ts) — the
   // binding name "NEXT_INC_CACHE_R2_BUCKET" is fixed, read directly by
   // @opennextjs/cloudflare's r2-incremental-cache.js, not configurable here.
-  // NOT YET CREATED: this bucket does not exist in Cloudflare yet. Run
-  // `npx wrangler r2 bucket create clearcut-blog-incremental-cache` (or pick
-  // a different name and update bucket_name below to match) before the next
-  // deploy, or the deploy will fail / the cache will silently fall back to
-  // erroring on every get/set the same way the dummy cache did.
+  // Bucket created in the Cloudflare dashboard 2026-10-20 (public access off).
   "r2_buckets": [
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
@@ -50,24 +46,20 @@
     }
   ],
   // OpenNext's tag cache for revalidatePath/revalidateTag (open-next.config.ts
-  // `tagCache: d1NextTagCache`). Binding name is fixed. NOT YET CREATED: run
-  // `npx wrangler d1 create clearcut-blog-tag-cache` and paste the printed
-  // database_id below before deploying — the placeholder makes the deploy
-  // fail loudly instead of silently skipping revalidation. The `revalidations`
-  // table is created by `opennextjs-cloudflare deploy` itself.
-  // See docs/BLOG_CACHE_DEPLOY.md.
+  // `tagCache: d1NextTagCache`). Binding name is fixed. Database created in the
+  // Cloudflare dashboard 2026-10-20. Its `revalidations` table is created by
+  // `opennextjs-cloudflare populateCache remote` (the deploy workflow's
+  // "Populate OpenNext caches" step). See docs/BLOG_CACHE_DEPLOY.md.
   "d1_databases": [
     {
       "binding": "NEXT_TAG_CACHE_D1",
       "database_name": "clearcut-blog-tag-cache",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "8e698f75-f2e9-47af-9516-83c535ab8038"
     }
   ]
-  // Runtime (non-NEXT_PUBLIC_*) values this app reads at request time:
-  // BACKEND_URL (src/lib/api/api2.ts, sitemap route handlers) and the secret
-  // REVALIDATE_SECRET (src/app/api/revalidate — `npx wrangler secret put
-  // REVALIDATE_SECRET`; same value as the backend's BLOG_REVALIDATE_SECRET).
-  // Everything else is NEXT_PUBLIC_* and gets inlined at build time. Set them
-  // in the Cloudflare dashboard under this Worker's Settings -> Variables and
-  // Secrets.
+  // Runtime (non-NEXT_PUBLIC_*) value this app reads at request time:
+  // BACKEND_URL (src/lib/api/api2.ts, sitemap route handlers), passed by the
+  // deploy workflow. BLOG_SERVER_KEY / REVALIDATE_SECRET live in code
+  // (src/lib/api/blog-server-key.ts); a Worker secret of the same name would
+  // override them. Everything else is NEXT_PUBLIC_* and inlined at build time.
 }

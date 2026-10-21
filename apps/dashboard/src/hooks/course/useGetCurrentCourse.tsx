@@ -21,6 +21,22 @@ export const MY_COURSES_KEY = (courseId: number | string) => [
   ...CURRENT_COURSE_QUERY_KEY,
   courseId,
 ];
+// Key + fetch for one course's current-course query. Shared with callers
+// that want to start it early (ContentShell prefetches it alongside the
+// syllabus, before the notes/pyqs page that uses this hook is mounted).
+export function currentCourseQueryOptions(courseId: number | string | undefined) {
+  return {
+    queryKey: MY_COURSES_KEY(courseId!),
+    queryFn: () =>
+      sentryApiClient(() => getCurrentCourse({ courseId }), {
+        endpoint: "/current-course",
+        module: "dashboard",
+      }),
+    staleTime: 1000 * 60 * 15, // 5 minutes fresh
+    gcTime: 1000 * 60 * 25, // 10 minutes cache
+  };
+}
+
 export function useGetCurrentCourse({
   courseId,
 }: {
@@ -37,14 +53,7 @@ export function useGetCurrentCourse({
     isFetching,
     refetch,
   } = useQuery<CurrentCourseResponse>({
-    queryKey: MY_COURSES_KEY(courseId!),
-    queryFn: () =>
-      sentryApiClient(() => getCurrentCourse({ courseId }), {
-        endpoint: "/current-course",
-        module: "dashboard",
-      }),
-    staleTime: 1000 * 60 * 15, // 5 minutes fresh
-    gcTime: 1000 * 60 * 25, // 10 minutes cache
+    ...currentCourseQueryOptions(courseId),
     retry: 1,
     refetchOnWindowFocus: false,
   });

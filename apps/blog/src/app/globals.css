@@ -440,6 +440,13 @@ body {
   height: auto;
 }
 
+/* CountdownBanner: an offer that has already ended is hidden before first
+   paint (pre-paint script in the blog layout sets data-offer-ended), so the
+   page doesn't render it and then jump up when hydration removes it. */
+html[data-offer-ended] [data-countdown-banner] {
+  display: none;
+}
+
 /* Question-bank pages render a question's English and Hindi translations
    (when they differ) on the server, each tagged data-tr="en" | "hi";
    CourseLangScope sets data-course-lang from the visitor's course language

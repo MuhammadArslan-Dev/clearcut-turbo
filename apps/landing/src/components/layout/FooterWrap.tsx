@@ -1,5 +1,6 @@
 import Footer from "./Footer";
 import { getAlternativesList } from "@/lib/api/cms";
+import type { AlternativeSummary } from "@/types/cms";
 
 // Server component: fetches the Alternatives list here (not in Footer.tsx,
 // which is a client component) and hands it down as a prop. New pages show
@@ -18,9 +19,19 @@ export default async function FooterWrap() {
     console.error("FooterWrap: failed to load alternatives list", err);
   }
 
+  // Footer is a client component, so whatever it receives is serialized into
+  // every page's RSC payload. The CMS returns full documents (rich text
+  // included); a footer link only ever needs these fields.
+  const links: AlternativeSummary[] = alternatives.map(({ id, slug, competitorName, hero }) => ({
+    id,
+    slug,
+    competitorName,
+    hero: { title: hero?.title },
+  }));
+
   return (
     <div>
-      <Footer alternatives={alternatives} />
+      <Footer alternatives={links} />
     </div>
   );
 }

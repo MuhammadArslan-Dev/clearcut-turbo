@@ -19,6 +19,7 @@ import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import SubjectsList from "@/components/blog/ui/subjects-list";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 type Props = {
   params: {
     locale: string;
@@ -69,7 +70,7 @@ export default async function page({ params }: Props) {
   // ✅ Correct API fetch Years
   const resYears = await fetch(
     `${process.env.BACKEND_URL}/blog/get-years?${queryYears}`,
-    { cache: "force-cache" },
+    { cache: "force-cache", headers: backendServerHeaders() },
   );
 
   const dataYears = await resYears.json();

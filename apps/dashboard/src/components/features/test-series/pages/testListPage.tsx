@@ -21,6 +21,10 @@ import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStor
 import { useRouter, useSearchParams } from "next/navigation";
 import { useExamModalStore } from "../../exam/store/useExamModalStore";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  chapterTestExplicitPaperId,
+  chapterTestQueryOptions,
+} from "../components/tests/chapterTestQuery";
 
 // Only ever one of these three renders per page visit (gated on `testType`
 // just below), but all three used to be static imports — meaning every
@@ -44,8 +48,27 @@ export default function TestListPage({ courseId }: { courseId?: string }) {
   const showReport = get("showReport");
   const examId = get("examId");
 
-  const { progressData } = useTestListDataStore();
+  const { progressData, paper, defaultPaperIdByEndpoint } = useTestListDataStore();
   const queryClient = useQueryClient();
+
+  // What to render. TestSeriesShell writes testType=chapter-tests into the URL
+  // when it's missing, but that is a router.replace round trip — until it
+  // lands, this page used to render no list at all. Render the tab it is
+  // about to become right away. (The report effect below keeps reading the
+  // real URL value, unchanged.)
+  const shownTestType = testType ?? "chapter-tests";
+
+  // ChapterTest is a next/dynamic chunk; its query only starts after that
+  // chunk downloads. Start the identical query now so both load in parallel
+  // (same key as ChapterTest computes from the same store values).
+  useEffect(() => {
+    if (shownTestType !== "chapter-tests" || !courseId) return;
+    const explicitPaperId = chapterTestExplicitPaperId(
+      paper?.id,
+      defaultPaperIdByEndpoint["chapter-test"] ?? null,
+    );
+    queryClient.prefetchQuery(chapterTestQueryOptions(courseId, explicitPaperId));
+  }, [shownTestType, courseId, paper?.id, defaultPaperIdByEndpoint, queryClient]);
 
   // Auto open after exam submit
   const hasOpenedRef = useRef(false);
@@ -119,15 +142,15 @@ export default function TestListPage({ courseId }: { courseId?: string }) {
             </Text>
           </div>
           <div className="">
-            {testType === "sectional-tests" && (
+            {shownTestType === "sectional-tests" && (
               <SectionalTest courseId={courseId} />
             )}
 
-            {testType === "full-length-papers" && (
+            {shownTestType === "full-length-papers" && (
               <FullTest courseId={courseId} />
             )}
 
-            {testType === "chapter-tests" && (
+            {shownTestType === "chapter-tests" && (
               <ChapterTest courseId={courseId} />
             )}
           </div>

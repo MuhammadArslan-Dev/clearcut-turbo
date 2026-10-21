@@ -18,8 +18,12 @@ const config: NextConfig = {
   reactStrictMode: true,
 
   experimental: {
+    // optimizeCss (critters) already inlines the above-the-fold CSS and loads
+    // the rest asynchronously. `inlineCss` used to be on as well: it copied
+    // the WHOLE stylesheet (~115 KB) into every page 4× in the HTML and 3× in
+    // the RSC payload (home: 698 KB HTML, 459 KB RSC that every <Link>
+    // prefetch re-downloads), with no stylesheet caching between pages.
     optimizeCss: true,
-    inlineCss: true, // inline critical CSS — trades stylesheet caching for faster first paint, worth it on a marketing page
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
 

@@ -15,11 +15,13 @@ import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { canonicalSubject } from "@/lib/seo/canonical";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
-import { loadExamInfo } from "@/lib/question-bank/load";
+import { loadExamInfo, loadSubjectSection } from "@/lib/question-bank/load";
 import { loadScope, type QuestionScope } from "@/lib/question-bank/scope";
 import { pagePath, pageSlice } from "@/lib/question-bank/pagination";
+import { isHindiPage } from "@/lib/question-bank/hindi-page";
 import QuestionBankView, { ChapterLinks, localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
+import { localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
 
 export type SubjectParams = {
   locale: string;
@@ -29,24 +31,49 @@ export type SubjectParams = {
   page?: string;
 };
 
+/** The page's scope (its level's own section). Page and metadata build it the
+ * same way, so the React-cached loaders behind loadScope share one fetch. */
+async function subjectScope(examName: string, level: string, subject: string): Promise<QuestionScope> {
+  const index = await tryLoadExamIndex(examName);
+  const section = index ? findSubject(index, level, subject)?.sectionId : undefined;
+  return { kind: "subject", exam: examName, subject, section };
+}
+
+/** Subject display name: the section's Hindi name on /hi, else the slug label. */
+function subjectName(names: { hi: string | null } | undefined, locale: string, fallback: string): string {
+  return (locale === "hi" && names?.hi) || fallback;
+}
+
 export async function subjectPageMetadata(params: SubjectParams) {
   const { locale, examName, level_id, subject_id } = params;
-  const canonical = await canonicalSubject(examName, level_id, subject_id);
-  const seo = pageSeo(metadataPage(params.page));
+  const page = metadataPage(params.page);
+  const scope = await subjectScope(examName, level_id, subject_id);
+  const [canonical, loaded, section, t] = await Promise.all([
+    canonicalSubject(examName, level_id, subject_id),
+    loadScope(scope),
+    loadSubjectSection(examName, subject_id, scope.kind === "subject" ? scope.section : undefined),
+    pageCopy(locale),
+  ]);
+  const seo = pageSeo(page);
+  const suffix = pageSuffixes(t, page);
   const path = `${examName}/${canonical.level}/subject/${subject_id}${seo.pathSuffix}`;
 
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
-  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const levelLabel = unFormatSlug(level_id ?? "");
-  const subjectLabel = unFormatSlug(subject_id ?? "");
+  const labels = {
+    exam: unFormatSlug(examName ?? "").toUpperCase(),
+    level: unFormatSlug(level_id ?? ""),
+    subject: subjectName(section?.names, locale, unFormatSlug(subject_id ?? "")),
+  };
 
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${subjectLabel} - ${examLabel} ${levelLabel} Questions${seo.titleSuffix}`,
-    description: `${subjectLabel} practice questions for ${examLabel} Exam ${levelLabel}, free on Clear Cutoff.${seo.descriptionSuffix}`,
+    title: `${t("subjectTitle", labels)}${suffix.title}`,
+    description: `${t("subjectDescription", labels)}${suffix.description}`,
     noindex: canonical.empty,
+    // /hi is its own page only when this page's questions have Hindi versions.
+    hiTranslated: isHindiPage(loaded.cards, page),
   });
 }
 
@@ -73,10 +100,17 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
   const canonicalLevel = resolved?.kind === "ok" ? resolved.canonical.level : level_id;
 
   const examName = examNameParam?.toUpperCase() ?? "";
-  const section = index ? findSubject(index, level_id, subject_id)?.sectionId : undefined;
-  const scope: QuestionScope = { kind: "subject", exam: examNameParam, subject: subject_id, section };
-  const [loaded, examInfo] = await Promise.all([loadScope(scope), loadExamInfo(examNameParam)]);
+  const scope = await subjectScope(examNameParam, level_id, subject_id);
+  const section = scope.kind === "subject" ? scope.section : undefined;
+  const [loaded, examInfo, sectionInfo, t] = await Promise.all([
+    loadScope(scope),
+    loadExamInfo(examNameParam),
+    loadSubjectSection(examNameParam, subject_id, section),
+    pageCopy(locale),
+  ]);
   assertPageExists(page, loaded.cards.length, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
+  const subjectLabel = subjectName(sectionInfo?.names, locale, unFormatSlug(subject_id ?? ""));
 
   // `state` is nullable on the backend (national exams like CTET have none).
   const examState = examInfo?.state;
@@ -86,28 +120,28 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
     ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const homeUrl = siteUrl;
+  // Breadcrumbs stay on the visitor's language site (/hi links to /hi).
+  const homeUrl = localeOrigin(locale);
   const examsUrl = `${homeUrl}/${examNameParam}`;
   const levelUrl = `${examsUrl}/${level_id}`;
   const subjectUrl = `${levelUrl}/subject`;
   const subjectIdUrl = `${subjectUrl}/${subject_id}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl || "/" },
+    { name: t("home"), url: homeUrl || "/" },
     { name: examName, url: examsUrl },
     { name: unFormatSlug(level_id), url: levelUrl },
-    { name: "Subject", url: subjectUrl },
-    { name: unFormatSlug(subject_id), url: subjectIdUrl },
+    { name: t("subject"), url: subjectUrl },
+    { name: subjectLabel, url: subjectIdUrl },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
+  // In the language the page shows, at its canonical URL (/hi only for a Hindi page).
   const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
     questions: loaded.raw.filter((q) => pageIds.has(q.id)),
     name: `${unFormatSlug(subject_id)} - ${examName} ${unFormatSlug(level_id ?? "")} Quiz`,
-    url: pagePath(`${examsUrl}/${canonicalLevel}/subject/${subject_id}`, page),
-    // Questions server-render in English on /hi too (courseLanguage default).
-    courseLang: "en",
+    url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}/${examNameParam}/${canonicalLevel}/subject/${subject_id}`, page),
+    courseLang: hindiPage ? "hi" : "en",
   });
 
   const chapterPaths = index
@@ -126,9 +160,9 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
         <div className="px-3">
           <CustomizableHeader
             showEyebrow={false}
-            heading={`${examName} Exam - ${unFormatSlug(level_id ?? "")} - ${unFormatSlug(subject_id ?? "")}`}
+            heading={t("examHeading", { exam: examName, level: unFormatSlug(level_id ?? ""), name: subjectLabel })}
             highlightText={examName}
-            subheading={`${examName} exam ${unFormatSlug(level_id ?? "")} preparation with Clear Cutoff`}
+            subheading={t("prepSubheading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"
@@ -148,11 +182,11 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
         </div>
         <div className="space-y-2">
           <div className="flex justify-between items-center gap-2 px-3">
-            <div className="heading-small">Subject-wise questions</div>
+            <div className="heading-small">{t("subjectWise")}</div>
             {/* --color-success-strong is #00753a, the green used here before. */}
             <div className="flex items-center gap-2 text-[var(--color-success-strong)]">
               <CourseCheckBadge size={20} fill="currentColor" />
-              <p>by Clear Cutoff</p>
+              <p>{t("byClearCutoff")}</p>
             </div>
           </div>
           {/* A subject spans every chapter within it, so it groups by

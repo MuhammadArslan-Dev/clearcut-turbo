@@ -1,7 +1,7 @@
 // src/components/layout/Topbar.tsx
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Button } from "@clearcut/ui/button";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 
@@ -11,7 +11,7 @@ import PaperSwitch from "@/components/features/test-series/components/PaperSwitc
 
 import Text from "@clearcut/ui/text";
 import { ChevronIcon } from "@/components/ui/icons";
-import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
+import { useScrollHideRow } from "@/hooks/useTopbarScrollHide";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Link } from "@/i18n/navigation";
 
@@ -22,42 +22,18 @@ import { Link } from "@/i18n/navigation";
 export default function Topbar() {
   const { exam } = useGetCurrentCourseStore();
   const isMobile = useIsMobile();
-  const scrollOffset = useTopbarVisibilityStore((s) => s.offset);
-  const setProgress = useTopbarVisibilityStore((s) => s.setProgress);
 
   /* ================= DERIVED DATA ================= */
 
   const examTitle = exam?.short_name ? `${exam?.short_name ?? ""} Exam` : "";
 
-  // Measure the title row's own natural height so the hide can be clamped
-  // to exactly that (the store's offset is a shared upper-bound value, not
-  // this row's real height, which varies with locale/content).
+  // Mobile clips the title row 1:1 with how far the user has scrolled the
+  // test list (see TestSeriesShell.tsx); desktop always shows it in full.
+  // Styles are written to these elements directly (useScrollHideRow), so
+  // scrolling never re-renders this Topbar or its switches.
+  const titleRowOuterRef = useRef<HTMLDivElement>(null);
   const titleRowRef = useRef<HTMLDivElement>(null);
-  const [rowHeight, setRowHeight] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    const el = titleRowRef.current;
-    if (!el) return;
-
-    const measure = () => setRowHeight(el.scrollHeight);
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // Desktop always shows this row in full; mobile clips it 1:1 with how far
-  // the user has scrolled the test list (see TestSeriesShell.tsx). Before
-  // the first measurement, render at natural height so nothing flashes closed.
-  const clampedOffset =
-    isMobile && rowHeight != null ? Math.min(scrollOffset, rowHeight) : 0;
-
-  // Share "how hidden am I, 0..1" with everything that needs to move in
-  // sync with this row — see useTopbarVisibilityStore's `progress` doc.
-  useEffect(() => {
-    setProgress(rowHeight ? clampedOffset / rowHeight : 0);
-  }, [clampedOffset, rowHeight, setProgress]);
+  useScrollHideRow(titleRowOuterRef, titleRowRef, isMobile);
 
   /* ================= UI ================= */
 
@@ -65,16 +41,9 @@ export default function Topbar() {
     <header className="border-slate-200">
       <div className="h-auto bg-white flex flex-col lg:flex-row lg:gap-3 items-center justify-between rounded-md">
         {/* LEFT SECTION */}
-        <div
-          style={{
-            height: rowHeight != null ? rowHeight - clampedOffset : "auto",
-            opacity: rowHeight ? 1 - clampedOffset / rowHeight : 1,
-          }}
-          className="w-full overflow-hidden"
-        >
+        <div ref={titleRowOuterRef} className="w-full overflow-hidden">
           <div
             ref={titleRowRef}
-            style={{ transform: `translateY(${-clampedOffset}px)` }}
             className="flex items-center justify-between md:justify-start w-full md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
           >
             <div className="flex gap-3 md:gap-10 items-center">

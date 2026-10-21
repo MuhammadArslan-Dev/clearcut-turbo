@@ -1,37 +1,22 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-
+/**
+ * Below-the-fold section wrapper. Renders the section right away — on the
+ * server too — inside the same plain wrapper div as before.
+ *
+ * It used to mount the section only once an IntersectionObserver saw it
+ * (rendering an empty `fallbackHeight` box until then): the server HTML had
+ * no content for these sections at all, `#pricing`-style anchors landed on
+ * boxes whose height changed under them, and the box → real-height swap
+ * shifted the page. `content-visibility: auto` was tried instead and dropped:
+ * its paint containment clips shadows that reach past the section box (the
+ * pricing card and the "How it works" step circles at 390px).
+ *
+ * `fallbackHeight` is kept so existing callers don't change; it is unused.
+ */
 export default function LazySection({
   children,
-  fallbackHeight = "400px",
 }: {
   children: React.ReactNode;
   fallbackHeight?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px" }, // start loading 200px before entering viewport
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref}>
-      {visible ? children : <div style={{ minHeight: fallbackHeight }} />}
-    </div>
-  );
+  return <div>{children}</div>;
 }

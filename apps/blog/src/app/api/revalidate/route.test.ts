@@ -9,6 +9,9 @@ vi.mock("next/cache", () => ({
 const forgotten = vi.hoisted(() => ({ examIndex: [] as unknown[], search: [] as unknown[] }));
 vi.mock("@/lib/seo/load-exam-index", () => ({ forgetExamIndex: (e: unknown) => forgotten.examIndex.push(e) }));
 vi.mock("@/lib/question-bank/search-index", () => ({ forgetSearchIndex: (e: unknown) => forgotten.search.push(e) }));
+// The route's secret comes from blog-server-key.ts (in-code value, env
+// override); tests drive it through the env only.
+vi.mock("@/lib/api/blog-server-key", () => ({ revalidateSecret: () => process.env.REVALIDATE_SECRET ?? "" }));
 
 const { POST } = await import("./route");
 

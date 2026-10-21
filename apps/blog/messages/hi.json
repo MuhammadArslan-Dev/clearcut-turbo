@@ -134,6 +134,27 @@
     "chapterCount": "{count} प्रश्न",
     "loadError": "अभी प्रश्न लोड नहीं हो सके। कृपया कुछ मिनट बाद फिर से कोशिश करें।"
   },
+  "QuestionBankPage": {
+    "chapterTitle": "{chapter} - {subject} {exam} {level} प्रश्न",
+    "chapterDescription": "{exam} परीक्षा {level} के लिए {subject} के {chapter} अध्याय के अभ्यास प्रश्न, Clear Cutoff पर मुफ़्त।",
+    "subjectTitle": "{subject} - {exam} {level} प्रश्न",
+    "subjectDescription": "{exam} परीक्षा {level} के लिए {subject} के अभ्यास प्रश्न, Clear Cutoff पर मुफ़्त।",
+    "yearTitle": "{exam} {year} {level} पिछले वर्ष के प्रश्न",
+    "yearDescription": "{exam} {year} {level} के पिछले वर्ष के प्रश्न उत्तर सहित, Clear Cutoff पर मुफ़्त।",
+    "pageTitleSuffix": " - पेज {page}",
+    "pageDescriptionSuffix": " पेज {page}।",
+    "examHeading": "{exam} परीक्षा - {level} - {name}",
+    "yearHeading": "{exam} परीक्षा {level}",
+    "prepSubheading": "Clear Cutoff के साथ {exam} परीक्षा {level} की तैयारी",
+    "chapterWise": "अध्याय-वार प्रश्न",
+    "subjectWise": "विषय-वार प्रश्न",
+    "yearWise": "वर्ष-वार प्रश्न",
+    "verified": "सत्यापित उत्तर और व्याख्याएँ",
+    "byClearCutoff": "Clear Cutoff द्वारा",
+    "home": "होम",
+    "subject": "विषय",
+    "years": "वर्ष"
+  },
   "QuestionFilter": {
     "filter": "फ़िल्टर",
     "close": "बंद करें",

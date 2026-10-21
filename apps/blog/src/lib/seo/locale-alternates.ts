@@ -1,12 +1,12 @@
 /**
  * Canonical + hreflang for a page served at both `/<path>` (en) and
  * `/hi/<path>`. Only a page whose main content is really Hindi on /hi gets a
- * self-referencing /hi canonical and an en/hi hreflang pair. Everywhere else
- * /hi renders the same main content as English (question-bank pages: question
- * text follows the separate courseLanguage setting and server-renders in
- * English; only UI labels change), so both URLs canonicalize to English and
- * no Hindi alternate is declared — Google treats localized versions as
- * duplicates when the main content is untranslated.
+ * self-referencing /hi canonical and an en/hi hreflang pair (question pages
+ * whose questions have Hindi translations, which /hi server-renders). Where
+ * /hi shows the same main content as English (English-only sections, listing
+ * pages), both URLs canonicalize to English and no Hindi alternate is
+ * declared — Google treats localized versions as duplicates when the main
+ * content is untranslated.
  */
 export function localeAlternates({
   siteUrl,

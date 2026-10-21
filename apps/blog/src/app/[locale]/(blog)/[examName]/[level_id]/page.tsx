@@ -25,9 +25,6 @@ type Props = {
     examName: string;
     level_id?: string;
   }>;
-  searchParams: Promise<{
-    levels?: string | string[];
-  }>;
 };
 
 /* =========================================================
@@ -68,11 +65,6 @@ export async function generateMetadata({
    HELPERS
 ========================================================= */
 
-function normalizeToArray(value?: string | string[]) {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
-
 /**
  * Reads a public list endpoint through the Data Cache.
  *
@@ -102,11 +94,8 @@ async function safeFetch(url: string, revalidate = 3600) {
    PAGE
 ========================================================= */
 
-export default async function Page({ params, searchParams }: Props) {
+export default async function Page({ params }: Props) {
   const { examName: examSlug, level_id } = await params;
-  const sp = await searchParams;
-
-  const levels = normalizeToArray(sp.levels);
 
   /* ---------- Validate Exam ---------- */
 
@@ -114,39 +103,35 @@ export default async function Page({ params, searchParams }: Props) {
     notFound();
   }
 
+  /* ---------- Build API URLs ---------- */
+
+  const yearsUrl = `/blog/get-years?exam_id=${examSlug}`;
+
+  // The level's subjects, with their real slugs — the same list the
+  // /<level>/subject page shows. (This used to read get-sections with a
+  // ?levels= query param no link ever set, so it always came back empty and
+  // the level page had no links to its subject pages at all.)
+  const subjectsUrl =
+    `/blog/get-subject?exam_id=${encodeURIComponent(examSlug)}&slug=${encodeURIComponent(String(level_id ?? ""))}`;
+
+  /* ---------- Fetch Data ---------- */
+
+  // Started together with the exam index check (they don't depend on it);
+  // safeFetch never rejects, so an early notFound() leaves nothing dangling.
+  const dataPromise = Promise.all([safeFetch(yearsUrl), safeFetch(subjectsUrl)]);
+
   const index = await tryLoadExamIndex(String(examSlug));
   if (index && !findLevel(index, String(level_id))) notFound();
 
   const examName = unFormatSlug(examSlug).toUpperCase();
   const levelName = unFormatSlug(level_id ?? "");
 
-  /* ---------- Build API URLs ---------- */
-
-  const baseUrl = 'https://apptest.clearcutoff.in/api';
-
-  if (!baseUrl) {
-    console.error("BACKEND_URL missing");
-    return notFound();
-  }
-
-  const yearsUrl = `/blog/get-years?exam_id=${examSlug}`;
-
-  const levelsString = encodeURIComponent(
-    JSON.stringify(levels.map(unFormatSlug)),
-  );
-
-  const subjectsUrl =
-    `/blog/get-sections?` +
-    `exam_id=${examSlug}` +
-    `&name=${levelName}` +
-    `&levels=${levelsString}`;
-
-  /* ---------- Fetch Data ---------- */
-
-  const [dataYears, dataSubjects] = await Promise.all([
-    safeFetch(yearsUrl),
-    safeFetch(subjectsUrl),
-  ]);
+  const [dataYears, dataSubjects] = await dataPromise;
+  // get-subject can list one slug twice (HTET "mathematics"); one link each.
+  const seenSubjects = new Set<string>();
+  const subjects = (Array.isArray(dataSubjects?.data) ? dataSubjects.data : [])
+    .filter((s: { slug?: string }) => s?.slug && !seenSubjects.has(s.slug) && seenSubjects.add(s.slug))
+    .map((s: { slug: string; name?: string }) => ({ sections: { name: s.name ?? unFormatSlug(s.slug), slug: s.slug } }));
 
   // if (
   //   (!dataYears?.data || dataYears.data.length === 0) &&
@@ -205,9 +190,7 @@ export default async function Page({ params, searchParams }: Props) {
             />
           </div>
 
-          {dataSubjects?.data?.length > 0 && (
-            <TestBySubjects data={dataSubjects.data} examName={examName} />
-          )}
+          {subjects.length > 0 && <TestBySubjects data={subjects} examName={examName} />}
 
           {dataYears?.data?.length > 0 && (
             <TestByYears data={dataYears.data} examName={examName} />

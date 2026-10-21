@@ -57,14 +57,18 @@ type Params = {
    resolve. Exam-mismatch hardening can tighten this in a later pass.
 ========================================================= */
 
-async function loadPost(slug: string, locale: string, examName: string) {
-  // Resolve the URL exam segment ("ctet") to the canonical exam_id
-  // ("teaching_CTET") so the exam-scoped lookup matches. Fall back to a
-  // slug-only lookup so a valid post still resolves if scoping misses.
-  const examId = (await resolveExamId(examName)) ?? examName;
+async function loadPost(slug: string, locale: string, examId: string) {
+  // Exam-scoped lookup first; fall back to a slug-only lookup so a valid
+  // post still resolves if scoping misses.
   const scoped = await getPostBySlug(slug, { locale, examId });
   if (scoped) return scoped;
   return getPostBySlug(slug, { locale });
+}
+
+// The URL exam segment ("ctet") → the canonical exam_id ("teaching_CTET"),
+// or the raw segment if it doesn't resolve.
+async function examIdOf(examName: string) {
+  return (await resolveExamId(examName)) ?? examName;
 }
 
 /* =========================================================
@@ -75,15 +79,19 @@ export async function generateMetadata({
   params,
 }: Params): Promise<Metadata> {
   const { locale, examName, slug } = await params;
-  const post = await loadPost(slug, locale, examName);
+  const examId = await examIdOf(examName);
+  // Both only need the exam id — fetch them together, not one after the other.
+  // /hi is this post's Hindi version only when the CMS has Hindi copy for it;
+  // otherwise /hi shows the English fallback and canonicalizes to English.
+  const [post, hindiPosts] = await Promise.all([
+    loadPost(slug, locale, examId),
+    getHindiPostSlugs(examId),
+  ]);
 
   if (!post) {
     return { title: siteConfig.name };
   }
 
-  // /hi is this post's Hindi version only when the CMS has Hindi copy for it;
-  // otherwise /hi shows the English fallback and canonicalizes to English.
-  const hindiPosts = await getHindiPostSlugs((await resolveExamId(examName)) ?? examName);
   const { canonical: canonicalUrl, languages } = localeAlternates({
     siteUrl: SITE_URL,
     path: `/${examName}/blog/${slug}`,
@@ -135,7 +143,14 @@ export async function generateMetadata({
 
 export default async function BlogArticlePage({ params }: Params) {
   const { locale, examName, slug } = await params;
-  const post = await loadPost(slug, locale, examName);
+  const examId = await examIdOf(examName);
+  // The post and its siblings both only need the exam id — fetch together.
+  // Related shows the 3 newest posts other than this one, so the 4 newest
+  // are enough (was 100 full posts, content included, for 3 cards).
+  const [post, examPosts] = await Promise.all([
+    loadPost(slug, locale, examId),
+    getPostsByExam(examId, { locale, limit: 4 }),
+  ]);
 
   if (!post) {
     notFound();
@@ -154,13 +169,9 @@ export default async function BlogArticlePage({ params }: Params) {
       ? resolveMediaUrl(post.heroImage.url)
       : undefined;
 
-  // Sibling posts (same exam, newest-first) for prev/next + related.
-  const examId = (await resolveExamId(examName)) ?? examName;
-  const examPosts = await getPostsByExam(examId, { locale, limit: 100 });
-  const idx = examPosts.findIndex((p) => p.slug === slug);
-  const prevPost = idx > 0 ? examPosts[idx - 1] : null;
-  const nextPost =
-    idx >= 0 && idx < examPosts.length - 1 ? examPosts[idx + 1] : null;
+  // Sibling posts (same exam, newest-first) for related. (Prev/next used the
+  // full list; the ArticlePager that showed them is commented out below —
+  // re-enabling it needs the full list fetched again.)
   const relatedPosts = examPosts.filter((p) => p.slug !== slug).slice(0, 3);
 
   // Locale-aware link back to the exam blog listing.
@@ -282,6 +293,7 @@ export default async function BlogArticlePage({ params }: Params) {
             <img
               src={heroImage}
               alt={post.title}
+              fetchPriority="high"
               className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover"
             />
           ) : null}

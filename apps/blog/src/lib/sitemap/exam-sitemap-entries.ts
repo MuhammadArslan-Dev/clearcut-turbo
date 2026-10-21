@@ -11,9 +11,10 @@ export type SitemapPost = { slug: string; lastmod?: string; hindi?: boolean };
  * (`questionPages`, see question-pages.ts): every page of each, at canonical
  * paths, with <lastmod> from real question content timestamps. Blog posts
  * carry their CMS date. Listing pages (exam, level, /year, /subject) have no
- * content timestamp, so no <lastmod>. Question-bank pages are English-only
- * (their /hi copy canonicalizes to English); the blog listing and posts get
- * their /hi URL only when there is Hindi CMS copy.
+ * content timestamp, so no <lastmod>. Question pages list their /hi URL only
+ * where /hi shows real Hindi questions (pagedEntries); listing pages stay
+ * English-only (their /hi copy canonicalizes to English); the blog listing
+ * and posts get their /hi URL only when there is Hindi CMS copy.
  */
 export function examStructureEntries(
   origin: string,

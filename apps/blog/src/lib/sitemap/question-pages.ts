@@ -6,6 +6,7 @@
 // question on the page has a timestamp.
 
 import { QUESTIONS_PER_PAGE, pagePath } from "@/lib/question-bank/pagination";
+import { isHindiPageByFlags } from "@/lib/question-bank/hindi-page";
 import { canonicalChapterPaths, canonicalSubjectPaths, type ExamIndex } from "@/lib/seo/exam-index";
 import { formatToSlug } from "@/utils/slugify";
 import type { SitemapEntry } from "./xml";
@@ -15,8 +16,10 @@ export function yearSlug(instanceId: string): string {
   return formatToSlug(instanceId.replace("_", " "));
 }
 
-/** [question id, newest translation updated_at (Unix seconds) | null] */
-export type IndexEntry = [number, number | null];
+/** [question id, newest translation updated_at (Unix seconds) | null,
+ *  1 when it has both an English and a Hindi translation]. The flag is
+ *  missing from an older backend — treated as 0 (no /hi URLs listed). */
+export type IndexEntry = [number, number | null, (0 | 1)?];
 export type QuestionIndex = {
   /** chapter slug -> the chapter page's questions */
   chapters: Record<string, IndexEntry[]>;
@@ -38,18 +41,21 @@ export function stageIdFor(examYear: string, levelSlug: string): string | null {
   return `${exam}_${level[1] === "paper" ? "P" : "L"}${level[2]}`;
 }
 
-/** One entry per page of `entries` under `basePath`. */
+/** One entry per page of `entries` under `basePath`, followed by its /hi
+ * twin when that page is a genuinely Hindi page (same rule the page's own
+ * canonical/hreflang use — lib/question-bank/hindi-page.ts). */
 export function pagedEntries(origin: string, basePath: string, entries: IndexEntry[]): SitemapEntry[] {
   const out: SitemapEntry[] = [];
   for (let start = 0; start < entries.length; start += QUESTIONS_PER_PAGE) {
+    const slice = entries.slice(start, start + QUESTIONS_PER_PAGE);
     let newest: number | null = null;
-    for (const [, ts] of entries.slice(start, start + QUESTIONS_PER_PAGE)) {
+    for (const [, ts] of slice) {
       if (ts !== null && (newest === null || ts > newest)) newest = ts;
     }
-    out.push({
-      loc: `${origin}${pagePath(basePath, start / QUESTIONS_PER_PAGE + 1)}`,
-      ...(newest !== null ? { lastmod: new Date(newest * 1000).toISOString() } : {}),
-    });
+    const path = pagePath(basePath, start / QUESTIONS_PER_PAGE + 1);
+    const lastmod = newest !== null ? { lastmod: new Date(newest * 1000).toISOString() } : {};
+    out.push({ loc: `${origin}${path}`, ...lastmod });
+    if (isHindiPageByFlags(slice.map((e) => e[2] === 1))) out.push({ loc: `${origin}/hi${path}`, ...lastmod });
   }
   return out;
 }

@@ -26,6 +26,43 @@
 
 /* ================= Utility Animations ================= */
 
+/* ButtonShimmerOverlay: light band sweeping across a CTA, forever (was a
+   framer-motion x: -150% → 150%, 3s linear, repeat Infinity). */
+@keyframes buttonShimmer {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(150%);
+  }
+}
+.button-shimmer {
+  animation: buttonShimmer 3s linear infinite;
+}
+
+/* LogoCarousel: endless left scroll at `speed` px/s. The track holds the logo
+   set 3×; --marquee-shift is exactly one set's width (measured in
+   LogoCarousel), so the loop restarts on an identical frame — no jump. */
+@keyframes logoMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--marquee-shift));
+  }
+}
+.logo-marquee {
+  animation: logoMarquee var(--marquee-duration, 30s) linear infinite;
+}
+[data-paused] > .logo-marquee {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee {
+    animation: none;
+  }
+}
+
 @keyframes badgeSlideUp {
   from {
     opacity: 0;

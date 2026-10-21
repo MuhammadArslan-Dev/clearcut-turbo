@@ -5,6 +5,7 @@ import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { Metadata } from "next";
 import React from "react";
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 
 export async function generateMetadata({
   params,
@@ -36,6 +37,7 @@ export default async function Page({
   const resCourses = await fetch(
     `${process.env.BACKEND_URL}/blog/exam?status=active`,
     {
+      headers: backendServerHeaders(),
       next: { revalidate: 60 },
     },
   );

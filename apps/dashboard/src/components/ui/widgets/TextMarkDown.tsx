@@ -1,3 +1,4 @@
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -48,7 +49,10 @@ function escapeMathForMarkdown(text: string): string {
   return text.replace(MATH_SPAN_RE, (span) => span.replace(/(?<!\\)[_*`]/g, "\\$&"));
 }
 
-export default function TextMarkDown({ children }: { children: string }) {
+// Memoized on its one string prop: the markdown → HTML pipeline (rehype-raw +
+// sanitize) is the expensive part of an exam question/option, and parents
+// re-render for unrelated reasons (answer clicks, store updates).
+export default React.memo(function TextMarkDown({ children }: { children: string }) {
   const normalized = escapeMathForMarkdown(normalizeImgTags(children ?? ""));
 
   // `markdown-content` (globals.css) restores the p/ul/ol/li spacing
@@ -77,4 +81,4 @@ export default function TextMarkDown({ children }: { children: string }) {
       </ReactMarkdown>
     </div>
   );
-}
+});

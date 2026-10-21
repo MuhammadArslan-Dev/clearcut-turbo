@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateSecret } from "@/lib/api/blog-server-key";
 import { forgetSearchIndex } from "@/lib/question-bank/search-index";
 import {
   isAuthorized,
@@ -29,7 +30,8 @@ const json = (body: unknown, status: number) =>
   });
 
 export async function POST(request: Request) {
-  const secret = process.env.REVALIDATE_SECRET;
+  // In-code secret unless REVALIDATE_SECRET overrides it (blog-server-key.ts).
+  const secret = revalidateSecret();
   // Fail closed: without a (long enough) secret nobody can trigger this.
   if (!secretConfigured(secret)) return json({ error: "revalidation is not configured" }, 503);
   if (!isAuthorized(request.headers.get("authorization"), secret)) return json({ error: "unauthorized" }, 401);

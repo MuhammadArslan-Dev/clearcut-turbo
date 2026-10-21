@@ -5,9 +5,6 @@ import { toLocale } from "@/lib/i18n/config";
 
 import CoursePageHero from "@/components/sections/heros/CoursePageHero";
 
-import HowItWorksSection from "@/components/sections/howitwork/HowItWorksSection";
-import ComparisonSection from "@/components/sections/ComparisonSection";
-import FAQsSection from "@/components/sections/FAQsSection";
 import PricingSectionWrapper from "@/components/sections/pricing/PricingSectionWrapper";
 import CourseLogoCarousal from "@/components/sections/carousal/CourseLogoCarousal";
 

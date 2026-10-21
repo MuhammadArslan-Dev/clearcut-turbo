@@ -1,3 +1,4 @@
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { resolveExamId } from "@/lib/api/exams";
 import { questionTags } from "@/lib/question-bank/cache-tags";
 import { getHindiPostSlugs, getPostsByExam } from "@/lib/api/posts";
@@ -16,6 +17,7 @@ function isoOrUndefined(value?: string | null): string | undefined {
 async function fetchYearInstanceIds(exam: string): Promise<string[]> {
   const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
   const res = await fetch(`${base}/blog/get-years?exam_id=${encodeURIComponent(exam)}`, {
+    headers: backendServerHeaders(),
     next: { revalidate: 3600, tags: questionTags(exam) },
   });
   if (!res.ok) throw new Error(`get-years ${exam} -> HTTP ${res.status}`);

@@ -8,9 +8,10 @@ type LocaleSEOOptions = {
   description: string;
   /** Valid but empty pages stay reachable but out of the index. */
   noindex?: boolean;
-  /** Whether /hi renders genuinely Hindi main content. Off for every current
-   * caller (home + question-bank pages show the English questions on /hi),
-   * so /hi canonicalizes to English — see localeAlternates. */
+  /** Whether /hi renders genuinely Hindi main content: then /hi is
+   * self-canonical with an en/hi hreflang pair, else /hi canonicalizes to
+   * English — see localeAlternates. Question pages decide per page
+   * (lib/question-bank/hindi-page.ts); home stays off. */
   hiTranslated?: boolean;
 };
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import ContentPageSwitch from "./ContentPageSwitch";
-import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
+import { useScrollRevealWidth } from "@/hooks/useTopbarScrollHide";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 /**
@@ -13,33 +13,15 @@ import { useIsMobile } from "@/hooks/useIsMobile";
  */
 export default function BottomContentPageSwitchReveal() {
   const isMobile = useIsMobile();
-  const progress = useTopbarVisibilityStore((s) => s.progress);
 
-  // Always rendered (just visually clipped below) so ResizeObserver can
-  // measure its natural width — same technique Topbar uses for its height.
+  // Same as preparation's BottomPageSwitchReveal: width/opacity are written
+  // directly (useScrollRevealWidth), so scrolling never re-renders this.
+  const outerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [naturalWidth, setNaturalWidth] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-
-    const measure = () => setNaturalWidth(el.scrollWidth);
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const clippedWidth =
-    isMobile && naturalWidth != null ? naturalWidth * progress : 0;
+  useScrollRevealWidth(outerRef, wrapRef, isMobile);
 
   return (
-    <div
-      style={{ width: clippedWidth, opacity: isMobile ? progress : 0 }}
-      className="overflow-hidden shrink-0"
-    >
+    <div ref={outerRef} style={{ width: 0, opacity: 0 }} className="overflow-hidden shrink-0">
       <div ref={wrapRef} className="inline-block">
         {/* Distinct layoutScopeId — see ContentPageSwitch's prop doc. This
             one is mounted at the same time as Topbar's own copy during the

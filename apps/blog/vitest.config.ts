@@ -1,5 +1,8 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import { defineConfig } from "vitest/config";
+
+const require = createRequire(import.meta.url);
 
 export default defineConfig({
   test: {
@@ -12,6 +15,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Next resolves "server-only" itself (a build error if a client
+      // component imports a server module); tests run as server code.
+      "server-only": require.resolve("next/dist/compiled/server-only/empty.js"),
     },
   },
 });

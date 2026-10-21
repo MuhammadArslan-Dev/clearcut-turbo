@@ -1,19 +1,19 @@
 // src/components/layout/DashboardShell.tsx
 "use client";
-import React, { useEffect, useMemo, useRef, type ReactNode } from "react";
+import React, { useMemo, useRef, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useExamModalStore } from "@/components/features/exam/store/useExamModalStore";
 import { P_QUERY_KEY } from '@/components/features/preparation/hooks/usePreparationData';
 import { ExamSyllabusData } from '@/components/features/preparation/types/types';
 import { getExamSyllabus } from '@/lib/preparation/preparation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { currentCourseQueryOptions } from "@/hooks/course/useGetCurrentCourse";
 import { useContentDataStore } from "@/components/features/downloadable-content/store/useContentDataStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import BottomContentPageSwitchReveal from "@/components/features/downloadable-content/components/BottomContentPageSwitchReveal";
 import { useNotesIndexStore } from "@/components/features/downloadable-content/store/useNotesIndexStore";
-import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
-import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
+import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -52,6 +52,17 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
     retry: 1,
   });
 
+  // The notes/pyqs page below is held back until the syllabus resolves (see
+  // the spinner gate further down), and its current-course query only
+  // started once it mounted. That request doesn't need the syllabus, so it is
+  // started here alongside it; the page's useGetCurrentCourse then finds it
+  // in the cache (same key/fn). The spinner gate itself is unchanged.
+  const queryClient = useQueryClient();
+  React.useEffect(() => {
+    if (!courseId) return;
+    queryClient.prefetchQuery(currentCourseQueryOptions(courseId));
+  }, [courseId, queryClient]);
+
   const {
     setData,
     setLoading,
@@ -76,21 +87,15 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
 
   // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
   // scrolled the notes list, same technique as preparation's Sidebar (see
-  // useScrollHideOffset) — Topbar clamps this against its own measured
+  // useTopbarScrollHide) — Topbar clamps this against its own measured
   // height, so this just needs to be a safe upper bound. PaywallFloatingWidget
   // and BottomContentPageSwitchReveal below read the resulting `progress`
   // from the same store to grow into view in sync as the Topbar shrinks.
+  // Writes the store directly, so scrolling never re-renders this shell; the
+  // Topbar is shown again once we leave this screen.
   const isMobile = useIsMobile();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollOffset = useScrollHideOffset(scrollContainerRef, TOPBAR_MAX_HIDE_OFFSET);
-  const setTopbarOffset = useTopbarVisibilityStore((s) => s.setOffset);
-
-  useEffect(() => {
-    setTopbarOffset(isMobile ? scrollOffset : 0);
-  }, [isMobile, scrollOffset, setTopbarOffset]);
-
-  // Always show the Topbar again once we leave this screen.
-  useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
+  useTopbarScrollHide(scrollContainerRef, isMobile, TOPBAR_MAX_HIDE_OFFSET);
 
   const pathname = usePathname();
   const isNotesRoute = pathname.includes("/notes");

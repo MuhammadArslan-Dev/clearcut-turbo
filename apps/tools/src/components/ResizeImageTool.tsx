@@ -171,6 +171,30 @@ function loadImage(src: string, errorMessage: string): Promise<HTMLImageElement>
   });
 }
 
+// The uploaded file decoded once and reused: dragging Brightness/Contrast/
+// Clean Up or editing the name/date re-renders from the same file, and each
+// run used to decode the full upload again. One entry only — a new file
+// replaces it and frees the old object URL. Same <img> decode path as before
+// (so EXIF orientation handling is unchanged); the URL stays alive while the
+// entry does, since the element may need its source again.
+let decoded: { file: File; url: string; img: Promise<HTMLImageElement> } | null = null;
+
+function decodeFile(file: File, errorMessage: string): Promise<HTMLImageElement> {
+  if (decoded?.file === file) return decoded.img;
+  if (decoded) URL.revokeObjectURL(decoded.url);
+  const url = URL.createObjectURL(file);
+  const entry = { file, url, img: loadImage(url, errorMessage) };
+  decoded = entry;
+  entry.img.catch(() => {
+    // Don't keep a failed decode around; the next attempt starts fresh.
+    if (decoded === entry) {
+      URL.revokeObjectURL(url);
+      decoded = null;
+    }
+  });
+  return entry.img;
+}
+
 function canvasToJpegBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
 }
@@ -272,41 +296,36 @@ async function resizeAndCompress(
   stampName?: string,
   stampDate?: string,
 ): Promise<Blob> {
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    const img = await loadImage(objectUrl, messages.readError);
+  const img = await decodeFile(file, messages.readError);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error(messages.processError);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error(messages.processError);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
 
-    const trimmedName = stampName?.trim();
-    const hasStamp = Boolean(trimmedName || stampDate);
-    const imageAreaHeight = hasStamp ? height - getStampStripHeight(height) : height;
+  const trimmedName = stampName?.trim();
+  const hasStamp = Boolean(trimmedName || stampDate);
+  const imageAreaHeight = hasStamp ? height - getStampStripHeight(height) : height;
 
-    ctx.filter = `brightness(${100 + adjust.brightness}%) contrast(${100 + adjust.contrast}%)`;
-    ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, imageAreaHeight);
-    ctx.filter = "none";
+  ctx.filter = `brightness(${100 + adjust.brightness}%) contrast(${100 + adjust.contrast}%)`;
+  ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, imageAreaHeight);
+  ctx.filter = "none";
 
-    applySignatureCleanup(ctx, width, imageAreaHeight, adjust.cleanup);
+  applySignatureCleanup(ctx, width, imageAreaHeight, adjust.cleanup);
 
-    if (hasStamp) {
-      drawNameDateStamp(ctx, trimmedName ?? "", stampDate ?? "", width, imageAreaHeight);
-    }
-
-    return encodeJpegWithinBudget(
-      (quality) => canvasToJpegBlob(canvas, quality),
-      maxKB * KB,
-      messages.processError,
-    );
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+  if (hasStamp) {
+    drawNameDateStamp(ctx, trimmedName ?? "", stampDate ?? "", width, imageAreaHeight);
   }
+
+  return encodeJpegWithinBudget(
+    (quality) => canvasToJpegBlob(canvas, quality),
+    maxKB * KB,
+    messages.processError,
+  );
 }
 
 function PhotoTypeIcon() {
@@ -1447,7 +1466,9 @@ export default function ResizeImageTool({
               </div>
             </div>
           ) : (
-            <AnimatePresence mode="wait">
+            // initial={false}: shown as-is on first render (it's above the
+            // fold on the resizer pages); switching presets still animates.
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={`${width}x${height}-${minKB}-${maxKB}`}
                 initial={{ opacity: 0, y: -4 }}

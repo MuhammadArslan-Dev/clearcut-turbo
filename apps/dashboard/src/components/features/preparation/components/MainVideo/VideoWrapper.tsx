@@ -128,9 +128,12 @@ export default function VideoWrapper() {
   };
 
   /**
-   * 🦴 1️⃣ Loading state
+   * 🦴 1️⃣ Loading state — also while no topic is selected yet. The store
+   * turns `loading` off before the chapters/topic arrive, so this used to go
+   * skeleton → nothing → video, collapsing and re-expanding the page. Note:
+   * a course with no topics at all now keeps showing the skeleton.
    */
-  if (loading) {
+  if (loading || !selectedTopic) {
     return (
       <div className="w-full flex justify-center">
         <div className="max-w-3xl w-full space-y-3">
@@ -145,11 +148,6 @@ export default function VideoWrapper() {
       </div>
     );
   }
-
-  /**
-   * 2️⃣ Not loading but no topic selected
-   */
-  if (!selectedTopic) return null;
 
   /**
    * 3️⃣ Not loading but no valid video available

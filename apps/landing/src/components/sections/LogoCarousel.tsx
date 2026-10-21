@@ -1,12 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import {
-  motion,
-  useMotionValue,
-  useAnimationFrame,
-  useReducedMotion,
-} from "framer-motion";
 import Text from "@clearcut/ui/text";
 import Image from "next/image";
 
@@ -25,66 +19,78 @@ interface LogoCarouselProps {
   imgClassName?: string;
 }
 
+// Each item is w-[88px] and the track is gap-14 (56px): one set of logos is
+// logos.length × (88 + 56) px. Used for the server render; the real distance
+// is measured on mount.
+const ITEM_WIDTH = 88;
+const GAP = 56;
+
+/**
+ * Endless logo strip. The motion is the CSS keyframe `.logo-marquee`
+ * (globals.css), not a framer-motion rAF loop: it runs on the compositor
+ * from first paint and needs no JS per frame. `speed` px/s, pauses while
+ * hovered or touched, still under prefers-reduced-motion.
+ *
+ * It loops after exactly one set of logos. (The framer version wrapped at
+ * half the track — 1.5 sets — so the logos jumped half a set every cycle.)
+ */
 export default function LogoCarousel({
   logos,
   speed = 80,
   direction = "left",
   pauseOnHover = true,
   className = "",
-  imgClassName = "",
 }: LogoCarouselProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  const shouldReduceMotion = useReducedMotion();
+  const items = [...logos, ...logos, ...logos];
+  const estimatedSet = logos.length * (ITEM_WIDTH + GAP);
 
-  // ⭐ Motion value (NO React state)
-  const x = useMotionValue(0);
-
-  const trackWidthRef = useRef(0);
-  const pausedRef = useRef(false);
-
-  // Measure track width
+  // Measure one set exactly (start of the 2nd set − start of the 1st) and
+  // set the matching duration, so the speed stays `speed` px/s.
   useEffect(() => {
-    if (trackRef.current) {
-      trackWidthRef.current = trackRef.current.scrollWidth / 2;
+    const track = trackRef.current;
+    if (!track || !logos.length) return;
+    const first = track.children[0] as HTMLElement | undefined;
+    const second = track.children[logos.length] as HTMLElement | undefined;
+    if (!first || !second) return;
+    const set = second.offsetLeft - first.offsetLeft;
+    if (set > 0) {
+      track.style.setProperty("--marquee-shift", `${-set}px`);
+      track.style.setProperty("--marquee-duration", `${set / speed}s`);
     }
-  }, [logos]);
+  }, [logos, speed]);
 
-  // Animation loop
-  useAnimationFrame((_, delta) => {
-    if (shouldReduceMotion || pausedRef.current) return;
-
-    const moveBy = (speed * delta) / 1000;
-    const width = trackWidthRef.current;
-
-    let next = direction === "left" ? x.get() - moveBy : x.get() + moveBy;
-
-    // ⭐ Seamless wrap WITHOUT reset jump
-    if (direction === "left") {
-      if (next <= -width) next += width;
-    } else {
-      if (next >= 0) next -= width;
-    }
-
-    x.set(next);
-  });
+  const setPaused = (paused: boolean) => {
+    if (!pauseOnHover || !rootRef.current) return;
+    if (paused) rootRef.current.setAttribute("data-paused", "");
+    else rootRef.current.removeAttribute("data-paused");
+  };
 
   return (
     <div
+      ref={rootRef}
       className={`overflow-hidden w-full ${className}`}
-      onMouseEnter={() => pauseOnHover && (pausedRef.current = true)}
-      onMouseLeave={() => pauseOnHover && (pausedRef.current = false)}
-      onTouchStart={() => pauseOnHover && (pausedRef.current = true)}
-      onTouchEnd={() => pauseOnHover && (pausedRef.current = false)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
       aria-label="Logo carousel"
     >
-      <motion.div
+      <div
         ref={trackRef}
-        className="flex items-center gap-14 w-max"
-        style={{ x }}
+        className="logo-marquee flex items-center gap-14 w-max"
+        style={
+          {
+            "--marquee-shift": `${-estimatedSet}px`,
+            "--marquee-duration": `${estimatedSet / speed}s`,
+            animationDirection: direction === "left" ? "normal" : "reverse",
+          } as React.CSSProperties
+        }
       >
         {/* Auto duplicated */}
-        {[...logos, ...logos, ...logos].map((logo, i) => (
+        {items.map((logo, i) => (
           <div
             key={i}
             className="w-[88px] flex flex-col items-center gap-4 flex-shrink-0"
@@ -124,7 +130,7 @@ export default function LogoCarousel({
             </div>
           </div>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }

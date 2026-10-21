@@ -11,11 +11,11 @@ import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
 import { useTestListDataStore } from "../../store/useTestListDataStore";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getChapterTestList,
   SectionalTestItem,
   SectionalTestV2Data,
   ChapterItem,
 } from "@/lib/tests/getExam";
+import { chapterTestExplicitPaperId, chapterTestQueryOptions } from "./chapterTestQuery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LockIcon } from "@/components/ui/icons";
 import { ChangePaperButton } from "./FullTest";
@@ -72,18 +72,12 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   // tab's first visit did and missing the cache (a fresh reload) every time
   // you switch back.
   const defaultPaperId = defaultPaperIdByEndpoint["chapter-test"] ?? null;
-  const explicitPaperId =
-    paper?.id && paper.id !== defaultPaperId ? paper.id : undefined;
+  const explicitPaperId = chapterTestExplicitPaperId(paper?.id, defaultPaperId);
 
+  // Same key/fn TestListPage prefetches while this chunk downloads.
   const { data, isLoading, error, refetch } = useQuery<SectionalTestV2Data>({
-    queryKey: ["chapter-test", courseId, explicitPaperId ?? null],
+    ...chapterTestQueryOptions(courseId, explicitPaperId),
     enabled: !!courseId,
-    queryFn: async () => {
-      const res = await getChapterTestList(courseId, explicitPaperId);
-      return res.data;
-    },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });

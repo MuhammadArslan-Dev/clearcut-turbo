@@ -53,6 +53,25 @@ describe("pagedEntries", () => {
     const [entry] = pagedEntries(ORIGIN, "/x", list(3, 1, [0, 1, 2]));
     expect(entry).toEqual({ loc: `${ORIGIN}/x` });
   });
+
+  it("adds the /hi twin right after each page whose questions are mostly bilingual", () => {
+    // Page 1: 50 bilingual; page 2: 50 English-only; page 3: 10 bilingual.
+    const flags: (0 | 1)[] = [...Array(50).fill(1), ...Array(50).fill(0), ...Array(10).fill(1)];
+    const entries = pagedEntries(ORIGIN, "/x", list(110).map(([id, ts], i) => [id, ts, flags[i]]));
+    expect(locs(entries)).toEqual([
+      `${ORIGIN}/x`,
+      `${ORIGIN}/hi/x`,
+      `${ORIGIN}/x/page/2`,
+      `${ORIGIN}/x/page/3`,
+      `${ORIGIN}/hi/x/page/3`,
+    ]);
+    // The /hi page carries the same content date as its English twin.
+    expect(entries[1].lastmod).toBe(entries[0].lastmod);
+  });
+
+  it("lists no /hi URLs when the backend sends no bilingual flag", () => {
+    expect(locs(pagedEntries(ORIGIN, "/x", list(60))).some((u) => u.includes("/hi/"))).toBe(false);
+  });
 });
 
 describe("stageIdFor", () => {

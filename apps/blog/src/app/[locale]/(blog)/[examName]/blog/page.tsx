@@ -3,6 +3,7 @@ import BlogPostGrid from "@/components/blog/blog-post-grid";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import MainContainer from "@/components/main-container";
 import { getHindiPostSlugs, getPostsByExam } from "@/lib/api/posts";
+import { toCardPost } from "@/lib/blog/card-post";
 import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExam, examLabelOf } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
@@ -119,7 +120,7 @@ export default async function ExamBlogListingPage({ params }: Params) {
       {/* Grid (search + featured + load-more handled client-side) */}
       <MainContainer padding="py-10" maxWidth="max-w-[1100px]" bgColor="">
         <div className="px-4">
-          <BlogPostGrid posts={posts} examName={examName} locale={locale} />
+          <BlogPostGrid posts={posts.map(toCardPost)} examName={examName} locale={locale} />
         </div>
       </MainContainer>
     </div>

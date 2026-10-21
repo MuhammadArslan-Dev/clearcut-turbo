@@ -172,7 +172,9 @@ export default function StartHero({ locale = defaultLocale }: { locale?: Locale 
         alt=""
         fill
         priority
-        sizes="60vw"
+        // The panel is `hidden` below md: on phones ask for the smallest
+        // srcset entry instead of preloading a 60vw image nobody sees.
+        sizes="(max-width: 767px) 1px, 60vw"
         className="object-cover object-bottom z-0"
       />
 

@@ -129,7 +129,11 @@ export default function MainContent({ examId }: { examId: string }) {
     goToReport(exam.course?.group_code, exam.uuid, examType);
   }, [exam, goToReport]);
 
-  const remaining = useExamTimer({ examId, initialRemaining: 0, onExpire: handleAutoExpire });
+  // The exam countdown + server heartbeat now live in <ExamTimerWatcher />
+  // (rendered first in both return paths below). Its `remaining` state ticks
+  // every second; called here, that re-rendered this whole question — markdown
+  // and all four options — every second, while the value was never read.
+  const examTimer = <ExamTimerWatcher examId={examId} onExpire={handleAutoExpire} />;
 
   // ===============================
   // CONTEXT (recalculates when exam or language changes)
@@ -332,8 +336,15 @@ export default function MainContent({ examId }: { examId: string }) {
   // GUARDS
   // ===============================
 
+  // The watcher is the first child of a fragment in BOTH returns, so React
+  // keeps the same instance (timer + heartbeat) across skeleton ↔ content.
   if (isLoading || !exam || !question || !section || !translation) {
-    return <ExamSkeleton />;
+    return (
+      <>
+        {examTimer}
+        <ExamSkeleton />
+      </>
+    );
   }
   const currentQNo = ctx.questionIndex + 1;
   const totalInSection = section.questions.length;
@@ -364,6 +375,8 @@ export default function MainContent({ examId }: { examId: string }) {
   // ===============================
 
   return (
+    <>
+    {examTimer}
     <div className="flex h-full flex-col gap-3 py-3 lg:p-3 lg:pl-3">
       {/* Question card — mobile: full width, flush against the screen edges
           (no side padding on the wrapper, square corners); desktop: the
@@ -518,8 +531,24 @@ export default function MainContent({ examId }: { examId: string }) {
       </div>
       <ContactUsModal />
     </div>
+    </>
   );
 }
+
+/**
+ * Owns useExamTimer (1s countdown + 60s server heartbeat, auto-submit on
+ * expiry) so its per-second state updates re-render only this null component.
+ */
+const ExamTimerWatcher = memo(function ExamTimerWatcher({
+  examId,
+  onExpire,
+}: {
+  examId: string;
+  onExpire: () => void;
+}) {
+  useExamTimer({ examId, initialRemaining: 0, onExpire });
+  return null;
+});
 
 /* -------------------------------------------------------------------------- */
 /* Question header: subject chip · Mark for Review · per-question clock · marks */

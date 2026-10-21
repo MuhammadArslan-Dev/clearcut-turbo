@@ -517,7 +517,6 @@ function TestimonialsSection({ data }: any) {
             width={48}
             height={48}
             className="w-full h-full object-cover"
-            priority
           />
         ),
         role: r.role,
@@ -641,11 +640,15 @@ function SocialProofStack({ data }: { data: any }) {
     return () => clearInterval(timer);
   }, []);
 
-  if (!item) return null;
+  // The row's 36px is reserved from the server render on (items only arrive
+  // after hydration); returning null until then made the hero list below
+  // jump down when the first name appeared.
+  if (!socialProof.length) return null;
 
   return (
     <div className="relative h-[36px] -mt-4 -mb-0.5 overflow-hidden">
       <AnimatePresence mode="wait">
+        {item && (
         <motion.div
           key={item.id}
           className="absolute left-0 right-0"
@@ -660,6 +663,7 @@ function SocialProofStack({ data }: { data: any }) {
             </Text>
           </div>
         </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

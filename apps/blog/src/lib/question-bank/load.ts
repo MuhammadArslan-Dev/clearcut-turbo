@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Question } from "@/components/blog/assessment-question/questions-list";
 import { apiFetch } from "@/lib/api/api2";
 import { mapLimit } from "@/lib/async/map-limit";
+import { getLocalizedEntityName } from "@/utils/question-translation";
 import { questionTags } from "./cache-tags";
 import { renderIndexById } from "./card-model";
 
@@ -49,10 +50,17 @@ function sectionQuery(exam: string, subject: string, section?: string): string {
     : `section_id=${enc(exam)}&slug=${enc(subject)}`;
 }
 
-/** A subject page's chapter slugs, in page order; null when the backend
+export type SubjectSection = {
+  /** Chapter slugs in page order. */
+  chapters: string[];
+  /** The section's name per language (its `description` translations). */
+  names: { en: string | null; hi: string | null };
+};
+
+/** A subject page's section: its chapters and names; null when the backend
  * failed. Shared by the subject page and the sitemap so both agree. */
-export const loadSubjectChapterSlugs = cache(
-  async (exam: string, subject: string, section?: string): Promise<string[] | null> => {
+export const loadSubjectSection = cache(
+  async (exam: string, subject: string, section?: string): Promise<SubjectSection | null> => {
     const json = await apiFetch(`/blog/get-questions-by-section?${sectionQuery(exam, subject, section)}`, {
       revalidate: REVALIDATE_SECONDS,
       tags: questionTags(exam),
@@ -62,8 +70,21 @@ export const loadSubjectChapterSlugs = cache(
     // sitemap builder relies on), so it is only used to discover the subject's
     // chapters; each chapter's full set comes from the chapter endpoint.
     const entries: { chapter?: { slug?: string } }[] = Array.isArray(json?.data?.data) ? json.data.data : [];
-    return [...new Set(entries.map((e) => e.chapter?.slug).filter((s): s is string => Boolean(s)))];
+    const data = json?.data;
+    return {
+      chapters: [...new Set(entries.map((e) => e.chapter?.slug).filter((s): s is string => Boolean(s)))],
+      names: {
+        en: getLocalizedEntityName(data, data?.description, "en"),
+        hi: getLocalizedEntityName(data, data?.description, "hi"),
+      },
+    };
   },
+);
+
+/** A subject page's chapter slugs, in page order; null when the backend failed. */
+export const loadSubjectChapterSlugs = cache(
+  async (exam: string, subject: string, section?: string): Promise<string[] | null> =>
+    (await loadSubjectSection(exam, subject, section))?.chapters ?? null,
 );
 
 /** Every chapter of a subject, concatenated in navigation order; null when

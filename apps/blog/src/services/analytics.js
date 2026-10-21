@@ -1,5 +1,21 @@
 // src/services/analytics.js
-import * as amplitude from "@amplitude/analytics-browser";
+//
+// The SDK is loaded with a dynamic import (its own chunk) instead of a static
+// one: this module is reachable from the root layout via lib/auth.ts, so a
+// static import put the whole SDK in every page's main bundle and on the
+// hydration path. Every call below goes through `load()`, and the `.then`
+// callbacks run in call order, so events keep their order. Init still happens
+// right after hydration (InitAmplitude's effect), as before.
+
+/** @type {Promise<typeof import("@amplitude/analytics-browser")> | null} */
+let sdk = null;
+const load = () => (sdk ??= import("@amplitude/analytics-browser"));
+// Analytics must never break the page or the login flow.
+const withSdk = (fn) => {
+  load()
+    .then(fn)
+    .catch(() => {});
+};
 
 // Same fallback key apps/dashboard and apps/tools use when
 // NEXT_PUBLIC_AMPLITUDE_API_KEY isn't set — was previously hardcoded with
@@ -41,16 +57,18 @@ export const initAmplitude = () => {
   if (typeof window === "undefined" || !AMPLITUDE_ENABLED || !AMPLITUDE_KEY) return;
   if (isInitialized) return;
 
-  amplitude.init(AMPLITUDE_KEY, {
-    defaultTracking: {
-      pageViews: true,
-      sessions: true,
-      formInteractions: false,
-      fileDownloads: false,
-    },
-    includeUtm: true,
-  });
   isInitialized = true;
+  withSdk((amplitude) =>
+    amplitude.init(AMPLITUDE_KEY, {
+      defaultTracking: {
+        pageViews: true,
+        sessions: true,
+        formInteractions: false,
+        fileDownloads: false,
+      },
+      includeUtm: true,
+    }),
+  );
 
   setUserProperties({
     custom_platform: getCustomPlatform(),
@@ -74,7 +92,7 @@ export const setUserId = (userId) => {
     return;
   }
 
-  amplitude.setUserId(idStr);
+  withSdk((amplitude) => amplitude.setUserId(idStr));
   lastUserId = idStr;
 
   setUserProperties({
@@ -86,13 +104,15 @@ export const setUserId = (userId) => {
 export const setUserProperties = (properties = {}) => {
   if (typeof window === "undefined" || !AMPLITUDE_ENABLED) return;
 
-  const identifyObj = new amplitude.Identify();
-  for (const [key, value] of Object.entries(properties)) {
-    if (value !== undefined && value !== null) {
-      identifyObj.set(key, value);
+  withSdk((amplitude) => {
+    const identifyObj = new amplitude.Identify();
+    for (const [key, value] of Object.entries(properties)) {
+      if (value !== undefined && value !== null) {
+        identifyObj.set(key, value);
+      }
     }
-  }
-  amplitude.identify(identifyObj);
+    amplitude.identify(identifyObj);
+  });
 };
 
 /** ✅ Track Event */
@@ -102,11 +122,11 @@ export const logAmplitudeEvent = (eventName, properties = {}) => {
     console.warn("[Amplitude] Event name is required");
     return;
   }
-  amplitude.track(eventName, properties);
+  withSdk((amplitude) => amplitude.track(eventName, properties));
 };
 
 /** ✅ Reset on Logout */
 export const resetAmplitude = () => {
   if (typeof window === "undefined" || !AMPLITUDE_ENABLED) return;
-  amplitude.reset();
+  withSdk((amplitude) => amplitude.reset());
 };

@@ -52,6 +52,19 @@ jobs:
           NEXT_PUBLIC_SITE_URL: "https://academy.clearcutoff.in"
         run: pnpm run cf:build
 
+      # A bare `wrangler deploy` (below) skips what `opennextjs-cloudflare
+      # deploy` does first: upload the prerendered pages to the R2 incremental
+      # cache and create the D1 tag cache's `revalidations` table. Without it,
+      # revalidateTag/revalidatePath (POST /api/revalidate) has no table to
+      # write to. Idempotent (CREATE TABLE IF NOT EXISTS); needs the R2 bucket
+      # and D1 database from wrangler.jsonc to exist — docs/BLOG_CACHE_DEPLOY.md.
+      - name: Populate OpenNext caches (R2 + D1)
+        working-directory: apps/blog
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec opennextjs-cloudflare populateCache remote
+
       # BACKEND_URL is passed here too (not just at build time) because it's
       # the one var this app reads from process.env per-request rather than
       # only at build time — see the comment in wrangler.jsonc.

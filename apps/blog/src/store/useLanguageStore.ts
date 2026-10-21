@@ -3,6 +3,10 @@ import { createPersistedStore } from "@clearcut/state/create-persisted-store";
 
 interface LanguageState {
   courseLanguage: string;
+  /** True once the visitor picked a course language themselves (language
+   * modal). Until then question pages follow the URL's locale — see
+   * lib/question-bank/use-course-lang.ts. */
+  courseLanguageChosen: boolean;
   appLanguage: string;
   setCourseLanguage: (language: string) => void;
   setAppLanguage: (language: string) => void;
@@ -19,15 +23,16 @@ const STORAGE_KEY = "language-settings";
 // at the plain defaults below on both server and first client paint; the
 // real persisted value is applied afterward via useHydrateStore, called
 // once from MainThemeProvider.
-type PersistedLanguageState = Pick<LanguageState, "courseLanguage" | "appLanguage">;
+type PersistedLanguageState = Pick<LanguageState, "courseLanguage" | "courseLanguageChosen" | "appLanguage">;
 
 export const useLanguageStore = createPersistedStore<LanguageState, PersistedLanguageState>(
   "languageStore",
   (set) => ({
     courseLanguage: "en",
+    courseLanguageChosen: false,
     appLanguage: "en",
 
-    setCourseLanguage: (language: string) => set({ courseLanguage: language }),
+    setCourseLanguage: (language: string) => set({ courseLanguage: language, courseLanguageChosen: true }),
     setAppLanguage: (language: string) => set({ appLanguage: language }),
   }),
   {
@@ -36,6 +41,7 @@ export const useLanguageStore = createPersistedStore<LanguageState, PersistedLan
     // Only persist these fields, not the setter functions.
     partialize: (state) => ({
       courseLanguage: state.courseLanguage,
+      courseLanguageChosen: state.courseLanguageChosen,
       appLanguage: state.appLanguage,
     }),
   },

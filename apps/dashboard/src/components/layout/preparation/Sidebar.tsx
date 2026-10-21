@@ -30,7 +30,7 @@ import {
 
 import { useFlowNavigation } from "@/hooks/navigation/useFlowNavigation";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
+import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useSearchParams } from "next/navigation";
 
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
@@ -62,7 +62,6 @@ import {
   usePaywallsStore,
 } from "@/components/features/PayWalls/usePaywallsStore";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
-import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import AppDownloadWidget from "@/components/features/PayWalls/AppDownloadWidget";
 import { useRouter } from "@/i18n/navigation";
@@ -138,20 +137,11 @@ export default function Sidebar() {
   }, [selectedPaperId]);
 
   // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
-  // scrolled the chapter list (see useScrollHideOffset) — Topbar clamps
+  // scrolled the chapter list (see useTopbarScrollHide) — Topbar clamps
   // this against its own measured height, so this just needs to be a safe
-  // upper bound.
-  const chapterListScrollOffset = useScrollHideOffset(
-    topicContainerRef,
-    TOPBAR_MAX_HIDE_OFFSET,
-  );
-  const setTopbarOffset = useTopbarVisibilityStore((s) => s.setOffset);
-  useEffect(() => {
-    setTopbarOffset(isMobile ? chapterListScrollOffset : 0);
-  }, [isMobile, chapterListScrollOffset, setTopbarOffset]);
-
-  // Always show the Topbar again once we leave this screen/view.
-  useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
+  // upper bound. Writes the store directly, so scrolling never re-renders
+  // this Sidebar; the Topbar is shown again once we leave this screen/view.
+  useTopbarScrollHide(topicContainerRef, isMobile, TOPBAR_MAX_HIDE_OFFSET);
 
   // Auto-scroll active topic into view
   useEffect(() => {

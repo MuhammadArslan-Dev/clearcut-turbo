@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+
+// false in the server render and during hydration, true afterwards.
+const noopSubscribe = () => () => {};
+function useHydrated() {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
+}
 import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import MainInput from "@clearcut/ui/main-input";
@@ -590,6 +596,12 @@ export default function StartAuthForm({
   /* ---------------- TRUECALLER ---------------- */
 
   const truecallerAvailability = useTruecallerAvailability();
+  // Both inputs below are browser-only (UA, URL, the localStorage cache), so
+  // the server always renders this page without the Truecaller block. Showing
+  // it in the very first client render (as before) mismatched that HTML on
+  // Android Chrome, and React then re-rendered the whole form on the client.
+  // Gating on hydration shows it one render later, matching the server HTML.
+  const hydrated = useHydrated();
 
   // ?showTruecaller=true — set by the Astro /go marketing pages' Login/Try
   // Free CTAs when THEIR OWN on-page detection already found Truecaller
@@ -666,7 +678,8 @@ export default function StartAuthForm({
                   — see that hook's docblock), OR when ?showTruecaller=true
                   arrives from a /go marketing page that already confirmed it
                   on its own. */}
-              {(truecallerAvailability === "available" ||
+              {hydrated &&
+                (truecallerAvailability === "available" ||
                 forceShowTruecaller) && (
                 <div className="flex md:hidden flex-col gap-2">
                   <TruecallerButton

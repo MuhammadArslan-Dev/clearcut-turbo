@@ -1,6 +1,6 @@
 import Header from "@/components/layout/headers/Header";
 import CoursePage from "@/components/pages/CoursePage";
-import { getCourse } from "@/lib/data/courses";
+import { courses, getCourse } from "@/lib/data/courses";
 import { getExamBySlug } from "@/lib/data/staticExams";
 import JsonLd from "@clearcut/ui/json-ld";
 import { generateSeoMetadata, SITE_URL } from "@/lib/seo/metadata";
@@ -8,6 +8,15 @@ import FloatingButton from "@/components/global/FloatingButton";
 import { toLocale, type Locale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
+
+// Page data is the static snapshot in lib/data (no request-time input), so
+// every course page is pre-rendered at build time instead of rendered on each
+// request. Slugs outside `courses` still render (and are then cached), as before.
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return courses.map((c) => ({ slug: c.slug }));
+}
 
 // UI-chrome-only translation for this page's SEO metadata — exam short
 // names/full names are proper nouns and stay untranslated on every locale,

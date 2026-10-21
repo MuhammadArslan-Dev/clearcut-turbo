@@ -556,7 +556,7 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
     applyLoadedTracker(entry);
   };
 
-  if (step === "loading") return null;
+  if (step === "loading") return <TrackerLoadingSkeleton />;
 
   const savedCopyOfCurrent = state ? savedEntries?.find((e) => entryKey(e) === entryKey(state)) : undefined;
   const dashboardSaveStatus: SaveStatus =
@@ -766,6 +766,38 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
       />
 
       {authGateMounted && <ToolsAuthGate requestId={loginRequestId} reason={loginReason} locale={locale} onAuthenticated={handleAuthenticated} />}
+    </div>
+  );
+}
+
+/**
+ * Shown (server render included) until the mount effect has read localStorage
+ * and picked the first screen — it used to render nothing, so the whole tool
+ * and the footer below jumped in. Sized like the first screen a new visitor
+ * gets (account bar, stepper, exam picker heading + search, and the picker's
+ * own 6-card loading grid), measured at 390px and desktop. A visitor with
+ * saved trackers lands on the list instead, which has a different height.
+ */
+function TrackerLoadingSkeleton() {
+  return (
+    <div className="max-w-[1080px] mx-auto px-3 pt-6 sm:py-6" aria-hidden="true">
+      <Skeleton variant="rectangular" width="100%" height={36} borderRadius={12} className="mb-4" />
+      <div className="mb-8 h-[74px] sm:h-[78px]">
+        <Skeleton variant="rectangular" width="100%" height="100%" borderRadius={16} />
+      </div>
+      <div className="flex flex-col gap-5">
+        <div className="h-[178px] sm:h-[90px]">
+          <Skeleton variant="rectangular" width="100%" height="100%" borderRadius={16} />
+        </div>
+        <div className="h-[91px] sm:h-[42px]">
+          <Skeleton variant="rectangular" width="100%" height="100%" borderRadius={12} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} variant="rectangular" width="100%" height={130} borderRadius={16} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

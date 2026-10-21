@@ -1,4 +1,5 @@
 import { createFetchClient } from "@clearcut/api/fetch-client";
+import { backendServerHeaders } from "./backend-headers";
 
 const baseUrl = process.env.BACKEND_URL;
 
@@ -39,6 +40,7 @@ export async function apiFetch<T = any>(
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        ...backendServerHeaders(),
         ...headers,
       },
       body: body ?? undefined,

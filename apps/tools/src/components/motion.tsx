@@ -7,7 +7,13 @@ import { motion } from "framer-motion";
 // hand-rolling its own framer-motion variants, so the feel (timing, easing)
 // stays consistent and a single tweak here updates everywhere.
 
-/** Fades + slides a block in once, on mount. Use for hero/heading blocks. */
+/**
+ * Fades + slides a block in once, on mount. Use for hero/heading blocks.
+ * Plain CSS (`.cc-fade-in` in globals.css), not framer-motion: framer
+ * server-renders `opacity: 0` and only starts once the JS has hydrated, so
+ * the hero — the page's LCP — stayed invisible until then. The CSS keyframe
+ * starts at first paint, with the same 0.5s / ease-out / 14px rise.
+ */
 export function FadeIn({
   children,
   delay = 0,
@@ -18,14 +24,12 @@ export function FadeIn({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      className={className}
+    <div
+      className={className ? `cc-fade-in ${className}` : "cc-fade-in"}
+      style={delay ? { animationDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 

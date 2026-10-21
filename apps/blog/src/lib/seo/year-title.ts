@@ -17,17 +17,16 @@ export function yearFromSlug(yearSlug: string): string | null {
 }
 
 /**
- * Title/description for a year page (/<exam>/<level>/year/<exam>-<yyyy>):
+ * The parts of a year page's title/description (/<exam>/<level>/year/
+ * <exam>-<yyyy>), filled into QuestionBankPage.yearTitle / yearDescription:
  * "CTET 2024 Paper 1 Previous Year Questions" instead of the raw slug
  * ("CTET Exam Paper 1 ctet-2024 - Questions & Answers"). Bare — the root
  * layout's "%s | Clear Cutoff" template adds the site name.
  */
-export function yearPageSeo(examSlug: string, levelSlug: string, yearSlug: string): { title: string; description: string } {
-  const exam = examSlug.toUpperCase();
-  const level = levelLabel(levelSlug);
-  const year = yearFromSlug(yearSlug) ?? unFormatSlug(yearSlug);
+export function yearPageLabels(examSlug: string, levelSlug: string, yearSlug: string): { exam: string; year: string; level: string } {
   return {
-    title: `${exam} ${year} ${level} Previous Year Questions`,
-    description: `${exam} ${year} ${level} previous year questions with answers, free on Clear Cutoff.`,
+    exam: examSlug.toUpperCase(),
+    year: yearFromSlug(yearSlug) ?? unFormatSlug(yearSlug),
+    level: levelLabel(levelSlug),
   };
 }

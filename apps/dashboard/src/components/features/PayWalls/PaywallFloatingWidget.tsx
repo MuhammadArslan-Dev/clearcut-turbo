@@ -2,7 +2,7 @@ import Button from "@clearcut/ui/button";
 import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef } from "react";
 import { PaywallSource, usePaywallsStore } from "./usePaywallsStore";
 import { useRouter } from "@/i18n/navigation";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -16,49 +16,57 @@ export default function PaywallFloatingWidget() {
 
   const router = useRouter();
   const isMobile = useIsMobile();
-  // Same raw scroll-hide offset Topbar itself reads (not the derived
-  // `progress`) — clamped against this row's OWN measured height below,
-  // mirroring Topbar's self-contained technique exactly rather than
-  // depending on another component having already written a derived value
-  // for this render.
-  const scrollOffset = useTopbarVisibilityStore((s) => s.offset);
 
+  const priceRowOuterRef = useRef<HTMLDivElement>(null);
   const priceRowRef = useRef<HTMLDivElement>(null);
-  const [priceRowHeight, setPriceRowHeight] = useState<number | null>(null);
 
   const hasActive = useMemo(
     () => course?.status === "trial" || course?.status === "trial_end",
     [course?.status],
   );
 
-  // `hasActive` is a dependency here, not just `[]`: this
-  // component always renders `false` until course status resolves to
-  // "trial"/"trial_end", so `priceRowRef` is null on first mount whenever
-  // that data hasn't loaded yet — an empty deps array would then never
-  // re-run once the ref actually attaches, leaving `priceRowHeight` stuck at
-  // null forever and the scroll-hide permanently inert (`visibleFraction`
-  // falls back to 1 unconditionally). Observed depending on how fast course
-  // data resolves relative to mount on the page this renders from.
+  // Mobile: the price row collapses 1:1 with the Topbar's scroll-hide —
+  // the same raw store offset Topbar reads, clamped against this row's OWN
+  // measured height. Styles are written to the DOM from a store
+  // subscription, so scrolling never re-renders this widget.
+  // `hasActive` is a dependency, not just `[]`: this component renders
+  // `false` until course status resolves to "trial"/"trial_end", so the refs
+  // are null on first mount whenever that data hasn't loaded yet — an empty
+  // deps array would never re-run once they attach, leaving the scroll-hide
+  // permanently inert.
   useLayoutEffect(() => {
-    const el = priceRowRef.current;
-    if (!el) return;
+    const outer = priceRowOuterRef.current;
+    const row = priceRowRef.current;
+    if (!outer || !row) return;
 
-    const measure = () => setPriceRowHeight(el.scrollHeight);
-    measure();
+    let rowHeight = row.scrollHeight;
+    const apply = () => {
+      const offset = useTopbarVisibilityStore.getState().offset;
+      const clamped = isMobile ? Math.min(offset, rowHeight) : 0;
+      const visible = rowHeight ? 1 - clamped / rowHeight : 1;
+      outer.style.height = `${rowHeight * visible}px`;
+      outer.style.opacity = String(visible);
+      // Was a flex `gap-3` on the parent, but a gap doesn't shrink away
+      // with a collapsed sibling. Scaling this margin by the same fraction
+      // as the height keeps the two in sync (12px = gap-3) down to a true 0.
+      outer.style.marginBottom = `${12 * visible}px`;
+      row.style.transform = `translateY(${(1 - visible) * -8}px)`;
+    };
 
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasActive]);
-
-  const clampedOffset =
-    isMobile && priceRowHeight != null
-      ? Math.min(scrollOffset, priceRowHeight)
-      : 0;
-  const visibleFraction = priceRowHeight
-    ? 1 - clampedOffset / priceRowHeight
-    : 1;
+    apply();
+    const ro = new ResizeObserver(() => {
+      rowHeight = row.scrollHeight;
+      apply();
+    });
+    ro.observe(row);
+    const unsubscribe = useTopbarVisibilityStore.subscribe((state, prev) => {
+      if (state.offset !== prev.offset) apply();
+    });
+    return () => {
+      ro.disconnect();
+      unsubscribe();
+    };
+  }, [hasActive, isMobile]);
 
   const examTitle = useMemo(
     () => course?.exam?.short_name ?? "",
@@ -82,29 +90,8 @@ export default function PaywallFloatingWidget() {
           bordercolor="var(--color-brand)"
         >
           <div className="flex w-full flex-col">
-            <div
-              style={{
-                height:
-                  priceRowHeight != null
-                    ? priceRowHeight * visibleFraction
-                    : "auto",
-                opacity: priceRowHeight != null ? visibleFraction : 1,
-                // Was a flex `gap-3` on the parent, but a gap doesn't shrink
-                // away with a collapsed sibling — it still held a fixed 12px
-                // gap above the button even at height 0. Scaling this margin
-                // by the same fraction as the height keeps the two in sync
-                // (12px = Tailwind's gap-3) all the way down to a true 0.
-                marginBottom: 12 * visibleFraction,
-              }}
-              className="overflow-hidden"
-            >
-              <div
-                ref={priceRowRef}
-                style={{
-                  transform: `translateY(${(1 - visibleFraction) * -8}px)`,
-                }}
-                className="flex items-center justify-between gap-2"
-              >
+            <div ref={priceRowOuterRef} style={{ marginBottom: 12 }} className="overflow-hidden">
+              <div ref={priceRowRef} className="flex items-center justify-between gap-2">
                 <Text as="h6" variant="heading-large" weight="semibold">
                   {examTitle}
                 </Text>

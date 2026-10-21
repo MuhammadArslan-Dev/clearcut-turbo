@@ -1,9 +1,11 @@
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { canonicalChapterPath } from "@/lib/seo/exam-index";
 import { loadExamIndex } from "@/lib/seo/load-exam-index";
 import { chapterPageUrl, examSlugFromQuestion, parseQuestionId } from "@/lib/seo/question-redirect";
 import { loadScope } from "@/lib/question-bank/scope";
 import { pageOfIndex } from "@/lib/question-bank/pagination";
+import { isHindiPage } from "@/lib/question-bank/hindi-page";
 
 // Individual question pages were replaced by the shared chapter pages, which
 // render every question with an `id="q-<id>"` anchor. Each old
@@ -41,7 +43,10 @@ export async function GET(
   const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
   let questions: Array<{ id?: number; stage_id_b?: string; exam_instance_id_b?: string; chapter?: { slug?: string } | null }>;
   try {
-    const res = await fetch(`${base}/blog/get-questions?id=${id}&limit_q=2`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${base}/blog/get-questions?id=${id}&limit_q=2`, {
+      headers: backendServerHeaders(),
+      next: { revalidate: 3600 },
+    });
     if (!res.ok) return unavailableResponse();
     const json = await res.json();
     if (!Array.isArray(json?.data)) return unavailableResponse();
@@ -73,13 +78,14 @@ export async function GET(
   const index = loaded.cards.findIndex((c) => c.id === Number(id));
   const page = index >= 0 ? pageOfIndex(index) : 1;
 
-  // Always the English chapter URL: the /hi chapter page shows the same
-  // (English) questions and canonicalizes to it (lib/seo/locale-alternates),
-  // so every variant — /question/<id>, /question/<slug>-<id>, /hi/... — lands
-  // on the one primary URL in a single 301.
+  // The canonical URL of that page, in one 301: English, or the /hi chapter
+  // page for an old /hi link when that page is a genuinely Hindi page (its
+  // own canonical — lib/question-bank/hindi-page). Otherwise /hi shows the
+  // English page's content and canonicalizes to it, so /hi links land there.
+  const toHindi = locale === "hi" && isHindiPage(loaded.cards, page);
   const location = chapterPageUrl({
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin,
-    locale: "en",
+    locale: toHindi ? "hi" : "en",
     exam,
     path,
     chapter,

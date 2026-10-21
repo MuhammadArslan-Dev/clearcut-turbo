@@ -1,3 +1,4 @@
+import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { mapLimit } from "@/lib/async/map-limit";
 import { questionTags } from "@/lib/question-bank/cache-tags";
 import type { ExamIndex, IndexSubject } from "./exam-index";
@@ -22,7 +23,10 @@ function apiBase(): string {
 }
 
 async function getJson(path: string, exam: string): Promise<{ data?: unknown }> {
-  const res = await fetch(`${apiBase()}${path}`, { next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) } });
+  const res = await fetch(`${apiBase()}${path}`, {
+    headers: backendServerHeaders(),
+    next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) },
+  });
   if (!res.ok) throw new Error(`GET ${path} -> HTTP ${res.status}`);
   return res.json();
 }

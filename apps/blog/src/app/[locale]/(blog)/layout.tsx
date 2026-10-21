@@ -1,4 +1,4 @@
-import CountdownBanner from "@/components/banner/countdownbanner";
+import CountdownBanner, { COUNTDOWN_ENDED_SCRIPT } from "@/components/banner/countdownbanner";
 import Header from "@/components/blog/header";
 import Footer from "@/components/landing/footer/footer";
 import React from "react";
@@ -10,6 +10,9 @@ export default function BlogLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+      {/* Runs while the HTML is parsed, before the banner paints: hides an
+          already-ended offer so it never flashes in and then collapses. */}
+      <script dangerouslySetInnerHTML={{ __html: COUNTDOWN_ENDED_SCRIPT }} />
       <CountdownBanner message="Flash Sale Ends In" />
       <Header />
       {/* Main Layout (sidebars fixed, main scrolls) */}

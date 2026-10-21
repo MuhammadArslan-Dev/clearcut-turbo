@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Agentation } from "agentation";
+import DevAgentation from "@/components/DevAgentation";
 import LazyGTM from "@clearcut/analytics/lazy-gtm";
 import LazyClarity from "@clearcut/analytics/lazy-clarity";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LazyGTM gtmId={GTM_ID} />
         <LazyClarity />
         <PageViewTracker />
-        {process.env.NODE_ENV === "development" && <Agentation />}
+        <DevAgentation />
       </body>
     </html>
   );

@@ -150,6 +150,27 @@ declare const messages: {
     "chapterCount": "{count} questions",
     "loadError": "Questions couldn't be loaded right now. Please try again in a few minutes."
   },
+  "QuestionBankPage": {
+    "chapterTitle": "{chapter} - {subject} {exam} {level} Questions",
+    "chapterDescription": "{chapter} practice questions from {subject} for {exam} Exam {level}, free on Clear Cutoff.",
+    "subjectTitle": "{subject} - {exam} {level} Questions",
+    "subjectDescription": "{subject} practice questions for {exam} Exam {level}, free on Clear Cutoff.",
+    "yearTitle": "{exam} {year} {level} Previous Year Questions",
+    "yearDescription": "{exam} {year} {level} previous year questions with answers, free on Clear Cutoff.",
+    "pageTitleSuffix": " - Page {page}",
+    "pageDescriptionSuffix": " Page {page}.",
+    "examHeading": "{exam} Exam - {level} - {name}",
+    "yearHeading": "{exam} Exam {level}",
+    "prepSubheading": "{exam} exam {level} preparation with Clear Cutoff",
+    "chapterWise": "Chapter-wise questions",
+    "subjectWise": "Subject-wise questions",
+    "yearWise": "Year-wise questions",
+    "verified": "Verified Answers and Explanations",
+    "byClearCutoff": "by Clear Cutoff",
+    "home": "Home",
+    "subject": "Subject",
+    "years": "Years"
+  },
   "QuestionFilter": {
     "filter": "Filter",
     "close": "Close",

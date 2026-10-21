@@ -11,7 +11,9 @@ import { notFound } from "next/navigation";
 import { canonicalChapterPathMap, findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
-import { yearPageSeo } from "@/lib/seo/year-title";
+import { yearPageLabels } from "@/lib/seo/year-title";
+import { isHindiPage } from "@/lib/question-bank/hindi-page";
+import { localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { getQuizSchema } from "@/utils/google/get-quiz-schema";
 import { loadExamInfo, loadYears } from "@/lib/question-bank/load";
@@ -32,19 +34,24 @@ const yearScope = (p: YearParams): QuestionScope => ({ kind: "year", exam: p.exa
 
 export async function yearPageMetadata(params: YearParams) {
   const { locale, examName, level_id, year_id } = params;
-  const seo = pageSeo(metadataPage(params.page));
+  const page = metadataPage(params.page);
+  const seo = pageSeo(page);
 
   // The years list is exam-wide, so some level/year pairs have no questions:
   // keep those reachable from the year listing but out of the index.
-  const loaded = await loadScope(yearScope(params));
-  const base = yearPageSeo(examName ?? "", level_id ?? "", year_id ?? "");
+  const [loaded, t] = await Promise.all([loadScope(yearScope(params)), pageCopy(locale)]);
+  const labels = yearPageLabels(examName ?? "", level_id ?? "", year_id ?? "");
+  const suffix = pageSuffixes(t, page);
 
   return generateLocaleMetadata({
     locale,
     path: `/${examName}/${level_id}/year/${year_id}${seo.pathSuffix}`,
-    title: `${base.title}${seo.titleSuffix}`,
-    description: `${base.description}${seo.descriptionSuffix}`,
+    title: `${t("yearTitle", labels)}${suffix.title}`,
+    description: `${t("yearDescription", labels)}${suffix.description}`,
     noindex: loaded.ok && loaded.cards.length === 0,
+    // A year mixes bilingual subjects with the English/Hindi language
+    // sections, so this is decided per page.
+    hiTranslated: isHindiPage(loaded.cards, page),
   });
 }
 
@@ -61,17 +68,19 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   const examYear = toExamYear(year_id);
   const scope = yearScope(params);
 
-  const [loaded, examInfo, years, index] = await Promise.all([
+  const [loaded, examInfo, years, index, t] = await Promise.all([
     loadScope(scope),
     loadExamInfo(examNameParam),
     loadYears(examNameParam),
     tryLoadExamIndex(examNameParam),
+    pageCopy(locale),
   ]);
 
   // Unknown level or year 404s; only checked when the lookups succeeded.
   if (index && !findLevel(index, level_id)) notFound();
   if (years && !years.some((y) => y.instance_id?.toUpperCase() === examYear)) notFound();
   assertPageExists(page, loaded.cards.length, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
 
   // `state` is nullable on the backend (national exams like CTET have none).
   const examState = examInfo?.state;
@@ -81,22 +90,23 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
     ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
-  const homeUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  // Breadcrumbs stay on the visitor's language site (/hi links to /hi).
+  const homeUrl = localeOrigin(locale);
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl || "/" },
+    { name: t("home"), url: homeUrl || "/" },
     { name: unFormatSlug(examNameParam.toLocaleUpperCase()), url: `${homeUrl}/${examNameParam}` },
     { name: capitalizeFirst(unFormatSlug(level_id)), url: `${homeUrl}/${examNameParam}/${level_id}` },
-    { name: "Years", url: `${homeUrl}/${examNameParam}/${level_id}/year` },
+    { name: t("years"), url: `${homeUrl}/${examNameParam}/${level_id}/year` },
     { name: unFormatSlug(examYear.toUpperCase()), url: `${homeUrl}${ownPath}` },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
+  // In the language the page shows, at its canonical URL (/hi only for a Hindi page).
   const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
     questions: loaded.raw.filter((q) => pageIds.has(q.id)),
     name: `${examName} Exam ${unFormatSlug(level_id ?? "")} ${unFormatSlug(examYear.toUpperCase())} Quiz`,
-    url: pagePath(`${homeUrl}${ownPath}`, page),
-    // Questions server-render in English on /hi too (courseLanguage default).
-    courseLang: "en",
+    url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}${ownPath}`, page),
+    courseLang: hindiPage ? "hi" : "en",
   });
 
   const chapterPaths = index
@@ -116,9 +126,9 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
         <div className="flex flex-col gap-5">
           <CustomizableHeader
             showEyebrow={false}
-            heading={`${examName} Exam ${unFormatSlug(level_id ?? "")}`}
+            heading={t("yearHeading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
             highlightText={examName}
-            subheading={`${examName} exam ${unFormatSlug(level_id ?? "")} preparation with Clear Cutoff`}
+            subheading={t("prepSubheading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"
@@ -139,7 +149,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
         <div className="flex flex-col gap-5">
           <CustomizableHeader
             showEyebrow={false}
-            heading={`Verified Answers and Explanations`}
+            heading={t("verified")}
             headingColor="text-gray-900"
             alignment="md:text-center text-left"
             headingClasses="!mb-0"
@@ -149,11 +159,11 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
 
           <div className="p-4 bg-white space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-2 ">
-              <div className="heading-small col-span-1">Year-wise questions</div>
+              <div className="heading-small col-span-1">{t("yearWise")}</div>
               {/* --color-success-strong is #00753a, the green used here before. */}
               <div className="flex items-center gap-2 text-[var(--color-success-strong)] col-span-1 md:justify-self-end">
                 <CourseCheckBadge size={16} fill="currentColor" />
-                <p>by Clear Cutoff</p>
+                <p>{t("byClearCutoff")}</p>
               </div>
             </div>
             {/* A year spans every subject, so it groups by subject

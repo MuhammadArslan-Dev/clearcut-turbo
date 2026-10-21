@@ -10,8 +10,7 @@ import { useExamModalStore } from "@/components/features/exam/store/useExamModal
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useScrollHideOffset } from "@/hooks/useScrollHideOffset";
-import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
+import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useTestListDataStore } from "@/components/features/test-series/store/useTestListDataStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import Text from "@clearcut/ui/text";
@@ -70,16 +69,12 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
   }, []);
 
   // Mobile-only: hide the Topbar's title row 1:1 with how far the user has
-  // scrolled the test list (see useScrollHideOffset) — same behavior as the
-  // preparation screen, see layout/preparation/Sidebar.tsx.
+  // scrolled the test list (see useTopbarScrollHide) — same behavior as the
+  // preparation screen, see layout/preparation/Sidebar.tsx. Writes the store
+  // directly, so scrolling never re-renders this shell.
   const mainRef = useRef<HTMLElement | null>(null);
   const isMobile = useIsMobile();
-  const mainScrollOffset = useScrollHideOffset(mainRef, TOPBAR_MAX_HIDE_OFFSET);
-  const setTopbarOffset = useTopbarVisibilityStore((s) => s.setOffset);
-  useEffect(() => {
-    setTopbarOffset(isMobile ? mainScrollOffset : 0);
-  }, [isMobile, mainScrollOffset, setTopbarOffset]);
-  useEffect(() => () => setTopbarOffset(0), [setTopbarOffset]);
+  useTopbarScrollHide(mainRef, isMobile, TOPBAR_MAX_HIDE_OFFSET);
 
   const activeModal = useMemo(
     () => (stack.length ? stack[stack.length - 1] : null),

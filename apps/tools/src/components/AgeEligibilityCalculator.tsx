@@ -7,41 +7,12 @@ import { Select, SelectOption } from "@clearcut/ui/select";
 import type { AgeEligibilityExam } from "@/lib/ageEligibility";
 import type { Locale } from "@/lib/dictionary";
 import { getAgeCalcStrings, MONTH_NAMES, QUALIFICATION_OPTIONS_BY_LOCALE } from "@/lib/ageCalculatorStrings";
+import { clampDob, maxDob, maxSelectableDay, maxSelectableMonth, MIN_DOB_YEAR } from "@/lib/dobSelection";
 import { ageOn, checkEligibility, formatAgeBreakdown, type AgeBreakdown, type EligibilityResult } from "@/lib/ageCalculator";
 
 function currentAndNextYears(): number[] {
   const now = new Date().getFullYear();
   return [now, now + 1, now + 2];
-}
-
-/** The latest birth date that still makes someone exactly 18 today — the
- * calendar guard rail: no day/month/year combination past this is selectable. */
-function maxDob(): Date {
-  const today = new Date();
-  return new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-}
-
-const MIN_DOB_YEAR = new Date().getFullYear() - 100;
-
-function daysInMonth(year: number, monthIndex: number): number {
-  return new Date(year, monthIndex + 1, 0).getDate();
-}
-
-/** Highest selectable day for a given year/month, respecting both the
- * month's real length and the 18-years-old ceiling. */
-function maxSelectableDay(year: number, monthIndex: number): number {
-  const cap = maxDob();
-  const monthMax = daysInMonth(year, monthIndex);
-  if (year === cap.getFullYear() && monthIndex === cap.getMonth()) {
-    return Math.min(monthMax, cap.getDate());
-  }
-  return monthMax;
-}
-
-/** Highest selectable month (0-indexed) for a given year, respecting the ceiling. */
-function maxSelectableMonth(year: number): number {
-  const cap = maxDob();
-  return year === cap.getFullYear() ? cap.getMonth() : 11;
 }
 
 export default function AgeEligibilityCalculator({ exam, locale = "en" }: { exam: AgeEligibilityExam; locale?: Locale }) {
@@ -79,18 +50,21 @@ export default function AgeEligibilityCalculator({ exam, locale = "en" }: { exam
 
   // Changing the year can push a previously-picked month/day past the
   // 18-years-old ceiling (or past the new month's length) — clamp instead of
-  // leaving a stale, now-invalid selection in place.
-  React.useEffect(() => {
-    if (dobYear === "") return;
-    const monthLimit = maxSelectableMonth(dobYear);
-    if (dobMonth !== "" && dobMonth > monthLimit) setDobMonth(monthLimit);
-  }, [dobYear]); // eslint-disable-line react-hooks/exhaustive-deps
+  // leaving a stale, now-invalid selection in place. Done in the change
+  // handlers (month first, then day against the clamped month), not in
+  // effects, so a pick is one render instead of a render plus a correction.
+  const handleDobYearChange = (year: number | "") => {
+    setDobYear(year);
+    const clamped = clampDob(year, dobMonth, dobDay);
+    if (clamped.month !== dobMonth) setDobMonth(clamped.month);
+    if (clamped.day !== dobDay) setDobDay(clamped.day);
+  };
 
-  React.useEffect(() => {
-    if (dobYear === "" || dobMonth === "") return;
-    const dayLimit = maxSelectableDay(dobYear, dobMonth);
-    if (dobDay !== "" && dobDay > dayLimit) setDobDay(dayLimit);
-  }, [dobYear, dobMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleDobMonthChange = (month: number | "") => {
+    setDobMonth(month);
+    const clamped = clampDob(dobYear, month, dobDay);
+    if (clamped.day !== dobDay) setDobDay(clamped.day);
+  };
 
   // Any input change invalidates a previous result — matches the reference
   // calculator's own behaviour: recalculating always requires an explicit click.
@@ -147,7 +121,7 @@ export default function AgeEligibilityCalculator({ exam, locale = "en" }: { exam
               </Select>
               <Select
                 value={dobMonth === "" ? "" : String(dobMonth)}
-                onValueChange={(v) => setDobMonth(v === "" ? "" : Number(v))}
+                onValueChange={(v) => handleDobMonthChange(v === "" ? "" : Number(v))}
                 placeholder={t.dobMonth}
                 error={dobError}
               >
@@ -159,7 +133,7 @@ export default function AgeEligibilityCalculator({ exam, locale = "en" }: { exam
               </Select>
               <Select
                 value={dobYear === "" ? "" : String(dobYear)}
-                onValueChange={(v) => setDobYear(v === "" ? "" : Number(v))}
+                onValueChange={(v) => handleDobYearChange(v === "" ? "" : Number(v))}
                 placeholder={t.dobYear}
                 error={dobError}
               >

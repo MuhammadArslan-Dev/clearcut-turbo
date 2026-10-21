@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { ReactQueryProvider } from "@clearcut/react-query/provider";
 import AnalyticsLoader from "@/components/global/AnalyticsLoader";
 import { AuthProvider, AuthModal } from "@/lib/auth";
 import AuthRedirectLoader from "@/components/layout/AuthRedirectLoader";
@@ -15,7 +14,7 @@ import { Suspense } from "react";
 import AnalyticsProvider from "@clearcut/analytics/provider";
 import FacebookPixel from "@/components/thirdparties/FacebookPixel";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
-import { Agentation } from "agentation";
+import DevAgentation from "@/components/global/DevAgentation";
 
 const SITE_URL = "https://clearcutoff.in";
 // Same var + fallback as REDIRECT_BASE_URL in lib/auth.ts.
@@ -141,7 +140,11 @@ export default async function RootLayout({
         <div id="auth-pending-loader" style={{ display: "none" }}>
           <FullScreenLoader />
         </div>
-        <ReactQueryProvider>
+        {/* No ReactQueryProvider: nothing on landing uses React Query (the
+            one hook that did, hooks/queries/useVerifyMeQuery.ts, is never
+            imported), so it only added its runtime to every page. Wrap this
+            tree in @clearcut/react-query/provider again before using it. */}
+        <>
           <NextIntlClientProvider>
             <AuthProvider>
               <AuthRedirectLoader />
@@ -163,8 +166,8 @@ export default async function RootLayout({
             <AnalyticsLoader />
           </Suspense>
 
-          {process.env.NODE_ENV === "development" && <Agentation />}
-        </ReactQueryProvider>
+          <DevAgentation />
+        </>
       </body>
     </html>
   );
