@@ -1,0 +1,43 @@
+name: Warm blog cache
+
+# After each successful Vercel production deployment of the blog, request every
+# sitemap URL once so visitors and crawlers get cached pages (a page rendered
+# on its first request takes 2-10 s). Vercel's GitHub integration reports
+# deployments as GitHub deployment statuses; this runs on those. Manual runs
+# can warm any base URL.
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to warm"
+        required: true
+        default: "https://clearcut-turbo-blog.vercel.app"
+
+concurrency:
+  group: warm-blog-cache
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    # Only the blog's production deployments that succeeded (or a manual run).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       contains(github.event.deployment.environment, 'Production') &&
+       contains(github.event.deployment_status.target_url, 'clearcut-turbo-blog'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: apps/blog/scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Warm every sitemap URL
+        env:
+          WARM_CONCURRENCY: "6"
+        run: >
+          node apps/blog/scripts/warm-cache.mjs
+          "${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'https://clearcut-turbo-blog.vercel.app' }}"

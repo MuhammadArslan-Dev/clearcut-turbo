@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { Question } from "@/components/blog/assessment-question/questions-list";
+import type { Question, QuestionChapter } from "@/components/blog/assessment-question/questions-list";
 import { apiFetch } from "@/lib/api/api2";
 import { mapLimit } from "@/lib/async/map-limit";
 import { getLocalizedEntityName } from "@/utils/question-translation";
@@ -53,6 +53,9 @@ function sectionQuery(exam: string, subject: string, section?: string): string {
 export type SubjectSection = {
   /** Chapter slugs in page order. */
   chapters: string[];
+  /** Each chapter's record (name + `translations`), the same chapter a
+   * question carries — so chapter labels need no question download. */
+  chapterInfo: Record<string, QuestionChapter>;
   /** The section's name per language (its `description` translations). */
   names: { en: string | null; hi: string | null };
 };
@@ -69,10 +72,13 @@ export const loadSubjectSection = cache(
     // `get-questions-by-section` caps each chapter at 3 questions (a limit the
     // sitemap builder relies on), so it is only used to discover the subject's
     // chapters; each chapter's full set comes from the chapter endpoint.
-    const entries: { chapter?: { slug?: string } }[] = Array.isArray(json?.data?.data) ? json.data.data : [];
+    const entries: { chapter?: QuestionChapter & { slug?: string } }[] = Array.isArray(json?.data?.data) ? json.data.data : [];
     const data = json?.data;
+    const chapterInfo: Record<string, QuestionChapter> = {};
+    for (const e of entries) if (e.chapter?.slug && !chapterInfo[e.chapter.slug]) chapterInfo[e.chapter.slug] = e.chapter;
     return {
       chapters: [...new Set(entries.map((e) => e.chapter?.slug).filter((s): s is string => Boolean(s)))],
+      chapterInfo,
       names: {
         en: getLocalizedEntityName(data, data?.description, "en"),
         hi: getLocalizedEntityName(data, data?.description, "hi"),
@@ -109,6 +115,17 @@ export const loadSubjectQuestions = cache(
     return { questions, chapterIndexById };
   },
 );
+
+/** Full question rows for one page, in the given order (`ids` is the
+ * comma-joined list, so React's cache() can key on it); null when the backend
+ * failed or predates /blog/get-questions-by-ids (404). */
+export const loadQuestionsByIds = cache(async (exam: string, ids: string): Promise<Question[] | null> => {
+  const json = await apiFetch(`/blog/get-questions-by-ids?ids=${ids}`, {
+    revalidate: REVALIDATE_SECONDS,
+    tags: questionTags(exam),
+  });
+  return Array.isArray(json?.data) ? json.data : null;
+});
 
 /** A year paper's questions for one level; null when the backend failed. */
 export const loadYearQuestions = cache(async (examYear: string, level: string): Promise<Question[] | null> => {

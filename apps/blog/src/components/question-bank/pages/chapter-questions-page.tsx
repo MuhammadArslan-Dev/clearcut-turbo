@@ -16,9 +16,9 @@ import { canonicalChapter } from "@/lib/seo/canonical";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { loadExamInfo } from "@/lib/question-bank/load";
-import { loadScope, type QuestionScope } from "@/lib/question-bank/scope";
-import { pagePath, pageSlice } from "@/lib/question-bank/pagination";
-import { isHindiPage } from "@/lib/question-bank/hindi-page";
+import type { QuestionScope } from "@/lib/question-bank/scope";
+import { isHindiScopePage, loadScopePage } from "@/lib/question-bank/scope-page";
+import { pagePath } from "@/lib/question-bank/pagination";
 import QuestionBankView, { localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
 import { chapterName, localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
@@ -38,7 +38,7 @@ export async function chapterPageMetadata(params: ChapterParams) {
   // Same React-cached loads as the page itself — no extra backend calls.
   const [canonical, loaded, t] = await Promise.all([
     canonicalChapter(examName, level_id, subject_id, chapter_name),
-    loadScope({ kind: "chapter", exam: examName, chapter: chapter_name }),
+    loadScopePage({ kind: "chapter", exam: examName, chapter: chapter_name }, page),
     pageCopy(locale),
   ]);
   const seo = pageSeo(page);
@@ -61,7 +61,7 @@ export async function chapterPageMetadata(params: ChapterParams) {
     description: `${t("chapterDescription", labels)}${suffix.description}`,
     noindex: canonical.empty,
     // /hi is its own page only when this page's questions have Hindi versions.
-    hiTranslated: isHindiPage(loaded.cards, page),
+    hiTranslated: isHindiScopePage(loaded),
   });
 }
 
@@ -74,8 +74,10 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
 
   // The chapter's questions depend only on exam + chapter slug (not on the
   // level/subject checked below), so start them alongside the index lookup.
+  const ownPath = `/${examName}/${level_id}/subject/${subject_id}/${chapter_name}`;
+  const page = resolvePageParam(params.page, ownPath, locale);
   const scope: QuestionScope = { kind: "chapter", exam: examName, chapter: chapter_name };
-  const dataPromise = Promise.all([loadScope(scope), loadExamInfo(examName), pageCopy(locale)]);
+  const dataPromise = Promise.all([loadScopePage(scope, page), loadExamInfo(examName), pageCopy(locale)]);
   dataPromise.catch(() => {}); // see below: still awaited (and thrown) on the render path
 
   // The backend serves a chapter by exam + slug alone, so any level/subject
@@ -84,8 +86,6 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   // unknown ones 404. If the index can't be loaded, render as before.
   const index = await tryLoadExamIndex(examName);
   const resolved = index ? resolveChapterRoute(index, level_id, subject_id, chapter_name) : null;
-  const ownPath = `/${examName}/${level_id}/subject/${subject_id}/${chapter_name}`;
-  const page = resolvePageParam(params.page, ownPath, locale);
   if (resolved?.kind === "notFound") notFound();
   if (resolved?.kind === "redirect") {
     const to = `/${examName}/${resolved.to.level}/subject/${resolved.to.subject}/${resolved.to.chapter}`;
@@ -95,8 +95,8 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
     resolved?.kind === "ok" ? resolved.canonical : { level: level_id, subject: subject_id };
 
   const [loaded, examInfo, t] = await dataPromise;
-  assertPageExists(page, loaded.cards.length, loaded.ok);
-  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
+  assertPageExists(page, loaded.total, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiScopePage(loaded);
   const chapterLabel = chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? ""));
 
   // `state` is nullable on the backend (national exams like CTET have none).
@@ -126,9 +126,8 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
   // Structured data describes this page's questions, in the language the
   // page shows, at this page's canonical URL (/hi only for a Hindi page).
-  const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
-    questions: loaded.raw.filter((q) => pageIds.has(q.id)),
+    questions: loaded.raw,
     name: `${unFormatSlug(chapter_name)} - ${unFormatSlug(subject_id)} ${examName.toUpperCase()} ${unFormatSlug(level_id ?? "")} Quiz`,
     url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}/${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}`, page),
     courseLang: hindiPage ? "hi" : "en",
@@ -161,7 +160,7 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
           <DetailsSectionCard
             sourceLabel="Chapter"
             Labels={Labels}
-            questionCount={loaded.cards.length}
+            questionCount={loaded.total}
             yearId={unFormatSlug(chapter_name ?? "")}
           />
         </div>
@@ -178,7 +177,8 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
             locale={locale}
             scope={scope}
             ok={loaded.ok}
-            allCards={loaded.cards}
+            cards={loaded.cards}
+            total={loaded.total}
             page={page}
             basePath={localePath(locale, ownPath)}
             chapterPaths={{ [chapter_name]: `${canonical.level}/subject/${canonical.subject}/${chapter_name}` }}

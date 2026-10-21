@@ -12,13 +12,13 @@ import { canonicalChapterPathMap, findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { yearPageLabels } from "@/lib/seo/year-title";
-import { isHindiPage } from "@/lib/question-bank/hindi-page";
 import { localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { getQuizSchema } from "@/utils/google/get-quiz-schema";
 import { loadExamInfo, loadYears } from "@/lib/question-bank/load";
-import { loadScope, toExamYear, type QuestionScope } from "@/lib/question-bank/scope";
-import { pagePath, pageSlice } from "@/lib/question-bank/pagination";
+import { toExamYear, type QuestionScope } from "@/lib/question-bank/scope";
+import { isHindiScopePage, loadScopePage } from "@/lib/question-bank/scope-page";
+import { pagePath } from "@/lib/question-bank/pagination";
 import QuestionBankView, { localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
 
@@ -39,7 +39,7 @@ export async function yearPageMetadata(params: YearParams) {
 
   // The years list is exam-wide, so some level/year pairs have no questions:
   // keep those reachable from the year listing but out of the index.
-  const [loaded, t] = await Promise.all([loadScope(yearScope(params)), pageCopy(locale)]);
+  const [loaded, t] = await Promise.all([loadScopePage(yearScope(params), page), pageCopy(locale)]);
   const labels = yearPageLabels(examName ?? "", level_id ?? "", year_id ?? "");
   const suffix = pageSuffixes(t, page);
 
@@ -48,10 +48,10 @@ export async function yearPageMetadata(params: YearParams) {
     path: `/${examName}/${level_id}/year/${year_id}${seo.pathSuffix}`,
     title: `${t("yearTitle", labels)}${suffix.title}`,
     description: `${t("yearDescription", labels)}${suffix.description}`,
-    noindex: loaded.ok && loaded.cards.length === 0,
+    noindex: loaded.ok && loaded.total === 0,
     // A year mixes bilingual subjects with the English/Hindi language
     // sections, so this is decided per page.
-    hiTranslated: isHindiPage(loaded.cards, page),
+    hiTranslated: isHindiScopePage(loaded),
   });
 }
 
@@ -69,7 +69,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   const scope = yearScope(params);
 
   const [loaded, examInfo, years, index, t] = await Promise.all([
-    loadScope(scope),
+    loadScopePage(scope, page),
     loadExamInfo(examNameParam),
     loadYears(examNameParam),
     tryLoadExamIndex(examNameParam),
@@ -79,8 +79,8 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   // Unknown level or year 404s; only checked when the lookups succeeded.
   if (index && !findLevel(index, level_id)) notFound();
   if (years && !years.some((y) => y.instance_id?.toUpperCase() === examYear)) notFound();
-  assertPageExists(page, loaded.cards.length, loaded.ok);
-  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
+  assertPageExists(page, loaded.total, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiScopePage(loaded);
 
   // `state` is nullable on the backend (national exams like CTET have none).
   const examState = examInfo?.state;
@@ -101,9 +101,8 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
   // In the language the page shows, at its canonical URL (/hi only for a Hindi page).
-  const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
-    questions: loaded.raw.filter((q) => pageIds.has(q.id)),
+    questions: loaded.raw,
     name: `${examName} Exam ${unFormatSlug(level_id ?? "")} ${unFormatSlug(examYear.toUpperCase())} Quiz`,
     url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}${ownPath}`, page),
     courseLang: hindiPage ? "hi" : "en",
@@ -141,7 +140,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
             <DetailsSectionCard
               yearId={unFormatSlug(examYear).toUpperCase()}
               Labels={Labels}
-              questionCount={loaded.cards.length}
+              questionCount={loaded.total}
             />
           </div>
         </div>
@@ -172,7 +171,8 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
               locale={locale}
               scope={scope}
               ok={loaded.ok}
-              allCards={loaded.cards}
+              cards={loaded.cards}
+              total={loaded.total}
               page={page}
               basePath={localePath(locale, ownPath)}
               chapterPaths={chapterPaths}

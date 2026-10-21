@@ -16,9 +16,9 @@ import { canonicalSubject } from "@/lib/seo/canonical";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { loadExamInfo, loadSubjectSection } from "@/lib/question-bank/load";
-import { loadScope, type QuestionScope } from "@/lib/question-bank/scope";
-import { pagePath, pageSlice } from "@/lib/question-bank/pagination";
-import { isHindiPage } from "@/lib/question-bank/hindi-page";
+import type { QuestionScope } from "@/lib/question-bank/scope";
+import { isHindiScopePage, loadScopePage } from "@/lib/question-bank/scope-page";
+import { pagePath } from "@/lib/question-bank/pagination";
 import QuestionBankView, { ChapterLinks, localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
 import { localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
@@ -32,7 +32,7 @@ export type SubjectParams = {
 };
 
 /** The page's scope (its level's own section). Page and metadata build it the
- * same way, so the React-cached loaders behind loadScope share one fetch. */
+ * same way, so the React-cached loadScopePage shares one load. */
 async function subjectScope(examName: string, level: string, subject: string): Promise<QuestionScope> {
   const index = await tryLoadExamIndex(examName);
   const section = index ? findSubject(index, level, subject)?.sectionId : undefined;
@@ -50,7 +50,7 @@ export async function subjectPageMetadata(params: SubjectParams) {
   const scope = await subjectScope(examName, level_id, subject_id);
   const [canonical, loaded, section, t] = await Promise.all([
     canonicalSubject(examName, level_id, subject_id),
-    loadScope(scope),
+    loadScopePage(scope, page),
     loadSubjectSection(examName, subject_id, scope.kind === "subject" ? scope.section : undefined),
     pageCopy(locale),
   ]);
@@ -73,7 +73,7 @@ export async function subjectPageMetadata(params: SubjectParams) {
     description: `${t("subjectDescription", labels)}${suffix.description}`,
     noindex: canonical.empty,
     // /hi is its own page only when this page's questions have Hindi versions.
-    hiTranslated: isHindiPage(loaded.cards, page),
+    hiTranslated: isHindiScopePage(loaded),
   });
 }
 
@@ -103,13 +103,13 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
   const scope = await subjectScope(examNameParam, level_id, subject_id);
   const section = scope.kind === "subject" ? scope.section : undefined;
   const [loaded, examInfo, sectionInfo, t] = await Promise.all([
-    loadScope(scope),
+    loadScopePage(scope, page),
     loadExamInfo(examNameParam),
     loadSubjectSection(examNameParam, subject_id, section),
     pageCopy(locale),
   ]);
-  assertPageExists(page, loaded.cards.length, loaded.ok);
-  const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
+  assertPageExists(page, loaded.total, loaded.ok);
+  const hindiPage = locale === "hi" && isHindiScopePage(loaded);
   const subjectLabel = subjectName(sectionInfo?.names, locale, unFormatSlug(subject_id ?? ""));
 
   // `state` is nullable on the backend (national exams like CTET have none).
@@ -136,16 +136,16 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
   // In the language the page shows, at its canonical URL (/hi only for a Hindi page).
-  const pageIds = new Set(pageSlice(loaded.cards, page).map((c) => c.id));
   const quizLd = getQuizSchema({
-    questions: loaded.raw.filter((q) => pageIds.has(q.id)),
+    questions: loaded.raw,
     name: `${unFormatSlug(subject_id)} - ${examName} ${unFormatSlug(level_id ?? "")} Quiz`,
     url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}/${examNameParam}/${canonicalLevel}/subject/${subject_id}`, page),
     courseLang: hindiPage ? "hi" : "en",
   });
 
+  // Every chapter of the subject (not just this page's), as before.
   const chapterPaths = index
-    ? canonicalChapterPathMap(index, loaded.cards.map((c) => c.chapterSlug ?? ""))
+    ? canonicalChapterPathMap(index, loaded.chapters.map((c) => c.slug))
     : undefined;
 
   return (
@@ -177,7 +177,7 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
             yearId={unFormatSlug(subject_id)}
             Labels={Labels}
             sourceLabel="Subject"
-            questionCount={loaded.cards.length}
+            questionCount={loaded.total}
           />
         </div>
         <div className="space-y-2">
@@ -195,13 +195,15 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
             locale={locale}
             scope={scope}
             ok={loaded.ok}
-            allCards={loaded.cards}
+            cards={loaded.cards}
+            total={loaded.total}
+            chapters={loaded.chapters}
             page={page}
             basePath={localePath(locale, ownPath)}
             chapterPaths={chapterPaths}
           >
             {chapterPaths && (
-              <ChapterLinks locale={locale} exam={examNameParam} allCards={loaded.cards} chapterPaths={chapterPaths} />
+              <ChapterLinks locale={locale} exam={examNameParam} chapters={loaded.chapters} chapterPaths={chapterPaths} />
             )}
           </QuestionBankView>
         </div>

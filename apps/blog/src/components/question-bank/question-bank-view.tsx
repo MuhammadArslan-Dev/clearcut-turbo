@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import type { CardQuestion } from "@/lib/question-bank/card-model";
 import { groupsByLang } from "@/lib/question-bank/card-model";
-import { QUESTIONS_PER_PAGE, pageCount } from "@/lib/question-bank/pagination";
+import { pageCount } from "@/lib/question-bank/pagination";
+import type { ScopeChapter } from "@/lib/question-bank/scope-page";
 import { GROUP_BY, searchIndexPath, type QuestionScope } from "@/lib/question-bank/scope";
 import CourseLangScope from "./course-lang-scope";
 import QuestionBankToolbar from "./question-bank-toolbar";
@@ -15,22 +16,18 @@ export function localePath(locale: string, path: string): string {
 
 export type ChapterNavItem = { slug: string; href: string; labels: CardQuestion["labels"]; count: number };
 
-/** A subject's chapters in order, with their canonical chapter-page links. */
+/** A subject's chapters in order (scope-page.ts), with their canonical
+ * chapter-page links; chapters without a canonical path are left out. */
 export function chapterNav(
   locale: string,
   exam: string,
-  allCards: CardQuestion[],
+  chapters: ScopeChapter[],
   chapterPaths: Record<string, string>,
 ): ChapterNavItem[] {
-  const chapters = new Map<string, ChapterNavItem>();
-  for (const card of allCards) {
-    const path = card.chapterSlug ? chapterPaths[card.chapterSlug] : undefined;
-    if (!card.chapterSlug || !path) continue;
-    const hit = chapters.get(card.chapterSlug);
-    if (hit) hit.count++;
-    else chapters.set(card.chapterSlug, { slug: card.chapterSlug, href: localePath(locale, `/${exam}/${path}`), labels: card.labels, count: 1 });
-  }
-  return [...chapters.values()];
+  return chapters.flatMap(({ slug, labels, count }) => {
+    const path = chapterPaths[slug];
+    return path ? [{ slug, href: localePath(locale, `/${exam}/${path}`), labels, count }] : [];
+  });
 }
 
 /**
@@ -44,7 +41,9 @@ export default async function QuestionBankView({
   locale,
   scope,
   ok,
-  allCards,
+  cards,
+  total,
+  chapters,
   page,
   basePath,
   chapterPaths,
@@ -54,8 +53,12 @@ export default async function QuestionBankView({
   scope: QuestionScope;
   /** False when the backend failed. */
   ok: boolean;
-  /** Every card in the scope (this page is sliced from it). */
-  allCards: CardQuestion[];
+  /** This page's cards (lib/question-bank/scope-page.ts). */
+  cards: CardQuestion[];
+  /** Questions in the whole scope. */
+  total: number;
+  /** Subject pages: their chapters, for the Filter's chapter links. */
+  chapters?: ScopeChapter[];
   page: number;
   /** Locale-prefixed path of page 1. */
   basePath: string;
@@ -68,15 +71,13 @@ export default async function QuestionBankView({
     getTranslations({ locale, namespace: "QuestionFilter" }),
     getTranslations({ locale, namespace: "QuestionBank" }),
   ]);
-  const start = (page - 1) * QUESTIONS_PER_PAGE;
-  const cards = allCards.slice(start, start + QUESTIONS_PER_PAGE);
   const listId = "question-bank-list";
   // On a subject page the Filter lists every chapter of the subject and opens
   // its chapter page (all of that chapter's questions); elsewhere it filters
   // this page's cards in place.
   const groupLinks =
-    scope.kind === "subject" && chapterPaths
-      ? chapterNav(locale, scope.exam, allCards, chapterPaths).map((c) => ({
+    scope.kind === "subject" && chapterPaths && chapters
+      ? chapterNav(locale, scope.exam, chapters, chapterPaths).map((c) => ({
           href: c.href,
           en: c.labels.find((l) => l.show !== "hi")?.text ?? c.slug,
           hi: c.labels.find((l) => l.show !== "en")?.text ?? c.slug,
@@ -125,8 +126,8 @@ export default async function QuestionBankView({
         locale={locale}
         basePath={basePath}
         page={page}
-        totalPages={pageCount(allCards.length)}
-        total={allCards.length}
+        totalPages={pageCount(total)}
+        total={total}
       />
     </CourseLangScope>
   );
@@ -137,15 +138,15 @@ export default async function QuestionBankView({
 export async function ChapterLinks({
   locale,
   exam,
-  allCards,
+  chapters: scopeChapters,
   chapterPaths,
 }: {
   locale: string;
   exam: string;
-  allCards: CardQuestion[];
+  chapters: ScopeChapter[];
   chapterPaths: Record<string, string>;
 }) {
-  const chapters = chapterNav(locale, exam, allCards, chapterPaths);
+  const chapters = chapterNav(locale, exam, scopeChapters, chapterPaths);
   if (chapters.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "QuestionBank" });
 
