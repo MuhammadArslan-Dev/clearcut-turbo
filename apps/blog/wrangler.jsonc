@@ -1,65 +1,72 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "clearcut-blog",
-  "main": ".open-next/worker.js",
+  // worker.ts wraps OpenNext's generated .open-next/worker.js: it answers the
+  // old /question/<slug>-<id> redirects from a build-time map before Next
+  // loads (see worker.ts), and marks the staging Worker noindex.
+  "main": "worker.ts",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // Lets the worker call itself, which OpenNext needs for background ISR
-  // revalidation. Must match "name" above. No extra setup needed — Cloudflare
-  // resolves this once the worker with this name exists (itself).
+  // Lets the worker call itself (OpenNext uses it for internal sub-requests).
+  // Must match "name" above.
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "clearcut-blog"
     }
   ],
-  // Backs OpenNext's R2 incremental cache (see open-next.config.ts) — the
-  // binding name "NEXT_INC_CACHE_R2_BUCKET" is fixed, read directly by
-  // @opennextjs/cloudflare's r2-incremental-cache.js, not configurable here.
-  // Bucket created in the Cloudflare dashboard 2026-10-20 (public access off).
+  // Second-tier incremental cache (open-next.config.ts): pages that were not
+  // prerendered at build time are rendered once on request and kept here, so
+  // they are not rendered again. Prerendered pages are read from the static
+  // assets above instead. Binding name is fixed by @opennextjs/cloudflare.
   "r2_buckets": [
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
       "bucket_name": "clearcut-blog-incremental-cache"
     }
   ],
-  // OpenNext's ISR revalidation queue (open-next.config.ts `queue: doQueue`).
-  // Binding name and class name are fixed by @opennextjs/cloudflare; the class
-  // is exported by the generated .open-next/worker.js. Created on deploy by
-  // the migration below — nothing to create by hand.
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "NEXT_CACHE_DO_QUEUE",
-        "class_name": "DOQueueHandler"
-      }
-    ]
-  },
+  // History of the OpenNext ISR queue Durable Object. v1 was applied by the
+  // 2026-10-21 deploy; v2 (the 2026-10-21 hotfix) deleted it again. The
+  // Worker no longer uses a queue (no time-based ISR — pages are rebuilt), so
+  // there is no durable_objects binding. Cloudflare refuses deploys whose
+  // migrations are behind the live ones, so both stay listed.
   "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["DOQueueHandler"]
-    }
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] },
+    { "tag": "v2", "deleted_classes": ["DOQueueHandler"] }
   ],
-  // OpenNext's tag cache for revalidatePath/revalidateTag (open-next.config.ts
-  // `tagCache: d1NextTagCache`). Binding name is fixed. Database created in the
-  // Cloudflare dashboard 2026-10-20. Its `revalidations` table is created by
-  // `opennextjs-cloudflare populateCache remote` (the deploy workflow's
-  // "Populate OpenNext caches" step). See docs/BLOG_CACHE_DEPLOY.md.
-  "d1_databases": [
-    {
-      "binding": "NEXT_TAG_CACHE_D1",
-      "database_name": "clearcut-blog-tag-cache",
-      "database_id": "8e698f75-f2e9-47af-9516-83c535ab8038"
-    }
-  ]
   // Runtime (non-NEXT_PUBLIC_*) value this app reads at request time:
   // BACKEND_URL (src/lib/api/api2.ts, sitemap route handlers), passed by the
   // deploy workflow. BLOG_SERVER_KEY / REVALIDATE_SECRET live in code
   // (src/lib/api/blog-server-key.ts); a Worker secret of the same name would
   // override them. Everything else is NEXT_PUBLIC_* and inlined at build time.
+  "env": {
+    // Isolated test Worker (https://clearcut-blog-staging.<account>.workers.dev),
+    // deployed by .github/workflows/deploy-blog-staging.yml. Its own R2 bucket;
+    // never bound to the production domain. Bindings are not inherited by
+    // wrangler environments, so each is repeated here.
+    "staging": {
+      "name": "clearcut-blog-staging",
+      "workers_dev": true,
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "clearcut-blog-staging"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "NEXT_INC_CACHE_R2_BUCKET",
+          "bucket_name": "clearcut-blog-staging-cache"
+        }
+      ],
+      "vars": {
+        // worker.ts adds X-Robots-Tag: noindex to every staging response.
+        "STAGING": "1"
+      }
+    }
+  }
 }

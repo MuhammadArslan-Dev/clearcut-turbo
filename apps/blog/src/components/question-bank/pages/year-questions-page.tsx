@@ -8,6 +8,7 @@ import { capitalizeFirst } from "@clearcut/utils/text-format";
 import DetailsSectionCard from "@/components/blog/assessment-question/details-section-card";
 import JsonLd from "@clearcut/ui/json-ld";
 import { notFound } from "next/navigation";
+import { assertLoadedForPrerender } from "@/lib/build/prerender";
 import { canonicalChapterPathMap, findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
@@ -79,6 +80,8 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   // Unknown level or year 404s; only checked when the lookups succeeded.
   if (index && !findLevel(index, level_id)) notFound();
   if (years && !years.some((y) => y.instance_id?.toUpperCase() === examYear)) notFound();
+  // CI prerender: a failed backend read stops the build (lib/build/prerender).
+  assertLoadedForPrerender(loaded.ok, `${locale}${ownPath}/page/${page}`);
   assertPageExists(page, loaded.cards.length, loaded.ok);
   const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
 

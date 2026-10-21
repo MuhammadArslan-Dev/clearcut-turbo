@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { isAuthorized, QUESTION_PAGE_PATTERNS, revalidationTargets } from "@/lib/question-bank/revalidate";
+import { isAuthorized, revalidationTargets } from "@/lib/question-bank/revalidate";
 
-const cacheCalls = vi.hoisted(() => ({ tags: [] as unknown[][], paths: [] as unknown[][] }));
-vi.mock("next/cache", () => ({
-  revalidateTag: (...args: unknown[]) => cacheCalls.tags.push(args),
-  revalidatePath: (...args: unknown[]) => cacheCalls.paths.push(args),
+const rebuilds = vi.hoisted(() => ({ reasons: [] as string[], status: "started" as string }));
+vi.mock("@/lib/question-bank/rebuild", () => ({
+  triggerRebuild: async (reason: string) => {
+    rebuilds.reasons.push(reason);
+    return { status: rebuilds.status };
+  },
 }));
 const forgotten = vi.hoisted(() => ({ examIndex: [] as unknown[], search: [] as unknown[] }));
 vi.mock("@/lib/seo/load-exam-index", () => ({ forgetExamIndex: (e: unknown) => forgotten.examIndex.push(e) }));
@@ -26,8 +28,8 @@ const post = (body: string | undefined, auth?: string) =>
   );
 
 beforeEach(() => {
-  cacheCalls.tags = [];
-  cacheCalls.paths = [];
+  rebuilds.reasons = [];
+  rebuilds.status = "started";
   forgotten.examIndex = [];
   forgotten.search = [];
   process.env.REVALIDATE_SECRET = SECRET;
@@ -75,35 +77,33 @@ describe("POST /api/revalidate", () => {
   it("is closed when REVALIDATE_SECRET is not configured", async () => {
     delete process.env.REVALIDATE_SECRET;
     expect((await post("{}", "Bearer anything")).status).toBe(503);
-    expect(cacheCalls.tags).toEqual([]);
+    expect(rebuilds.reasons).toEqual([]);
   });
 
-  it("rejects a missing or wrong secret without touching the cache", async () => {
+  it("rejects a missing or wrong secret without starting a rebuild", async () => {
     expect((await post("{}")).status).toBe(401);
     expect((await post("{}", "Bearer wrong")).status).toBe(401);
-    expect(cacheCalls.tags).toEqual([]);
-    expect(cacheCalls.paths).toEqual([]);
+    expect(rebuilds.reasons).toEqual([]);
   });
 
   it("rejects malformed JSON", async () => {
     expect((await post("{", `Bearer ${SECRET}`)).status).toBe(400);
     expect((await post('{"exams":"ctet"}', `Bearer ${SECRET}`)).status).toBe(400);
-    expect(cacheCalls.tags).toEqual([]);
+    expect(rebuilds.reasons).toEqual([]);
   });
 
-  it("expires one exam's tags, the question pages and that exam's memos", async () => {
+  it("starts one rebuild for a sync and drops that exam's memos", async () => {
     const res = await post('{"exams":["ctet"]}', `Bearer ${SECRET}`);
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, exams: ["ctet"], tags: ["qb:ctet"] });
-    expect(cacheCalls.tags).toEqual([["qb:ctet", { expire: 0 }]]);
-    expect(cacheCalls.paths).toEqual(QUESTION_PAGE_PATTERNS.map((p) => [p, "page"]));
+    expect(res.status).toBe(202);
+    expect(await res.json()).toMatchObject({ ok: true, exams: ["ctet"], rebuild: "started" });
+    expect(rebuilds.reasons).toEqual(["question sync: ctet"]);
     expect(forgotten.examIndex).toEqual([["ctet"]]);
     expect(forgotten.search).toEqual([["ctet"]]);
   });
 
-  it("expires everything for an empty body", async () => {
-    expect((await post(undefined, `Bearer ${SECRET}`)).status).toBe(200);
-    expect(cacheCalls.tags).toEqual([["qb", { expire: 0 }]]);
+  it("rebuilds for every exam on an empty body", async () => {
+    expect((await post(undefined, `Bearer ${SECRET}`)).status).toBe(202);
+    expect(rebuilds.reasons).toEqual(["question sync: ctet, htet"]);
     expect(forgotten.examIndex).toEqual([undefined]);
   });
 
@@ -111,7 +111,13 @@ describe("POST /api/revalidate", () => {
     const res = await post('{"exams":["mahatet"]}', `Bearer ${SECRET}`);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ exams: [] });
-    expect(cacheCalls.tags).toEqual([]);
-    expect(cacheCalls.paths).toEqual([]);
+    expect(rebuilds.reasons).toEqual([]);
+  });
+
+  it("reports a rebuild that could not be started as a non-2xx", async () => {
+    rebuilds.status = "not-configured";
+    expect((await post('{"exams":["htet"]}', `Bearer ${SECRET}`)).status).toBe(503);
+    rebuilds.status = "failed";
+    expect((await post('{"exams":["htet"]}', `Bearer ${SECRET}`)).status).toBe(502);
   });
 });

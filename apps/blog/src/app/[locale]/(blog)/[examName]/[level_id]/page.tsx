@@ -14,6 +14,13 @@ import JsonLd from "@clearcut/ui/json-ld";
 import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { localeAlternates } from "@/lib/seo/locale-alternates";
+import { levelStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return levelStaticParams();
+}
 
 /* =========================================================
    TYPES (Next.js 15/16)
@@ -66,22 +73,14 @@ export async function generateMetadata({
 ========================================================= */
 
 /**
- * Reads a public list endpoint through the Data Cache.
- *
- * This used to take a `RequestCache` and was called with two DIFFERENT modes
- * for two reads on the same page — `"force-cache"` for years and
- * `"no-store"` for subjects. The `no-store` one silently opted the whole
- * route out of the full route cache, so every request re-rendered the page
- * and re-fetched BOTH lists. Neither list is request-specific.
- *
- * It now takes a revalidate window instead. `force-cache` was also not the
- * right tool: it caches forever with no revalidation, so the years list could
- * go stale indefinitely. A time window is both fresher than `force-cache` and
- * far cheaper than `no-store`.
+ * Reads a public list endpoint through the Data Cache. Neither list is
+ * request-specific (a `no-store` read once opted the whole route out of
+ * caching). Cached without a time window: the page is prerendered and a
+ * question sync rebuilds the site (lib/question-bank/route-cache.ts).
  */
-async function safeFetch(url: string, revalidate = 3600) {
+async function safeFetch(url: string) {
   try {
-    const data = await apiFetch(url, { revalidate });
+    const data = await apiFetch(url, { cache: "force-cache" });
 
     return data;
   } catch (err) {

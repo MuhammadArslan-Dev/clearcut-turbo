@@ -1,27 +1,19 @@
-import { revalidatePath, revalidateTag } from "next/cache";
 import { revalidateSecret } from "@/lib/api/blog-server-key";
 import { forgetSearchIndex } from "@/lib/question-bank/search-index";
-import {
-  isAuthorized,
-  QUESTION_PAGE_PATTERNS,
-  revalidationTargets,
-  secretConfigured,
-} from "@/lib/question-bank/revalidate";
+import { isAuthorized, revalidationTargets, secretConfigured } from "@/lib/question-bank/revalidate";
+import { triggerRebuild } from "@/lib/question-bank/rebuild";
 import { forgetExamIndex } from "@/lib/seo/load-exam-index";
 
 // POST /api/revalidate — called by the backend once a question sync has fully
 // succeeded (QuestionCacheService::notifyBlog), or by hand:
 //   curl -X POST https://<site>/api/revalidate \
 //     -H "Authorization: Bearer $REVALIDATE_SECRET" -d '{"exams":["ctet"]}'
-// Expires the question-bank data (cache tags, lib/question-bank/cache-tags.ts)
-// and the ISR question pages, so the next visit renders fresh questions
-// instead of waiting out the 10-minute ISR / 1-hour data-cache windows.
 //
-// In-memory copies (exam index, search index) are per server instance: only
-// the instance that receives this call drops them; others refresh on their
-// own TTL. On Cloudflare (OpenNext) tag/path revalidation needs the D1 tag
-// cache + DO queue configured in open-next.config.ts — see
-// docs/BLOG_CACHE_DEPLOY.md.
+// Every blog page is prerendered at build time and never re-rendered inside
+// the Worker (Workers Free plan, 10 ms CPU per request — see
+// lib/question-bank/route-cache.ts), so fresh questions arrive by rebuilding
+// the site: this starts the deploy workflow (lib/question-bank/rebuild.ts).
+// The request contract with the backend is unchanged; any 2xx is success.
 
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {
@@ -47,15 +39,14 @@ export async function POST(request: Request) {
   }
   const targets = revalidationTargets(body);
   if (!targets) return json({ error: "expected { exams?: string[] }" }, 400);
-  if (targets.exams.length === 0) return json({ ok: true, exams: [], tags: [], paths: [] }, 200);
+  if (targets.exams.length === 0) return json({ ok: true, exams: [], rebuild: "skipped" }, 200);
 
-  for (const tag of targets.tags) revalidateTag(tag, { expire: 0 });
-  // The page patterns are exam-agnostic, so this also refreshes other exams'
-  // ISR pages on their next visit — harmless, and it covers pages whose
-  // >2MB reads were never in the data cache to carry a tag.
-  for (const pattern of QUESTION_PAGE_PATTERNS) revalidatePath(pattern, "page");
+  // Per-instance memos; harmless to drop, and keeps a request-time render
+  // (a URL that was not prerendered) on fresh data.
   forgetExamIndex(targets.all ? undefined : targets.exams);
   forgetSearchIndex(targets.all ? undefined : targets.exams);
 
-  return json({ ok: true, exams: targets.exams, tags: targets.tags, paths: QUESTION_PAGE_PATTERNS }, 200);
+  const rebuild = await triggerRebuild(`question sync: ${targets.exams.join(", ")}`);
+  const status = rebuild.status === "started" ? 202 : rebuild.status === "not-configured" ? 503 : 502;
+  return json({ ok: rebuild.status === "started", exams: targets.exams, rebuild: rebuild.status }, status);
 }

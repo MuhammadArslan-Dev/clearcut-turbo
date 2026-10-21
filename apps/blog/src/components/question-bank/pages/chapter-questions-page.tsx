@@ -8,6 +8,7 @@ import JsonLd from "@clearcut/ui/json-ld";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { getQuizSchema } from "@/utils/google/get-quiz-schema";
 import { notFound } from "next/navigation";
+import { assertLoadedForPrerender } from "@/lib/build/prerender";
 import { permanentRedirect } from "@/i18n/navigation";
 import { AppLocale } from "@/types/components/language";
 import { resolveChapterRoute, type ChapterPath } from "@/lib/seo/exam-index";
@@ -95,6 +96,8 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
     resolved?.kind === "ok" ? resolved.canonical : { level: level_id, subject: subject_id };
 
   const [loaded, examInfo, t] = await dataPromise;
+  // CI prerender: a failed backend read stops the build (lib/build/prerender).
+  assertLoadedForPrerender(loaded.ok, `${locale}${ownPath}/page/${page}`);
   assertPageExists(page, loaded.cards.length, loaded.ok);
   const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
   const chapterLabel = chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? ""));

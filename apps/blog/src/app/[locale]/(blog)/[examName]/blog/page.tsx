@@ -8,6 +8,13 @@ import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExam, examLabelOf } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
+import { examStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return examStaticParams();
+}
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(
   /\/$/,

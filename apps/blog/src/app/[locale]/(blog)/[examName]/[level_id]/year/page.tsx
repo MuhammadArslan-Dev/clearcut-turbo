@@ -20,6 +20,13 @@ import SubjectsList from "@/components/blog/ui/subjects-list";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { backendServerHeaders } from "@/lib/api/backend-headers";
+import { levelStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return levelStaticParams();
+}
 type Props = {
   params: {
     locale: string;

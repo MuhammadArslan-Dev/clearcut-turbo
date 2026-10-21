@@ -2,14 +2,14 @@ import SubjectQuestionsPage, {
   subjectPageMetadata,
   type SubjectParams,
 } from "@/components/question-bank/pages/subject-questions-page";
+import { subjectStaticParams } from "@/lib/question-bank/static-params";
 
 // Page N (>= 2) of a subject's questions. "/page/1" 308s to the subject URL.
 // The static "page" segment takes precedence over the sibling [chapter_name].
 
-// Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 600;
+// Prerendered at build time, every URL — see lib/question-bank/route-cache.ts.
 export async function generateStaticParams() {
-  return [];
+  return subjectStaticParams(false);
 }
 
 type Params = Promise<SubjectParams & { page: string }>;

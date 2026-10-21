@@ -7,6 +7,7 @@ import 'server-only';
 import { createFetchClient } from "@clearcut/api/fetch-client";
 
 import type { Post, PayloadListResponse } from '@/types/blog/post';
+import { IS_PRERENDER_BUILD } from "@/lib/build/prerender";
 
 // Falls back to the known production CMS if the env var isn't set (e.g. a
 // deploy environment missing/misconfiguring the secret) — this used to
@@ -21,7 +22,10 @@ if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
   );
 }
 
-const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 60 });
+// No revalidate window: every blog page is prerendered at build time and a
+// rebuild brings new CMS content (lib/question-bank/route-cache.ts). A window
+// would make the pages time-based ISR, re-rendered inside the Worker.
+const client = createFetchClient({ baseUrl: PAYLOAD_URL });
 
 interface GetPostBySlugOptions {
   // Payload locale to request (e.g. 'en', 'hi'). Drives both localized fields
@@ -60,6 +64,8 @@ export async function getPostBySlug(
     const data = await client.fetchJson<PayloadListResponse<Post>>(`/api/posts?${params.toString()}`);
     return data.docs?.[0] ?? null;
   } catch (error) {
+    // CI prerender: fail the build instead of storing an empty page.
+    if (IS_PRERENDER_BUILD) throw error;
     console.error(`Network or parsing error fetching post "${slug}":`, error);
     return null;
   }
@@ -89,6 +95,8 @@ export async function getHindiPostSlugs(examId: string): Promise<Set<string>> {
     );
     return new Set((data.docs ?? []).filter((d) => d.title?.trim()).map((d) => d.slug));
   } catch (error) {
+    // CI prerender: fail the build instead of storing an empty page.
+    if (IS_PRERENDER_BUILD) throw error;
     console.error(`Network or parsing error fetching Hindi posts for exam "${examId}":`, error);
     return new Set();
   }
@@ -117,6 +125,8 @@ export async function getPostsByExam(
     const data = await client.fetchJson<PayloadListResponse<Post>>(`/api/posts?${params.toString()}`);
     return data.docs ?? [];
   } catch (error) {
+    // CI prerender: fail the build instead of storing an empty page.
+    if (IS_PRERENDER_BUILD) throw error;
     console.error(`Network or parsing error fetching posts for exam "${examId}":`, error);
     return [];
   }

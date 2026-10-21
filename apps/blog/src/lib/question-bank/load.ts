@@ -3,18 +3,20 @@ import type { Question } from "@/components/blog/assessment-question/questions-l
 import { apiFetch } from "@/lib/api/api2";
 import { mapLimit } from "@/lib/async/map-limit";
 import { getLocalizedEntityName } from "@/utils/question-translation";
-import { questionTags } from "./cache-tags";
 import { renderIndexById } from "./card-model";
 
 // Server-side loaders for the question-bank pages and their search index
 // route. Wrapped in React `cache()` so generateMetadata, the page and the
 // search route share one fetch per request (apiFetch's timeout signal opts out
-// of fetch de-duplication). Responses under 2MB are also kept in Next's data
-// cache for an hour; larger ones (a few big chapters/years) are not — see
-// docs/DEVELOPMENT_RULES.md. Every read carries the exam's question tags
-// (cache-tags.ts) so a question sync can expire it on demand.
+// of fetch de-duplication).
+//
+// Every page is prerendered at build time and a question sync rebuilds the
+// site (docs/phases/14-blog-worker-limit.md), so reads are cached without a
+// time window: a window would turn the pages back into time-based ISR, which
+// re-renders them inside the Worker — far over its 10 ms CPU limit. During the
+// CI build apiFetch also memoizes responses on disk (lib/build/prerender.ts).
 
-const REVALIDATE_SECONDS = 3600;
+const CACHED = { cache: "force-cache" } as const;
 // The backend allows 60 requests/min per IP, shared by every SSR request and
 // the sitemaps, so a subject's chapters are fetched a few at a time.
 const CHAPTER_FETCH_CONCURRENCY = 3;
@@ -26,8 +28,7 @@ const enc = encodeURIComponent;
 /** One chapter's questions in backend order; null when the backend failed. */
 export const loadChapterQuestions = cache(async (exam: string, chapter: string): Promise<Question[] | null> => {
   const json = await apiFetch(`/blog/get-questions-by-chapter?slug=${enc(chapter)}&exam_name=${enc(exam)}`, {
-    revalidate: REVALIDATE_SECONDS,
-    tags: questionTags(exam),
+    ...CACHED,
     timeout: LARGE_FETCH_TIMEOUT_MS,
   });
   if (!json) return null;
@@ -62,8 +63,7 @@ export type SubjectSection = {
 export const loadSubjectSection = cache(
   async (exam: string, subject: string, section?: string): Promise<SubjectSection | null> => {
     const json = await apiFetch(`/blog/get-questions-by-section?${sectionQuery(exam, subject, section)}`, {
-      revalidate: REVALIDATE_SECONDS,
-      tags: questionTags(exam),
+    ...CACHED,
     });
     if (!json) return null;
     // `get-questions-by-section` caps each chapter at 3 questions (a limit the
@@ -113,9 +113,7 @@ export const loadSubjectQuestions = cache(
 /** A year paper's questions for one level; null when the backend failed. */
 export const loadYearQuestions = cache(async (examYear: string, level: string): Promise<Question[] | null> => {
   const json = await apiFetch(`/blog/get-questions?year=${enc(examYear)}&level_id=${enc(level)}`, {
-    revalidate: REVALIDATE_SECONDS,
-    // "CTET_2024" -> the exam's tags.
-    tags: questionTags(examYear.split("_")[0]),
+    ...CACHED,
     timeout: LARGE_FETCH_TIMEOUT_MS,
   });
   if (!json) return null;
@@ -125,14 +123,11 @@ export const loadYearQuestions = cache(async (examYear: string, level: string): 
 /** `/blog/exam` — cached like the other reads (the chapter page used to
  * fetch it uncached, which made every chapter request hit the backend). */
 export const loadExamInfo = cache(async (exam: string): Promise<{ state?: string | null } | null> => {
-  const json = await apiFetch(`/blog/exam?short_name=${enc(exam)}&first=true`, { revalidate: REVALIDATE_SECONDS });
+  const json = await apiFetch(`/blog/exam?short_name=${enc(exam)}&first=true`, CACHED);
   return json?.data ?? null;
 });
 
 export const loadYears = cache(async (exam: string): Promise<{ instance_id?: string }[] | null> => {
-  const json = await apiFetch(`/blog/get-years?exam_id=${enc(exam)}`, {
-    revalidate: REVALIDATE_SECONDS,
-    tags: questionTags(exam),
-  });
+  const json = await apiFetch(`/blog/get-years?exam_id=${enc(exam)}`, CACHED);
   return Array.isArray(json?.data) ? json.data : null;
 });

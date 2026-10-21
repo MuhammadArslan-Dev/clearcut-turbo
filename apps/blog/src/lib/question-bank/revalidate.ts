@@ -7,17 +7,6 @@ import { examQuestionTag, QUESTION_TAG } from "./cache-tags";
 /** Shorter secrets are treated as unset — the route then refuses everything. */
 export const MIN_SECRET_LENGTH = 32;
 
-/** The ISR question-bank routes (file-system patterns, for revalidatePath
- * with type "page"). */
-export const QUESTION_PAGE_PATTERNS = [
-  "/[locale]/(blog)/[examName]/[level_id]/subject/[subject_id]/[chapter_name]",
-  "/[locale]/(blog)/[examName]/[level_id]/subject/[subject_id]/[chapter_name]/page/[page]",
-  "/[locale]/(blog)/[examName]/[level_id]/subject/[subject_id]",
-  "/[locale]/(blog)/[examName]/[level_id]/subject/[subject_id]/page/[page]",
-  "/[locale]/(blog)/[examName]/[level_id]/year/[year_id]",
-  "/[locale]/(blog)/[examName]/[level_id]/year/[year_id]/page/[page]",
-];
-
 export function secretConfigured(secret: string | undefined): secret is string {
   return typeof secret === "string" && secret.length >= MIN_SECRET_LENGTH;
 }

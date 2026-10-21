@@ -6,6 +6,13 @@ import { ALLOWED_EXAMS } from "@/lib/exams";
 import { Metadata } from "next";
 import React from "react";
 import { backendServerHeaders } from "@/lib/api/backend-headers";
+import { localeStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return localeStaticParams();
+}
 
 export async function generateMetadata({
   params,
@@ -38,7 +45,7 @@ export default async function Page({
     `${process.env.BACKEND_URL}/blog/exam?status=active`,
     {
       headers: backendServerHeaders(),
-      next: { revalidate: 60 },
+      cache: "force-cache", // rebuilt, not revalidated: lib/question-bank/route-cache.ts
     },
   );
 

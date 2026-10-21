@@ -1,13 +1,12 @@
 import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { mapLimit } from "@/lib/async/map-limit";
-import { questionTags } from "@/lib/question-bank/cache-tags";
 import type { ExamIndex, IndexSubject } from "./exam-index";
+import { IS_PRERENDER_BUILD } from "@/lib/build/prerender";
 
 // The backend rate-limits every /api route to 60 requests/min per IP, so the
 // tree is fetched with low concurrency and reused: Next's data cache per
 // response, plus an in-memory copy per server instance.
-const REVALIDATE_SECONDS = 3600;
-const MEMO_TTL_MS = REVALIDATE_SECONDS * 1000;
+const MEMO_TTL_MS = 3600 * 1000;
 const CONCURRENCY = 3;
 
 type RawSubject = { slug?: string; section_id?: string };
@@ -25,7 +24,7 @@ function apiBase(): string {
 async function getJson(path: string, exam: string): Promise<{ data?: unknown }> {
   const res = await fetch(`${apiBase()}${path}`, {
     headers: backendServerHeaders(),
-    next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) },
+    cache: "force-cache", // rebuilt, not revalidated: lib/question-bank/load.ts
   });
   if (!res.ok) throw new Error(`GET ${path} -> HTTP ${res.status}`);
   return res.json();
@@ -119,11 +118,14 @@ export function loadExamIndex(exam: string): Promise<ExamIndex> {
 }
 
 /** For pages: null when the backend is unavailable, so callers can fall back
- * to rendering as-is instead of 404ing a page that may well exist. */
+ * to rendering as-is instead of 404ing a page that may well exist. During the
+ * CI prerender build it rethrows instead: a page built without the index would
+ * be stored as-is until the next build (lib/build/prerender.ts). */
 export async function tryLoadExamIndex(exam: string): Promise<ExamIndex | null> {
   try {
     return await loadExamIndex(exam);
   } catch (err) {
+    if (IS_PRERENDER_BUILD) throw err;
     console.error(`exam index unavailable for "${exam}":`, err);
     return null;
   }

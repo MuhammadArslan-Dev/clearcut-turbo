@@ -1,5 +1,6 @@
 import { createFetchClient } from "@clearcut/api/fetch-client";
 import { backendServerHeaders } from "./backend-headers";
+import { IS_PRERENDER_BUILD, prerenderCachedJson } from "@/lib/build/prerender";
 
 const baseUrl = process.env.BACKEND_URL;
 
@@ -33,9 +34,8 @@ export async function apiFetch<T = any>(
   }
 
   const client = createFetchClient({ baseUrl, timeout });
-
-  try {
-    return await client.fetchJson<T>(endpoint, {
+  const request = () =>
+    client.fetchJson<T>(endpoint, {
       method,
       headers: {
         "User-Agent":
@@ -51,6 +51,15 @@ export async function apiFetch<T = any>(
       revalidate,
       tags,
     });
+
+  // CI prerender build: shared on-disk memo + retries (lib/build/prerender).
+  // A read that still fails comes back null, as on the request-time path.
+  if (IS_PRERENDER_BUILD && method === "GET") {
+    return prerenderCachedJson<T>(`${baseUrl}${endpoint}`, request);
+  }
+
+  try {
+    return await request();
   } catch (err) {
     console.error("Fetch failed:", err, `${baseUrl}${endpoint}`);
     return null;

@@ -2,13 +2,13 @@ import ChapterQuestionsPage, {
   chapterPageMetadata,
   type ChapterParams,
 } from "@/components/question-bank/pages/chapter-questions-page";
+import { chapterStaticParams } from "@/lib/question-bank/static-params";
 
 // Page N (>= 2) of a chapter's questions. "/page/1" 308s to the chapter URL.
 
-// Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 600;
+// Prerendered at build time, every URL — see lib/question-bank/route-cache.ts.
 export async function generateStaticParams() {
-  return [];
+  return chapterStaticParams(false);
 }
 
 type Params = Promise<ChapterParams & { page: string }>;

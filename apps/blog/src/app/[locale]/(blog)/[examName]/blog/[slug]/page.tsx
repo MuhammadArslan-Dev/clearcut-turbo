@@ -18,6 +18,13 @@ import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExamId } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
 import { siteConfig } from "@/lib/metadata";
+import { blogPostStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return blogPostStaticParams();
+}
 
 // Absolute base URL used for canonical/OG URLs and JSON-LD ids.
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(

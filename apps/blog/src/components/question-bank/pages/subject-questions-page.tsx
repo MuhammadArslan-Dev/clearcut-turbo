@@ -8,6 +8,7 @@ import { unFormatSlug } from "@/utils/slugify";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { getQuizSchema } from "@/utils/google/get-quiz-schema";
 import { notFound } from "next/navigation";
+import { assertLoadedForPrerender } from "@/lib/build/prerender";
 import { permanentRedirect } from "@/i18n/navigation";
 import { AppLocale } from "@/types/components/language";
 import { canonicalChapterPathMap, findSubject, resolveSubjectRoute } from "@/lib/seo/exam-index";
@@ -108,6 +109,8 @@ export default async function SubjectQuestionsPage({ params }: { params: Subject
     loadSubjectSection(examNameParam, subject_id, section),
     pageCopy(locale),
   ]);
+  // CI prerender: a failed backend read stops the build (lib/build/prerender).
+  assertLoadedForPrerender(loaded.ok, `${locale}${ownPath}/page/${page}`);
   assertPageExists(page, loaded.cards.length, loaded.ok);
   const hindiPage = locale === "hi" && isHindiPage(loaded.cards, page);
   const subjectLabel = subjectName(sectionInfo?.names, locale, unFormatSlug(subject_id ?? ""));

@@ -13,6 +13,7 @@ import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import Link from "next/link";
 import { localeAlternates } from "@/lib/seo/locale-alternates";
+import { examStaticParams } from "@/lib/question-bank/static-params";
 
 /* =========================================================
    TYPES
@@ -26,7 +27,7 @@ type Params = {
 };
 
 /* =========================================================
-   RENDERING STRATEGY — ISR
+   RENDERING STRATEGY — prerendered (SSG)
    -----------------------------------------------------------------
    This route was `ƒ` (server-rendered on every request) purely because its
    one data read defaulted to `cache: "no-store"` (see lib/api/api2.ts, where
@@ -44,19 +45,13 @@ type Params = {
    other slug is rendered on demand and then hits the same redirect it always
    did.
 
-   3600s matches the window already used by the year/[year_id] route, so the
-   freshness contract across blog content routes stays consistent.
+   No `revalidate` window: the Worker runs on the Workers Free plan (10 ms
+   CPU per request), so pages are never re-rendered inside it on a schedule;
+   a question sync rebuilds the site instead (lib/question-bank/route-cache.ts).
 ========================================================= */
 
-export const revalidate = 3600;
-
 export async function generateStaticParams() {
-  return [
-    { locale: "en", examName: "ctet" },
-    { locale: "hi", examName: "ctet" },
-    { locale: "en", examName: "htet" },
-    { locale: "hi", examName: "htet" },
-  ];
+  return examStaticParams();
 }
 
 /* =========================================================
@@ -133,7 +128,7 @@ export default async function Page({ params }: Params) {
   
   const data = await apiFetch(
     `/blog/exam?short_name=${examSlug}&enavigation=true&first=true`,
-    { revalidate: 3600 },
+    { cache: "force-cache" },
   );
   const examData = data?.data ?? null;
 

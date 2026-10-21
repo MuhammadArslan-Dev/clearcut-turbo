@@ -5,6 +5,7 @@
 // match the segment against each exam's exam_id / short_name flexibly.
 import "server-only";
 import { createFetchClient } from "@clearcut/api/fetch-client";
+import { IS_PRERENDER_BUILD } from "@/lib/build/prerender";
 
 // Falls back to the known production CMS if the env var isn't set (e.g. a
 // deploy environment missing/misconfiguring the secret) — this used to
@@ -19,7 +20,10 @@ if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
   );
 }
 
-const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 300 });
+// No revalidate window: every blog page is prerendered at build time and a
+// rebuild brings new CMS content (lib/question-bank/route-cache.ts). A window
+// would make the pages time-based ISR, re-rendered inside the Worker.
+const client = createFetchClient({ baseUrl: PAYLOAD_URL });
 
 // Normalize for comparison: lowercase, drop spaces/hyphens/underscores.
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]/g, "");
@@ -49,6 +53,8 @@ export async function resolveExam(segment: string): Promise<ExamLite | null> {
       null
     );
   } catch (error) {
+    // CI prerender: fail the build instead of storing an empty page.
+    if (IS_PRERENDER_BUILD) throw error;
     console.error(`Failed to resolve exam segment "${segment}":`, error);
     return null;
   }

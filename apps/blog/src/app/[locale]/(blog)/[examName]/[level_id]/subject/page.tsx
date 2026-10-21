@@ -14,6 +14,13 @@ import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { backendServerHeaders } from "@/lib/api/backend-headers";
+import { levelStaticParams } from "@/lib/question-bank/static-params";
+
+// Prerendered at build time for every URL (Workers Free plan: never rendered
+// on request). See lib/question-bank/route-cache.ts.
+export async function generateStaticParams() {
+  return levelStaticParams();
+}
 type Props = {
   params: {
     locale: string;
@@ -58,18 +65,16 @@ export default async function page({ params }: Props) {
   }
 
   // ✅ Correct API fetch Subjects
-  // `revalidate: 3600` rather than `no-store`: the subject list is public,
-  // identical for every visitor and changes on a content-editing cadence, not
-  // a per-request one. `no-store` opted this route out of the full route
-  // cache entirely, so every crawler hit re-rendered the page and re-queried
-  // the backend. 3600s matches the window used by the other blog content
-  // routes.
+  // Cached, not `no-store`: the subject list is public and identical for
+  // every visitor (`no-store` once opted this route out of caching). No time
+  // window: the page is prerendered and a question sync rebuilds the site
+  // (lib/question-bank/route-cache.ts).
   // Started together with the exam index check below (it doesn't depend on
   // it). The no-op catch only keeps an early notFound() from leaving an
   // unhandled rejection; awaiting it later still throws as before.
   const subjectsPromise = fetch(
     `${process.env.BACKEND_URL}/blog/get-subject?exam_id=${examNameParam}&slug=${level_id ?? ""}`,
-    { headers: backendServerHeaders(), next: { revalidate: 3600 } },
+    { headers: backendServerHeaders(), cache: "force-cache" },
   ).then((res) => res.json());
   subjectsPromise.catch(() => {});
 

@@ -1,17 +1,17 @@
 // Caching for the question-bank pages (chapter, subject, year; page 1 and
 // /page/N). They read no request data (cookies, headers, searchParams) —
-// verified with `dynamic = "error"` — so they can be static and regenerated
-// in the background (ISR). Without this they rendered on every request.
+// verified with `dynamic = "error"` — so they can be fully static.
 //
-// Each route file declares `export const revalidate = 600` and an empty
-// `generateStaticParams` itself: Next reads route-segment options statically
-// and needs a literal there. route-cache.test.ts keeps all six files in
-// sync with QUESTION_PAGE_REVALIDATE.
-//
-// Freshness: the backend caches these reads for 1h and Next's data cache
-// for 1h already; regenerating the page every 10 minutes adds at most 10
-// minutes on top. A failed regeneration keeps serving the last good page; a
-// failed first render is a 500 and is never cached.
+// The blog runs on the Workers Free plan (10 ms CPU per request) and one of
+// these pages costs 0.3–2 s of CPU to render, so they are never rendered
+// inside the Worker on a schedule: no route declares `revalidate` (time-based
+// ISR would re-render them in the Worker), and each route's
+// generateStaticParams lists every URL (lib/question-bank/static-params.ts) so
+// `next build` renders them all in CI. Content changes arrive by rebuilding
+// the site — the backend's post-sync POST /api/revalidate triggers the deploy
+// workflow. route-cache.test.ts keeps all six route files on this policy.
+// docs/phases/14-blog-worker-limit.md.
 
-/** Seconds between background regenerations of a cached page. */
+/** How long one server instance reuses the question search index
+ * (search-index.ts) before rebuilding it from the cached loaders. */
 export const QUESTION_PAGE_REVALIDATE = 600;

@@ -1,6 +1,5 @@
 import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { mapLimit } from "@/lib/async/map-limit";
-import { questionTags } from "@/lib/question-bank/cache-tags";
 import { loadSubjectChapterSlugs } from "@/lib/question-bank/load";
 import { canonicalSubjects, type ExamIndex } from "@/lib/seo/exam-index";
 import type { IndexEntry, QuestionIndex } from "./question-pages";
@@ -8,7 +7,6 @@ import type { IndexEntry, QuestionIndex } from "./question-pages";
 // Fetches for the question-bank sitemap entries. Both throw on any failure:
 // the sitemap routes answer 503 rather than serve a shorter file.
 
-const REVALIDATE_SECONDS = 3600;
 // The backend allows 60 requests/min per IP, shared with SSR.
 const CONCURRENCY = 2;
 
@@ -26,7 +24,7 @@ export async function fetchQuestionIndex(exam: string): Promise<QuestionIndex> {
   const path = `/blog/question-index?exam_name=${encodeURIComponent(exam)}`;
   const res = await fetch(`${base}${path}`, {
     headers: backendServerHeaders(),
-    next: { revalidate: REVALIDATE_SECONDS, tags: questionTags(exam) },
+    cache: "force-cache", // rebuilt, not revalidated: lib/question-bank/load.ts
   });
   if (!res.ok) throw new Error(`GET ${path} -> HTTP ${res.status}`);
   const data = (await res.json())?.data;
