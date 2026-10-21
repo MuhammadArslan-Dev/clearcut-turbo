@@ -12,7 +12,7 @@ on:
       base_url:
         description: "Base URL to warm"
         required: true
-        default: "https://clearcut-turbo-blog.vercel.app"
+        default: "https://academy.clearcutoff.in"
 
 concurrency:
   group: warm-blog-cache
@@ -40,4 +40,4 @@ jobs:
           WARM_CONCURRENCY: "6"
         run: >
           node apps/blog/scripts/warm-cache.mjs
-          "${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'https://clearcut-turbo-blog.vercel.app' }}"
+          "${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'https://academy.clearcutoff.in' }}"

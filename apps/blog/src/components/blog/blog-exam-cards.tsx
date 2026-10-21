@@ -2,7 +2,7 @@
 import React from "react";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { useSelectedDataStore } from "@/store/blog/useSelectedDataStore";
 import { Card } from "@clearcut/ui/card";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -19,12 +19,16 @@ import { useTranslations } from "next-intl";
 import CheckIcon from "../ui/icons/check-icon";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 
+// A real <a href> (locale-aware Link) so crawlers can follow it; it used
+// to be a click handler calling router.push, which search engines don't run.
 const ExamCourseCard = ({
   item,
+  href,
   onClick,
   bgcolor,
 }: {
   item: Exam;
+  href: string;
   onClick: () => void;
   bgcolor?: string;
 }) => {
@@ -58,9 +62,9 @@ const ExamCourseCard = ({
     },
   ];
   return (
+    <Link href={href} onClick={onClick} className="block">
     <Card
       bgcolor={bgcolor}
-      onClick={onClick}
       minWidth={"250px"}
       padding={0}
       maxWidth={"350px"}
@@ -116,23 +120,16 @@ const ExamCourseCard = ({
         </div>
       </div>
     </Card>
+    </Link>
   );
 };
 
 export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
-  const router = useRouter();
   const setSelectedCourse = useSelectedDataStore((s) => s.setSelectedCourse);
-  const onSelect = (item: Exam) => {
-    // Save in client-side store (optional)
-    setSelectedCourse(item);
-    const examId = item.short_name;
-
-    // Extract value after the underscore (_) and convert to lowercase
-    const formattedId = formatToSlug(examId);
-
-    // Navigate with clean lowercase URL
-    router.push(`/${formattedId}`);
-  };
+  // The card's Link navigates; this only keeps the client-side store in step.
+  const onSelect = (item: Exam) => setSelectedCourse(item);
+  // Clean lowercase exam URL, e.g. "/ctet".
+  const examHref = (item: Exam) => `/${formatToSlug(item.short_name)}`;
 
   // Only show exams that have a real exam page to land on. `onSelect` below
   // routes to `/${formatToSlug(short_name)}`, and that route redirects home
@@ -197,6 +194,7 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
                       bgcolor="white"
                       key={item.id}
                       item={item}
+                      href={examHref(item)}
                       onClick={() => onSelect(item)}
                     />
                   );
@@ -224,7 +222,8 @@ export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
                               bgcolor="white"
                               key={item.id}
                               item={item}
-                              onClick={() => onSelect(item)}
+                              href={examHref(item)}
+                      onClick={() => onSelect(item)}
                             />
                           );
                         })}

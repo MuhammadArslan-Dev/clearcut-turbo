@@ -1,5 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { cn } from "@clearcut/ui/utils";
+import { Link } from "@/i18n/navigation";
+import { unprefixedPath } from "./question-bank-view";
 import { QUESTIONS_PER_PAGE, pagePath, pageWindow } from "@/lib/question-bank/pagination";
 
 const linkClass =
@@ -9,11 +11,10 @@ const idleClass =
 const currentClass = "border-[var(--color-brand)] bg-[var(--color-brand)] text-white";
 
 /**
- * Crawlable pagination: plain `<a href>` to each page's own URL (Google
- * follows links, not buttons, and ignores rel=prev/next). A plain anchor,
- * not next/link: no background prefetch of other pages' (large) payloads,
- * and leaving a page frees it instead of keeping it in the client router
- * cache.
+ * Crawlable pagination: a locale-aware `Link` (an `<a href>` in the HTML) to
+ * each page's own URL — Google follows links, not buttons, and ignores
+ * rel=prev/next. `prefetch={false}`: no background prefetch of other pages'
+ * (large) payloads.
  */
 export default async function QuestionPagination({
   locale,
@@ -33,6 +34,7 @@ export default async function QuestionPagination({
   if (totalPages <= 1) return null;
   const t = await getTranslations({ locale, namespace: "QuestionPagination" });
   const from = (page - 1) * QUESTIONS_PER_PAGE + 1;
+  const href = (p: number) => unprefixedPath(locale, pagePath(basePath, p));
   const to = Math.min(page * QUESTIONS_PER_PAGE, total);
 
   return (
@@ -43,9 +45,9 @@ export default async function QuestionPagination({
       <ul className="flex flex-wrap items-center justify-center gap-2">
         {page > 1 && (
           <li>
-            <a href={pagePath(basePath, page - 1)} rel="prev" className={cn(linkClass, idleClass)}>
+            <Link href={href(page - 1)} prefetch={false} rel="prev" className={cn(linkClass, idleClass)}>
               {t("previous")}
-            </a>
+            </Link>
           </li>
         )}
         {pageWindow(page, totalPages).map((p, i) =>
@@ -55,22 +57,23 @@ export default async function QuestionPagination({
             </li>
           ) : (
             <li key={p}>
-              <a
-                href={pagePath(basePath, p)}
+              <Link
+                href={href(p)}
+                prefetch={false}
                 aria-current={p === page ? "page" : undefined}
                 aria-label={t("pageN", { page: p })}
                 className={cn(linkClass, p === page ? currentClass : idleClass)}
               >
                 {p}
-              </a>
+              </Link>
             </li>
           ),
         )}
         {page < totalPages && (
           <li>
-            <a href={pagePath(basePath, page + 1)} rel="next" className={cn(linkClass, idleClass)}>
+            <Link href={href(page + 1)} prefetch={false} rel="next" className={cn(linkClass, idleClass)}>
               {t("next")}
-            </a>
+            </Link>
           </li>
         )}
       </ul>

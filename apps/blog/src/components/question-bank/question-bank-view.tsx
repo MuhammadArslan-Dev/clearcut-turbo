@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import type { CardQuestion } from "@/lib/question-bank/card-model";
 import { groupsByLang } from "@/lib/question-bank/card-model";
 import { pageCount } from "@/lib/question-bank/pagination";
@@ -12,6 +13,12 @@ import QuestionPagination from "./question-pagination";
 /** "/hi" + path on the Hindi site, path alone in English (as-needed prefix). */
 export function localePath(locale: string, path: string): string {
   return `${locale === "hi" ? "/hi" : ""}${path}`;
+}
+
+/** The inverse of localePath — for the locale-aware `Link`, which adds the
+ * prefix itself. */
+export function unprefixedPath(locale: string, path: string): string {
+  return locale === "hi" ? path.replace(/^\/hi(?=\/|$)/, "") || "/" : path;
 }
 
 export type ChapterNavItem = { slug: string; href: string; labels: CardQuestion["labels"]; count: number };
@@ -87,6 +94,10 @@ export default async function QuestionBankView({
   return (
     <CourseLangScope className="space-y-4">
       <QuestionBankToolbar
+        // Pages of one scope share a route, so a Link from page 2 to page 3
+        // keeps client state; a fresh toolbar per page resets search/filter
+        // and the visible count, as a full page load did.
+        key={page}
         listId={listId}
         groupBy={GROUP_BY[scope.kind]}
         groups={groupsByLang(cards)}
@@ -156,8 +167,9 @@ export async function ChapterLinks({
       <ul className="flex flex-wrap gap-2">
         {chapters.map(({ slug, href, labels, count }) => (
           <li key={slug}>
-            <a
-              href={href}
+            <Link
+              href={unprefixedPath(locale, href)}
+              prefetch={false}
               className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border-gray-subtle)] px-3 py-1.5 body-medium !font-normal surface-text-gray-normal hover:bg-[var(--color-background-gray-subtle)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {labels.map((l) => (
@@ -166,7 +178,7 @@ export async function ChapterLinks({
                 </span>
               ))}
               <span className="body-small surface-text-gray-muted">{t("chapterCount", { count })}</span>
-            </a>
+            </Link>
           </li>
         ))}
       </ul>
