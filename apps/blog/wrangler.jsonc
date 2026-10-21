@@ -16,6 +16,16 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "clearcut-blog"
     }
+  ],
+  // Hotfix 2026-10-21: the 2026-10-21 deploy (version d8292f52) ran Durable
+  // Object migration "v1" (DOQueueHandler, OpenNext's ISR queue). Cloudflare
+  // refuses to deploy a version that is behind the live migration (error
+  // 10210), so this restores the 2026-10-13 code (1829d4d) with v1 recorded
+  // and v2 deleting the class again. The class only held queued ISR
+  // revalidations; no content or user data lives there.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] },
+    { "tag": "v2", "deleted_classes": ["DOQueueHandler"] }
   ]
   // BACKEND_URL is the only non-NEXT_PUBLIC_* var this app reads at request
   // time (src/lib/api/api2.ts, sitemap route handlers) — everything else is
