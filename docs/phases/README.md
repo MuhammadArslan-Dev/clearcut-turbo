@@ -1,0 +1,59 @@
+# Wave-1 Phases — Tracker
+
+Source: Arslan's top-to-bottom list (2026-10-21). Jira project `CC` (clear-cutoff.atlassian.net).
+Investigation done read-only on 2026-10-21 across 4 repos:
+
+| Short | Repo |
+|---|---|
+| **CM** | `D:\clearcutoff-projects\clearcut-master` (this repo — landing, dashboard, blog, tools, packages) |
+| **BE** | `C:\laragon\www\clearcutoff-main-backend` (Laravel API) |
+| **ASTRO** | `D:\clearcutoff-projects\Astro-marketing-clearcut` (`/go/*` ad landing pages, academy, Worker) |
+| **RN** | `E:\React Native\ClearCutoff-App - New` (WebView wraps dashboard) |
+
+## Rules for every phase
+
+1. Work phases **in order**, top to bottom. Don't start the next phase while the current one is waiting on a decision, unless the user says so.
+2. **🛑 DECISION**: stop and ask the user. Don't pick an option yourself.
+3. **⚠️ SYSTEM IMPACT**: the change affects other apps, shared packages, backend contracts, prod env, payments or analytics data. Stop, explain the impact, and wait for approval.
+4. **📞 CLIENT**: only RD/client can answer. Mark the phase `Blocked – Client` until the answer is written into the phase file.
+5. Record every answer in the phase file's **Decision log**, with a date, before continuing.
+6. Follow `docs/DEVELOPMENT_RULES.md`: reuse components and tokens, i18n en/hi/mr, verify with tsc, eslint and check:colors, plus screenshots for UI.
+7. Never commit or push unless asked, and no Co-Authored-By trailer.
+
+## Status values
+
+`Not Started` · `In Progress` · `Blocked – Decision` · `Blocked – Client` · `In Review` · `Completed`
+
+Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked.
+
+## Tracker
+
+| # | Phase | Tickets | Repos | Status | Waiting on |
+|---|---|---|---|---|---|
+| 00 | [Security findings (outside the tickets)](00-security-findings.md) | — | BE | Blocked – Decision | User: rotate keys / remove routes |
+| 01 | [Razorpay "Test Mode" on live checkout](01-cc58-razorpay-test-mode.md) | CC-58 | BE, CM-dashboard | Not Started | D1–D3, C1–C3 |
+| 02 | [Stop test traffic reaching live Pixel/Amplitude/Clarity](02-cc115a-cc94-analytics-allowlist.md) | CC-115A, CC-94 | CM, ASTRO, BE, GTM | Not Started | D1–D5, C1–C5 |
+| 03 | [Raw code text on landing pages](03-cc107-raw-code-text.md) | CC-107 | ASTRO | Not Started | D1, C1 |
+| 04 | [₹NaN in Payments tab](04-cc100-payments-nan.md) | CC-100 | CM-dashboard, BE | Not Started | D1–D2, C1 |
+| 05 | [Correct Purchase value to Meta](05-cc53-meta-purchase-value.md) | CC-53 | CM-dashboard, (BE) | Not Started | D1–D3, C1–C4 |
+| 06 | [Signup form + T&C link](06-cc84-cc85-signup-form.md) | CC-84, CC-85 | CM-landing, (packages/ui, auth), (ASTRO) | Not Started | D1–D5, C1–C3 |
+| 07 | [Real reason behind OTP "unknown_error"](07-cc87-cc55-otp-unknown-error.md) | CC-87, CC-55 | CM packages/auth + landing, (BE), (RN) | Not Started | D1–D4, C1 |
+| 08 | [Landing main button not responding](08-cc106-landing-cta.md) | CC-106 | ASTRO, (CM) | Not Started | D1–D4, C1–C3 |
+| 09 | [Pay button does nothing](09-cc60-pay-button.md) | CC-60 | CM-dashboard, (BE) | Not Started | D1–D2, C1–C2 |
+| 10 | [Crashes on older phones](10-cc112-older-phone-crashes.md) | CC-112 | CM (all apps), ASTRO | Not Started | D1–D3, C1–C4 |
+| 11 | [Payment page loads twice](11-cc61-payment-double-load.md) | CC-61 | CM-dashboard | Not Started | D1, C1 |
+| 12 | [Trial copy on landing + in-app](12-cc67-trial-copy.md) | CC-67 | ASTRO, CM-landing, CM-dashboard, CMS admin | Not Started | C1–C3 (copy from RD) |
+| 13 | [HPTET landing-page-view tracking (parked)](13-cc115b-hptet-lpv.md) | CC-115 Part B | ASTRO | Not Started | Not in Arslan's list — confirm whether to do it |
+
+## Cross-phase dependencies
+
+- **01 ↔ 09:** the monthly-autopay checkout opens without a Razorpay `key` (subscription-create returns none). That is the likely cause of both "Test Mode" (CC-58) and some dead pay taps (CC-60).
+- **09 → 05:** one-time Purchase events rarely fire today, because verify-polling dies on the first 400. Fixing 09 will **raise Purchase counts in Ads Manager**, so tell the client before it ships.
+- **02 → 05:** once the allowlist exists, the Purchase/Subscribe pixel calls must go through it too.
+- **06 ↔ 07:** both touch `StartAuthForm.tsx` and `packages/auth`. Do 06 and 07 back-to-back and test login once at the end.
+- **03 ↔ 08:** CC-107's fix (move the Lottie script, make the guarantee/price block a link) overlaps CC-106's "price card should link to /start".
+- **10 ↔ 02:** the `.at` crash comes from Amplitude's web-vitals plugin. Changing the Amplitude init in 02 is the natural place to set `autocapture.webVitals:false`.
+
+## Change log
+
+- 2026-10-21: created folder, 14 phase files, investigation results copied in.
