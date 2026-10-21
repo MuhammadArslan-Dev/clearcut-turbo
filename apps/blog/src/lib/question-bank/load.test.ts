@@ -1,5 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// unstable_cache needs Next's runtime: run the function directly and record
+// the options (cache tags) it was given.
+const cacheOptions: { tags?: string[]; revalidate?: number | false }[] = [];
+vi.mock("next/cache", () => ({
+  unstable_cache:
+    <T,>(fn: () => Promise<T>, _key: string[], options: { tags?: string[] }) =>
+    () => {
+      cacheOptions.push(options);
+      return fn();
+    },
+}));
+
 // lib/api/api2 reads BACKEND_URL when it is first imported.
 process.env.BACKEND_URL = "https://backend.test/api";
 const { loadSubjectChapterSlugs, loadSubjectQuestions } = await import("./load");
@@ -37,7 +49,7 @@ describe("subject loaders", () => {
     const url = new URL(calls[0].url);
     expect(url.searchParams.get("section_id")).toBe("CTET_L2_ENG");
     expect(url.searchParams.get("exact_section")).toBe("1");
-    expect(calls[0].init.next?.tags).toEqual(["qb", "qb:ctet"]);
+    expect(cacheOptions.at(-1)?.tags).toEqual(["qb", "qb:ctet"]);
   });
 
   it("fall back to the exam-wide prefix when the section is unknown", async () => {

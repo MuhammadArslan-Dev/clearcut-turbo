@@ -4,8 +4,31 @@ import { canonicalChapterPath } from "@/lib/seo/exam-index";
 import { loadExamIndex } from "@/lib/seo/load-exam-index";
 import { chapterPageUrl, examSlugFromQuestion, parseQuestionId } from "@/lib/seo/question-redirect";
 import { loadScope } from "@/lib/question-bank/scope";
-import { pageOfIndex } from "@/lib/question-bank/pagination";
-import { isHindiPage } from "@/lib/question-bank/hindi-page";
+import { QUESTIONS_PER_PAGE, pageOfIndex } from "@/lib/question-bank/pagination";
+import { isHindiPage, isHindiPageByFlags } from "@/lib/question-bank/hindi-page";
+import { fetchQuestionIndex } from "@/lib/sitemap/question-index";
+
+/** The question's page in its chapter and whether that page is a genuinely
+ * Hindi page — from the cached question index (the chapter page's own ids,
+ * order and bilingual flags; scope-page.ts), so a redirect never downloads the
+ * whole chapter (2-10 MB, too big for the data cache). Falls back to the
+ * full chapter if the index is unavailable; null when that fails too. */
+async function chapterPageOf(exam: string, chapter: string, id: number): Promise<{ page: number; hindi: boolean } | null> {
+  try {
+    const entries = (await fetchQuestionIndex(exam)).chapters[chapter] ?? [];
+    const at = entries.findIndex(([qid]) => qid === id);
+    const page = at >= 0 ? pageOfIndex(at) : 1;
+    const start = (page - 1) * QUESTIONS_PER_PAGE;
+    const flags = entries.slice(start, start + QUESTIONS_PER_PAGE).map((e) => e[2] === 1);
+    return { page, hindi: isHindiPageByFlags(flags) };
+  } catch {
+    const loaded = await loadScope({ kind: "chapter", exam, chapter });
+    if (!loaded.ok) return null;
+    const at = loaded.cards.findIndex((c) => c.id === id);
+    const page = at >= 0 ? pageOfIndex(at) : 1;
+    return { page, hindi: isHindiPage(loaded.cards, page) };
+  }
+}
 
 // Individual question pages were replaced by the shared chapter pages, which
 // render every question with an `id="q-<id>"` anchor. Each old
@@ -73,16 +96,15 @@ export async function GET(
   // renders. A question that doesn't render there (no translation) falls back
   // to page 1. If the chapter can't be loaded, don't guess: a wrong 301 would
   // be cached.
-  const loaded = await loadScope({ kind: "chapter", exam, chapter });
-  if (!loaded.ok) return unavailableResponse();
-  const index = loaded.cards.findIndex((c) => c.id === Number(id));
-  const page = index >= 0 ? pageOfIndex(index) : 1;
+  const found = await chapterPageOf(exam, chapter, Number(id));
+  if (!found) return unavailableResponse();
+  const { page } = found;
 
   // The canonical URL of that page, in one 301: English, or the /hi chapter
   // page for an old /hi link when that page is a genuinely Hindi page (its
   // own canonical — lib/question-bank/hindi-page). Otherwise /hi shows the
   // English page's content and canonicalizes to it, so /hi links land there.
-  const toHindi = locale === "hi" && isHindiPage(loaded.cards, page);
+  const toHindi = locale === "hi" && found.hindi;
   const location = chapterPageUrl({
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin,
     locale: toHindi ? "hi" : "en",

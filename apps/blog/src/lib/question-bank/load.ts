@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Question, QuestionChapter } from "@/components/blog/assessment-question/questions-list";
 import { apiFetch } from "@/lib/api/api2";
 import { mapLimit } from "@/lib/async/map-limit";
@@ -61,14 +62,28 @@ export type SubjectSection = {
 };
 
 /** A subject page's section: its chapters and names; null when the backend
- * failed. Shared by the subject page and the sitemap so both agree. */
+ * failed. Shared by the subject page and the sitemap so both agree.
+ *
+ * The backend response is up to ~3 MB (it carries questions too), over the
+ * data cache's 2 MB limit, so it was downloaded again on every render. Only
+ * the small result below is cached (same tags and lifetime). A failure
+ * throws inside, so it is never cached. */
 export const loadSubjectSection = cache(
   async (exam: string, subject: string, section?: string): Promise<SubjectSection | null> => {
-    const json = await apiFetch(`/blog/get-questions-by-section?${sectionQuery(exam, subject, section)}`, {
-      revalidate: REVALIDATE_SECONDS,
-      tags: questionTags(exam),
-    });
-    if (!json) return null;
+    try {
+      return await unstable_cache(() => fetchSubjectSection(exam, subject, section), ["subject-section", exam, subject, section ?? ""], {
+        revalidate: REVALIDATE_SECONDS,
+        tags: questionTags(exam),
+      })();
+    } catch {
+      return null;
+    }
+  },
+);
+
+async function fetchSubjectSection(exam: string, subject: string, section?: string): Promise<SubjectSection> {
+    const json = await apiFetch(`/blog/get-questions-by-section?${sectionQuery(exam, subject, section)}`);
+    if (!json) throw new Error("subject section unavailable");
     // `get-questions-by-section` caps each chapter at 3 questions (a limit the
     // sitemap builder relies on), so it is only used to discover the subject's
     // chapters; each chapter's full set comes from the chapter endpoint.
@@ -84,8 +99,7 @@ export const loadSubjectSection = cache(
         hi: getLocalizedEntityName(data, data?.description, "hi"),
       },
     };
-  },
-);
+}
 
 /** A subject page's chapter slugs, in page order; null when the backend failed. */
 export const loadSubjectChapterSlugs = cache(

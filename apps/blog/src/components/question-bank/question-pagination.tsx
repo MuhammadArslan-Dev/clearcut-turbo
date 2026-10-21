@@ -1,7 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import { cn } from "@clearcut/ui/utils";
-import { Link } from "@/i18n/navigation";
-import { unprefixedPath } from "./question-bank-view";
 import { QUESTIONS_PER_PAGE, pagePath, pageWindow } from "@/lib/question-bank/pagination";
 
 const linkClass =
@@ -11,10 +9,14 @@ const idleClass =
 const currentClass = "border-[var(--color-brand)] bg-[var(--color-brand)] text-white";
 
 /**
- * Crawlable pagination: a locale-aware `Link` (an `<a href>` in the HTML) to
- * each page's own URL — Google follows links, not buttons, and ignores
- * rel=prev/next. `prefetch={false}`: no background prefetch of other pages'
- * (large) payloads.
+ * Crawlable pagination: plain `<a href>` to each page's own URL (Google
+ * follows links, not buttons, and ignores rel=prev/next). A plain anchor,
+ * not next/link: no background prefetch of other pages' (large) payloads,
+ * and leaving a page frees it instead of keeping it in the client router
+ * cache. Tried as Link (prefetch off) on 2026-10-21: a click showed nothing
+ * for ~3 s on a slow connection (no browser loading state while the RSC
+ * payload downloads), so it felt broken; a plain anchor shows the browser's
+ * own loading state at once.
  */
 export default async function QuestionPagination({
   locale,
@@ -34,7 +36,6 @@ export default async function QuestionPagination({
   if (totalPages <= 1) return null;
   const t = await getTranslations({ locale, namespace: "QuestionPagination" });
   const from = (page - 1) * QUESTIONS_PER_PAGE + 1;
-  const href = (p: number) => unprefixedPath(locale, pagePath(basePath, p));
   const to = Math.min(page * QUESTIONS_PER_PAGE, total);
 
   return (
@@ -45,9 +46,9 @@ export default async function QuestionPagination({
       <ul className="flex flex-wrap items-center justify-center gap-2">
         {page > 1 && (
           <li>
-            <Link href={href(page - 1)} prefetch={false} rel="prev" className={cn(linkClass, idleClass)}>
+            <a href={pagePath(basePath, page - 1)} rel="prev" className={cn(linkClass, idleClass)}>
               {t("previous")}
-            </Link>
+            </a>
           </li>
         )}
         {pageWindow(page, totalPages).map((p, i) =>
@@ -57,23 +58,22 @@ export default async function QuestionPagination({
             </li>
           ) : (
             <li key={p}>
-              <Link
-                href={href(p)}
-                prefetch={false}
+              <a
+                href={pagePath(basePath, p)}
                 aria-current={p === page ? "page" : undefined}
                 aria-label={t("pageN", { page: p })}
                 className={cn(linkClass, p === page ? currentClass : idleClass)}
               >
                 {p}
-              </Link>
+              </a>
             </li>
           ),
         )}
         {page < totalPages && (
           <li>
-            <Link href={href(page + 1)} prefetch={false} rel="next" className={cn(linkClass, idleClass)}>
+            <a href={pagePath(basePath, page + 1)} rel="next" className={cn(linkClass, idleClass)}>
               {t("next")}
-            </Link>
+            </a>
           </li>
         )}
       </ul>
