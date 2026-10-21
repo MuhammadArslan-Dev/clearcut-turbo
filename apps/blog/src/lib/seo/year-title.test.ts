@@ -17,21 +17,21 @@ const yearPageSeo = (m: Messages, exam: string, level: string, year: string) => 
   const labels = yearPageLabels(exam, level, year);
   return {
     title: fill(m.QuestionBankPage.yearTitle, labels),
-    description: fill(m.QuestionBankPage.yearDescription, labels),
+    description: fill(m.QuestionBankPage.yearDescription, { ...labels, pageDescription: "" }),
   };
 };
 
 describe("year page titles", () => {
   it("replaces the raw year slug with a readable, keyword-focused title", () => {
-    expect(yearPageSeo(en, "ctet", "paper-1", "ctet-2024").title).toBe("CTET 2024 Paper 1 Previous Year Questions");
-    expect(yearPageSeo(en, "htet", "level-1-prt", "htet-2015").title).toBe("HTET 2015 Level 1 PRT Previous Year Questions");
+    expect(yearPageSeo(en, "ctet", "paper-1", "ctet-2024").title).toBe("CTET 2024 Paper 1 Question Paper with Answers");
+    expect(yearPageSeo(en, "htet", "level-1-prt", "htet-2015").title).toBe("HTET 2015 Level 1 PRT Question Paper with Answers");
     expect(yearPageSeo(en, "htet", "level-3-pgt", "htet-2023").description).toBe(
-      "HTET 2023 Level 3 PGT previous year questions with answers, free on Clear Cutoff.",
+      "Solve the HTET 2023 Level 3 PGT previous year question paper (PYQ) online with answers and explanations, free on Clear Cutoff.",
     );
   });
 
   it("has a Hindi title with the same parts", () => {
-    expect(yearPageSeo(hi, "ctet", "paper-1", "ctet-2024").title).toBe("CTET 2024 Paper 1 पिछले वर्ष के प्रश्न");
+    expect(yearPageSeo(hi, "ctet", "paper-1", "ctet-2024").title).toBe("CTET 2024 Paper 1 प्रश्न पत्र उत्तर सहित");
   });
 
   it("never leaks the raw slug or the site name (the layout template adds it)", () => {
@@ -50,6 +50,6 @@ describe("year page titles", () => {
   });
 
   it("falls back to a readable label when a slug has no 4-digit year", () => {
-    expect(yearPageSeo(en, "ctet", "paper-1", "ctet-special").title).toBe("CTET Ctet Special Paper 1 Previous Year Questions");
+    expect(yearPageSeo(en, "ctet", "paper-1", "ctet-special").title).toBe("CTET Ctet Special Paper 1 Question Paper with Answers");
   });
 });

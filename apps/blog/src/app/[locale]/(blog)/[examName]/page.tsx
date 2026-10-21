@@ -7,6 +7,7 @@ import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { Metadata } from "next";
 import React, { Suspense } from "react";
 import { unFormatSlug } from "@/utils/slugify";
+import { seoDescription, seoTitle, titleText } from "@/lib/seo/seo-text";
 import { siteConfig } from "@/lib/metadata";
 import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
@@ -83,12 +84,16 @@ export async function generateMetadata({
   // bare title here to avoid a doubled site name.
   const examLabel = unFormatSlug(examName ?? "").toUpperCase();
 
-  const title = `${examLabel} Exam`;
-  const description = `${examLabel} exam preparation — practice questions, test series, and previous year papers, free on Clear Cutoff.`;
+  const seo = seoTitle([
+    `${examLabel} Question Papers, PYQ & MCQ with Answers`,
+    `${examLabel} Previous Year Question Papers & MCQ`,
+  ]);
+  const title = titleText(seo);
+  const description = `${examLabel} previous year question papers (PYQ) and chapter-wise MCQ practice for every paper, with answers and explanations, free on Clear Cutoff.`;
 
   return {
-    title,
-    description,
+    title: seo,
+    description: seoDescription(description),
 
     openGraph: {
       title,

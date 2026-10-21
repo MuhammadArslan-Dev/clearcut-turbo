@@ -1,3 +1,4 @@
+import { levelLabel } from "@/lib/seo/year-title";
 import MainContainer from "@/components/main-container";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import { unFormatSlug } from "@/utils/slugify";
@@ -21,7 +22,7 @@ import { isHindiScopePage, loadScopePage } from "@/lib/question-bank/scope-page"
 import { pagePath } from "@/lib/question-bank/pagination";
 import QuestionBankView, { localePath } from "../question-bank-view";
 import { assertPageExists, metadataPage, pageSeo, resolvePageParam } from "./page-param";
-import { chapterName, localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
+import { chapterName, localeOrigin, pageCopy, questionBankSeo } from "./page-copy";
 
 export type ChapterParams = {
   locale: string;
@@ -42,23 +43,26 @@ export async function chapterPageMetadata(params: ChapterParams) {
     pageCopy(locale),
   ]);
   const seo = pageSeo(page);
-  const suffix = pageSuffixes(t, page);
   const path = `${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}${seo.pathSuffix}`;
 
-  // Root layout applies the "%s | Clear Cutoff" title template, so use a
-  // bare title here to avoid a doubled site name.
-  const labels = {
-    exam: unFormatSlug(examName ?? "").toUpperCase(),
-    level: unFormatSlug(level_id ?? ""),
-    subject: unFormatSlug(subject_id ?? ""),
-    chapter: chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? "")),
-  };
+  const { title, description } = questionBankSeo(
+    t,
+    "chapter",
+    {
+      exam: (examName ?? "").toUpperCase(),
+      levelSlug: level_id ?? "",
+      subjectSlug: subject_id ?? "",
+      subject: unFormatSlug(subject_id ?? ""),
+      chapter: chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? "")),
+    },
+    page,
+  );
 
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${t("chapterTitle", labels)}${suffix.title}`,
-    description: `${t("chapterDescription", labels)}${suffix.description}`,
+    title,
+    description,
     noindex: canonical.empty,
     // /hi is its own page only when this page's questions have Hindi versions.
     hiTranslated: isHindiScopePage(loaded),
@@ -103,7 +107,7 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   const examState = examInfo?.state;
   const Labels = [
     { lable: "Exam", value: examName.toUpperCase() ?? "REET" },
-    { lable: "Level", value: unFormatSlug(level_id ?? "") },
+    { lable: "Level", value: levelLabel(level_id ?? "") },
     ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
@@ -118,7 +122,7 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   const breadcrumbItems = [
     { name: t("home"), url: homeUrl || "/" },
     { name: examName, url: examsUrl },
-    { name: unFormatSlug(level_id), url: levelUrl },
+    { name: levelLabel(level_id ?? ""), url: levelUrl },
     { name: t("subject"), url: subjectUrl },
     { name: unFormatSlug(subject_id), url: subjectIdUrl },
     { name: chapterLabel, url: chapterUrl },
@@ -128,7 +132,7 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
   // page shows, at this page's canonical URL (/hi only for a Hindi page).
   const quizLd = getQuizSchema({
     questions: loaded.raw,
-    name: `${unFormatSlug(chapter_name)} - ${unFormatSlug(subject_id)} ${examName.toUpperCase()} ${unFormatSlug(level_id ?? "")} Quiz`,
+    name: `${unFormatSlug(chapter_name)} - ${unFormatSlug(subject_id)} ${examName.toUpperCase()} ${levelLabel(level_id ?? "")} Quiz`,
     url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}/${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}`, page),
     courseLang: hindiPage ? "hi" : "en",
   });
@@ -144,9 +148,9 @@ export default async function ChapterQuestionsPage({ params }: { params: Chapter
         <div className="px-3">
           <CustomizableHeader
             showEyebrow={false}
-            heading={t("examHeading", { exam: examName.toUpperCase(), level: unFormatSlug(level_id ?? ""), name: chapterLabel })}
+            heading={t("examHeading", { exam: examName.toUpperCase(), level: levelLabel(level_id ?? ""), name: chapterLabel })}
             highlightText={examName.toUpperCase()}
-            subheading={t("prepSubheading", { exam: examName.toUpperCase(), level: unFormatSlug(level_id ?? "") })}
+            subheading={t("prepSubheading", { exam: examName.toUpperCase(), level: levelLabel(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"

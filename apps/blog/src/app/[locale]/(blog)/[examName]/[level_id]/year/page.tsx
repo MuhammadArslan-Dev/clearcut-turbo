@@ -1,4 +1,6 @@
 import MainBreadcrumbs from "@/components/breadcrumbs/main-breadcrumbs";
+import { levelShort, seoTitle } from "@/lib/seo/seo-text";
+import { levelLabel as levelName } from "@/lib/seo/year-title";
 import React from "react";
 import { Metadata } from "next";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
@@ -41,13 +43,16 @@ export async function generateMetadata({
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
   const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const levelLabel = unFormatSlug(level_id ?? "");
+  const level = levelName(level_id ?? "");
 
   return generateLocaleMetadata({
     locale,
     path,
-    title: `${examLabel} Exam ${levelLabel} - Year Wise Papers`,
-    description: `${examLabel} Exam ${levelLabel} year-wise previous papers and practice questions, free on Clear Cutoff.`,
+    title: seoTitle([
+      `${examLabel} ${level} Previous Year Question Papers (PYQ)`,
+      `${examLabel} ${levelShort(level_id ?? "")} Previous Year Question Papers (PYQ)`,
+    ]),
+    description: `Year-wise ${examLabel} ${level} previous year question papers (PYQ) – solve each paper online with answers and explanations, free on Clear Cutoff.`,
   });
 }
 

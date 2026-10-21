@@ -17,6 +17,7 @@ import { getHindiPostSlugs, getPostBySlug, getPostsByExam } from "@/lib/api/post
 import { localeAlternates } from "@/lib/seo/locale-alternates";
 import { resolveExamId } from "@/lib/api/exams";
 import { unFormatSlug } from "@/utils/slugify";
+import { seoDescription, seoTitle } from "@/lib/seo/seo-text";
 import { siteConfig } from "@/lib/metadata";
 
 // Absolute base URL used for canonical/OG URLs and JSON-LD ids.
@@ -108,9 +109,9 @@ export async function generateMetadata({
 
   return {
     // Root layout applies the "%s | Clear Cutoff" title template, so use the
-    // bare post title here to avoid a doubled site name.
-    title: post.title,
-    description: post.excerpt || undefined,
+    // bare post title; seoTitle drops the site name (or shortens) past 60.
+    title: seoTitle([post.title]),
+    description: post.excerpt ? seoDescription(post.excerpt) : undefined,
     alternates: {
       canonical: canonicalUrl,
       ...(languages ? { languages } : {}),

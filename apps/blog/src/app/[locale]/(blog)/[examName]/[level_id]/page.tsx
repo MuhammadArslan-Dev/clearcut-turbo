@@ -7,6 +7,8 @@ import { notFound } from "next/navigation";
 import { findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { unFormatSlug } from "@/utils/slugify";
+import { levelShort, seoDescription, seoTitle } from "@/lib/seo/seo-text";
+import { levelLabel as levelName } from "@/lib/seo/year-title";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
@@ -49,11 +51,16 @@ export async function generateMetadata({
   // Root layout applies the "%s | Clear Cutoff" title template, so use a
   // bare title here to avoid a doubled site name.
   const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const levelLabel = unFormatSlug(level_id ?? "");
+  const level = levelName(level_id ?? "");
 
   return {
-    title: `${examLabel} Exam ${levelLabel}`,
-    description: `${examLabel} exam ${levelLabel} — practice questions, test series, and year-wise papers, free on Clear Cutoff.`,
+    title: seoTitle([
+      `${examLabel} ${level} Question Papers, PYQ & MCQ`,
+      `${examLabel} ${levelShort(level_id ?? "")} Question Papers, PYQ & MCQ`,
+    ]),
+    description: seoDescription(
+      `${examLabel} ${level} previous year question papers (PYQ) and subject-wise MCQ practice with answers and explanations, free on Clear Cutoff.`,
+    ),
 
     alternates: {
       canonical: canonicalUrl,

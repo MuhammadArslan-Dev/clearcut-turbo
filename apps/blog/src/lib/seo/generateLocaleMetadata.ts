@@ -1,10 +1,12 @@
 import { Metadata } from "next";
 import { localeAlternates } from "./locale-alternates";
+import { seoDescription, titleText, type SeoTitle } from "./seo-text";
 
 type LocaleSEOOptions = {
   locale?: string;
   path: string; // e.g. "ctet/level-1/year"
-  title: string;
+  /** Plain (the layout adds " | Clear Cutoff") or absolute — see seoTitle. */
+  title: SeoTitle;
   description: string;
   /** Valid but empty pages stay reachable but out of the index. */
   noindex?: boolean;
@@ -30,16 +32,18 @@ export function generateLocaleMetadata({
     hiTranslated,
   });
 
+  const ogTitle = titleText(title);
+  description = seoDescription(description);
   return {
     title,
     description,
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
 
     openGraph: {
-      title,
+      title: ogTitle,
       description,
       url: canonicalUrl,
-      siteName: title,
+      siteName: "Clear Cutoff",
       images: [
         {
           url: "https://cc-teaching-content-ind.s3.dualstack.ap-south-1.amazonaws.com/images/favicon.png",

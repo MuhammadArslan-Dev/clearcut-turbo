@@ -35,10 +35,13 @@ export async function generateMetadata({
     locale,
     hiTranslated: hindiPosts.size > 0,
   });
-  const description = `Guides, strategy and preparation articles for ${examLabel}.`;
+  const description =
+    locale === "hi"
+      ? `${examLabel} की तैयारी के लिए गाइड, रणनीति और परीक्षा से जुड़े लेख – Clear Cutoff ब्लॉग।`
+      : `${examLabel} exam guides, preparation strategy, syllabus and pattern explained – articles from the Clear Cutoff blog.`;
 
   return {
-    title: `${examLabel} Blog`,
+    title: locale === "hi" ? `${examLabel} ब्लॉग – तैयारी गाइड और टिप्स` : `${examLabel} Blog – Exam Guides & Preparation Tips`,
     description,
     alternates: {
       canonical: canonicalUrl,

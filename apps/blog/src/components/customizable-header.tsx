@@ -1,6 +1,8 @@
 import clsx from "clsx";
 
 interface CustomizableHeaderProps {
+  /** Heading element; one h1 per page, so a second header on a page is an h2. */
+  as?: "h1" | "h2";
   // Content props
   eyebrow?: string | null;
   showEyebrow?: boolean; // Add this new prop
@@ -63,6 +65,7 @@ export default function CustomizableHeader({
   subheadingClasses = "",
   eyebrowClasses = "heading-small",
   className,
+  as: HeadingTag = "h1",
 }: CustomizableHeaderProps) {
   // Weight mappings
   const weightClasses = {
@@ -137,7 +140,7 @@ export default function CustomizableHeader({
           </div>
         )}
 
-        <h1
+        <HeadingTag
           className={clsx(
             weightClasses[headingWeight],
             headingColor,
@@ -147,7 +150,7 @@ export default function CustomizableHeader({
           )}
         >
           {renderHeading()}
-        </h1>
+        </HeadingTag>
 
         {subheading && (
           <p

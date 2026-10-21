@@ -11,8 +11,8 @@ import { notFound } from "next/navigation";
 import { canonicalChapterPathMap, findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
-import { yearPageLabels } from "@/lib/seo/year-title";
-import { localeOrigin, pageCopy, pageSuffixes } from "./page-copy";
+import { yearPageLabels, levelLabel } from "@/lib/seo/year-title";
+import { localeOrigin, pageCopy, questionBankSeo } from "./page-copy";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { getQuizSchema } from "@/utils/google/get-quiz-schema";
 import { loadExamInfo, loadYears } from "@/lib/question-bank/load";
@@ -41,13 +41,18 @@ export async function yearPageMetadata(params: YearParams) {
   // keep those reachable from the year listing but out of the index.
   const [loaded, t] = await Promise.all([loadScopePage(yearScope(params), page), pageCopy(locale)]);
   const labels = yearPageLabels(examName ?? "", level_id ?? "", year_id ?? "");
-  const suffix = pageSuffixes(t, page);
+  const { title, description } = questionBankSeo(
+    t,
+    "year",
+    { exam: labels.exam, levelSlug: level_id ?? "", year: labels.year },
+    page,
+  );
 
   return generateLocaleMetadata({
     locale,
     path: `/${examName}/${level_id}/year/${year_id}${seo.pathSuffix}`,
-    title: `${t("yearTitle", labels)}${suffix.title}`,
-    description: `${t("yearDescription", labels)}${suffix.description}`,
+    title,
+    description,
     noindex: loaded.ok && loaded.total === 0,
     // A year mixes bilingual subjects with the English/Hindi language
     // sections, so this is decided per page.
@@ -86,7 +91,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   const examState = examInfo?.state;
   const Labels = [
     { lable: "Exam", value: examName ?? "REET" },
-    { lable: "Level", value: unFormatSlug(level_id ?? "") ?? "" },
+    { lable: "Level", value: levelLabel(level_id ?? "") ?? "" },
     ...(examState ? [{ lable: "State", value: examState }] : []),
   ];
 
@@ -95,7 +100,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   const breadcrumbItems = [
     { name: t("home"), url: homeUrl || "/" },
     { name: unFormatSlug(examNameParam.toLocaleUpperCase()), url: `${homeUrl}/${examNameParam}` },
-    { name: capitalizeFirst(unFormatSlug(level_id)), url: `${homeUrl}/${examNameParam}/${level_id}` },
+    { name: capitalizeFirst(levelLabel(level_id ?? "")), url: `${homeUrl}/${examNameParam}/${level_id}` },
     { name: t("years"), url: `${homeUrl}/${examNameParam}/${level_id}/year` },
     { name: unFormatSlug(examYear.toUpperCase()), url: `${homeUrl}${ownPath}` },
   ];
@@ -103,7 +108,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
   // In the language the page shows, at its canonical URL (/hi only for a Hindi page).
   const quizLd = getQuizSchema({
     questions: loaded.raw,
-    name: `${examName} Exam ${unFormatSlug(level_id ?? "")} ${unFormatSlug(examYear.toUpperCase())} Quiz`,
+    name: `${examName} Exam ${levelLabel(level_id ?? "")} ${unFormatSlug(examYear.toUpperCase())} Quiz`,
     url: pagePath(`${localeOrigin(hindiPage ? "hi" : "en")}${ownPath}`, page),
     courseLang: hindiPage ? "hi" : "en",
   });
@@ -125,9 +130,9 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
         <div className="flex flex-col gap-5">
           <CustomizableHeader
             showEyebrow={false}
-            heading={t("yearHeading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
+            heading={t("yearHeading", { exam: examName, level: levelLabel(level_id ?? "") })}
             highlightText={examName}
-            subheading={t("prepSubheading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
+            subheading={t("prepSubheading", { exam: examName, level: levelLabel(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"
@@ -148,6 +153,7 @@ export default async function YearQuestionsPage({ params }: { params: YearParams
         <div className="flex flex-col gap-5">
           <CustomizableHeader
             showEyebrow={false}
+            as="h2"
             heading={t("verified")}
             headingColor="text-gray-900"
             alignment="md:text-center text-left"

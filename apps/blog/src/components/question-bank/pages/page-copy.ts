@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import type { Question } from "@/components/blog/assessment-question/questions-list";
 import { getLocalizedEntityName } from "@/utils/question-translation";
+import { levelShort, seoDescription, seoTitle, subjectShort, type SeoTitle } from "@/lib/seo/seo-text";
+import { levelLabel } from "@/lib/seo/year-title";
 
 // Locale-dependent copy shared by the chapter, subject and year pages
 // (messages: QuestionBankPage). English strings are the ones these pages
@@ -16,6 +18,56 @@ export async function pageCopy(locale: string) {
 export function pageSuffixes(t: PageCopy, page: number): { title: string; description: string } {
   if (page <= 1) return { title: "", description: "" };
   return { title: t("pageTitleSuffix", { page }), description: t("pageDescriptionSuffix", { page }) };
+}
+
+export type SeoLabels = {
+  exam: string;
+  levelSlug: string;
+  subjectSlug?: string;
+  /** Display names in the page's language. */
+  subject?: string;
+  chapter?: string;
+  year?: string;
+};
+
+// Title variants per page type, most descriptive first; seoTitle picks the
+// first that fits TITLE_MAX (lib/seo/seo-text.ts). The page number is kept
+// whole on every variant, so page N never shares page 1's title.
+const TITLE_KEYS = {
+  chapter: ["chapterTitle", "chapterTitleMedium", "chapterTitleShort", "chapterTitleMin"],
+  subject: ["subjectTitle", "subjectTitleMedium", "subjectTitleShort", "subjectTitleMin"],
+  year: ["yearTitle", "yearTitleShort", "yearTitleMin"],
+} as const;
+
+/** A question-bank page's title and description, within the search-result
+ * limits (keywords researched 2026-10-21: "question paper", "PYQ", "MCQ",
+ * "with answers", CDP/EVS, PRT/TGT/PGT). */
+export function questionBankSeo(
+  t: PageCopy,
+  kind: keyof typeof TITLE_KEYS,
+  labels: SeoLabels,
+  page: number,
+): { title: SeoTitle; description: string } {
+  const suffix = pageSuffixes(t, page);
+  const short = labels.subjectSlug ? subjectShort(labels.subjectSlug) : null;
+  const values = {
+    exam: labels.exam,
+    level: levelLabel(labels.levelSlug),
+    levelShort: levelShort(labels.levelSlug),
+    subject: labels.subject ?? "",
+    subjectShort: short ?? labels.subject ?? "",
+    subjectAbbr: short && short !== labels.subject ? ` (${short})` : "",
+    chapter: labels.chapter ?? "",
+    year: labels.year ?? "",
+    pageDescription: suffix.description,
+  };
+  return {
+    title: seoTitle(
+      TITLE_KEYS[kind].map((key) => t(key, values)),
+      suffix.title,
+    ),
+    description: seoDescription(t(`${kind}Description`, values)),
+  };
 }
 
 /** Absolute site origin, plus "/hi" on the Hindi site — for links and
