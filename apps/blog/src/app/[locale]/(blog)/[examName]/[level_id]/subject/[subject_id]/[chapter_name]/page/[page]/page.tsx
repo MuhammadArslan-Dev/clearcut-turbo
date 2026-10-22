@@ -6,7 +6,7 @@ import ChapterQuestionsPage, {
 // Page N (>= 2) of a chapter's questions. "/page/1" 308s to the chapter URL.
 
 // Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 600;
+export const revalidate = 86400;
 export async function generateStaticParams() {
   return [];
 }

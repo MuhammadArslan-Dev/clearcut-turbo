@@ -7,8 +7,9 @@
 //
 // The sitemaps list absolute URLs on the public domain (NEXT_PUBLIC_SITE_URL);
 // each is requested on the given base instead, so a deployment can be warmed
-// before (or without) the domain pointing at it. Run by
-// .github/workflows/warm-blog-cache.yml after each production deployment.
+// before (or without) the domain pointing at it. Manual only
+// (.github/workflows/warm-blog-cache.yml): a full run is ~300K Vercel ISR
+// write units, more than the Hobby plan's monthly 200K.
 // Env: WARM_CONCURRENCY (default 6), WARM_TIMEOUT_MS (default 60000).
 
 const base = (process.argv[2] || process.env.WARM_BASE_URL || "").replace(/\/+$/, "");

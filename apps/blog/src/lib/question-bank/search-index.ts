@@ -1,15 +1,14 @@
 import { searchIndexItems } from "./card-model";
 import { QUESTIONS_PER_PAGE } from "./pagination";
-import { QUESTION_PAGE_REVALIDATE } from "./route-cache";
 import { loadScope, searchIndexPath, type QuestionScope } from "./scope";
 
 // The search index body for app/api/question-search. Building one loads the
 // whole scope (a subject is every chapter, some over Next's 2MB data-cache
-// limit), so finished bodies are kept in memory per server instance for as
-// long as the pages themselves are cached (QUESTION_PAGE_REVALIDATE).
+// limit), so finished bodies are kept in memory per server instance for 10
+// minutes (its own window: it is not cleared by on-demand revalidation).
 // Failures are never kept.
 
-const MEMO_TTL_MS = QUESTION_PAGE_REVALIDATE * 1000;
+const MEMO_TTL_MS = 10 * 60 * 1000;
 const MEMO_MAX = 100;
 const memo = new Map<string, { exam: string; at: number; body: Promise<string | null> }>();
 

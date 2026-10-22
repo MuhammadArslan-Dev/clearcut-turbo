@@ -25,7 +25,8 @@ describe("question-bank route caching", () => {
     expect(source).not.toMatch(/dynamic\s*=\s*["']force-dynamic["']/);
   });
 
-  it("refreshes well inside the existing 1h data/backend cache", () => {
-    expect(QUESTION_PAGE_REVALIDATE).toBeLessThanOrEqual(3600);
+  it("regenerates at most once a day (content changes revalidate on demand)", () => {
+    expect(QUESTION_PAGE_REVALIDATE).toBeGreaterThanOrEqual(3600);
+    expect(QUESTION_PAGE_REVALIDATE).toBeLessThanOrEqual(86400);
   });
 });

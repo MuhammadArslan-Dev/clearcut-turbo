@@ -7,7 +7,7 @@ import SubjectQuestionsPage, {
 // The static "page" segment takes precedence over the sibling [chapter_name].
 
 // Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 600;
+export const revalidate = 86400;
 export async function generateStaticParams() {
   return [];
 }
