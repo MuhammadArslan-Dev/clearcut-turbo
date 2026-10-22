@@ -6,6 +6,7 @@ import ExamInstanceCard, { ExamInstance } from '../components/cards/ExamInstance
 import ExamInstanceModal from '../components/cards/ExamInstanceModal';
 import { TabItem } from '@/components/ui/tabs/TabSwitch';
 import CourseContentCard, { PDFCard } from '../components/cards/CourseContentCard';
+import { usePdfViewer } from '../components/PdfViewerModal';
 import { useGetCurrentCourse } from '@/hooks/course/useGetCurrentCourse';
 import { useGetCurrentCourseStore } from '@/store/course/useGetCurrentCourseStore';
 import { handleOpenPaywall } from '../../PayWalls/PaywallFloatingWidget';
@@ -61,7 +62,7 @@ export default function PaperPage({ examId }: { examId?: string }) {
   const isActive = course?.status === 'active';
 
   const [selectedLevel, setSelectedLevel] = React.useState<string>('0');
-  const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
+  const { openPdf, viewer: pdfViewer } = usePdfViewer();
   const [selectedInstance, setSelectedInstance] = React.useState<ExamInstance | null>(null);
 
   const {
@@ -78,7 +79,7 @@ export default function PaperPage({ examId }: { examId?: string }) {
       handleOpenPaywall(router, 'topic_card_clicked', course);
       return;
     }
-    setSelectedPDF(fileUrl);
+    openPdf(fileUrl);
   };
 
   const levelTabs: TabItem[] = React.useMemo(() => {
@@ -194,30 +195,12 @@ export default function PaperPage({ examId }: { examId?: string }) {
         />
       )}
 
-      {selectedPDF && (
-        <div
-          onClick={() => setSelectedPDF(null)}
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full sm:w-[90%] h-[85%] sm:h-[90%] rounded-lg overflow-hidden relative"
-          >
-            <button
-              onClick={() => setSelectedPDF(null)}
-              className="absolute top-2 right-2 z-10 bg-white px-3 py-1 rounded shadow cursor-pointer"
-            >
-              ✕
-            </button>
-            <iframe src={selectedPDF} className="w-full h-full" title="PDF Viewer" />
-          </div>
-        </div>
-      )}
+      {pdfViewer}
     </div>
   );
 }
 
-function PaperPageSkeleton() {
+export function PaperPageSkeleton() {
   return (
     <div>
       <div className="flex gap-2 px-4 py-3 overflow-hidden">

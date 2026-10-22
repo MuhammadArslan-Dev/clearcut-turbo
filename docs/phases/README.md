@@ -48,6 +48,14 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 15 | [Move blog to Vercel](15-blog-vercel-migration.md) | — | CM-blog, Vercel, Cloudflare DNS | Not Started | D1–D5, C1–C2 |
 | 16 | [Question rendering: 20/page, render-once HTML, page-only fetch](16-question-rendering-and-page-size.md) | — | CM-blog, (BE for part C) | In Progress | C gated on index check |
 | 17 | [Sentry lazy loading, keep page-speed data](17-sentry-lazy-loading.md) | — (user request 2026-10-22) | CM dashboard, blog, landing, tools; ASTRO go/academy | In Review | User checks locally; then merge + deploy dashboard, landing, blog (Vercel), tools (Pages) |
+| 18 | [Content + subject-card dead taps](18-cc105-cc83-content-dead-taps.md) | CC-105, CC-83 | CM-dashboard, BE | Built, verified locally (not merged) | Any deploy order (card hides marks until BE is live) |
+| 19 | [Layout shift + payment speed](19-cc116-cc68-layout-shift-speed.md) | CC-116, CC-68 | CM-dashboard | Not Started | Measure first (CC-61 already fixed payment CLS) |
+| 20 | [Resizer: tabs, plain labels, feedback](20-cc92-cc93-resizer-ui.md) | CC-92, CC-93 | CM-tools | Not Started | D1 (look change), D2 (language) |
+| 21 | [My Courses clarity + exam logos](21-cc111-cc25-my-courses-and-exam-logos.md) | CC-111, CC-25 | CM-dashboard, (BE) | Not Started | D1 (MyCourseCard "do not restyle"), D2 (logo reference) |
+| 22 | [Landing cards look tappable](22-cc109-landing-cards.md) | CC-109 | ASTRO, (CM-landing) | Not Started | D1 (link to signup vs plain look) |
+| 23 | [Hindi/Marathi payment page + failed-page recovery](23-cc66-cc64-payment-pages.md) | CC-66, CC-64 | CM-dashboard, BE | Not Started | D1 (failed page mockup), D2 (WhatsApp no.), C1 (RD copy) |
+| 24 | [Start-here guide on preparation](24-cc79-start-here-guide.md) | CC-79 | CM-dashboard, BE | Not Started | D1 (seen flag), after CC-80? |
+| 25 | [Cancel flow: reason + offer + confirmation](25-cc97-cancel-flow.md) | CC-97 | CM-dashboard, BE | Not Started | C1 (RD offers), D1 (store reasons), D2 (WhatsApp no.) |
 
 ## Cross-phase dependencies
 

@@ -126,7 +126,10 @@
     "not_answered": "Not Answered",
     "answered": "Answered",
     "not_visited": "Not Visited",
-    "papers": "Papers"
+    "papers": "Papers",
+    "close": "Close",
+    "openingPdf": "Opening PDF…",
+    "examMarks": "Exam: {marks} marks"
   },
   "timeRemainingTillExam": {
     "title": "Time Remaining till Exam",
