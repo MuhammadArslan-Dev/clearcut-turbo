@@ -52,5 +52,16 @@
     "followUpStudents": "Students who follow daily study goals are 3× more likely to clear {exam}",
 
     "resume": "Resume from where you left"
+  },
+
+  "checkout": {
+    "opening": "Opening payment…",
+    "confirming": "Confirming your payment…",
+    "activating": "Payment received. Activating your course…",
+    "processing": "Processing payment…",
+    "errorSdk": "Couldn't open the payment window. Check your internet and tap Pay again.",
+    "errorGeneric": "Something went wrong. Please tap Pay again.",
+    "errorUnavailable": "Payments are temporarily unavailable. Please try again in a few minutes.",
+    "activatingNote": "Payment received. Your course will be active in a few minutes — no need to pay again."
   }
 }

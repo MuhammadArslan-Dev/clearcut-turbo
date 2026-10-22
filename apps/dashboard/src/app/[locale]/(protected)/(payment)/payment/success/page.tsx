@@ -32,6 +32,8 @@ export default function Success() {
   const courseName = get("course_name") as string;
   const source = get("source") as string;
   const price = get("price") as string;
+  // Paid, but the webhook hadn't activated the course yet (CC-60).
+  const activationPending = get("pending") === "1";
 
   useEffect(() => {
     if (!courseId) {
@@ -180,6 +182,12 @@ export default function Success() {
                     </Text>
                   </div>
                 </div>
+
+                {activationPending && (
+                  <p className="body-medium text-center text-surface-gray-muted px-4" role="status">
+                    {modalT("checkout.activatingNote")}
+                  </p>
+                )}
 
                 <div className="flex justify-center">
                   <div className="flex flex-col gap-2 items-start">

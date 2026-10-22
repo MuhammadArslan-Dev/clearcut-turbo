@@ -35,7 +35,32 @@ type UseRazorpayPaymentProps = {
   onSuccess: () => void;
   onFailure: () => void;
   onClose?: () => void;
+  /**
+   * Paid (Razorpay called the handler) but the webhook still hadn't marked
+   * the order after ~80 s of checking: the course activates a little later.
+   * Show that — never "payment failed". Defaults to onSuccess (CC-60).
+   */
+  onPending?: () => void;
+  /**
+   * Checkout couldn't be opened (script didn't load, order not created).
+   * Defaults to an alert(); pages pass this to show the message in place —
+   * alert() is often suppressed in in-app WebViews (CC-60).
+   */
+  onError?: (reason: "sdk_failed" | "unknown") => void;
 };
+
+/**
+ * Where a one-time payment is (CC-60): `opening` from the tap until the
+ * checkout opens, `verifying` while the first ~20 s of webhook checks run
+ * after a successful payment, `activating` for the extra ~60 s when the
+ * webhook is late. Pages show a full-screen state for the last two, which
+ * otherwise looked like nothing happened after paying.
+ */
+export type RazorpayPaymentPhase = "idle" | "opening" | "verifying" | "activating";
+
+// First window, then the "activating" window (CC-60): 10 x 2 s + 30 x 2 s.
+const VERIFY_RETRIES = 10;
+const ACTIVATING_RETRIES = 30;
 
 export function useRazorpayPayment({
   examId,
@@ -46,14 +71,28 @@ export function useRazorpayPayment({
   onSuccess,
   onFailure,
   onClose,
+  onPending,
+  onError,
 }: UseRazorpayPaymentProps) {
   const invalidateQuery = useInvalidateQuery(MY_COURSES_KEY);
   const queryClient = useQueryClient();
   const [loading, setLoading] = React.useState(false);
+  const [phase, setPhase] = React.useState<RazorpayPaymentPhase>("idle");
+  // Synchronous double-tap guard: `loading` state only disables the button
+  // after a re-render, so two quick taps created two orders (CC-60).
+  const inFlightRef = React.useRef(false);
   const { user: authUser } = useAuth();
 
+  const reportError = (reason: "sdk_failed" | "unknown") => {
+    if (onError) onError(reason);
+    else alert(reason === "sdk_failed" ? "Razorpay SDK failed to load" : "Something went wrong");
+  };
+
   const handlePayment = async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setLoading(true);
+    setPhase("opening");
 
     try {
       await trackEvent("Payment Initiated", {
@@ -67,7 +106,7 @@ export function useRazorpayPayment({
         module: "payment-initiation",
       });
       if (!razorpayLoaded) {
-        alert("Razorpay SDK failed to load");
+        reportError("sdk_failed");
         return;
       }
 
@@ -101,14 +140,27 @@ export function useRazorpayPayment({
 
         handler: async (response: any) => {
           onClose?.();
+          setPhase("verifying");
 
-          const verified = await sentryApiClient(
-            () => pollVerifyPaymentResult(order.transaction_id),
+          let verified = await sentryApiClient(
+            () => pollVerifyPaymentResult(order.transaction_id, VERIFY_RETRIES),
             {
               endpoint: "/verify-payment-polling",
               module: "payment-initiation",
             },
           );
+          // Webhook late: keep checking for ~60 s more behind an
+          // "activating your course" screen instead of giving up.
+          if ("pending" in verified) {
+            setPhase("activating");
+            verified = await sentryApiClient(
+              () => pollVerifyPaymentResult(order.transaction_id, ACTIVATING_RETRIES),
+              {
+                endpoint: "/verify-payment-polling",
+                module: "payment-initiation",
+              },
+            );
+          }
           const success = verified.success;
 
           await invalidateQuery();
@@ -155,7 +207,7 @@ export function useRazorpayPayment({
             // charged (after any referral discount) and the server-side
             // multiplier. A backend from before that falls back to the
             // client-side values below.
-            const meta = verified.metaPurchase;
+            const meta = verified.success ? verified.metaPurchase : undefined;
             if (meta) {
               if (meta.send) {
                 trackFacebookEventOnce(
@@ -181,6 +233,15 @@ export function useRazorpayPayment({
             }
 
             onSuccess();
+          } else if ("pending" in verified) {
+            // Paid, webhook still not in: the course activates shortly. Not
+            // a failure (Razorpay only calls this handler after payment);
+            // the "failed" page here made people pay a second time.
+            logger.warn("Payment verification still pending after polling", {
+              tags: { module: "payment" },
+              extra: { examId, examName, price, type, transaction_id: order.transaction_id },
+            });
+            (onPending ?? onSuccess)();
           } else {
             trackEvent("Payment Outcome", {
               outcome: "payment_failed",
@@ -263,14 +324,20 @@ export function useRazorpayPayment({
       razorpay.open();
     } catch (error) {
       console.error(error);
-      alert("Something went wrong");
+      setPhase("idle");
+      reportError("unknown");
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
+      // The checkout is open now (or failed to open); `verifying` /
+      // `activating` are set by the handler once a payment completes.
+      setPhase((current) => (current === "opening" ? "idle" : current));
     }
   };
 
   return {
     handlePayment,
     loading,
+    phase,
   };
 }

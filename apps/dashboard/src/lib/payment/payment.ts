@@ -266,30 +266,54 @@ export async function getPaymentPricing(): Promise<PaymentPricing> {
   return apiFetch<PaymentPricing>("/v2/payment/pricing");
 }
 
+/** Outcome of polling /v2/payment/verify. */
+export type VerifyPollResult =
+  | { success: true; metaPurchase?: MetaPurchase }
+  /** The webhook marked the order failed: the money was not taken. */
+  | { success: false; failed: true }
+  /** Still not final when the polling window ended (webhook late). */
+  | { success: false; pending: true };
+
+/** The backend's "transaction is failed" answer (PaymentController::verifyPayment). */
+function isFinalFailure(error: unknown): boolean {
+  if (!isApiError(error) || error.status !== 400 || !error.responseBody) return false;
+  try {
+    return JSON.parse(error.responseBody)?.message === "Payment not successful";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Polls /v2/payment/verify until the webhook has marked the order. A "not
  * final yet" answer keeps polling: newer backends send 200 + pending, older
  * ones a 400 that apiFetch throws, which used to end the loop on the first
- * try and report a paid order as failed (CC-60 / CC-53). A 404 (unknown
- * transaction) stops at once.
+ * try and report a paid order as failed (CC-60 / CC-53). A network error
+ * keeps polling too. Stops early on a final failure ("Payment not
+ * successful"); a 404 (unknown transaction) throws.
+ *
+ * Ending without either is `pending` — NOT a failure: Razorpay only calls
+ * the checkout handler after the payment went through, so the caller should
+ * tell the user the course is being activated, never "payment failed".
  */
 export async function pollVerifyPaymentResult(
   transactionId: number,
   retries = 10,
   delay = 2000,
-): Promise<{ success: boolean; metaPurchase?: MetaPurchase }> {
+): Promise<VerifyPollResult> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await verifyPayment(transactionId);
       if (res.success) return { success: true, metaPurchase: res.meta_purchase };
     } catch (error) {
-      if (!isApiError(error) || error.status === 404) throw error;
+      if (isApiError(error) && error.status === 404) throw error;
+      if (isFinalFailure(error)) return { success: false, failed: true };
     }
 
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
-  return { success: false };
+  return { success: false, pending: true };
 }
 
 export async function pollVerifyPayment(
