@@ -1,6 +1,6 @@
 # Phase 07 — CC-87 + CC-55: the real reason behind OTP "unknown_error"
 
-**Status:** Not Started
+**Status:** In Review (branches cc-87-55-otp-errors in CM, cc-87-55-otp-error-code in BE; not merged)
 **Jira:** [CC-87](https://clear-cutoff.atlassian.net/browse/CC-87), [CC-55](https://clear-cutoff.atlassian.net/browse/CC-55)
 **Repos:** CM (`packages/auth`, `packages/api`, `apps/landing` StartAuthForm, dashboard analytics types), optionally BE and RN
 
@@ -43,8 +43,14 @@
 | Zod / other | `client_error` (new) | errGeneric |
 
 ## Plan
-- [ ] Add a shared `getHttpStatus(err)` (`err.status ?? err.response?.status`) in `verification-events.ts`. Use it in the classifier **and** in the UI branches (StartAuthForm, otp-screen, inline-auth-flow).
-- [ ] Distinguish expired from invalid by message, or by `error_code` (see D2).
+- [x] `getHttpStatus(err)` in `verification-events.ts`; `getAuthFailureReason` reads it plus the body's `error_code` (falls back to the "OTP has expired" message for an older backend). The screens pick their message from the same reason (StartAuthForm, otp-screen, inline-auth-flow).
+- [x] BE: `ApiResponse::badRequest/validationError/internalServerError` take an optional `$errorCode` (adds `error_code` only when given). varifyOtp: 422 `otp_invalid` / `otp_expired` / `otp_check_failed`, 400 `invalid_request` / `user_not_found`. Checked locally: wrong → otp_invalid 422, expired → otp_expired 422, unknown user → user_not_found 400.
+- [x] Expired: own message ("…tap Resend OTP"), resend enabled at once, code boxes cleared.
+- [x] 429 → "Too many attempts…" on /start and inline too (only the modal had it).
+- [x] Send/resend failures: `Verification Failed` event + a reason-specific message; resend used to fail silently.
+- [x] Truecaller: `useTruecallerLogin(authApi, onSuccess, track)` sends `Authentication Outcome` with `auth_method: "truecaller"` (timeout / truecaller_expired / truecaller_failed / network reasons).
+- [x] Inline flow: a failed verify left `loading` true (spinner forever) — fixed.
+- [x] Dashboard `lib/analytics/events/auth.ts` types updated (`AuthFailureReason`, `Verification Failed`, `truecaller`).
 - [ ] Sentry: report only `server_error` and `client_error`/`unknown_error`, tagged `auth_step=otp_verify`. Inert until `NEXT_PUBLIC_SENTRY_DSN` is set.
 - [!] 🛑 **D1:** add new reasons (`otp_expired`, `timeout`, `invalid_request`, `client_error`), or keep the existing 5? New values also need dashboard `lib/analytics/events/auth.ts:57-63` and the RN union.
 - [!] 🛑 **D2:** should the backend add a machine-readable `error_code` (additive; `message` stays for RN), or keep string-matching the message?
@@ -60,4 +66,8 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | New reasons: otp_expired, timeout, invalid_request, client_error (+ truecaller_expired, truecaller_failed). RN union not changed yet (separate repo) | User |
+| 2026-10-22 | D2 | Backend `error_code` (additive; `message` unchanged for RN/old web) | User |
+| 2026-10-22 | D3 | Truecaller sends Authentication Outcome, auth_method "truecaller" | User |
+| 2026-10-22 | D4 | New `Verification Failed` event (failure_reason, is_resend) on send/resend failure | User |
+| 2026-10-22 | Sentry | Not added (frontend Sentry is still inert on blog/landing/tools); Fast2SMSService `Log::info($th)` left as is | Claude |

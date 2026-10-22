@@ -19,6 +19,7 @@ import {
   getAuthFailureReason,
   trackAuthFailure,
   trackAuthSuccess,
+  trackVerificationFailed,
   trackVerificationResent,
 } from "../verification-events";
 import type { AuthScreenDeps } from "./types";
@@ -223,20 +224,28 @@ export function createOtpScreen({
         // continuously until the browser actually navigates away.
         window.location.replace(redirectUrl);
       } catch (err: unknown) {
-        if (!outcomeTracked) trackAuthFailure(onEvent, getAuthFailureReason(err));
+        // One classifier for the event and the message (CC-87) — it reads
+        // the ApiError's `.status`; the old `err.response.status` check
+        // never matched, so every failure was "Something went wrong".
+        const reason = getAuthFailureReason(err);
+        if (!outcomeTracked) trackAuthFailure(onEvent, reason);
         setLoading(false);
-        const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 422 || status === 401) {
-          setError("Invalid or expired OTP. Please try again.");
+        if (reason === "incorrect_otp" || reason === "otp_expired") {
+          setError(
+            reason === "otp_expired"
+              ? "This OTP has expired. Tap Resend OTP to get a new one."
+              : "Invalid or expired OTP. Please try again.",
+          );
+          if (reason === "otp_expired") setResendTimer(0);
           // Most often the keyboard chip's code from a previous login —
           // clear it and remount the input (see otpFieldKey).
           setOtp("");
           setOtpFieldKey((k) => k + 1);
-        } else if (status === 429) {
+        } else if (reason === "too_many_attempts") {
           setError("Too many attempts. Please wait a minute and try again.");
-        } else if (status && status >= 500) {
+        } else if (reason === "server_error") {
           setError("Server error. Please try again.");
-        } else if (!navigator.onLine) {
+        } else if (reason === "network_error" || reason === "timeout") {
           setError("No internet connection.");
         } else {
           setError("Something went wrong. Please try again.");
@@ -260,7 +269,16 @@ export function createOtpScreen({
         resendCountRef.current += 1;
         trackVerificationResent(onEvent, phone, resendCountRef.current);
       } catch (err) {
-        console.error("Resend OTP failed", err);
+        // Used to fail silently (console only).
+        const reason = getAuthFailureReason(err);
+        trackVerificationFailed(onEvent, phone, reason, true);
+        setError(
+          reason === "too_many_attempts"
+            ? "Too many attempts. Please wait a minute and try again."
+            : reason === "network_error" || reason === "timeout"
+              ? "No internet connection."
+              : "Couldn't resend the OTP. Please try again.",
+        );
       } finally {
         setResendingOtp(false);
       }

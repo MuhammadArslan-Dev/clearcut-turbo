@@ -9,8 +9,27 @@ export type AuthEventName =
   | 'Authentication Form Interacted'
   | 'Verification Sent'
   | 'Verification Resent'
+  | 'Verification Failed'
   | 'Authentication Outcome'
   | 'Signed Up';
+
+// Mirrors packages/auth verification-events.ts (dashboard does not import
+// @clearcut/auth). incorrect_otp / otp_expired come from the backend's 422
+// error_code; timeout / network_error when no response; client_error when
+// our own code threw.
+export type AuthFailureReason =
+  | 'incorrect_otp'
+  | 'otp_expired'
+  | 'too_many_attempts'
+  | 'server_error'
+  | 'network_error'
+  | 'timeout'
+  | 'invalid_request'
+  | 'client_error'
+  | 'truecaller_expired'
+  | 'truecaller_failed'
+  | 'social_auth_failed'
+  | 'unknown_error';
 
 // --- Payloads ---
 
@@ -51,16 +70,19 @@ export interface AuthEventPayloads {
   // (packages/auth verification-events.ts) — not from the dashboard itself.
   'Authentication Outcome': {
     outcome: 'successful' | 'failed';
-    auth_method: 'phone_otp' | 'google_auth';
-    // Only when outcome is 'failed'. The OTP flows send incorrect_otp,
-    // too_many_attempts, server_error, network_error or unknown_error.
-    failure_reason?:
-      | 'incorrect_otp'
-      | 'social_auth_failed'
-      | 'too_many_attempts'
-      | 'server_error'
-      | 'network_error'
-      | 'unknown_error';
+    auth_method: 'phone_otp' | 'truecaller' | 'google_auth';
+    // Only when outcome is 'failed' (packages/auth getAuthFailureReason).
+    failure_reason?: AuthFailureReason;
+  };
+
+  // The OTP could not be sent (login request failed) — blog/landing/tools.
+  'Verification Failed': {
+    user_phone: string;
+    verification_method: 'Number' | 'Email';
+    verification_mode: 'SMS' | 'RCS' | 'WhatsApp' | 'Missed Call' | 'Voice Call';
+    verification_purpose: 'Login';
+    failure_reason: AuthFailureReason;
+    is_resend: boolean;
   };
 
   // SERVER-SIDE: sent by the Laravel backend (AuthController::login, after a new

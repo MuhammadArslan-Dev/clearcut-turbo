@@ -28,9 +28,11 @@ import {
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
 import {
+  type AuthFailureReason,
   getAuthFailureReason,
   trackAuthFailure,
   trackAuthSuccess,
+  trackVerificationFailed,
   trackVerificationResent,
   trackVerificationSent,
 } from "@clearcut/auth/verification-events";
@@ -109,6 +111,8 @@ const CONTENT: Record<
     errLoginFailed: string;
     errEnterValidOtp: string;
     errOtpInvalid: string;
+    errOtpExpired: string;
+    errTooMany: string;
     errServer: string;
     errNoInternet: string;
     errGeneric: string;
@@ -156,6 +160,8 @@ const CONTENT: Record<
     errLoginFailed: "Login failed. Please try again.",
     errEnterValidOtp: "Enter valid OTP",
     errOtpInvalid: "Invalid or expired OTP. Please try again.",
+    errOtpExpired: "This OTP has expired. Tap Resend OTP to get a new one.",
+    errTooMany: "Too many attempts. Please wait a minute and try again.",
     errServer: "Server error. Please try again.",
     errNoInternet: "No internet connection.",
     errGeneric: "Something went wrong. Please try again.",
@@ -202,6 +208,8 @@ const CONTENT: Record<
     errLoginFailed: "लॉगिन विफल रहा। कृपया पुनः प्रयास करें।",
     errEnterValidOtp: "मान्य OTP दर्ज करें",
     errOtpInvalid: "अमान्य या समाप्त हो चुका OTP। कृपया पुनः प्रयास करें।",
+    errOtpExpired: "OTP की समय सीमा खत्म हो गई। नया OTP पाने के लिए \"OTP फिर से भेजें\" दबाएँ।",
+    errTooMany: "बहुत ज़्यादा प्रयास। एक मिनट रुककर फिर कोशिश करें।",
     errServer: "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
     errNoInternet: "इंटरनेट कनेक्शन नहीं है।",
     errGeneric: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
@@ -248,6 +256,8 @@ const CONTENT: Record<
     errLoginFailed: "लॉगिन अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.",
     errEnterValidOtp: "वैध OTP टाका",
     errOtpInvalid: "अवैध किंवा कालबाह्य OTP. कृपया पुन्हा प्रयत्न करा.",
+    errOtpExpired: "OTP ची मुदत संपली. नवीन OTP साठी \"OTP पुन्हा पाठवा\" दाबा.",
+    errTooMany: "खूप जास्त प्रयत्न. एक मिनिट थांबून पुन्हा प्रयत्न करा.",
     errServer: "सर्व्हर त्रुटी. कृपया पुन्हा प्रयत्न करा.",
     errNoInternet: "इंटरनेट कनेक्शन नाही.",
     errGeneric: "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
@@ -479,11 +489,21 @@ export default function StartAuthForm({
         setLoading(false);
         setStep("otp");
       }, 200);
-    } catch {
+    } catch (err) {
+      // The OTP was not sent (CC-87/D4): say why, and record it.
+      const reason = getAuthFailureReason(err);
+      trackVerificationFailed(logAmplitudeEvent, number, reason);
       setLoading(false);
-      setError(t.errLoginFailed);
+      setError(sendFailureMessage(reason));
     }
   };
+
+  const sendFailureMessage = (reason: AuthFailureReason) =>
+    reason === "too_many_attempts"
+      ? t.errTooMany
+      : reason === "network_error" || reason === "timeout"
+        ? t.errNoInternet
+        : t.errLoginFailed;
 
   /* ---------------- RESEND TIMER ---------------- */
 
@@ -509,7 +529,10 @@ export default function StartAuthForm({
       resendCountRef.current += 1;
       trackVerificationResent(logAmplitudeEvent, phone, resendCountRef.current);
     } catch (err) {
-      console.error("Resend OTP failed", err);
+      // Used to fail silently (console only).
+      const reason = getAuthFailureReason(err);
+      trackVerificationFailed(logAmplitudeEvent, phone, reason, true);
+      setError(sendFailureMessage(reason));
     } finally {
       setResendingOtp(false);
     }
@@ -586,19 +609,25 @@ export default function StartAuthForm({
 
       window.location.replace(redirectUrl);
     } catch (err: unknown) {
-      if (!outcomeTracked) trackAuthFailure(logAmplitudeEvent, getAuthFailureReason(err));
+      // One classifier for the event and the message (CC-87): it reads the
+      // ApiError's `.status`, which the old `err.response.status` check
+      // never found, so every failure here said "something went wrong".
+      const reason = getAuthFailureReason(err);
+      if (!outcomeTracked) trackAuthFailure(logAmplitudeEvent, reason);
       setLoading(false);
-      const status = (err as { response?: { status?: number } })?.response
-        ?.status;
-      if (status === 422 || status === 401) {
-        setError(t.errOtpInvalid);
+      if (reason === "incorrect_otp" || reason === "otp_expired") {
+        setError(reason === "otp_expired" ? t.errOtpExpired : t.errOtpInvalid);
+        // An expired code can't be retried: let them resend right away.
+        if (reason === "otp_expired") setResendTimer(0);
         // Most often the keyboard chip's code from a previous login — clear
         // it and remount the boxes (OtpBoxInput refocusKey).
         setOtp("");
         setOtpRefocusKey((k) => k + 1);
-      } else if (status && status >= 500) {
+      } else if (reason === "too_many_attempts") {
+        setError(t.errTooMany);
+      } else if (reason === "server_error") {
         setError(t.errServer);
-      } else if (!navigator.onLine) {
+      } else if (reason === "network_error" || reason === "timeout") {
         setError(t.errNoInternet);
       } else {
         setError(t.errGeneric);
@@ -663,7 +692,7 @@ export default function StartAuthForm({
     });
 
     window.location.replace(redirectUrl);
-  });
+  }, logAmplitudeEvent);
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">

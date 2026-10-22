@@ -8,7 +8,11 @@ import { AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 import { DrawerSheet } from "../ui/drawer-sheet";
-import { trackVerificationSent } from "../verification-events";
+import {
+  getAuthFailureReason,
+  trackVerificationFailed,
+  trackVerificationSent,
+} from "../verification-events";
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
@@ -124,7 +128,7 @@ export function createLoginScreen({
       });
 
       window.location.replace(redirectUrl);
-    });
+    }, onEvent);
 
     const handleWhatsAppLogin = () => {
       window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
@@ -304,9 +308,18 @@ export function createLoginScreen({
         setUserId(data?.user_id ?? userId);
 
         setTimeout(loginSuccess, 200);
-      } catch {
+      } catch (err) {
+        // The OTP was not sent (CC-87/D4): say why, and record it.
+        const reason = getAuthFailureReason(err);
+        trackVerificationFailed(onEvent, number, reason);
         setLoading(false);
-        setError("Login failed. Please try again.");
+        setError(
+          reason === "too_many_attempts"
+            ? "Too many attempts. Please wait a minute and try again."
+            : reason === "network_error" || reason === "timeout"
+              ? "No internet connection."
+              : "Login failed. Please try again.",
+        );
       }
     };
 

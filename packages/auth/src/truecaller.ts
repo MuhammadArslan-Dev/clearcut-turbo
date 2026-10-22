@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AuthApi, TruecallerStatusResponseData } from "./api";
+import {
+  getAuthFailureReason,
+  trackAuthFailure,
+  trackAuthSuccess,
+  type VerificationTracker,
+} from "./verification-events";
 
 export type TruecallerLoginState =
   | "idle"
@@ -86,6 +92,10 @@ export interface TruecallerLoginResult {
 export function useTruecallerLogin(
   authApi: Pick<AuthApi, "truecallerInitiate" | "truecallerStatus">,
   onSuccess: (result: TruecallerLoginResult) => void,
+  // Optional: sends `Authentication Outcome` (auth_method "truecaller")
+  // once a login finishes, successful or failed (CC-87/D3). "Unavailable"
+  // (app not installed) is not an outcome: the user just uses the OTP form.
+  track?: VerificationTracker,
 ) {
   const [state, setState] = useState<TruecallerLoginState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +105,8 @@ export function useTruecallerLogin(
   const maxWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
+  const trackRef = useRef(track);
+  trackRef.current = track;
 
   const clearTimers = useCallback(() => {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
@@ -125,6 +137,7 @@ export function useTruecallerLogin(
         clearPendingNonce();
         setState("error");
         setError("Truecaller login timed out. Please try again.");
+        trackAuthFailure(trackRef.current, "timeout", "truecaller");
       }, remainingMs);
 
       pollTimerRef.current = setInterval(async () => {
@@ -139,6 +152,7 @@ export function useTruecallerLogin(
 
           if (data.status === "success" && data.token) {
             setState("success");
+            trackAuthSuccess(trackRef.current, "truecaller");
             onSuccessRef.current({
               token: data.token,
               hasCourse: Boolean(data.has_course),
@@ -148,6 +162,11 @@ export function useTruecallerLogin(
           }
 
           setState("error");
+          trackAuthFailure(
+            trackRef.current,
+            data.status === "expired" ? "truecaller_expired" : "truecaller_failed",
+            "truecaller",
+          );
           setError(
             data.error
               ? data.error
@@ -214,11 +233,12 @@ export function useTruecallerLogin(
 
       pollForResult(request_nonce, MAX_WAIT_MS);
       setState("waiting");
-    } catch {
+    } catch (err) {
       clearTimers();
       clearPendingNonce();
       setState("error");
       setError("Couldn't start Truecaller login. Please try again.");
+      trackAuthFailure(trackRef.current, getAuthFailureReason(err), "truecaller");
     }
   }, [authApi, clearTimers, pollForResult]);
 
