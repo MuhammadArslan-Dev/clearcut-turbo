@@ -1,6 +1,6 @@
 # Phase 08 — CC-106: landing main button "3-दिन का फ्री ट्रायल शुरू" doesn't respond on first tap
 
-**Status:** Not Started
+**Status:** In Review (ASTRO branch cc-106-go-cta, CM branch cc-106-mr-redirect; not merged)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-106
 **Repos:** ASTRO (`packages/ui/Button.astro`, `apps/go-marketing/.../exam/[slug].astro`, maybe the Worker), CM `packages/auth/src/redirect.ts` (for mr)
 
@@ -20,11 +20,13 @@
   - Cloudflare Speed Brain or a Bot challenge on `/hi/start` would look like a reload. Check Cloudflare Security Events.
 
 ## Plan
-- [ ] Fix `Button.astro` locale handling for `mr`.
-- [ ] Pass the incoming query string (`utm_*`, `fbclid`) to every /start link.
-- [ ] Make the price card and guarantee block link to the same /start URL (coordinate with Phase 03).
-- [ ] Add an immediate pressed state, and prefetch /start when the CTA enters the viewport.
-- [ ] Fix the `mr` locale in `buildPostVerifyRedirectUrl` / `getCurrentLocale`.
+- [x] `Button.astro` locale handling for `mr` (/mr/start).
+- [x] `StartLinkEnhancer.astro` (exam, htet, landing go pages): carries `utm_*`, `fbclid`, `gclid` to every /start link; pressed state on tap (cleared on bfcache restore); `<link rel=prefetch>` of the main CTA's exact URL (`data-start-prefetch`) when on screen. Checked in preview: 8/8 links carry the params, unrelated params are not copied, `course` kept, one prefetch of the sticky CTA.
+- [x] Sticky price ("₹1299 ₹99") is a link (`element_location=sticky_bar_price`). Guarantee block was already a link (Phase 03).
+- [x] Sticky CTA shown on desktop too (C2 = yes); sticky row limited to the 600px content width.
+- [x] Truecaller probe removed from go pages (exam, landing); academy keeps it.
+- [x] `mr` in `getCurrentLocale` and `buildPostVerifyRedirectUrl` (→ dashboard `/mr/onboarding`).
+- [x] D3 not needed: `apptest.clearcutoff.in` IS the production API.
 - [!] 🛑 **D1:** pass the query string with a small inline script, or with the Worker (HTMLRewriter)?
 - [!] 🛑 **D2:** keep the Truecaller probe on go pages? Remove it, or delay it until after the CTA tap?
 - [!] 🛑 **D3:** go pages' backend: switch `apptest.clearcutoff.in` to the production API?
@@ -42,4 +44,8 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | Inline script (StartLinkEnhancer), not the Worker | User |
+| 2026-10-22 | D2 | Remove the Truecaller probe from go pages | User |
+| 2026-10-22 | D3 | Not needed — apptest.clearcutoff.in is production | Claude |
+| 2026-10-22 | D4 | `<link rel=prefetch>` | User |
+| 2026-10-22 | C2 | Desktop gets the sticky CTA | User |
