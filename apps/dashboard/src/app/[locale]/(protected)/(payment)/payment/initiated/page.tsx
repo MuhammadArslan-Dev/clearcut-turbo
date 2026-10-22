@@ -71,6 +71,7 @@ const DEFAULT_VARIANT: PaymentType = "1month";
 
 export default function InitiatedPage() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
+  const checkoutT = useTranslations("payment.checkout");
   const { get, set } = useQueryParams();
   const locale = useLocale(); // "en", "hi", etc.
   const router = useRouter();
@@ -114,6 +115,17 @@ export default function InitiatedPage() {
   }, []);
 
   const [redirecting, setRedirecting] = React.useState(false);
+  // Shown under the pay button instead of alert(), which in-app WebViews
+  // often suppress (CC-60). Cleared on the next tap.
+  const [payError, setPayError] = React.useState<string | null>(null);
+  // Synchronous double-tap guard for the pay button (state lags a render).
+  const payBusyRef = React.useRef(false);
+
+  // Fetch Razorpay's checkout.js while the student reads the page, so the
+  // tap only has to create the order (CC-60, D2: script only, no order).
+  useEffect(() => {
+    void loadRazorpay();
+  }, []);
 
   const { allCourses = [] } = useMyActiveCourses();
 
@@ -324,7 +336,7 @@ export default function InitiatedPage() {
   }, [selectedPrice]);
 
   /* ---------------------------------- payment hook ---------------------------------- */
-  const { handlePayment, loading } = useRazorpayPayment({
+  const { handlePayment, loading, phase: paymentPhase } = useRazorpayPayment({
     examId: data?.id!,
     examName: data?.short_name!,
     price: selectedPrice,
@@ -343,6 +355,14 @@ export default function InitiatedPage() {
         `/payment/failed?exam_id=${courseId}&course_name=${data?.short_name}`,
       );
     },
+    // Paid, webhook late: success page with an "activating" note (CC-60).
+    onPending: () => {
+      setRedirecting(true);
+      router.push(
+        `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}&pending=1`,
+      );
+    },
+    onError: (reason) => setPayError(checkoutT(reason === "sdk_failed" ? "errorSdk" : "errorGeneric")),
   });
 
   /* ---------------------------------- handlers ---------------------------------- */
@@ -354,7 +374,7 @@ export default function InitiatedPage() {
         module: "subscription-payment",
       });
       if (!razorpayLoaded) {
-        alert("Razorpay SDK failed to load");
+        setPayError(checkoutT("errorSdk"));
         return;
       }
 
@@ -443,7 +463,7 @@ export default function InitiatedPage() {
           tags: { module: "subscription-payment" },
           extra: { course_id: courseId, message: res.message },
         });
-        alert("Failed to create subscription");
+        setPayError(checkoutT("errorGeneric"));
         return;
       }
 
@@ -456,7 +476,7 @@ export default function InitiatedPage() {
           tags: { module: "subscription-payment" },
           extra: { course_id: courseId },
         });
-        alert("Payments are temporarily unavailable. Please try again in a few minutes.");
+        setPayError(checkoutT("errorUnavailable"));
         return;
       }
       if (!res.key) {
@@ -672,19 +692,23 @@ export default function InitiatedPage() {
           price: selectedPrice,
         },
       });
-      alert("Something went wrong");
+      setPayError(checkoutT("errorGeneric"));
     } finally {
       setSubscriptionLoading(false);
     }
   }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
+    // One checkout at a time: a second quick tap used to create a second
+    // order and fire AddPaymentInfo again (CC-60).
+    if (payBusyRef.current) return;
+    payBusyRef.current = true;
+    setPayError(null);
     trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
-    if (selectVariant === "1month") {
-      handleSubscriptionPayment();
-    } else {
-      handlePayment();
-    }
+    const start = selectVariant === "1month" ? handleSubscriptionPayment : handlePayment;
+    void start().finally(() => {
+      payBusyRef.current = false;
+    });
   }, [selectVariant, selectedPrice, data, handleSubscriptionPayment, handlePayment]);
 
   /* ---------------------------------- states ---------------------------------- */
@@ -693,12 +717,20 @@ export default function InitiatedPage() {
 
   /* ---------------------------------- redirect loader ---------------------------------- */
 
-  if (redirecting) {
+  // After a successful checkout the one-time path checks the webhook for up
+  // to ~80 s; without this screen the pay page just sat there (CC-60).
+  if (redirecting || paymentPhase === "verifying" || paymentPhase === "activating") {
     return (
       <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 px-4 text-center">
           <MainLoader />
-          <p className="text-sm text-gray-500">Processing payment...</p>
+          <p className="text-sm text-gray-500">
+            {paymentPhase === "activating"
+              ? checkoutT("activating")
+              : paymentPhase === "verifying"
+                ? checkoutT("confirming")
+                : checkoutT("processing")}
+          </p>
         </div>
       </div>
     );
@@ -1051,7 +1083,24 @@ export default function InitiatedPage() {
                 />
               </div>
 
-              <div className="flex body-small items-center gap-2 text-surface-gray-muted">
+              {(loading || subscriptionLoading) && (
+                <p className="body-small text-surface-gray-muted" aria-live="polite">
+                  {checkoutT("opening")}
+                </p>
+              )}
+              {payError && (
+                <p className="body-small text-[var(--color-danger)] text-center max-w-[400px]" role="alert">
+                  {payError}
+                </p>
+              )}
+
+              {/* Tappable (C1): it looked like a method picker and students
+                  tapped it; it now opens the same checkout as the button. */}
+              <button
+                type="button"
+                onClick={handlePayClick}
+                className="flex body-small items-center gap-2 text-surface-gray-muted cursor-pointer"
+              >
                 <div className="flex items-center gap-2">
                   <LockIcon size={20} color="var(--color-surface-gray-muted)" />
                   <p>{modalT("paymentInfo")}</p>
@@ -1064,7 +1113,7 @@ export default function InitiatedPage() {
                   />
                   <p>{modalT("paymentMethods")}</p>
                 </div>
-              </div>
+              </button>
             </div>
 
             <div className="w-full max-w-[400px]">

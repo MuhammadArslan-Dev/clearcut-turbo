@@ -1,6 +1,6 @@
 # Phase 09 — CC-60: pay button ("Unlock Full Access") does nothing
 
-**Status:** Not Started
+**Status:** In Review (branch cc-60-pay-button; not merged)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-60
 **Repos:** CM `apps/dashboard`, optionally BE
 
@@ -16,12 +16,12 @@
 - The subscription path's missing `key` (Phase 01) ends in `alert("Something went wrong")` or a broken popup. `alert()` may be suppressed in in-app WebViews.
 
 ## Plan
-- [ ] Preload `checkout.js` on page mount.
-- [ ] Add a `useRef` in-flight guard on both paths. On tap, disable the button immediately and show "भुगतान खुल रहा है…" / "Opening payment…" (i18n en/hi/mr).
-- [ ] Fix verify polling so pending isn't treated as failure (see D1).
-- [ ] After a polling timeout, show a "Payment received, activating…" state instead of nothing.
-- [ ] Replace `alert()` with in-page error UI and a "Try again" button. Show an error if checkout hasn't opened within ~5 seconds.
-- [ ] "UPI / Card / Net banking" row: make it tappable (opens the same checkout) or restyle it as plain text (see C1).
+- [x] Preload `checkout.js` on page mount (/payment/initiated only).
+- [x] `useRef` in-flight guards: the hook (one-time) and the page's pay click (both paths; AddPaymentInfo fires once). "Opening payment…" under the button while it spins (en/hi/mr, `payment.checkout.*`).
+- [x] Verify polling (BE half done in CC-53): `pollVerifyPaymentResult` now returns success / `failed` (BE 400 "Payment not successful", stops at once) / `pending` (window ended). Network errors keep polling.
+- [x] After a successful checkout: full-screen "Confirming your payment…" (20 s), then "Payment received. Activating your course…" (60 s more). Still pending → success page with `&pending=1` and a "course will be active in a few minutes — no need to pay again" note. **Never the failed page** for a paid order (that made people pay twice). Other hook callers (paywalls/modals) fall back to their `onSuccess`.
+- [x] alert() → in-page error under the button on /payment/initiated (SDK didn't load, order/subscription not created, test key, unexpected). Other hook callers keep alert() (no `onError`). The informational alerts before a redirect (already subscribed / paused) are unchanged. The "checkout not open after ~5 s" error was not added: the button spinner + "Opening payment…" cover that wait.
+- [x] "UPI / Card / Net banking" row is a button that opens the same checkout (C1).
 - [!] 🛑 **D1:** fix verify on the **BE** (return 200 `{status:"initiated"}` while pending; semantically right, needs a BE deploy) or the **FE** (catch 4xx and keep polling; no BE deploy)?
 - [!] 🛑 **D2:** create the Razorpay order in the background on page load (ticket step 2)? It creates many unused orders; preloading the script alone may be enough.
 - [!] ⚠️ **System impact:**
@@ -34,4 +34,8 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | Done in CC-53 (BE 200 + pending, FE keeps polling) | User (CC-53) |
+| 2026-10-22 | Pending | Check 60 s more behind an "activating" screen, then success page with a note; never "failed" | User |
+| 2026-10-22 | D2 | Preload checkout.js only; no order before the tap | User |
+| 2026-10-22 | C1 | UPI/Card/Net banking row opens the checkout | User |
+| 2026-10-22 | Tests | Polling outcomes: 6/6 (throwaway vitest with a stubbed apiFetch). tsc/eslint: no new problems (same 2 TS / 22 lint as main in these files). Browser + Razorpay test mode not run yet (needs click-through; ask the user) | Claude |
