@@ -2,7 +2,7 @@
 
 **Status:** In Review (branch sentry-lazy-loading; not merged)
 **Jira:** — (asked by the user 2026-10-22)
-**Repos:** CM `apps/dashboard`, `apps/blog`, `apps/landing`, `apps/tools`
+**Repos:** CM `apps/dashboard`, `apps/blog`, `apps/landing`, `apps/tools`; ASTRO `packages/analytics/src/lib/sentry.ts` (go + academy pages)
 
 ## Goal
 Load Sentry lazily on every web app so it doesn't slow down the first page load. Sentry must still capture page speed (Web Vitals: LCP, FCP, CLS, TTFB, INP) and errors.
@@ -46,6 +46,7 @@ Measured from the current builds (dashboard 20 Oct, blog/landing/tools 21 Oct). 
 | 2026-10-22 | Scope | Lazy-load on all apps, keep page-speed capture | User |
 | 2026-10-22 | Dashboard | Only Replay lazy (core is statically imported across the app; making it lazy would be a large refactor) | Claude |
 | 2026-10-22 | Public apps | SDK after load + idle (keeps buffered Web Vitals), not "on error only" | Claude, per the user's page-speed requirement |
+| 2026-10-22 | /go | Same on ASTRO go/academy pages (PUBLIC_SENTRY_DSN still unset there, so 0 bytes today); also added the missing browserTracingIntegration, without which no page-load data was sent | User |
 | 2026-10-22 | One init | blog/landing had two inits (instrumentation-client with tracing, page-errors with tracing 0; whichever ran first won). Now `loadSentry()` in page-errors.ts is the only one | Claude |
 
 ## Risks / trade-offs
@@ -68,6 +69,7 @@ Measured from the current builds (dashboard 20 Oct, blog/landing/tools 21 Oct). 
 | Landing | /hi/start | 670 ms | 789 ms (145 KB gz) | pageload: LCP 484, FCP 484, TTFB 50, CLS 0 | ✅ captured, tag app=landing |
 | Blog | /hi | 470 ms | 593 ms | pageload: LCP 352, FCP 352, TTFB 75 | ✅ captured, tag app=blog |
 | Tools | /tools/age-eligibility-calculator/afcat | 458 ms | 483 ms | pageload: LCP 256, FCP 256, TTFB 21 | ✅ captured, tag app=tools |
+| /go (ASTRO, branch `sentry-lazy-loading`, e3d0ee1) | /go/hi/exam/ctet-preparation | 202 ms | 212 ms (47 KB gz) | pageload: LCP 276, FCP 276, TTFB 18 | ✅ captured |
 | Dashboard | /sign-in | 391 ms | core at start (unchanged); Replay chunk 454 ms (39 KB gz) | tracing unchanged (10% sample) | ✅ captured + replay_event/replay_recording (buffer mode) |
 
 - Dashboard first-load JS on /sign-in (gzip, before `load`): **504 KB → 469 KB** (old vs new build, same machine); the 39 KB Replay chunk now comes after `load`.
