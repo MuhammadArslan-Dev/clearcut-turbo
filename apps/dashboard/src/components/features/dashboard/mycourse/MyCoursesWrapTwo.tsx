@@ -138,6 +138,16 @@ export default function MyCoursesWrapTwo({
   const courses = allCourses ?? [];
   const activeExam = activeCourse;
 
+  // Mobile swiper: show the card skeleton until the course slides exist. The
+  // old `isLoading || (… && <Skeleton/>)` rendered `true` (nothing) while
+  // loading, so only the "Add Exam" slide showed and the real card then pushed
+  // the page down ~450px — CLS 0.78 at 390px (CC-116). `isLoading` is
+  // LearnPage's isFetching, so it can't be the gate on its own (a background
+  // refetch would add a skeleton slide next to the real ones); the list is
+  // also filled one render after the data lands (useMyActiveCourses' effect).
+  const showSlideSkeleton =
+    courses.length === 0 && (!data || isLoading || (data.courses?.length ?? 0) > 0);
+
   const orderedCourses = activeExam
     ? [activeExam, ...courses.filter((course) => course?.id !== activeExam.id)]
     : courses;
@@ -272,12 +282,11 @@ export default function MyCoursesWrapTwo({
               }
             }}
           >
-            {isLoading ||
-              (orderedCourses.length === 0 && (
-                <SwiperSlide className="!h-full">
-                  <MyCourseCardSkeleton />
-                </SwiperSlide>
-              ))}
+            {showSlideSkeleton && (
+              <SwiperSlide className="!h-full">
+                <MyCourseCardSkeleton />
+              </SwiperSlide>
+            )}
             {orderedCourses.map((exam, index) => (
               <SwiperSlide key={exam?.id ?? index}>
                 {exam && (

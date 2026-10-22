@@ -34,11 +34,13 @@ export default function DailyTestWidget({
   rounded = "rounded-md",
 }: DailyTestWidgetProps) {
   const t = useTranslations("DailyTests");
-  const { activeCourse } = useMyActiveCourses();
+  const { activeCourse, courses, isLoading } = useMyActiveCourses();
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const router = useRouter();
 
-  const course = focusedCourse ?? activeCourse;
+  // `courses.active_course` covers the render between the data landing and
+  // useMyActiveCourses' effect copying it into `activeCourse`.
+  const course = focusedCourse ?? activeCourse ?? courses?.active_course ?? null;
   // Opaque id for the URL: the user's own enrollment uuid (never the exam's numeric id).
   const courseId = course?.uuid;
 
@@ -58,7 +60,10 @@ export default function DailyTestWidget({
     router.push(`/daily-tests/${courseId}`);
   }, [courseId, course, router]);
 
-  if (!courseId) return null;
+  // While the course loads, keep the card (values show "-", the button waits
+  // for the id): it used to appear only after load and push the page down
+  // (CC-116).
+  if (!courseId && !isLoading) return null;
 
   return (
     <div className={clsx("flex h-full flex-col justify-between gap-4 p-4 md:p-5", bgColor, rounded)}>
