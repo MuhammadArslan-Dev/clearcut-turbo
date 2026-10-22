@@ -16,6 +16,10 @@ import {
   scrubSensitiveData,
 } from "@/lib/sentry/sentry-shared";
 import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
+import { applyLegacyPolyfills } from "@/lib/legacy-polyfills";
+
+// `.at()` for old phones' browsers, before anything else runs (CC-112).
+applyLegacyPolyfills();
 
 const isProduction = process.env.NODE_ENV === "production";
 

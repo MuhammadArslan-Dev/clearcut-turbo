@@ -1,6 +1,6 @@
 # Phase 10 — CC-112: crashes on older phones and after deploys
 
-**Status:** Not Started
+**Status:** In Review (branch cc-112-older-phones; not merged)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-112
 **Repos:** CM (landing, blog, tools, dashboard, `packages/error-reporting`), ASTRO
 
@@ -19,11 +19,11 @@
 **Side finding:** landing and blog keep `instrumentation-client.ts` at the **app root** while `instrumentation.ts` is in `src/`. Per CLAUDE.md, Next may ignore root-level files with `src/app`, so their client Sentry may never run. Verify this.
 
 ## Plan
-- [ ] Shared chunk-reload handler (#1).
-- [ ] Amplitude web-vitals off, plus the `.at` polyfill (#3). Coordinate with the Phase 02 Amplitude changes.
-- [ ] Shared Sentry noise list (#4, #6, #7).
-- [ ] `instanceof Element` guards (#5) once the stack trace is known.
-- [ ] Check the `instrumentation-client.ts` location for landing and blog.
+- [x] Chunk reload (#1): `@clearcut/error-reporting/chunk-reload` (`isChunkLoadError`, `reloadOnceForChunkError`, `installChunkErrorReload`). Pattern now includes Turbopack's "Failed to load chunk" and native dynamic-import wordings. Anti-loop: at most one reload per tab per 60 s (sessionStorage; no storage → no reload). Wired: blog/landing/tools `instrumentation-client.ts` (window error + unhandledrejection, no DSN needed) and the shared `reportBoundaryError` (error.tsx / global-error.tsx reload instead of reporting). Dashboard: its own `ChunkErrorReload.tsx` updated the same way (pattern + 60 s window, exported helpers) and called from its 3 error boundaries.
+- [x] `.at` (#3): `fetchRemoteConfig: false` in blog and dashboard Amplitude init (landing, tools and ASTRO already had it — remote config could switch the web-vitals plugin on). Plus `applyLegacyPolyfills()` (Array/String `.at`) first thing in every app's instrumentation-client (dashboard: own copy `src/lib/legacy-polyfills.ts`). ASTRO not changed: its Amplitude already has remote config off.
+- [x] Noise (#4, #6, #7): `@clearcut/error-reporting/noise` (`IGNORE_ERRORS`, `DENY_URLS`: speechSynthesis, webkit.messageHandlers, FB IAB bridge strings, Java object is gone, extensions, GTM/FB/Clarity scripts) used in blog/landing/tools `loadSentry()`; same strings added to dashboard `sentry-shared.ts`.
+- [ ] `instanceof Element` guards (#5): **not done** — no stack trace (not in Sentry; public apps have no DSN, source is Clarity). Same for #2.
+- [x] `instrumentation-client.ts` location: verified in Phase 17 — Next's webpack alias resolves `src/` then the app root, and the client SDK ran in the landing/blog tests.
 - [!] 🛑 **D1:** after a chunk error, reload once automatically (may lose form state), or show a "new version, tap to reload" prompt?
 - [!] 🛑 **D2:** the `.at` crash: turn off Amplitude web vitals, add a polyfill, or both?
 - [!] 🛑 **D3:** change the browserslist target? It increases bundle size and still adds no polyfills. Recommendation: no.
@@ -40,4 +40,8 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | Reload once automatically (anti-loop: one per 60 s per tab) | User |
+| 2026-10-22 | D2 | Both: Amplitude remote config off (blog, dashboard) + `.at` polyfill | User |
+| 2026-10-22 | D3 | No browserslist change (it adds no polyfills) | Claude (doc recommendation) |
+| 2026-10-22 | Noise | Shared ignore list in every app | User |
+| 2026-10-22 | Tests | `@clearcut/error-reporting` 18/18 (5 new: chunk patterns, reload anti-loop, no-storage, polyfill). Playwright on a local landing production build: with `Array/String.prototype.at` deleted before load, the polyfill restored them and the page had 0 errors; with every new chunk 404 after load (stale deploy), a client navigation reloaded once and landed on the page, no loop over 16 s. Typecheck clean in all 4 apps; ESLint: no new problems (dashboard's 3 are old `any`s). Sentry search found none of the ticket's errors (they come from Clarity on public pages) | Claude |

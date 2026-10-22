@@ -1,5 +1,6 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
 import { routing } from "@/i18n/routing";
 
 // Page-level error reporting (404s, error boundaries) for the public blog.
@@ -28,6 +29,9 @@ export function loadSentry() {
         dsn: DSN,
         environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
         sendDefaultPii: false,
+        // In-app-browser / extension noise (CC-112).
+        ignoreErrors: IGNORE_ERRORS,
+        denyUrls: DENY_URLS,
         // Page-load tracing + Web Vitals. The SDK starts after the page has
         // loaded; the vitals still arrive (buffered PerformanceObserver).
         tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),

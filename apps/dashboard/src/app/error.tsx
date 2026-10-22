@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { isChunkError, reloadOnce } from "@/components/thirdparties/ChunkErrorReload";
 import * as Sentry from "@sentry/nextjs";
 import { Error500Screen } from "@/components/ui/error-screens";
 
@@ -16,6 +17,8 @@ export default function RouteError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // A chunk from a previous deploy failed to load: reload once (CC-112).
+    if ((isChunkError(error?.message) || error?.name === "ChunkLoadError") && reloadOnce()) return;
     Sentry.captureException(error, {
       tags: {
         boundary: "route-error",

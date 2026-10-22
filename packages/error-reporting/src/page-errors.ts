@@ -7,6 +7,7 @@
 // beforeSend). Returning null means "monitoring is off" (no DSN), in which case
 // nothing is loaded and nothing is sent.
 
+import { isChunkLoadError, reloadOnceForChunkError } from "./chunk-reload";
 import { classifyNotFound, type NotFoundOptions } from "./not-found";
 import { redactSearch, redactUrl } from "./redact";
 
@@ -73,6 +74,9 @@ export function createPageErrorReporter({ loadSentry, locales, defaultLocale, ig
    * onRequestError with the real message).
    */
   function reportBoundaryError(error: Error & { digest?: string }, boundary: BoundaryName): void {
+    // A chunk from a previous deploy failed to load: reload once instead of
+    // leaving the error screen up (CC-112). Not a defect, so not reported.
+    if (isChunkLoadError(error) && reloadOnceForChunkError()) return;
     const pending = loadSentry();
     if (!pending) return;
     void pending.then((sentry) => {

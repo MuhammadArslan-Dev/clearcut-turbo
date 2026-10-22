@@ -60,6 +60,9 @@ function internalInit() {
 
 
     amplitudeInit(AMPLITUDE_API_KEY, undefined, {
+        // Amplitude's remote config can switch on autocapture (incl. the
+        // web-vitals plugin, whose `.at()` crashed old phones — CC-112).
+        fetchRemoteConfig: false,
         defaultTracking: {
             pageViews: false,
             sessions: true,
