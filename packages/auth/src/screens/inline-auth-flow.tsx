@@ -22,6 +22,7 @@ import {
   getAuthFailureReason,
   trackAuthFailure,
   trackAuthSuccess,
+  trackVerificationFailed,
   trackVerificationResent,
   trackVerificationSent,
 } from "../verification-events";
@@ -178,7 +179,12 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         if (nextUserId) {
           localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
         }
-        if (status !== "success") { setError(message); return; }
+        if (status !== "success") {
+          setLoading(false); setDisabled(true);
+          trackVerificationFailed(onEvent, number, "invalid_request", isResend);
+          setError(message);
+          return;
+        }
 
         // Fire-and-forget — neither result is used to decide what the OTP
         // screen shows (the success message above already came from
@@ -200,8 +206,18 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
 
         setSuccess(message); setLoading(false); setDisabled(true);
         setStep("otp"); startTimer();
-      } catch {
-        setLoading(false); setDisabled(true); setError("Login failed");
+      } catch (err) {
+        // The OTP was not sent (CC-87/D4): say why, and record it.
+        const reason = getAuthFailureReason(err);
+        trackVerificationFailed(onEvent, number, reason, isResend);
+        setLoading(false); setDisabled(true);
+        setError(
+          reason === "too_many_attempts"
+            ? "Too many attempts. Please wait a minute and try again."
+            : reason === "network_error" || reason === "timeout"
+              ? "No internet connection."
+              : "Login failed",
+        );
       }
     };
 
@@ -256,15 +272,31 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         setLoading(true); setDisabled(false);
         window.location.replace(redirectUrl);
       } catch (err) {
-        if (!outcomeTracked) trackAuthFailure(onEvent, getAuthFailureReason(err));
+        const reason = getAuthFailureReason(err);
+        if (!outcomeTracked) trackAuthFailure(onEvent, reason);
         console.error(err);
-        setError("Invalid OTP");
-        // Most often the keyboard chip's code from a previous login — clear
-        // it and remount the input (see otpFieldKey in otp-screen.tsx).
-        setOtp("");
-        setOtpFieldKey((k) => k + 1);
+        // Was "Invalid OTP" for every failure, network and server included (CC-87).
+        if (reason === "incorrect_otp" || reason === "otp_expired") {
+          setError(reason === "otp_expired" ? "This OTP has expired. Tap Resend OTP to get a new one." : "Invalid OTP");
+          if (reason === "otp_expired") { setTimer(0); setCanResend(true); }
+          // Most often the keyboard chip's code from a previous login — clear
+          // it and remount the input (see otpFieldKey in otp-screen.tsx).
+          setOtp("");
+          setOtpFieldKey((k) => k + 1);
+        } else if (reason === "too_many_attempts") {
+          setError("Too many attempts. Please wait a minute and try again.");
+        } else if (reason === "server_error") {
+          setError("Server error. Please try again.");
+        } else if (reason === "network_error" || reason === "timeout") {
+          setError("No internet connection.");
+        } else {
+          setError("Something went wrong. Please try again.");
+        }
+        // The finally below used to leave `loading` true after a failure,
+        // so the button kept spinning.
+        setLoading(false); setDisabled(true);
       } finally {
-        setLoading(true); setDisabled(false); isVerifyingRef.current = false;
+        isVerifyingRef.current = false;
       }
     };
 

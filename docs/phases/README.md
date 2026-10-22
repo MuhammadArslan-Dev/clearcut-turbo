@@ -37,7 +37,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 04 | [₹NaN in Payments tab](04-cc100-payments-nan.md) | CC-100 | CM-dashboard, BE | In Review | Merge + deploy BE then dashboard; C1 (columns/wording/plan name) |
 | 05 | [Correct Purchase value to Meta](05-cc53-meta-purchase-value.md) | CC-53 | CM-dashboard, BE | In Review | Merge + deploy BE then dashboard; tell RD Purchase counts/values will change |
 | 06 | [Signup form + T&C link](06-cc84-cc85-signup-form.md) | CC-84, CC-85 | CM-landing, packages/ui, packages/auth | In Review | Merge + deploy landing (blog/tools pick up the modal changes on their next deploy); RD: copy (C1–C3) |
-| 07 | [Real reason behind OTP "unknown_error"](07-cc87-cc55-otp-unknown-error.md) | CC-87, CC-55 | CM packages/auth + landing, (BE), (RN) | Not Started | D1–D4, C1 |
+| 07 | [Real reason behind OTP "unknown_error"](07-cc87-cc55-otp-unknown-error.md) | CC-87, CC-55 | CM packages/auth + landing, (BE), (RN) | In Review | Merge + deploy BE first, then landing (blog/tools pick up the shared screens on their next deploy); annotate Amplitude; RD copy (C1) |
 | 08 | [Landing main button not responding](08-cc106-landing-cta.md) | CC-106 | ASTRO, (CM) | Not Started | D1–D4, C1–C3 |
 | 09 | [Pay button does nothing](09-cc60-pay-button.md) | CC-60 | CM-dashboard, (BE) | Not Started | D1–D2, C1–C2 |
 | 10 | [Crashes on older phones](10-cc112-older-phone-crashes.md) | CC-112 | CM (all apps), ASTRO | Not Started | D1–D3, C1–C4 |
