@@ -14,7 +14,12 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 let loading: Promise<typeof import("@sentry/browser")> | null = null;
 
-function loadSentry() {
+/**
+ * The one place tools' browser Sentry is loaded (Phase 17): after load +
+ * idle from instrumentation-client.ts, or at once by the 404/crash reporter
+ * below. A static export, so the DSN must be set at BUILD time.
+ */
+export function loadSentry() {
   if (!DSN) return null;
   loading ??= import("@sentry/browser").then((Sentry) => {
     if (!Sentry.getClient()) {
@@ -22,7 +27,10 @@ function loadSentry() {
         dsn: DSN,
         environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
         sendDefaultPii: false,
-        tracesSampleRate: 0,
+        // Page-load tracing + Web Vitals (Phase 17); they still arrive though
+        // the SDK starts after the page has loaded (buffered observers).
+        integrations: [Sentry.browserTracingIntegration()],
+        tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
         beforeSend(event) {
           scrubSensitiveData(event);
           event.tags = { ...event.tags, runtime: "browser", app: "tools" };

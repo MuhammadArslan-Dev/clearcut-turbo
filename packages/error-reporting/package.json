@@ -9,7 +9,8 @@
   "exports": {
     "./redact": "./src/redact.ts",
     "./not-found": "./src/not-found.ts",
-    "./page-errors": "./src/page-errors.ts"
+    "./page-errors": "./src/page-errors.ts",
+    "./when-idle": "./src/when-idle.ts"
   },
   "devDependencies": {
     "typescript": "^5",
