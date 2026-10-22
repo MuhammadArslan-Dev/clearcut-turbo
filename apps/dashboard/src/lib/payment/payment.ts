@@ -111,6 +111,8 @@ export type Subscription = {
   created_at: string;
   updated_at: string;
   plan: SubscriptionPlan | null;
+  /** The course's exam short name (e.g. "HTET"), when the backend sends it. */
+  course_name?: string | null;
 };
 
 export type GetSubscriptionsResponse = {
@@ -173,6 +175,32 @@ export async function verifyPayment(
 /**
  * List all subscriptions for the current user
  */
+/** One successful payment (one-time purchase or autopay charge), CC-100. */
+export type PaymentHistoryItem = {
+  id: string;
+  type: "one_time" | "autopay";
+  /** Rupees. */
+  amount: number;
+  currency: string;
+  paid_at: string | null;
+  /** Razorpay payment id ("pay_…"), when stored. */
+  payment_id: string | null;
+  /** "upi", "card", "netbanking", …, when stored. */
+  method: string | null;
+  purchase_type: string | null;
+  course: { group_code: string; name: string; short_name: string } | null;
+};
+
+export type GetPaymentHistoryResponse = {
+  success: boolean;
+  payments: PaymentHistoryItem[];
+};
+
+/** The signed-in student's successful payments, newest first. */
+export async function getPaymentHistory(): Promise<GetPaymentHistoryResponse> {
+  return apiFetch<GetPaymentHistoryResponse>("/v2/payment/history");
+}
+
 export async function getSubscriptions(): Promise<GetSubscriptionsResponse> {
   return apiFetch<GetSubscriptionsResponse>("/v2/subscription");
 }

@@ -1,6 +1,6 @@
 # Phase 04 — CC-100: "₹NaN" in Profile → Payments, plus subscription page labels
 
-**Status:** Not Started
+**Status:** In Review (branches cc-100-payment-history in BE + CM; not merged)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-100
 **Repos:** CM `apps/dashboard`, BE
 
@@ -33,4 +33,7 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | (a) real GET /v2/payment/history from successful `transactions` (rupees), Razorpay id + method from columns or metadata, one row per Razorpay payment id | User |
+| 2026-10-22 | D2 | (a) Payments lists only real payments (one-time + autopay charges); trials/inactive enrollments not listed | User |
+| 2026-10-22 | Data check | DB: transactions amounts in rupees (purchase 139–799, subscription 99–149); billing history in paise (9900–14900). Autopay charges: 842 per Razorpay paid_count vs 834 transactions (1 paused sub missing ~10; 2 extra on active). One-time rows keep payment id/method only in metadata (double-encoded). | Investigation |
+| 2026-10-22 | Done | BE: PaymentHistoryController + route; subscriptions list adds course_name. Dashboard: Payments tab on the new API with fallback to the enrollment view (active + paid only), real pagination, plain labels, en/hi/mr; Subscriptions tab plain status text, course name, "Monthly plan", "Next payment: ₹99, 23 Oct", en/hi/mr. Verified locally in Chrome (en): Autopay ₹99 UPI + payment id; subscription row correct. Hindi not viewed (language switch didn't apply locally). | Claude |
