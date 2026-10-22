@@ -1,8 +1,8 @@
 # Phase 24 — CC-79: "start here" guide for first-time students on the preparation page
 
-**Status:** Not Started (the ticket says "after CC-80")
+**Status:** Built + verified locally (2026-10-22) — branch `phase-24-start-guide` (0187de5), not merged, not deployed. Built independently of CC-80.
 **Jira:** [CC-79](https://clear-cutoff.atlassian.net/browse/CC-79)
-**Repos:** CM `apps/dashboard`; BE to store "guide seen" per user + exam
+**Repos:** CM `apps/dashboard` only (no BE change: `study_guide_seen` is already per enrollment)
 **Size:** large, new UI flow
 
 ## What the ticket says
@@ -32,6 +32,41 @@
 - **"Seen" storage:** the enrollment has `study_guide_seen` (boolean, `types/Exam.ts`). Check whether that's this guide's flag or an older study-guide modal; it may already be per user + exam.
 - **Floating Unlock:** `components/features/PayWalls/PaywallFloatingWidget.tsx`.
 
+## What was found (2026-10-22)
+- **First-visit guide already exists:** the `preparation-guide` modal (`GuideLine.tsx`) opens when `study_guide_seen` is false. On close it calls `POST /v2/action/start-course`, which sets the flag on the **enrollment** (so per student per exam, saved server-side).
+- **`GlobalTour` (driver.js, styled by `styles/tour.css`) had only placeholder steps** ("Welcome / This is the first step") and nothing ever opened it.
+- **The store ORs `study_guide_seen`** from get-course and get-sections, so both must say false for the modal to show.
+
+## What was built
+- **`StartGuide.tsx`** (mounted on the preparation page; driver.js still lazy) decides when the tour runs:
+  - It waits until this course's learning progress has loaded (`progressLoadedFor`, set by `useUserInteractionData`).
+  - It runs only when the student has opened **no** content.
+  - It runs (a) right after the first-visit modal's "Start Learning" (`requestStartGuide`), and (b) once more on a later visit while still no content was opened.
+  - Max 2 per course per browser (`localStorage cc-start-guide:<group_code>`). Storage blocked → no tour.
+  - It never runs when the target topic isn't visible (mobile topic/video view).
+- **Steps (en/hi/mr, `startGuide.*`):**
+  1. Subject tabs (`#start-guide-subjects` on SectionsTab).
+  2. First free chapter (`#start-guide-chapter`).
+  3. Its first topic (`#start-guide-topic`): "Watch the video, read the notes, then take a short test".
+  - Buttons: Next / Skip / Got it, i.e. आगे / छोड़ें / समझ गया. "Skip" works on step 1 too (`disableButtons: []`).
+- **Badge:** pulsing "Start here" / "यहाँ से शुरू करें" (brand pill, `animate-pulse`) on the first free topic while progress is loaded and empty. It disappears once any content is opened.
+- **Unlock bar:** the floating Unlock bar is hidden by class while the tour is on screen (not unmounted: its scroll-hide `useLayoutEffect` needs its refs). It is restored on close/unmount.
+- **Amplitude (typed):** `guide_shown {exam_name, attempt}`, `guide_step_viewed {step}`, `guide_skipped {step}`, `guide_completed`.
+- **`GlobalTour` props:** `nextText`/`prevText`/`doneText`, `skipAsPrev`, `onStepChange`/`onSkip`/`onComplete`, all read through a ref.
+
+## Verification (Playwright, test user; progress API stubbed to {} and study_guide_seen to false; start-course POST stubbed)
+- [x] 390px, first visit:
+  - Modal shows; "Start Learning" starts the tour.
+  - Step 1 highlights subjects, step 2 the free chapter (HTET L2 English ch. 1 — free since Phase 18), step 3 the first topic.
+  - Unlock bar hidden during, back after. Count = 1.
+- [x] Later visit (hi), still no content: the tour runs again in Hindi ("यहाँ अपना विषय चुनें", छोड़ें / आगे). Skip closes it. Count = 2.
+- [x] Third visit: no tour, badge stays.
+- [x] Progress present: no badge, no tour.
+- [x] 1440px: all 3 steps; Esc closes; Unlock bar returns.
+- [x] tsc: no new errors (Sidebar.tsx resume-state error pre-existing). eslint: 10 = 10, new files clean. check:colors passes.
+- [ ] Events not seen in Amplitude (disabled locally); typed and wired.
+- [ ] 📞 Ganesh reviews hi/mr copy (`messages/{hi,mr}.json` → `startGuide`).
+
 ## Plan
 - [ ] Read GlobalTour + where it's triggered; check `study_guide_seen` usage and BE endpoint to set it.
 - [ ] Steps 1–3 + the pulsing badge on the first unlocked topic; hide the floating widget during the tour; never on test/video routes.
@@ -45,4 +80,5 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 seen flag | Reuse `study_guide_seen` (per enrollment) for the first run; second chance counted per browser | Claude; user asked to continue |
+| 2026-10-22 | CC-80 order | Built independently | Claude |

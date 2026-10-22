@@ -54,7 +54,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 21 | [My Courses clarity + exam logos](21-cc111-cc25-my-courses-and-exam-logos.md) | CC-111, CC-25 | CM-dashboard, CM-tools | Built, verified locally (not merged) | Tools deploy (logos + 4 new exams) needs approval |
 | 22 | [Landing cards look tappable](22-cc109-landing-cards.md) | CC-109 | ASTRO | Built, verified locally (not merged) | Merge with the WIP stash dance; user deploys ASTRO |
 | 23 | [Hindi/Marathi payment page + failed-page recovery](23-cc66-cc64-payment-pages.md) | CC-66, CC-64 | CM-dashboard | Built, verified locally (not merged) | C1 RD copy review; confirm support WhatsApp |
-| 24 | [Start-here guide on preparation](24-cc79-start-here-guide.md) | CC-79 | CM-dashboard, BE | Not Started | D1 (seen flag), after CC-80? |
+| 24 | [Start-here guide on preparation](24-cc79-start-here-guide.md) | CC-79 | CM-dashboard | Built, verified locally (not merged) | Ganesh reviews hi/mr copy |
 | 25 | [Cancel flow: reason + offer + confirmation](25-cc97-cancel-flow.md) | CC-97 | CM-dashboard, BE | Not Started | C1 (RD offers), D1 (store reasons), D2 (WhatsApp no.) |
 
 ## Cross-phase dependencies
