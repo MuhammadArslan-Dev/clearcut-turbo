@@ -60,6 +60,10 @@ export const initAmplitude = () => {
   isInitialized = true;
   withSdk((amplitude) =>
     amplitude.init(AMPLITUDE_KEY, {
+      // Amplitude's remote config can switch on autocapture (incl. the
+      // web-vitals plugin, whose `.at()` crashed old phones — CC-112).
+      // Landing and tools already turn it off; same here.
+      fetchRemoteConfig: false,
       defaultTracking: {
         pageViews: true,
         sessions: true,

@@ -30,8 +30,16 @@
  * The dynamic `import()` rather than a top-level import is what permits the
  * elimination — a static import is unconditional by definition.
  */
+import { installChunkErrorReload } from "@clearcut/error-reporting/chunk-reload";
+import { applyLegacyPolyfills } from "@clearcut/error-reporting/legacy-polyfills";
 import { whenIdleAfterLoad } from "@clearcut/error-reporting/when-idle";
 import { loadSentry } from "@/lib/page-errors";
+
+// CC-112, before anything else runs: `.at()` for old phones' browsers, and
+// one reload when a chunk from a previous deploy can't be loaded. Both run
+// with or without a Sentry DSN.
+applyLegacyPolyfills();
+installChunkErrorReload();
 
 const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 

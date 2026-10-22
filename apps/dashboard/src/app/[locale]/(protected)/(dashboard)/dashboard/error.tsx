@@ -1,6 +1,7 @@
 'use client'
 
 import Topbar from '@/components/layout/dasbboard/Topbar'
+import { isChunkError, reloadOnce } from "@/components/thirdparties/ChunkErrorReload";
 import React, { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 
@@ -15,6 +16,8 @@ export default function Error({
   // crashes first — and used to swallow them without reporting, meaning nothing
   // that broke on this page ever reached Sentry.
   useEffect(() => {
+    // A chunk from a previous deploy failed to load: reload once (CC-112).
+    if ((isChunkError(error?.message) || error?.name === "ChunkLoadError") && reloadOnce()) return;
     Sentry.captureException(error, {
       tags: {
         boundary: 'dashboard-error',

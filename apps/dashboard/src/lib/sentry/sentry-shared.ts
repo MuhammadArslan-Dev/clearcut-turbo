@@ -70,6 +70,12 @@ export const IGNORE_ERRORS: (string | RegExp)[] = [
   // observed originating from Next's own dev-mode devtools overlay as well
   // as third-party pointer-event libraries; not actionable.
   "Failed to execute 'releasePointerCapture' on 'Element'",
+  // No first-party code uses these; injected by in-app browsers / extensions
+  // (CC-112). Same list as packages/error-reporting/src/noise.ts.
+  "speechSynthesis is not defined",
+  /webkit\.messageHandlers/,
+  "_AutofillCallbackHandler",
+  "instantSearchSDKJSBridgeClearHighlight",
 ];
 
 /** Third-party scripts we cannot fix and do not want reports from. */
@@ -88,6 +94,7 @@ export const DENY_URLS: RegExp[] = [
   // scheme, since that's also how OUR OWN real bundle paths are reported
   // (`app:///_next/static/chunks/...`) — those must keep reporting normally.
   /iab_inner_frame/i,
+  /clarity\.ms/i,
 ];
 
 /**
