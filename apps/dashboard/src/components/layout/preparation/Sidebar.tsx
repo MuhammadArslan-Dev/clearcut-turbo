@@ -368,21 +368,35 @@ export default function Sidebar() {
           ref={topicContainerRef}
           className="h-[calc(100%-10px)] md:h-[calc(100%-10px)] flex-1 py-4 pb-44 overflow-y-auto "
         >
-          <div className="px-3 lg:px-0 flex justify-center w-full">
+          {/* Tapping the summary did nothing (CC-83); it now opens the
+              chapter index, same as the Index button. */}
+          <button
+            type="button"
+            onClick={() => open("chapter-index")}
+            className="px-3 lg:px-0 flex justify-center w-full cursor-pointer"
+          >
             <Card borderRadius="8px" width={"315px"} padding={0}>
               <div className="bg-white px-4 py-3 space-y-2 rounded-md">
                 <div className="flex justify-center gap-4">
-                  {/* Marks */}
-                  <ProgressBlock
-                    title={`30/150 ${t("common.marks")}`}
-                    icon={
-                      <PieChartIcon size={24} color="var(--icon-gray-muted)" />
-                    }
-                  />
+                  {/* Marks this subject carries in the exam. This was a
+                      hardcoded "30/150" for every subject; hidden when the
+                      backend doesn't send the number. */}
+                  {fromSection?.total_marks != null && (
+                    <ProgressBlock
+                      title={t("common.examMarks", { marks: fromSection.total_marks })}
+                      icon={
+                        <PieChartIcon size={24} color="var(--icon-gray-muted)" />
+                      }
+                    />
+                  )}
 
-                  {/* Chapters */}
+                  {/* Chapters — no "0/0" while the list is still loading */}
                   <ProgressBlock
-                    title={`${completedChapters}/${totalChapters} ${t("common.chapters")}`}
+                    title={
+                      chapters
+                        ? `${completedChapters}/${totalChapters} ${t("common.chapters")}`
+                        : "–"
+                    }
                     icon={
                       <FireIcon
                         variant="outline"
@@ -399,7 +413,7 @@ export default function Sidebar() {
                 />
               </div>
             </Card>
-          </div>
+          </button>
          <div>
            <AreaTab />
          </div>
@@ -831,7 +845,7 @@ const ProgressBlock = React.memo(
 
         <div className="text-center">
           <div className="body-large text-surface-gray-normal">
-            <Text variant="body-large" weight="normal" color="gray-subtle">
+            <Text variant="body-large" weight="normal" color="gray-subtle" className="whitespace-nowrap">
               {title}
             </Text>
           </div>

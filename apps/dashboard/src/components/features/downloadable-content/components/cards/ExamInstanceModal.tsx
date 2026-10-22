@@ -351,7 +351,8 @@ const QuestionItem = React.memo(function QuestionItem({
               <div className="grid md:grid-cols-2 gap-3">
                 {translation?.options.map((opt, i) => {
                   if (!opt.text && !opt.image) return null;
-                  return <OptionCard key={i} index={i} value={opt} />;
+                  // Tapping an option opens the answer (CC-105 dead taps).
+                  return <OptionCard key={i} index={i} value={opt} onSelect={() => setIsExplanation(true)} />;
                 })}
               </div>
 
@@ -436,13 +437,16 @@ const QuestionItem = React.memo(function QuestionItem({
 const OptionCard = React.memo(function OptionCard({
   index,
   value,
+  onSelect,
 }: {
   index: number;
   value: QuestionOption;
+  onSelect: () => void;
 }) {
   const label = String.fromCharCode(65 + index);
 
   return (
+    <button type="button" onClick={onSelect} className="w-full text-left cursor-pointer">
     <Card padding={0} borderwidth={1} className="transition">
       <div className="min-h-12 flex px-2 items-center gap-2">
         <div className="w-9 h-9 flex items-center justify-center">
@@ -481,5 +485,6 @@ const OptionCard = React.memo(function OptionCard({
         </div>
       </div>
     </Card>
+    </button>
   );
 });

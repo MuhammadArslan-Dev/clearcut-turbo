@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { Chapter, Section } from "../../preparation/types/types";
 import CourseContentCard, { PDFCard } from "./cards/CourseContentCard";
+import { usePdfViewer } from "./PdfViewerModal";
 import { P_QUERY_KEY } from "../../preparation/hooks/usePreparationData";
 import { useQuery } from "@tanstack/react-query";
 import { getSectionNotes } from "@/lib/preparation/preparation";
@@ -36,7 +37,7 @@ export default function SectionNotes({
     const { setChapters, pendingScrollToId, clearPendingScroll } = useNotesIndexStore();
 
     const [selectedLang, setSelectedLang] = React.useState<"en" | "hi">("en");
-    const [selectedPDF, setSelectedPDF] = React.useState<string | null>(null);
+    const { openPdf, viewer: pdfViewer } = usePdfViewer();
     const chapterRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
 
     /* ================= API ================= */
@@ -110,7 +111,7 @@ export default function SectionNotes({
 
         // `note.link` is the actual PDF file URL (parallel to video items'
         // `video_link`); `note_content` isn't a URL, which left the popup blank.
-        setSelectedPDF(note?.link);
+        openPdf(note?.link);
     };
 
     /* ================= RENDER ================= */
@@ -275,36 +276,12 @@ export default function SectionNotes({
                 </div>
             ))}
 
-            {/* ================= PDF MODAL ================= */}
-            {selectedPDF && (
-                <div
-                    onClick={() => setSelectedPDF(null)}
-                    className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-                >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-white w-full sm:w-[90%] h-[85%] sm:h-[90%] rounded-lg overflow-hidden relative"
-                    >
-                        <button
-                            onClick={() => setSelectedPDF(null)}
-                            className="absolute top-2 right-2 z-10 bg-white px-3 py-1 rounded shadow cursor-pointer"
-                        >
-                            ✕
-                        </button>
-
-                        <iframe
-                            src={selectedPDF}
-                            className="w-full h-full"
-                            title="PDF Viewer"
-                        />
-                    </div>
-                </div>
-            )}
+            {pdfViewer}
         </div>
     );
 }
 
-function SectionNotesSkeleton() {
+export function SectionNotesSkeleton() {
     return (
         <div className="space-y-6">
             {[1, 2, 3].map((_, chapterIndex) => (

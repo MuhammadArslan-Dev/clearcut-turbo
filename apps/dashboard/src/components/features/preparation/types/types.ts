@@ -47,6 +47,8 @@ export interface Section {
   areas: { areas: SectionArea[] } | null;
   type: string;
   translation: any;
+  /** Marks this section carries in the exam (null until the backend sends it). */
+  total_marks?: number | null;
 }
 
 export interface Content {

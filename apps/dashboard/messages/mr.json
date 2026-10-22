@@ -126,7 +126,10 @@
     "not_answered": "उत्तर न दिलेले",
     "answered": "उत्तर दिलेले",
     "not_visited": "अद्याप पाहिलेले नाही",
-    "papers": "पेपर"
+    "papers": "पेपर",
+    "close": "बंद करा",
+    "openingPdf": "PDF उघडत आहे…",
+    "examMarks": "परीक्षा: {marks} गुण"
   },
   "timeRemainingTillExam": {
     "title": "परीक्षेपर्यंत उरलेला वेळ",

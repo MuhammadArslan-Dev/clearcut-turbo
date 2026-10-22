@@ -241,6 +241,12 @@ const QuestionItem = React.memo(function QuestionItem({
     setIsExplanation((prev) => !prev);
   }, []);
 
+  // Tapping an option used to do nothing (CC-105: ~830 dead taps); it now
+  // opens the answer + explanation, the same panel as the button below.
+  const showAnswer = useCallback(() => {
+    setIsExplanation(true);
+  }, []);
+
   return (
     <div className={clsx("flex flex-col  w-full justify-between gap-2")}>
       {/* Question Header */}
@@ -346,7 +352,7 @@ const QuestionItem = React.memo(function QuestionItem({
               {/* Options */}
               <div className="grid md:grid-cols-2 gap-3">
                 {options.map((opt: QuestionOption, i: number) => (
-                  <OptionCard key={i} index={i} value={opt} />
+                  <OptionCard key={i} index={i} value={opt} onSelect={showAnswer} />
                 ))}
               </div>
 
@@ -448,15 +454,18 @@ const QuestionItem = React.memo(function QuestionItem({
 const OptionCard = React.memo(function OptionCard({
   index,
   value,
+  onSelect,
 }: {
   index: number;
   value: QuestionOption;
+  onSelect: () => void;
 }) {
   // Convert 0,1,2,3 -> A,B,C,D
   const label = String.fromCharCode(65 + index);
 
   return (
-    <Card padding={0} className="cursor-pointer transition">
+    <button type="button" onClick={onSelect} className="w-full text-left cursor-pointer">
+    <Card padding={0} className="transition">
       <div className="min-h-12 flex px-2 items-center gap-2">
         <div className="w-[38px]">
           {/* A, B, C, D instead of 1, 2, 3, 4 */}
@@ -493,6 +502,7 @@ const OptionCard = React.memo(function OptionCard({
         </div>
       </div>
     </Card>
+    </button>
   );
 });
 

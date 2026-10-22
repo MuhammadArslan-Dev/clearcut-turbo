@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useScrollOnUserAction } from "@/components/features/preparation/hooks/useScrollOnUserAction";
@@ -108,6 +108,13 @@ const TabSwitch: React.FC<TabSwitchProps> = ({
 }) => {
   const pathname = usePathname();
 
+  // Link mode: the pill only moved once the new route had loaded (~1.3 s on a
+  // slow phone), so the tap looked dead (CC-105 "Papers"). Show the tapped tab
+  // as active at once; it's tied to the path it was tapped on, so it drops
+  // away by itself when the route changes.
+  const [pendingTab, setPendingTab] = useState<{ id: string; from: string } | null>(null);
+  const pendingId = pendingTab?.from === pathname ? pendingTab.id : null;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -143,7 +150,9 @@ const TabSwitch: React.FC<TabSwitchProps> = ({
 
         const isActive =
           type === "link"
-            ? isActiveRoute(pathname, item.match)
+            ? pendingId
+              ? item.id === pendingId
+              : isActiveRoute(pathname, item.match)
             : item.id === value;
 
         /* ======================================================
@@ -223,6 +232,10 @@ const TabSwitch: React.FC<TabSwitchProps> = ({
             key={item.id}
             href={item.href ?? "#"}
             prefetch={true}
+            onClick={(e) => {
+              if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              setPendingTab({ id: item.id, from: pathname });
+            }}
             className={clsx(
               "relative flex items-center justify-center gap-2 transition-colors",
               tabFontSize,

@@ -129,7 +129,10 @@ declare const messages: {
     "not_answered": "Not Answered",
     "answered": "Answered",
     "not_visited": "Not Visited",
-    "papers": "Papers"
+    "papers": "Papers",
+    "close": "Close",
+    "openingPdf": "Opening PDF…",
+    "examMarks": "Exam: {marks} marks"
   },
   "timeRemainingTillExam": {
     "title": "Time Remaining till Exam",
@@ -217,7 +220,7 @@ declare const messages: {
   },
   "course": {
     "courseStatus": {
-      "trial": "3 days left in FREE Trial",
+      "trial": "{days, plural, one {Last day of FREE trial} other {{daysText} days left in FREE trial}}",
       "trialEnd": "Trial Ended",
       "active": "Active",
       "completed": "Completed",
@@ -239,6 +242,7 @@ declare const messages: {
     "continueLearningActive": "Continue Learning",
     "addSubjects": "Add Subjects",
     "unlockFullAccess": "Unlock Full Access",
+    "unlockCourse": "Unlock {exam} course",
     "buyFullCourse": "Buy Full Course",
     "priceNote": "₹{price} only • Subscription per month",
     "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only"
