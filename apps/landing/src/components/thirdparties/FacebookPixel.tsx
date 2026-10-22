@@ -4,8 +4,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import { getMetaGeoData } from "@clearcut/utils/meta-geo";
+import { metaPixelId } from "@clearcut/utils/meta-pixel-env";
 
-const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1126041265682766";
+const FB_PIXEL_ID =
+  process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1126041265682766";
 
 export default function FacebookPixel() {
   const pathname = usePathname();
@@ -19,6 +21,16 @@ export default function FacebookPixel() {
   // only calls onReady once the code has run; onLoad is never called for inline
   // scripts.
   const [scriptReady, setScriptReady] = useState(false);
+
+  // Which pixel loads here: the live one on real sites, none on localhost
+  // unless this browser opted in (packages/utils/src/meta-pixel-env.ts,
+  // CC-115 Part A). Decided after mount, since only the browser knows the host.
+  const [pixelId, setPixelId] = useState<string | null>(null);
+  useEffect(() => {
+    setPixelId(
+      metaPixelId(FB_PIXEL_ID, process.env.NEXT_PUBLIC_FB_PIXEL_ID_TEST),
+    );
+  }, []);
 
   useEffect(() => {
     if (!scriptReady || !window.fbq) return;
@@ -55,12 +67,13 @@ export default function FacebookPixel() {
           this point (visitors are anonymous pre-login, and a logged-in
           visitor is redirected to the dashboard — see root CLAUDE.md "Tools:
           Save for Future"), so only geo is read here. */}
-      <Script
-        id="fb-pixel"
-        strategy="afterInteractive"
-        onReady={() => setScriptReady(true)}
-        dangerouslySetInnerHTML={{
-          __html: `
+      {pixelId && (
+        <Script
+          id="fb-pixel"
+          strategy="afterInteractive"
+          onReady={() => setScriptReady(true)}
+          dangerouslySetInnerHTML={{
+            __html: `
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -80,10 +93,11 @@ export default function FacebookPixel() {
                 if (ccGeo.zp) ccUd.zp = ccGeo.zp;
               }
             } catch (e) {}
-            fbq('init', '${FB_PIXEL_ID}', ccUd);
+            fbq('init', '${pixelId}', ccUd);
           `,
-        }}
-      />
+          }}
+        />
+      )}
       {/* No inline fbq('track', 'PageView') here — the effect above fires it
           once the script is ready, so it isn't sent twice. */}
       <noscript>

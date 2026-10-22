@@ -8,8 +8,7 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
-
-const FB_PIXEL_ID = "1126041265682766";
+import { LIVE_FB_PIXEL_ID, getFbPixelId } from "@/lib/analytics/facebook-pixel";
 
 // Pixel failures used to be silent: a broken script just meant missing events
 // for days before anyone noticed. Report once per page load so a drop shows up
@@ -60,7 +59,10 @@ function getCachedUserData(): { ph?: string; external_id?: string } | null {
   return Object.keys(userData).length > 0 ? userData : null;
 }
 
-type MetaUserData = { ph?: string; external_id?: string } & Partial<MetaGeoData>;
+type MetaUserData = {
+  ph?: string;
+  external_id?: string;
+} & Partial<MetaGeoData>;
 
 // Still used by CompleteRegistration/StartTrial below, re-sent via a later
 // fbq('init', ...) call immediately before their track() call — kept exactly
@@ -75,7 +77,7 @@ type MetaUserData = { ph?: string; external_id?: string } & Partial<MetaGeoData>
 // now reliably having that data available for its own first call.
 function setMetaUserData(userData: MetaUserData) {
   if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("init", FB_PIXEL_ID, userData);
+  window.fbq("init", getFbPixelId() ?? LIVE_FB_PIXEL_ID, userData);
 }
 
 async function waitForCachedUserData(
@@ -101,6 +103,14 @@ export default function FacebookPixel() {
   // inline scripts.
   const [scriptReady, setScriptReady] = useState(false);
 
+  // Which pixel loads here: the live one on real sites, none on localhost
+  // unless this browser opted in (getFbPixelId, CC-115 Part A). Decided after
+  // mount, since only the browser knows the host.
+  const [pixelId, setPixelId] = useState<string | null>(null);
+  useEffect(() => {
+    setPixelId(getFbPixelId());
+  }, []);
+
   // Set on the very first run, to the pathname that run saw — lets later
   // route changes know whether they still owe this path its PageView.
   const lastPageViewPath = useRef<string | null>(null);
@@ -118,6 +128,8 @@ export default function FacebookPixel() {
   // TEMPORARY: the Amplitude canary is for monitoring until the Meta graph is
   // stable; the client has approved removing it then.
   useEffect(() => {
+    // Off on purpose (localhost): nothing to monitor.
+    if (!getFbPixelId()) return;
     const timer = setTimeout(() => {
       const loaded = isPixelSdkLoaded();
       if (!loaded) reportPixelFailure("sdk_not_loaded_after_timeout");
@@ -155,7 +167,7 @@ export default function FacebookPixel() {
         }
 
         try {
-          fbq("init", FB_PIXEL_ID, ccUd);
+          fbq("init", pixelId ?? LIVE_FB_PIXEL_ID, ccUd);
           console.log("Meta Pixel: initialized");
           fbq("track", "PageView");
         } catch {
@@ -254,7 +266,7 @@ export default function FacebookPixel() {
         { scroll: false },
       );
     }
-  }, [scriptReady, pathname, searchParams, router]);
+  }, [scriptReady, pathname, searchParams, router, pixelId]);
 
   return (
     <>
@@ -274,12 +286,13 @@ export default function FacebookPixel() {
           used — never placeholders — since sending fabricated PII to Meta
           is worse than sending none. Waiting here never blocks the app's
           own rendering; it only delays this pixel's own init()/PageView. */}
-      <Script
-        id={FB_PIXEL_ID}
-        strategy="afterInteractive"
-        onReady={() => setScriptReady(true)}
-        dangerouslySetInnerHTML={{
-          __html: `
+      {pixelId && (
+        <Script
+          id={pixelId}
+          strategy="afterInteractive"
+          onReady={() => setScriptReady(true)}
+          dangerouslySetInnerHTML={{
+            __html: `
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -289,15 +302,16 @@ export default function FacebookPixel() {
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
           `,
-        }}
-      />
+          }}
+        />
+      )}
       {/* Noscript tag for tracking */}
       <noscript>
         <img
           height="1"
           width="1"
           style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
+          src={`https://www.facebook.com/tr?id=${LIVE_FB_PIXEL_ID}&ev=PageView&noscript=1`}
         />
       </noscript>
     </>

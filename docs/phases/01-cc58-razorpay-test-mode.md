@@ -1,6 +1,6 @@
 # Phase 01 — CC-58: some live checkouts open Razorpay in "Test Mode"
 
-**Status:** Not Started
+**Status:** In Review (merged to main 2026-10-22, BE 12921c5 + dashboard d2402ea; waiting for deploy + live check)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-58
 **Repos:** BE, CM `apps/dashboard`
 
@@ -41,4 +41,7 @@ Between Sep 28 and Oct 6, students on app.clearcutoff.in saw Razorpay's "Test Mo
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | (a) keep the live test payment for 9988776655, decided on the server (payment.razorpay_test_phones / RAZORPAY_TEST_PHONES); other users always get live | User |
+| 2026-10-22 | D2 | (a) block: production + non-live key -> 503 + Log::critical (Sentry) | User |
+| 2026-10-22 | D3 | (b) key rotation / env move later (Phase 00) | User |
+| 2026-10-22 | Finding | DB 2026-09-28..10-06: 113 autopay subscriptions (89 created, 10 authenticated, 7 active, 7 cancelled); test number absent; all plans/subs on the live account (SubscriptionService uses the live key). Only difference from the working one-time flow: autopay checkout opened with no key. | Investigation |
