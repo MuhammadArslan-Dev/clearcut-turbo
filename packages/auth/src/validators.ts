@@ -70,3 +70,19 @@ export function isFakeMobileNumber(value: string): boolean {
 
   return matchedPatterns >= 2;
 }
+
+/**
+ * Cleans what a student types or pastes into a 10-digit mobile field
+ * (CC-84): keeps digits only, drops leading zeros ("09876…", "0091…") and a
+ * "+91"/"91" country code when the number is longer than 10 digits, then
+ * keeps the first 10 digits. "+91 98765 43210" → "9876543210".
+ *
+ * "91" is only dropped beyond 10 digits: "9198765432" is itself a valid
+ * 10-digit mobile number. The field must not also carry an HTML maxLength,
+ * or the browser cuts a paste to its first 10 characters before this runs.
+ */
+export function normalizeIndianMobileInput(value: string): string {
+  let digits = value.replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length > 10 && digits.startsWith("91")) digits = digits.slice(2);
+  return digits.slice(0, 10);
+}

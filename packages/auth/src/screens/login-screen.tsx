@@ -12,7 +12,6 @@ import { trackVerificationSent } from "../verification-events";
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
-import ShieldCheckIcon from "../icons/shield-check-icon";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -20,6 +19,7 @@ import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
   isFakeMobileNumber as isFakeNumber,
+  normalizeIndianMobileInput,
 } from "../validators";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
@@ -163,7 +163,7 @@ export function createLoginScreen({
     /* ---------------- PHONE VALIDATION ---------------- */
 
     const validatePhone = (value: string) => {
-      const cleaned = value.replace(/\D/g, "");
+      const cleaned = normalizeIndianMobileInput(value);
 
       setPhone(cleaned);
       setAutoSubmitted(false);
@@ -254,8 +254,12 @@ export function createLoginScreen({
     const handleLogin = async (phoneValue?: string) => {
       const number = phoneValue ?? phone;
 
+      // The button stays tappable (CC-84): a tap with a missing or wrong
+      // number shows why under the field instead of silently doing nothing.
       if (!PHONE_REGEX.test(number)) {
-        setError("Enter valid phone number");
+        setError(number ? error || "Enter valid phone number" : "Enter your 10-digit mobile number");
+        setSuccess("");
+        inputRef.current?.focus();
         return;
       }
 
@@ -389,9 +393,12 @@ export function createLoginScreen({
                             priority
                             unoptimized
                           />
-                          <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)]">
+                          <label
+                            htmlFor="auth-modal-phone"
+                            className="body-small !font-semibold text-[var(--color-text-gray-subtle)]"
+                          >
                             Mobile or WhatsApp Number
-                          </p>
+                          </label>
                         </div>
 
                         <div className="flex gap-0 flex-col w-full items-center">
@@ -399,6 +406,10 @@ export function createLoginScreen({
                             <div className="w-full h-[48px] relative">
                               <MainInput
                                 ref={inputRef}
+                                id="auth-modal-phone"
+                                autoComplete="tel-national"
+                                normalizeValue={normalizeIndianMobileInput}
+                                focusOnTap
                                 value={phone}
                                 placeholder="10-digit number"
                                 inputType="phone"
@@ -446,7 +457,7 @@ export function createLoginScreen({
                             sx={{ borderRadius: "50px" }}
                             fullWidth
                             onClick={() => handleLogin()}
-                            disabled={!isValidPhone || loading}
+                            disabled={loading}
                             loading={loading}
                           >
                             {submitLabel}
@@ -455,24 +466,18 @@ export function createLoginScreen({
                       </div>
                     </div>
 
-                    {/* TRIAL — same design as /start's box (StartAuthForm.tsx),
-                        so a change to either should be mirrored in the other. */}
+                    {/* TRIAL — same plain line as /start (StartAuthForm.tsx), so
+                        a change to either should be mirrored in the other. Not
+                        a card (CC-84): the boxed version looked tappable. */}
                     {marketing === "course-marketing" || !showTrialBanner ? (
                       <></>
                     ) : (
-                      <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand)]/15 bg-[var(--color-brand)]/8 px-4 py-3 w-full">
-                        <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--color-brand)]/12 flex items-center justify-center">
-                          <ShieldCheckIcon />
-                        </div>
-                        <div>
-                          <Text as="p" variant="body-medium" weight="semibold" color="primary-normal">
-                            3-day FREE Trial
-                          </Text>
-                          <Text as="p" variant="body-small" color="gray-muted">
-                            No card or payment required
-                          </Text>
-                        </div>
-                      </div>
+                      <Text as="p" variant="body-small" color="gray-muted" className="text-center w-full">
+                        <span className="!font-semibold text-[var(--color-brand)]">
+                          3-day FREE Trial
+                        </span>{" "}
+                        • No card or payment required
+                      </Text>
                     )}
                   </div>
 
@@ -499,7 +504,7 @@ export function createLoginScreen({
                   href="https://clearcutoff.in/terms-and-conditions"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--color-brand)] font-medium"
+                  className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
                 >
                   Terms &amp; Conditions
                 </a>{" "}
@@ -508,7 +513,7 @@ export function createLoginScreen({
                   href="https://clearcutoff.in/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--color-brand)] font-medium"
+                  className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
                 >
                   Privacy Policy
                 </a>

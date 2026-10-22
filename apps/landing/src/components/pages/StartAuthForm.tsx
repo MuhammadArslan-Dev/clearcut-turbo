@@ -24,6 +24,7 @@ import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
   isFakeMobileNumber as isFakeNumber,
+  normalizeIndianMobileInput,
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@clearcut/auth/verification-events";
 import {
   buildPostVerifyRedirectUrl,
+  createLeadId,
   getCurrentLocale,
 } from "@clearcut/auth/redirect";
 import {
@@ -44,9 +46,7 @@ import {
   isTruecallerSupportedBrowser,
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
-import ShieldCheckIcon from "@clearcut/auth/icons/shield-check-icon";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
-import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
 
 const OTP_LENGTH = 4;
@@ -80,6 +80,9 @@ const CONTENT: Record<
     otpDisclaimerLine2: string;
     trustedByLine: string;
     terms: string;
+    termsLink: string;
+    privacyLink: string;
+    termsSuffix: string;
     andWord: string;
     mobileLabel: string;
     phonePlaceholder: string;
@@ -97,6 +100,7 @@ const CONTENT: Record<
     errStartDigit: string;
     errNo91: string;
     errValid10: string;
+    errEnter10: string;
     errMax10: string;
     errFakeNumber: string;
     successValidPhone: string;
@@ -123,6 +127,9 @@ const CONTENT: Record<
     otpDisclaimerLine2: "OTP will be sent via SMS and WhatsApp.",
     trustedByLine: "Trusted by 10,000+ students to clear TET exams across India",
     terms: "By Signing Up, I agree to",
+    termsLink: "Terms & Conditions",
+    privacyLink: "Privacy Policy",
+    termsSuffix: ".",
     andWord: "and",
     mobileLabel: "Mobile or WhatsApp Number",
     phonePlaceholder: "10-digit number",
@@ -140,6 +147,7 @@ const CONTENT: Record<
     errStartDigit: "Phone number must start with 6, 7, 8, or 9",
     errNo91: "Don't include 91 in number",
     errValid10: "Enter valid 10-digit phone number",
+    errEnter10: "Enter your 10-digit mobile number",
     errMax10: "Phone number cannot exceed 10 digits",
     errFakeNumber: "Enter only a real mobile number",
     successValidPhone: "Valid phone number",
@@ -165,6 +173,9 @@ const CONTENT: Record<
     otpDisclaimerLine2: "OTP SMS और WhatsApp के ज़रिए भेजा जाएगा।",
     trustedByLine: "10,000+ छात्रों का भरोसा, पूरे भारत में TET परीक्षाओं को पास करने के लिए",
     terms: "साइन अप करके, मैं",
+    termsLink: "नियम और शर्तें",
+    privacyLink: "गोपनीयता नीति",
+    termsSuffix: " से सहमत हूँ।",
     andWord: "और",
     mobileLabel: "मोबाइल या व्हाट्सएप नंबर",
     phonePlaceholder: "10-अंकों का नंबर",
@@ -182,6 +193,7 @@ const CONTENT: Record<
     errStartDigit: "फ़ोन नंबर 6, 7, 8, या 9 से शुरू होना चाहिए",
     errNo91: "नंबर में 91 शामिल न करें",
     errValid10: "मान्य 10-अंकों का फ़ोन नंबर दर्ज करें",
+    errEnter10: "10 अंकों का मोबाइल नंबर डालें",
     errMax10: "फ़ोन नंबर 10 अंकों से अधिक नहीं हो सकता",
     errFakeNumber: "केवल असली मोबाइल नंबर दर्ज करें",
     successValidPhone: "मान्य फ़ोन नंबर",
@@ -206,7 +218,10 @@ const CONTENT: Record<
     otpDisclaimerLine1: "फक्त लॉगिन आणि परीक्षा अपडेटसाठी वापरला जातो. स्पॅम नाही.",
     otpDisclaimerLine2: "OTP SMS आणि WhatsApp द्वारे पाठवला जाईल.",
     trustedByLine: "संपूर्ण भारतात TET परीक्षा उत्तीर्ण करण्यासाठी 10,000+ विद्यार्थ्यांचा विश्वास",
-    terms: "साइन अप करून, मी सहमत आहे",
+    terms: "साइन अप करून, मी",
+    termsLink: "अटी व शर्ती",
+    privacyLink: "गोपनीयता धोरण",
+    termsSuffix: " यांना सहमत आहे.",
     andWord: "आणि",
     mobileLabel: "मोबाईल किंवा व्हॉट्सअ‍ॅप नंबर",
     phonePlaceholder: "10-अंकी नंबर",
@@ -224,6 +239,7 @@ const CONTENT: Record<
     errStartDigit: "फोन नंबर 6, 7, 8, किंवा 9 ने सुरू झाला पाहिजे",
     errNo91: "नंबरमध्ये 91 समाविष्ट करू नका",
     errValid10: "वैध 10-अंकी फोन नंबर टाका",
+    errEnter10: "10 अंकी मोबाईल नंबर टाका",
     errMax10: "फोन नंबर 10 अंकांपेक्षा जास्त असू शकत नाही",
     errFakeNumber: "फक्त खरा मोबाईल नंबर टाका",
     successValidPhone: "वैध फोन नंबर",
@@ -318,21 +334,20 @@ export default function StartAuthForm({
     });
   }, []);
 
-  const isMobile = useIsMobile();
-
-  // Auto-focus is desktop-only: on mobile it pops the keyboard open before
-  // the user has done anything, and dismissing that unsolicited keyboard via
-  // the OS back button/gesture then navigates the page back instead of just
-  // closing it.
+  // Auto-focus so the number keypad opens on arrival (CC-84, decision D1),
+  // except in Facebook's/Instagram's in-app browser: there, dismissing that
+  // unsolicited keyboard with the back button/gesture navigated the page
+  // back instead of just closing it. Checked on the user agent, not
+  // useIsMobile (still false during hydration).
   useEffect(() => {
-    if (isMobile) return;
+    if (isFacebookOrInstagramInAppBrowser()) return;
     phoneInputRef.current?.focus();
-  }, [isMobile]);
+  }, []);
 
   /* ---------------- PHONE VALIDATION (verbatim from login-screen.tsx) ---------------- */
 
   const validatePhone = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
+    const cleaned = normalizeIndianMobileInput(value);
 
     setPhone(cleaned);
     setAutoSubmitted(false);
@@ -409,8 +424,12 @@ export default function StartAuthForm({
   const handleLogin = async (phoneValue?: string) => {
     const number = phoneValue ?? phone;
 
+    // The button stays tappable (CC-84): a tap with a missing or wrong
+    // number shows why under the field instead of silently doing nothing.
     if (!PHONE_REGEX.test(number)) {
-      setError(t.errEnterValidPhone);
+      setError(number ? error || t.errEnterValidPhone : t.errEnter10);
+      setSuccess("");
+      phoneInputRef.current?.focus();
       return;
     }
 
@@ -553,7 +572,7 @@ export default function StartAuthForm({
       // same pattern: Lead can only pick up phone/external_id on the app
       // side's first Pixel init(), so it's minted here as a one-time
       // registration-occurrence token and threaded through the redirect.
-      const leadId = isNewUser ? crypto.randomUUID() : undefined;
+      const leadId = isNewUser ? createLeadId() : undefined;
 
       const redirectUrl = buildPostVerifyRedirectUrl({
         baseUrl: REDIRECT_BASE_URL,
@@ -711,9 +730,12 @@ export default function StartAuthForm({
                     priority
                     unoptimized
                   />
-                  <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)]">
+                  <label
+                    htmlFor="start-phone"
+                    className="body-small !font-semibold text-[var(--color-text-gray-subtle)]"
+                  >
                     {t.mobileLabel}
-                  </p>
+                  </label>
                 </div>
 
                 <div className="flex gap-0 flex-col w-full items-center">
@@ -721,6 +743,10 @@ export default function StartAuthForm({
                     <div className="w-full h-[48px] relative">
                       <MainInput
                         ref={phoneInputRef}
+                        id="start-phone"
+                        autoComplete="tel-national"
+                        normalizeValue={normalizeIndianMobileInput}
+                        focusOnTap
                         value={phone}
                         placeholder={t.phonePlaceholder}
                         inputType="phone"
@@ -762,7 +788,7 @@ export default function StartAuthForm({
                 sx={{ borderRadius: "50px" }}
                 fullWidth
                 onClick={() => handleLogin()}
-                disabled={!isValidPhone || loading}
+                disabled={loading}
                 loading={loading}
               >
                 {t.continueBtn}
@@ -842,24 +868,14 @@ export default function StartAuthForm({
             </div>
           )}
 
-          <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand)]/15 bg-[var(--color-brand)]/8 px-4 py-3">
-            <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--color-brand)]/12 flex items-center justify-center">
-              <ShieldCheckIcon />
-            </div>
-            <div>
-              <Text
-                as="p"
-                variant="body-medium"
-                weight="semibold"
-                color="primary-normal"
-              >
-                {t.trialTitle}
-              </Text>
-              <Text as="p" variant="body-small" color="gray-muted">
-                {t.trialSubtitle}
-              </Text>
-            </div>
-          </div>
+          {/* Plain text, not a card (CC-84): the boxed version with an icon
+              looked tappable and students kept tapping it. */}
+          <Text as="p" variant="body-small" color="gray-muted" className="text-center">
+            <span className="!font-semibold text-[var(--color-brand)]">
+              {t.trialTitle}
+            </span>{" "}
+            • {t.trialSubtitle}
+          </Text>
 
           <Text
             as="p"
@@ -877,21 +893,29 @@ export default function StartAuthForm({
               color="gray-muted"
               className="text-center"
             >
+              {/* New tab (CC-85, decision D5) so the form and the typed
+                  number stay; the padding (cancelled by the negative margin,
+                  so the text doesn't move) makes each link a ~44px tap
+                  target. */}
               {t.terms}{" "}
               <Link
                 href="/terms-and-conditions"
-                className="text-[var(--color-brand)] font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
               >
-                Terms &amp; Conditions
+                {t.termsLink}
               </Link>{" "}
               {t.andWord}{" "}
               <Link
                 href="/privacy-policy"
-                className="text-[var(--color-brand)] font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
               >
-                Privacy Policy
+                {t.privacyLink}
               </Link>
-              .
+              {t.termsSuffix}
             </Text>
           </div>
         </div>
