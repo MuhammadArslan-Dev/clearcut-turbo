@@ -6,6 +6,7 @@ import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import { Card } from "@clearcut/ui/card";
 import { getDict, Locale } from "@/lib/dictionary";
+import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
 import { encodeJpegWithinBudget } from "@/lib/jpegBudget";
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
@@ -880,6 +881,12 @@ function AdjustStep({
 // branches on its absence.
 const ALL_PRESET_KEYS: PresetKey[] = ["photo", "signature", "draw", "thumb"];
 
+// Facebook's / Instagram's in-app browsers ignore <a download> on blob URLs,
+// so there the tap saves nothing; the result screen then explains the
+// press-and-hold fallback (the result image is a real <img>).
+const isInAppBrowser = () =>
+  typeof navigator !== "undefined" && /FBAN|FBAV|FB_IAB|FB4A|FBIOS|Instagram/i.test(navigator.userAgent);
+
 interface ResizeImageToolProps {
   photoSpec?: ImageSpec;
   signatureSpec?: ImageSpec;
@@ -891,6 +898,8 @@ interface ResizeImageToolProps {
   defaultPreset?: PresetKey;
   /** Restricts which document-type tiles render — e.g. an exam spoke page only lists Photo + Signature, since that's the only pair resizerExams.ts actually has verified specs for. Defaults to every preset (the general hub page). */
   allowedPresets?: PresetKey[];
+  /** Exam short name for analytics (spoke pages); undefined on the generic tool pages. */
+  examName?: string;
   /** Hides the "Document type" tile grid entirely — the Add Name & Date page is its own dedicated single-purpose form in the reference, not a mode picked from a tile grid. Defaults to shown. */
   showPresetPicker?: boolean;
   locale?: Locale;
@@ -906,6 +915,7 @@ export default function ResizeImageTool({
   allowedPresets = ALL_PRESET_KEYS,
   showPresetPicker = true,
   locale = "en",
+  examName,
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
   const PRESETS = buildPresets(locale, photoSpec, signatureSpec, { thumbSpec, rightThumbSpec, declarationSpec });
@@ -924,6 +934,13 @@ export default function ResizeImageTool({
   const [minKB, setMinKB] = useState(PRESETS[initialPreset].minKB);
   const [maxKB, setMaxKB] = useState(PRESETS[initialPreset].maxKB);
   const [unit, setUnit] = useState<"px" | "cm">("px");
+  // Set after Download: the file lands silently (or not at all in FB/IG's
+  // in-app browsers), so "Download Image" looked like a dead tap (CC-93).
+  const [downloaded, setDownloaded] = useState(false);
+
+  // CC-93: the resizer's funnel in Amplitude (upload → processed → download).
+  const trackResizer = (event: string, props: Record<string, unknown> = {}) =>
+    logAmplitudeEvent(event, { exam_name: examName ?? null, document_type: preset, locale, ...props });
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
   const [includeDate, setIncludeDate] = useState(false);
@@ -993,6 +1010,7 @@ export default function ResizeImageTool({
     setResult(null);
     setLastCrop(null);
     setError(null);
+    setDownloaded(false);
     setStep("configure");
   };
 
@@ -1048,14 +1066,19 @@ export default function ResizeImageTool({
           if (prev) URL.revokeObjectURL(prev.url);
           return { url: URL.createObjectURL(blob), blob, width: outWidth, height: outHeight };
         });
+        setDownloaded(false);
         setStep("result");
+        trackResizer("resizer_processed", {
+          size_kb: Math.round((blob.size / KB) * 10) / 10,
+          within_target: preset === "signature" || (blob.size >= minKB * KB && blob.size <= maxKB * KB),
+        });
       } catch (err) {
         if (version !== workspaceVersionRef.current) return;
         setError(err instanceof Error ? err.message : t.errorGeneric);
         setStep("configure");
       }
     },
-    [width, height, maxKB, preset, stampName, stampDate, includeDate, brightness, contrast, cleanup, t],
+    [width, height, minKB, maxKB, preset, stampName, stampDate, includeDate, brightness, contrast, cleanup, t],
   );
 
   const selectFile = useCallback(
@@ -1099,6 +1122,7 @@ export default function ResizeImageTool({
 
       if (originalPreviewUrl) URL.revokeObjectURL(originalPreviewUrl);
       setFile(workingFile);
+      trackResizer("resizer_upload", { file_kb: Math.round(workingFile.size / KB) });
       const previewUrl = URL.createObjectURL(workingFile);
       setOriginalPreviewUrl(previewUrl);
       setBrightness(0);
@@ -1169,6 +1193,7 @@ export default function ResizeImageTool({
   };
 
   const handleReset = () => {
+    trackResizer("resizer_process_another");
     clearImageState();
   };
 
@@ -1197,6 +1222,8 @@ export default function ResizeImageTool({
     document.body.appendChild(a);
     a.click();
     a.remove();
+    setDownloaded(true);
+    trackResizer("resizer_download", { in_app_browser: isInAppBrowser() });
   };
 
   const handleShare = async () => {
@@ -1782,6 +1809,14 @@ export default function ResizeImageTool({
               <Button fullWidth sx={{ borderRadius: "50px" }} onClick={handleDownload}>
                 {t.downloadImage}
               </Button>
+              {downloaded && (
+                <p role="status" className="body-small text-center">
+                  <span className="font-semibold text-[var(--color-success-strong)]">{t.downloaded}</span>
+                  {isInAppBrowser() && (
+                    <span className="mt-1 block text-text-gray-muted">{t.inAppSaveHint}</span>
+                  )}
+                </p>
+              )}
 
               <Text as="p" variant="body-small" color="gray-muted" className="text-center -mt-2">
                 {t.autoRenamedPrefix}{" "}

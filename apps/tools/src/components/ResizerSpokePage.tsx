@@ -137,6 +137,7 @@ export default function ResizerSpokePage({
           declarationSpec={specOf("handwritten_declaration")}
           allowedPresets={allowedPresets}
           locale={locale}
+          examName={exam.shortName}
         />
 
         {category && (
