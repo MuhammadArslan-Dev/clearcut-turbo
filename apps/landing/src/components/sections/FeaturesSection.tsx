@@ -52,9 +52,9 @@ const CONTENT: Record<Locale, FeaturesContent> = {
       {
         id: 3,
         icon: "clock",
-        heading: "Try it for free",
+        heading: "Try it free for 3 days",
         description:
-          "Use all features free during the trial. Watch videos, take tests, then decide whether to continue.",
+          "The first chapter of every subject, the first test of every chapter and today's daily test — all free. Like it? Unlock the full course.",
       },
     ],
   },
@@ -83,8 +83,8 @@ const CONTENT: Record<Locale, FeaturesContent> = {
       {
         id: 3,
         icon: "clock",
-        heading: "फ्री में आज़माएं",
-        description: "ट्रायल अवधि में सभी फीचर्स मुफ्त उपयोग करें। वीडियो देखें, टेस्ट हल करें और फिर निर्णय लें कि आगे जारी रखना है या नहीं।",
+        heading: "3 दिन फ्री में आज़माएं",
+        description: "हर विषय का पहला चैप्टर, हर चैप्टर का पहला टेस्ट और आज का डेली टेस्ट — सब फ्री। पसंद आए तो पूरा कोर्स अनलॉक करें।",
       },
     ],
   },
@@ -113,8 +113,8 @@ const CONTENT: Record<Locale, FeaturesContent> = {
       {
         id: 3,
         icon: "clock",
-        heading: "मोफत वापरून पाहा",
-        description: "ट्रायल कालावधीत सर्व फीचर्स मोफत वापरा. व्हिडिओ पाहा, टेस्ट द्या, मग पुढे सुरू ठेवायचे की नाही ते ठरवा.",
+        heading: "3 दिवस मोफत वापरून पाहा",
+        description: "प्रत्येक विषयाचा पहिला चॅप्टर, प्रत्येक चॅप्टरची पहिली टेस्ट आणि आजची डेली टेस्ट — सगळं मोफत. आवडलं तर पूर्ण कोर्स अनलॉक करा.",
       },
     ],
   },

@@ -2,7 +2,8 @@
   "common": {
     "continueFree": "मोफत तयारी सुरू ठेवा",
     "continueFreeShort": "मोफत सुरू ठेवा",
-    "startFree": "मोफत सुरू करा"
+    "startFree": "मोफत सुरू करा",
+    "startTrial": "3 दिवसांची मोफत ट्रायल सुरू करा"
   },
   "nav": {
     "pricing": "किंमत",

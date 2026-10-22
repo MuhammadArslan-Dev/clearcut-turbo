@@ -55,7 +55,7 @@ const COPY: Record<Locale, {
         <span className="text-brand">One</span> price, <span className="text-brand">everything</span> included!
       </>
     ),
-    pricingDescription: "Pay once. 6 months of access. Everything you need to pass on the first attempt.",
+    pricingDescription: "Plans from 1 month. Everything you need to pass on the first attempt.",
     trialButton: "Start your 3-day free trial",
     heroHeading: (courseName) => (
       <>
@@ -68,7 +68,7 @@ const COPY: Record<Locale, {
       "All exam sections covered",
       "Videos, notes and concepts",
       "50+ papers in the test series",
-      "Free demo classes",
+      "First chapter of every subject free",
     ],
     heroTrustCard: (courseName, stateName) => (
       <>
@@ -129,7 +129,7 @@ const COPY: Record<Locale, {
         <span className="text-brand">एक</span> कीमत, <span className="text-brand">सब कुछ</span> शामिल!
       </>
     ),
-    pricingDescription: "एक बार भुगतान। 6 महीने का एक्सेस। पहली कोशिश में पास होने के लिए ज़रूरी सब कुछ।",
+    pricingDescription: "1 महीने से शुरू होने वाले प्लान। पहली कोशिश में पास होने के लिए ज़रूरी सब कुछ।",
     trialButton: "3-दिन का फ्री ट्रायल शुरू करें",
     heroHeading: (courseName) => (
       <>
@@ -142,7 +142,7 @@ const COPY: Record<Locale, {
       "परीक्षा के सभी सेक्शन कवर",
       "वीडियो, नोट्स और कॉन्सेप्ट",
       "टेस्ट सीरीज़ में 50+ पेपर",
-      "फ्री डेमो क्लासेस",
+      "हर विषय का पहला चैप्टर फ्री",
     ],
     heroTrustCard: (courseName, stateName) => (
       <>
@@ -202,7 +202,7 @@ const COPY: Record<Locale, {
         <span className="text-brand">एक</span> किंमत, <span className="text-brand">सर्व काही</span> समाविष्ट!
       </>
     ),
-    pricingDescription: "एकदाच पैसे भरा. 6 महिन्यांचा अ‍ॅक्सेस. पहिल्याच प्रयत्नात उत्तीर्ण होण्यासाठी आवश्यक सर्व काही.",
+    pricingDescription: "1 महिन्यापासून सुरू होणारे प्लान. पहिल्याच प्रयत्नात उत्तीर्ण होण्यासाठी आवश्यक सर्व काही.",
     trialButton: "3-दिवसांची मोफत ट्रायल सुरू करा",
     heroHeading: (courseName) => (
       <>
@@ -215,7 +215,7 @@ const COPY: Record<Locale, {
       "परीक्षेचे सर्व विभाग समाविष्ट",
       "व्हिडिओ, नोट्स आणि संकल्पना",
       "टेस्ट सिरीजमध्ये 50+ पेपर",
-      "मोफत डेमो क्लासेस",
+      "प्रत्येक विषयाचा पहिला चॅप्टर मोफत",
     ],
     heroTrustCard: (courseName, stateName) => (
       <>

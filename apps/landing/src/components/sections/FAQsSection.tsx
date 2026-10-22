@@ -132,7 +132,7 @@ const CONTENT: Record<Locale, FAQsContent> = {
         },
         {
           q: "Is a trial period available?",
-          a: <>Yes, you can access a <strong>free trial</strong> of the course before buying.</>,
+          a: <>Yes. For 3 days you get <strong>the first chapter of every subject</strong> (videos and notes), the first test of every chapter, section and paper, and today’s daily test — free, no card needed. Everything else unlocks when you choose a plan.</>,
         },
         {
           q: "What if the exam gets postponed?",
@@ -247,7 +247,7 @@ const CONTENT: Record<Locale, FAQsContent> = {
         },
         {
           q: "क्या कोई ट्रायल अवधि उपलब्ध है?",
-          a: <>हाँ, खरीदने से पहले आप कोर्स का <strong>फ्री ट्रायल</strong> एक्सेस कर सकते हैं।</>,
+          a: <>हाँ। 3 दिन तक आपको <strong>हर विषय का पहला चैप्टर</strong> (वीडियो और नोट्स), हर चैप्टर, सेक्शन और पेपर का पहला टेस्ट, और आज का डेली टेस्ट फ्री मिलता है — कोई कार्ड नहीं चाहिए। बाकी सब प्लान लेने पर खुलता है।</>,
         },
         {
           q: "अगर परीक्षा स्थगित हो जाती है तो क्या होगा?",
@@ -362,7 +362,7 @@ const CONTENT: Record<Locale, FAQsContent> = {
         },
         {
           q: "ट्रायल कालावधी उपलब्ध आहे का?",
-          a: <>हो, खरेदी करण्यापूर्वी तुम्ही कोर्सची <strong>मोफत ट्रायल</strong> अ‍ॅक्सेस करू शकता.</>,
+          a: <>हो. 3 दिवस तुम्हाला <strong>प्रत्येक विषयाचा पहिला चॅप्टर</strong> (व्हिडिओ आणि नोट्स), प्रत्येक चॅप्टर, सेक्शन आणि पेपरची पहिली टेस्ट आणि आजची डेली टेस्ट मोफत मिळते — कार्डची गरज नाही. बाकी सगळं प्लान घेतल्यावर उघडतं.</>,
         },
         {
           q: "परीक्षा पुढे ढकलली गेली तर काय होईल?",

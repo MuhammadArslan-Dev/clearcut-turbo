@@ -93,7 +93,7 @@ const faqSchema = {
       name: "Is there a free trial available?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, you can access a free trial before purchasing the course to check if it meets your expectations — no payment or card required.",
+        text: "Yes. For 3 days you get the first chapter of every subject (videos and notes), the first test of every chapter, section and paper, and today's daily test — free, no card needed. Everything else unlocks when you choose a plan.",
       },
     },
   ],

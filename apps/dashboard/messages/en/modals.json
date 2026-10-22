@@ -61,7 +61,7 @@
 
   "topicLockedModal": {
     "title": "This Topic is Locked",
-    "subtitle": "Unlock to continue your preparation",
+    "subtitle": "Your free trial includes the first chapter of every subject. Unlock the full course to keep going.",
     "unlockAndGet": "Unlock and get",
     "features": {
       "accessTopic": "Access this topic & all lessons",
@@ -103,7 +103,7 @@
 
   "testLockedModal": {
     "title": "Test Locked",
-    "subtitle": "Unlock to attempt this test",
+    "subtitle": "Your free trial includes the first test of every chapter, section and paper. Unlock the full course to take this one.",
     "unlockAndGet": "Unlock and get",
     "features": {
       "attemptTest": "Attempt this test",

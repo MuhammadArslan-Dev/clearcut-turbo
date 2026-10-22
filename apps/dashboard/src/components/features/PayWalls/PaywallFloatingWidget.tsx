@@ -10,8 +10,10 @@ import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityS
 import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { ChevronIcon } from "@/components/ui/icons";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import { useTranslations } from "next-intl";
 
 export default function PaywallFloatingWidget() {
+  const t = useTranslations();
   const { course } = useGetCurrentCourseStore();
 
   const router = useRouter();
@@ -125,7 +127,7 @@ export default function PaywallFloatingWidget() {
                 <ChevronIcon size={20} type="double" variant="right" color="white" />
               }
             >
-              Unlock {examTitle} course
+              {t("myCourses.unlockCourse", { exam: examTitle })}
             </Button>
           </div>
         </Card>

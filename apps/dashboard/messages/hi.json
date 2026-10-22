@@ -214,7 +214,7 @@
   },
   "course": {
     "courseStatus": {
-      "trial": "FREE ट्रायल के 3 दिन बचे हैं",
+      "trial": "{days, plural, one {FREE ट्रायल का आखिरी दिन} other {FREE ट्रायल के {daysText} दिन बचे हैं}}",
       "trialEnd": "ट्रायल खत्म हो गया",
       "active": "एक्टिव",
       "completed": "पूरा हो चुका",
@@ -236,6 +236,7 @@
     "continueLearningActive": "लर्निंग कंटिन्यू करें",
     "addSubjects": "विषय जोड़ें",
     "unlockFullAccess": "फुल एक्सेस अनलॉक करें",
+    "unlockCourse": "{exam} कोर्स अनलॉक करें",
     "buyFullCourse": "पूरा कोर्स खरीदें",
     "priceNote": "₹{price}/माह • सब्सक्रिप्शन प्लान",
     "trialLimit": "फ्री ट्रायल सिर्फ {days, plural, one {# दिन} other {# दिन}} के लिए"

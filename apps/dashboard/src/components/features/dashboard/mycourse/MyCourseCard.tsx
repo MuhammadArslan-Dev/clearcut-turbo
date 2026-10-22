@@ -6,6 +6,7 @@ import { ChevronIcon, LockIcon, SettingGearIcon } from "@/components/ui/icons";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { CourseStatus } from "@/lib/status/courseStatus";
 import { getCourseStatus } from "@/lib/status/getCourseStatus";
+import { trialDaysLeft } from "@/lib/status/trialDaysLeft";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
@@ -20,6 +21,8 @@ export interface MyCOurseCardProps {
   examData?: string | number | null;
   rating?: string | number | null;
   badge?: string;
+  /** Enrollment creation date: the trial badge counts its days left from it (CC-67). */
+  trialStartedAt?: string | number | null;
   // Exam `short_name` — drives the per-exam price override (e.g. HPTET)
   // shown in `myCourses.priceNote`. See @/lib/payment/examPriceOverrides.
   examShortName?: string | null;
@@ -57,6 +60,7 @@ export default function MyCourseCard({
   examData,
   rating,
   badge,
+  trialStartedAt,
   examShortName,
   topics,
   tests,
@@ -73,6 +77,7 @@ export default function MyCourseCard({
 
   const { label, color } = getCourseStatus(badge as CourseStatus, t, {
     color: false,
+    trialDaysLeft: trialDaysLeft(trialStartedAt),
   });
 
   const examPrice = useMemo(() => JSON.parse(price ?? "{}") ?? 0, [price]);
