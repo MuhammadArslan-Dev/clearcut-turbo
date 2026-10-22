@@ -1,8 +1,8 @@
 # Phase 25 — CC-97: ask why before cancelling, offer a way to stay, confirm clearly
 
-**Status:** Not Started — offers need RD's confirmation before build
+**Status:** Built + verified locally with stubbed backend (2026-10-22) — branch `phase-25-cancel-flow` (6723be8), not merged, not deployed. "Too expensive" offer still waits for RD.
 **Jira:** [CC-97](https://clear-cutoff.atlassian.net/browse/CC-97)
-**Repos:** CM `apps/dashboard`; BE (store the reason; plan switch autopay → one-time; maybe a discount)
+**Repos:** CM `apps/dashboard` only (reasons go to Amplitude for v1; no BE change)
 **Size:** large, new flow
 
 ## What the ticket says
@@ -42,6 +42,39 @@
 - **"Switch autopay → one-time"** has no backend flow. It would mean cancel plus a one-time order.
 - **Related open data issue (CC-100):** paused/active charge counts look off (`SubscriptionWebhookService.php:64`), so check pause dates before showing "restarts on {date}".
 
+## What was built
+- **`CancelFlowContent.tsx`**, inside the existing `ConfirmSheet` (bottom sheet on mobile, dialog on desktop). Steps: **reason → offer (if any) → confirm → done**. Pause and resume keep the old one-step confirm.
+- **Reasons (required, en/hi/mr):** exam over, too expensive, no time, didn't like content, no autopay, something else (+ optional note, 300 chars).
+- **Offers, only where an action already exists:**
+
+  | Reason | What happens |
+  |---|---|
+  | No time | "Pause instead" (pause API), only if the plan can be paused (active/authenticated) |
+  | Content | "Talk on WhatsApp" (`lib/support.ts`, prefilled "Cancelling my plan – {course} – {phone}") |
+  | No autopay | Explains that cancelling stops autopay, access stays till period end, and a one-time plan can be bought later |
+  | Exam over | "Congratulations! 🎉" on the confirm step |
+  | Too expensive / other | Straight to confirm, **no offer until RD decides** |
+- **Done screen:** "Your plan is cancelled / paused" + the backend's own message (it carries the access end date: "Access continues until …"). No dates are invented on the frontend. The list refreshes.
+- **Amplitude (typed):**
+  - `cancel_started`
+  - `cancel_reason_selected {reason}`
+  - `save_offer_shown {reason, offer}`
+  - `save_offer_accepted {reason, offer}`
+  - `subscription_cancelled {reason, note?}`
+  - `subscription_paused {reason?}`
+
+## Verification (Playwright 390px; `/v2/subscription` GET/cancel/pause stubbed, no real subscription touched)
+- [x] Continue disabled until a reason is picked.
+- [x] No time on an active plan → pause offer → only `POST /v2/subscription/101/pause` → "Your plan is paused".
+- [x] Too expensive → straight to confirm → only `POST .../101/cancel` → "Your plan is cancelled" + "Access continues until 31 Oct 2026" (backend message).
+- [x] Content → WhatsApp `wa.me/917404758398?text=Cancelling my plan – HTET – +919988776655`, no API call.
+- [x] No time on a `created` plan (can't pause) → no pause offer.
+- [x] Hindi: "आप क्यों रद्द कर रहे हैं?" + all 6 reasons.
+- [x] tsc clean for these files; eslint 0 = 0; check:colors passes.
+- [ ] 📞 C1: RD decides the "too expensive" offer (next month ₹49? ₹99 without autopay?). Needs a backend price/plan path before it can be built.
+- [ ] D1 (v2): store reasons in the DB if Amplitude isn't enough.
+- [ ] Check pause end/restart dates in the backend message before relying on them (CC-100 note on paused counts).
+
 ## Plan
 - [ ] Reason sheet (BottomSheet on mobile / Modal on desktop, existing components), then an offer card, then a confirmation screen; the same end state for pause.
 - [ ] BE: save the reason (+ free text) with the subscription; return the access end date and pause end.
@@ -56,4 +89,6 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 store reasons | Amplitude only for v1 (no migration) | Claude; user asked to continue |
+| 2026-10-22 | D2 WhatsApp number | lib/support.ts (917404758398) — confirm | Claude, flagged |
+| 2026-10-22 | C1 offers | Built only offers that map to existing actions; 'too expensive' waits for RD | Claude |
