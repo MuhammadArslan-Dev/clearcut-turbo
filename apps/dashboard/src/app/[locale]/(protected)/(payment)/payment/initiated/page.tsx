@@ -368,6 +368,9 @@ export default function InitiatedPage() {
   /* ---------------------------------- handlers ---------------------------------- */
   const handleSubscriptionPayment = useCallback(async () => {
     setSubscriptionLoading(true);
+    // Busy until the popup is closed or the payment ends, not just until
+    // open() returns (same as the one-time hook, CC-60 follow-up).
+    let checkoutOpened = false;
     try {
       const razorpayLoaded = await sentryApiClient(() => loadRazorpay(), {
         endpoint: "/load-razorpay",
@@ -587,6 +590,8 @@ export default function InitiatedPage() {
         // Popup closed by the user — Razorpay fires no payment.failed for this.
         modal: {
           ondismiss: () => {
+            // Closed without paying: the button works again.
+            if (!outcomeReported) setSubscriptionLoading(false);
             if (outcomeReported) return;
             outcomeReported = true;
 
@@ -680,6 +685,7 @@ export default function InitiatedPage() {
         },
       );
       razorpay.open();
+      checkoutOpened = true;
     } catch (error) {
       logger.error(error, {
         tags: { module: "subscription-payment", type: "unexpected_error" },
@@ -694,14 +700,18 @@ export default function InitiatedPage() {
       });
       setPayError(checkoutT("errorGeneric"));
     } finally {
-      setSubscriptionLoading(false);
+      // Not opened: free the button now; once opened, the popup's callbacks
+      // (dismiss / success redirect / failure redirect) end it.
+      if (!checkoutOpened) setSubscriptionLoading(false);
     }
   }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
     // One checkout at a time: a second quick tap used to create a second
     // order and fire AddPaymentInfo again (CC-60).
-    if (payBusyRef.current) return;
+    // `loading`/`subscriptionLoading` stay on while a checkout is open or a
+    // payment is being confirmed, so a tap then does nothing at all.
+    if (payBusyRef.current || loading || subscriptionLoading) return;
     payBusyRef.current = true;
     setPayError(null);
     trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
@@ -709,7 +719,7 @@ export default function InitiatedPage() {
     void start().finally(() => {
       payBusyRef.current = false;
     });
-  }, [selectVariant, selectedPrice, data, handleSubscriptionPayment, handlePayment]);
+  }, [selectVariant, selectedPrice, data, handleSubscriptionPayment, handlePayment, loading, subscriptionLoading]);
 
   /* ---------------------------------- states ---------------------------------- */
 

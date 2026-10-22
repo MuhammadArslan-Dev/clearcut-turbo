@@ -4,7 +4,8 @@ import { useCourseStore } from "@/store/course/useCourseStore";
 import { ArrowIcon, CheckIcon, FireIcon } from "@/components/ui/icons";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { useLocale, useTranslations } from "next-intl";
-import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { MY_COURSES_KEY, useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { parseTranslation } from "@/utils/text/translation";
@@ -78,8 +79,15 @@ export default function Success() {
   );
 
   /* ---------------------------------- handlers ---------------------------------- */
+  const queryClient = useQueryClient();
+
   const handleResume = useCallback(async () => {
     if (!activeCourse) return;
+    // Paid but not yet activated: fetch the course status again so the next
+    // screen sees the activation the moment it lands (CC-60).
+    if (activationPending) {
+      await queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY }).catch(() => {});
+    }
     if (activeCourse?.stage_id) {
       await trackEvent("Content Started", {
         source: "payment_success_modal",
@@ -93,7 +101,7 @@ export default function Success() {
 
 
     // router.push(`/preparation/${course?.group_code}`);
-  }, [activeCourse?.uuid,open]);
+  }, [activeCourse?.uuid, open, activationPending, queryClient]);
 
   const Price = useMemo(
     () => JSON.parse(data?.price ?? "{}") ?? 0,
@@ -143,13 +151,17 @@ export default function Success() {
 
                   <div className="text-center">
                     <div className="heading-large !font-semibold text-surface-gray-normal">
-                      {modalT("paymentSuccess.unlockedTitle", {
-                        exam: examTitle,
-                      })}
+                      {activationPending
+                        ? modalT("checkout.receivedTitle")
+                        : modalT("paymentSuccess.unlockedTitle", {
+                            exam: examTitle,
+                          })}
                     </div>
-                    <p className="body-small text-surface-gray-muted">
-                      {modalT("paymentSuccess.featuresAvailable")}
-                    </p>
+                    {!activationPending && (
+                      <p className="body-small text-surface-gray-muted">
+                        {modalT("paymentSuccess.featuresAvailable")}
+                      </p>
+                    )}
                     <div className="mt-2">
                       {levelsLoading ? (
                         <Skeleton className="h-6 rounded-full" />
