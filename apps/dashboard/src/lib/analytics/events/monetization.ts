@@ -6,7 +6,8 @@ export type MonetizationEventName =
   | 'Purchase Intent Initiated'
   | 'Payment Initiated'
   | 'Payment Outcome'
-  | 'Subscription Status Updated';
+  | 'Subscription Status Updated'
+  | 'Support Contacted';
 
 export interface MonetizationEventPayloads {
   'Payment Paywall Rendered': {
@@ -34,6 +35,12 @@ export interface MonetizationEventPayloads {
     // 1 for the first switch on this page visit, 2 for the second, …
     switch_number: number;
     currency: 'INR';
+  };
+
+  // Student opened WhatsApp/phone support (e.g. from /payment/failed, CC-64).
+  'Support Contacted': {
+    source: string;
+    channel: 'whatsapp' | 'phone';
   };
 
   'Purchase Intent Initiated': {

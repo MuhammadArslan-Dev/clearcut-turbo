@@ -52,6 +52,8 @@
     "trustedBy": "Trusted by {count, plural, =0 {# teaching aspirant} one {#+ teaching aspirant} other {#+ teaching aspirants}}",
 
     "cta": "Unlock Full Access for {exam}",
+    "ctaPrice": "Unlock Full Access for {price}",
+    "cancelAnytime": "Cancel autopay anytime",
 
     "continueFree": "Continue free learning",
 

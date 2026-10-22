@@ -3,7 +3,11 @@
   "dontMiss": "Don't miss your {exam} preparation momentum",
 
   "notCompletedTitle": "Payment not completed",
-  "notCompletedDesc": "No money was deducted. Complete payment to unlock tests, notes & full syllabus.",
+  "notCompletedDesc": "If any money was deducted, it comes back to your account automatically in 5–7 working days. Complete the payment to unlock tests, notes & full syllabus.",
+  "whatsappMessage": "Payment failed – {exam} – {phone}",
+  "whatsappHelp": "Get help on WhatsApp",
+  "payOnceInstead": "Pay once, without autopay",
+  "tryAgain": "Try again",
 
   "priceNote": "{amount} (incl. GST)",
 
