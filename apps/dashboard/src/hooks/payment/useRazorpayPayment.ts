@@ -7,7 +7,7 @@ import { CURRENT_COURSE_QUERY_KEY } from "../course/useGetCurrentCourse";
 import React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
-import { trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
+import { trackFacebookEventOnce, trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import {
   computeMetaPurchaseValue,
@@ -16,7 +16,7 @@ import {
 import {
   createOrder,
   PaymentType,
-  pollVerifyPayment,
+  pollVerifyPaymentResult,
 } from "@/lib/payment/payment";
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
@@ -102,13 +102,14 @@ export function useRazorpayPayment({
         handler: async (response: any) => {
           onClose?.();
 
-          const success = await sentryApiClient(
-            () => pollVerifyPayment(order.transaction_id),
+          const verified = await sentryApiClient(
+            () => pollVerifyPaymentResult(order.transaction_id),
             {
               endpoint: "/verify-payment-polling",
               module: "payment-initiation",
             },
           );
+          const success = verified.success;
 
           await invalidateQuery();
           // The page's current-course query feeds the course store that
@@ -147,14 +148,37 @@ export function useRazorpayPayment({
             // stays correct if that ever changes). `plan` is omitted
             // (not guessed) for callers that don't pass `type` at all
             // (the single-course purchase modals).
-            const amountPaid = Number(price);
-            const plan = getMetaPurchasePlan(type);
-            trackFacebookEventWithUserData("Purchase", {
-              value: computeMetaPurchaseValue(amountPaid, type),
-              currency: "INR",
-              amount_paid: amountPaid,
-              ...(plan ? { plan } : {}),
-            });
+            //
+            // CC-53: the backend decides (verify's `meta_purchase`): Purchase
+            // only for the user's FIRST payment on this course (buying the
+            // same course again is a renewal), with the amount actually
+            // charged (after any referral discount) and the server-side
+            // multiplier. A backend from before that falls back to the
+            // client-side values below.
+            const meta = verified.metaPurchase;
+            if (meta) {
+              if (meta.send) {
+                trackFacebookEventOnce(
+                  "Purchase",
+                  {
+                    value: meta.value,
+                    currency: meta.currency,
+                    amount_paid: meta.amount_paid,
+                    ...(meta.plan ? { plan: meta.plan } : {}),
+                  },
+                  meta.event_id,
+                );
+              }
+            } else {
+              const amountPaid = Number(price);
+              const plan = getMetaPurchasePlan(type);
+              trackFacebookEventWithUserData("Purchase", {
+                value: computeMetaPurchaseValue(amountPaid, type),
+                currency: "INR",
+                amount_paid: amountPaid,
+                ...(plan ? { plan } : {}),
+              });
+            }
 
             onSuccess();
           } else {

@@ -1,6 +1,6 @@
 # Phase 05 — CC-53: send the correct Purchase value to Meta
 
-**Status:** Not Started (mostly already built; gaps remain)
+**Status:** In Review (branches cc-53-meta-purchase in BE + CM; not merged)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-53
 **Repos:** CM `apps/dashboard`, optionally BE
 
@@ -32,4 +32,8 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | First payment | Per user + course (group_code): the first successful payment of each course sends Purchase (+ Subscribe for autopay); autopay renewals and re-buying the same course's one-time plan are renewals (nothing sent). | User |
+| 2026-10-22 | D1 | (a) backend decides (MetaPurchaseService): verify returns meta_purchase; GET /v2/subscription/{id}/meta-purchase for autopay | User |
+| 2026-10-22 | D2 | (b) multipliers in BE config payment.meta_purchase (env META_PURCHASE_SUBSCRIPTION/ONE_TIME/ANNUAL_MULTIPLIER, then config:clear) | User |
+| 2026-10-22 | D3 | (a) verify polling fixed now: BE pending -> 200 + pending; FE keeps polling on old 400s, 10 x 2 s | User |
+| 2026-10-22 | Done | value = charged amount (webhook paise or transaction rupees, after discount) x multiplier, rounded; eventID per payment + once-per-browser guard. Local check (rolled back): first course send=true, same course again send=false, other course send=true; autopay ₹99 -> 183. Live Pixel not tested (needs a real payment). | Claude |

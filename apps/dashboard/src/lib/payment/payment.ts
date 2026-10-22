@@ -1,4 +1,5 @@
 import { apiFetch } from "../api/client";
+import { isApiError } from "../api/api-error";
 
 /* ---------------------------------- */
 /* Utils */
@@ -39,9 +40,26 @@ export type CreateOrderResponse = {
   transaction_id: number;
 };
 
+/**
+ * What to send to Meta for a payment, decided by the backend (CC-53):
+ * `send` only for the user's first successful payment on that course;
+ * `value` = amount charged x the server-side multiplier, rounded.
+ */
+export type MetaPurchase = {
+  send: boolean;
+  event_id: string;
+  value: number;
+  amount_paid: number;
+  plan: "monthly_autopay" | "monthly_onetime" | "annual" | null;
+  currency: string;
+};
+
 export type VerifyPaymentResponse = {
   success: boolean;
   message: string;
+  /** Not final yet (the webhook hasn't arrived): keep polling. */
+  pending?: boolean;
+  meta_purchase?: MetaPurchase;
 };
 
 export type CreateOrderPayload = {
@@ -248,20 +266,45 @@ export async function getPaymentPricing(): Promise<PaymentPricing> {
   return apiFetch<PaymentPricing>("/v2/payment/pricing");
 }
 
-export async function pollVerifyPayment(
+/**
+ * Polls /v2/payment/verify until the webhook has marked the order. A "not
+ * final yet" answer keeps polling: newer backends send 200 + pending, older
+ * ones a 400 that apiFetch throws, which used to end the loop on the first
+ * try and report a paid order as failed (CC-60 / CC-53). A 404 (unknown
+ * transaction) stops at once.
+ */
+export async function pollVerifyPaymentResult(
   transactionId: number,
-  retries = 6,
+  retries = 10,
   delay = 2000,
-): Promise<boolean> {
+): Promise<{ success: boolean; metaPurchase?: MetaPurchase }> {
   for (let i = 0; i < retries; i++) {
-    const res = await verifyPayment(transactionId);
-
-    if (res.success) {
-      return true;
+    try {
+      const res = await verifyPayment(transactionId);
+      if (res.success) return { success: true, metaPurchase: res.meta_purchase };
+    } catch (error) {
+      if (!isApiError(error) || error.status === 404) throw error;
     }
 
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
-  return false;
+  return { success: false };
+}
+
+export async function pollVerifyPayment(
+  transactionId: number,
+  retries = 10,
+  delay = 2000,
+): Promise<boolean> {
+  return (await pollVerifyPaymentResult(transactionId, retries, delay)).success;
+}
+
+/** Meta Subscribe/Purchase decision for an autopay subscription's checkout (CC-53). */
+export async function getSubscriptionMetaPurchase(
+  subscriptionId: number,
+): Promise<{ success: boolean; meta_purchase: MetaPurchase }> {
+  return apiFetch<{ success: boolean; meta_purchase: MetaPurchase }>(
+    `/v2/subscription/${subscriptionId}/meta-purchase`,
+  );
 }
