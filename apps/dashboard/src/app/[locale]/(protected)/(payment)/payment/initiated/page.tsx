@@ -19,7 +19,12 @@ import { useLevels } from "@/hooks/onboarding/useLevels";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
-import { trackFacebookEvent, trackFacebookEventWithUserData } from "@/lib/analytics/facebook-pixel";
+import {
+  LIVE_FB_PIXEL_ID,
+  getFbPixelId,
+  trackFacebookEvent,
+  trackFacebookEventWithUserData,
+} from "@/lib/analytics/facebook-pixel";
 import { computeMetaPurchaseValue } from "@/lib/payment/metaPurchaseConfig";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { recordCheckoutInitiated, recordCourseCustomization, webhookPaymentInitiate } from "@/lib/api/auth";
@@ -44,9 +49,8 @@ const PRICE_CARD_ROUNDING = 12;
 
 // const ALLOWED_PHONES = ["9988776655", "7210708599"];
 
-// Same pixel ID FacebookPixel.tsx already initialized (without user data) on
-// page load — re-used here to re-call init with advanced-matching data.
-const FB_PIXEL_ID = "1126041265682766";
+// The pixel FacebookPixel.tsx initialized on page load (getFbPixelId) is
+// re-used below to re-call init with advanced-matching data.
 
 // EXAM_PRICE_OVERRIDES / getPriceForVariant / getSubscriptionPlanId live in
 // @/lib/payment/examPriceOverrides — shared with every other place in the
@@ -138,7 +142,7 @@ export default function InitiatedPage() {
     Object.assign(userData, await getMetaGeoData());
 
     if (Object.keys(userData).length > 0) {
-      window.fbq("init", FB_PIXEL_ID, userData);
+      window.fbq("init", getFbPixelId() ?? LIVE_FB_PIXEL_ID, userData);
     }
   };
 

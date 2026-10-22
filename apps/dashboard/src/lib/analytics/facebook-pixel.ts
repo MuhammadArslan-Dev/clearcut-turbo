@@ -1,9 +1,24 @@
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
+import { metaPixelId } from "@clearcut/utils/meta-pixel-env";
 
-// Same pixel ID every app's own FacebookPixel.tsx hardcodes.
-const FB_PIXEL_ID = "1126041265682766";
+// Same live pixel ID every app's own FacebookPixel.tsx uses.
+export const LIVE_FB_PIXEL_ID = "1126041265682766";
+
+/**
+ * The pixel this page runs: the live one on real sites, none on localhost
+ * unless this browser opted in, then the test pixel when
+ * NEXT_PUBLIC_FB_PIXEL_ID_TEST is set (packages/utils/src/meta-pixel-env.ts,
+ * CC-115 Part A). Every fbq('init', …) in the app uses this, so a local test
+ * session never also initializes the live pixel.
+ */
+export function getFbPixelId(): string | null {
+  return metaPixelId(
+    LIVE_FB_PIXEL_ID,
+    process.env.NEXT_PUBLIC_FB_PIXEL_ID_TEST,
+  );
+}
 
 export function trackFacebookEvent(
   eventName: string,
@@ -91,7 +106,7 @@ export async function trackFacebookEventWithUserData(
   Object.assign(userData, await getMetaGeoData());
 
   if (Object.keys(userData).length > 0) {
-    window.fbq("init", FB_PIXEL_ID, userData);
+    window.fbq("init", getFbPixelId() ?? LIVE_FB_PIXEL_ID, userData);
   }
 
   window.fbq("track", eventName, params);

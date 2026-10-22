@@ -1,6 +1,6 @@
 # Phase 02 — CC-115 Part A + CC-94: stop localhost/test traffic reaching Meta Pixel, Amplitude, Clarity
 
-**Status:** Not Started
+**Status:** In Progress (Meta Pixel only, branch cc-115a-meta-localhost in CM + ASTRO)
 **Jira:** [CC-115](https://clear-cutoff.atlassian.net/browse/CC-115) (Part A only), [CC-94](https://clear-cutoff.atlassian.net/browse/CC-94)
 **Repos:** CM (`packages/analytics` + all 4 apps), ASTRO, BE, GTM container (outside the repos)
 
@@ -55,4 +55,5 @@ Wanted: a **hostname allowlist** — `clearcutoff.in`, `www.clearcutoff.in`, `ap
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | Scope | Only Meta Pixel: no events from localhost/LAN hosts. Amplitude, Clarity, GTM unchanged. | User |
+| 2026-10-22 | Local testing | Opt-in per browser: localStorage "cc-meta-pixel-local"="1"; optional test pixel id NEXT_PUBLIC_FB_PIXEL_ID_TEST / PUBLIC_FB_PIXEL_ID_TEST. | User |
