@@ -1,8 +1,8 @@
 # Phase 19 — CC-116 + CC-68: layout shift on Dashboard, Preparation and Payment, and payment page speed
 
-**Status:** Not Started
+**Status:** Dashboard fixed + verified locally (2026-10-22); preparation left for Sentry re-check — not merged, not deployed
 **Jira:** [CC-116](https://clear-cutoff.atlassian.net/browse/CC-116), [CC-68](https://clear-cutoff.atlassian.net/browse/CC-68)
-**Repos:** CM `apps/dashboard`
+**Repos:** CM `apps/dashboard` (branch `phase-19-layout-shift`, based on phase 18: 1851c4b)
 **Size:** medium, layout/perf; must not change the look (DEVELOPMENT_RULES; "no design changes in speed fixes")
 
 ## What the tickets say
@@ -42,6 +42,35 @@ Asks:
 - **Full-screen loader:** find the `fixed inset-0 z-[9999] bg-white` owner (not found by a plain grep, probably built from class parts).
 - **Payment:** checkout.js is now preloaded on mount (CC-60).
 
+## Measured (2026-10-22, prod build, test user, Playwright)
+Phone = 390×844, 4× CPU, 150 ms RTT, 200 KB/s. Desktop = 1440×900, no throttle.
+
+| Page | Before | After |
+|---|---|---|
+| /dashboard, phone | **0.776** | **0.014** |
+| /dashboard, desktop | 0.008 | 0.011 (noise) |
+| /preparation, phone | 0.113 | 0.113 (not changed, see below) |
+| /preparation, desktop | 0.007 | 0.007 |
+| /payment/initiated, phone + desktop | 0 | 0 (CC-61 already fixed it) |
+
+- **Dashboard root cause:** `MyCoursesWrapTwo` mobile swiper had `{isLoading || (orderedCourses.length === 0 && <SkeletonSlide/>)}`. While loading this renders `true`, i.e. nothing. So the only slide was "Studying for more than one exam? Add Exam" (256 px), and `DailyTestWidget` returned null until the course id existed. When courses landed, the 387 px card and the Daily Test card appeared and pushed the whole page down ~450 px. Students also briefly saw the wrong card.
+- **Fix:** the skeleton slide shows until the course slides exist. The rule covers LearnPage passing `isFetching` (a background refetch must not add a skeleton slide) and `useMyActiveCourses` filling its list one render after the data. The Daily Test card renders while the course loads (values "-", button waits for the id) and falls back to `courses.active_course`. The look of the loaded page is unchanged. The leftover 27 px is the skeleton (360) vs the card (387).
+- **Preparation (0.113):**
+  - 0.091: the Level 2/3 paper-tab row (52 px) arrives after the data, above the subject tabs. Whether it renders depends on the paper count *and* `useAvailablePapers` (Add Paper), so it isn't known in advance. D12 tried reserving it (0.33 → 0.84) and was reverted.
+  - 0.023: the floating Unlock widget pushes the Index button up 110 px.
+  - Sometimes +0.042: the scroll-hide header shrinks 20 px at ~9 s with no user scroll. This is D1, parked.
+  - **User decision 2026-10-22:** leave preparation, deploy the dashboard fix, re-check Sentry p75 after 3 days.
+- **The full-screen loader** `fixed inset-0 z-[9999] bg-white` the ticket names no longer exists in the code. The Sentry window predates the speed phases.
+- **LCP (phone, Slow 4G + 4× CPU, local backend):**
+
+  | Page | LCP | LCP element |
+  |---|---|---|
+  | payment | 0.45 s | "CLEAR CUTOFF" splash |
+  | dashboard | 1.8 s | "Today's Daily Test" |
+  | preparation | 3.6 s | the ₹149 floating widget line |
+
+  The field's 8.5 s on payment isn't reproduced locally; the local backend answers in ms. If it stays high after CC-61, look at API latency from India (apptest), not page code.
+
 ## Plan
 - [ ] Measure first (Playwright at 390px, Slow 4G + 4× CPU, `layout-shift` entries with sources) on /dashboard, /preparation/:id, /payment/initiated, logged-in test user against the local backend. Record before numbers here.
 - [ ] Dashboard: give each widget slot a fixed/min height skeleton that matches the loaded card, from the first render; nothing inserted above the grid after load.
@@ -55,4 +84,4 @@ Asks:
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | Preparation CLS (paper row) | Leave it; re-check Sentry p75 3 days after the dashboard fix ships | User |
