@@ -13,7 +13,14 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 let loading: Promise<typeof import("@sentry/nextjs")> | null = null;
 
-function loadSentry() {
+/**
+ * The ONE place this app's browser Sentry is loaded and initialised (Phase
+ * 17): instrumentation-client.ts calls it once the page is loaded and idle,
+ * and the 404/crash reporter below calls it when an error comes first. One
+ * init, so the config (tracing included) no longer depends on which caller
+ * happened to win.
+ */
+export function loadSentry() {
   if (!DSN) return null;
   loading ??= import("@sentry/nextjs").then((Sentry) => {
     if (!Sentry.getClient()) {
@@ -21,7 +28,9 @@ function loadSentry() {
         dsn: DSN,
         environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
         sendDefaultPii: false,
-        tracesSampleRate: 0,
+        // Page-load tracing + Web Vitals. The SDK starts after the page has
+        // loaded; the vitals still arrive (buffered PerformanceObserver).
+        tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
         beforeSend(event) {
           scrubSensitiveData(event);
           event.tags = { ...event.tags, runtime: "browser", app: "landing" };

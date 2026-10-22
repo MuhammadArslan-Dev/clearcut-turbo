@@ -30,36 +30,21 @@
  * The dynamic `import()` rather than a top-level import is what permits the
  * elimination — a static import is unconditional by definition.
  */
-import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { whenIdleAfterLoad } from "@clearcut/error-reporting/when-idle";
+import { loadSentry } from "@/lib/page-errors";
 
 const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-if (DSN) {
-  void import("@sentry/nextjs").then((Sentry) => {
-    Sentry.init({
-      dsn: DSN,
-      environment:
-        process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
-      // Sampled rather than 1.0: 100% client tracing is a cost and quota risk
-      // in production. Tune per environment via the env var.
-      tracesSampleRate: Number(
-        process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1,
-      ),
-      sendDefaultPii: false,
-      // Tokens/OTPs in URLs (login handoffs, reset links) must never reach Sentry.
-      beforeSend(event) {
-        scrubSensitiveData(event);
-        event.tags = { ...event.tags, runtime: "browser", app: "blog" };
-        return event;
-      },
-    });
-  });
-}
+// Phase 17: the SDK is fetched only once the page has loaded and the browser
+// is idle, never during the first render. Page-speed data still arrives —
+// Sentry reads Web Vitals through a buffered PerformanceObserver. A 404 or
+// crash before that loads it at once (lib/page-errors.ts, same loader).
+if (DSN) whenIdleAfterLoad(() => void loadSentry());
 
 /**
  * Next calls this on every client router transition, so it must exist as a
  * stable export. It costs nothing while Sentry is off: with no DSN it returns
- * immediately and the `import()` below is never reached.
+ * immediately and the loader is never reached.
  */
 export function onRouterTransitionStart(
   ...args: Parameters<
@@ -67,7 +52,5 @@ export function onRouterTransitionStart(
   >
 ) {
   if (!DSN) return;
-  void import("@sentry/nextjs").then((Sentry) =>
-    Sentry.captureRouterTransitionStart(...args),
-  );
+  void loadSentry()?.then((Sentry) => Sentry.captureRouterTransitionStart(...args));
 }

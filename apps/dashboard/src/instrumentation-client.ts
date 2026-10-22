@@ -15,6 +15,7 @@ import {
   redactUrl,
   scrubSensitiveData,
 } from "@/lib/sentry/sentry-shared";
+import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -26,12 +27,9 @@ Sentry.init({
   // obvious rather than mysterious.
   enabled: Boolean(SENTRY_DSN),
 
+  // Session Replay is added later, once the page is idle — see the end of
+  // this file (Phase 17).
   integrations: [
-    Sentry.replayIntegration({
-      // Recordings are for diagnosing, not for reading user data back.
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
     // Turns fetch/XHR calls, clicks and route changes into breadcrumbs, so an
     // event shows the steps that led up to it rather than just the throw site.
     Sentry.breadcrumbsIntegration({
@@ -93,6 +91,20 @@ if (typeof window !== "undefined") {
       tags: { type: "unhandled_rejection", runtime: "browser" },
       extra: { pathname: window.location.pathname },
     });
+  });
+}
+
+// Session Replay (~40 KB gzip) is not part of the first page load (Phase 17):
+// its own chunk is fetched once the page has loaded and the browser is idle,
+// then added to the running client. Errors and page-speed data don't need it.
+// Trade-off: an error in the first ~1-3 s of a visit has no replay attached.
+if (SENTRY_DSN) {
+  whenIdleAfterLoad(() => {
+    void import("@/lib/sentry/sentry-replay")
+      .then(({ createReplayIntegration }) => Sentry.addIntegration(createReplayIntegration()))
+      .catch(() => {
+        // A failed chunk load (offline, deploy in between) only costs the replay.
+      });
   });
 }
 
