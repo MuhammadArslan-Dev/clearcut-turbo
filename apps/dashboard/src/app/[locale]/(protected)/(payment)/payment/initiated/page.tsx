@@ -68,6 +68,8 @@ const PRICE_CARD_ROUNDING = 12;
 // The plan preselected when the page loads — reported on every Plan Switched
 // as `default_plan_id`, and the starting point for detecting a switch.
 const DEFAULT_VARIANT: PaymentType = "1month";
+// Plans this page offers (the ones a `?plan=` may preselect).
+const PLAN_VARIANTS = ["1month", "1month-onetime", "1year"] as const;
 
 export default function InitiatedPage() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
@@ -85,12 +87,18 @@ export default function InitiatedPage() {
   //     router.replace("/dashboard");
   //   }
   // }, [authUser, isAllowed, router]);
-  const [selectVariant, setSelectVariant] =
-    React.useState<PaymentType>(DEFAULT_VARIANT);
+  // `?plan=` (e.g. "Try again" on /payment/failed, CC-64) opens on that plan.
+  // Read once for the initial state only — no URL sync (CC-61).
+  const [selectVariant, setSelectVariant] = React.useState<PaymentType>(() => {
+    const plan = get("plan");
+    return typeof plan === "string" && (PLAN_VARIANTS as readonly string[]).includes(plan)
+      ? (plan as PaymentType)
+      : DEFAULT_VARIANT;
+  });
   // Plan Switched bookkeeping lives in refs, NOT in the setState updater below:
   // updaters must be pure (StrictMode runs them twice in dev), and refs update
   // synchronously so two fast clicks are each compared against the right plan.
-  const currentVariantRef = React.useRef<PaymentType>(DEFAULT_VARIANT);
+  const currentVariantRef = React.useRef<PaymentType>(selectVariant);
   const switchCountRef = React.useRef(0);
 
   const [subscriptionLoading, setSubscriptionLoading] = React.useState(false);
@@ -352,7 +360,7 @@ export default function InitiatedPage() {
     onFailure: () => {
       setRedirecting(true);
       router.push(
-        `/payment/failed?exam_id=${courseId}&course_name=${data?.short_name}`,
+        `/payment/failed?exam_id=${courseId}&course_name=${data?.short_name}&plan=${selectVariant}&price=${selectedPrice}`,
       );
     },
     // Paid, webhook late: success page with an "activating" note (CC-60).
@@ -680,7 +688,7 @@ export default function InitiatedPage() {
 
           setRedirecting(true);
           router.push(
-            `/payment/failed?exam_id=${courseId}&course_name=${data?.short_name}`,
+            `/payment/failed?exam_id=${courseId}&course_name=${data?.short_name}&plan=${selectVariant}&price=${selectedPrice}`,
           );
         },
       );
@@ -883,7 +891,7 @@ export default function InitiatedPage() {
                   {selectVariant === "1month" ? (
                     <CheckIcon size={16} />
                   ) : (
-                    <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                   )}
                 </div>
               </Card>
@@ -922,7 +930,7 @@ export default function InitiatedPage() {
                   {selectVariant === "1month-onetime" ? (
                     <CheckIcon size={16} />
                   ) : (
-                    <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                   )}
                 </div>
               </Card>
@@ -961,7 +969,7 @@ export default function InitiatedPage() {
                   {selectVariant === "6months" ? (
                     <CheckIcon size={16} />
                   ) : (
-                    <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                   )}
                 </div>
               </Card>
@@ -1010,7 +1018,7 @@ export default function InitiatedPage() {
                   {selectVariant === "15months" ? (
                     <CheckIcon size={16} />
                   ) : (
-                    <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                   )}
                 </div>
               </Card>
@@ -1056,7 +1064,7 @@ export default function InitiatedPage() {
                   {selectVariant === "1year" ? (
                     <CheckIcon size={16} />
                   ) : (
-                    <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                   )}
                 </div>
               </Card>
@@ -1091,8 +1099,10 @@ export default function InitiatedPage() {
                   icon={
                     <LockIcon variant="without-key" size={16} color="white" />
                   }
-                  text={modalT("cta", {
-                    exam: `₹${selectedPrice}`,
+                  // Price-only CTA: hi/mr read shorter ("₹149 में अनलॉक करें",
+                  // CC-66). The shared `cta` also takes an exam name elsewhere.
+                  text={modalT("ctaPrice", {
+                    price: `₹${selectedPrice}`,
                   })}
                 />
               </div>
@@ -1128,6 +1138,9 @@ export default function InitiatedPage() {
                   <p>{modalT("paymentMethods")}</p>
                 </div>
               </button>
+              {selectVariant === "1month" && (
+                <p className="body-small text-surface-gray-muted -mt-1">{modalT("cancelAnytime")}</p>
+              )}
             </div>
 
             <div className="w-full max-w-[400px]">

@@ -1,3 +1,4 @@
+import { SUPPORT_PHONE, SUPPORT_WHATSAPP } from "@/lib/support";
 import React, { useMemo, useCallback } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CustomBottomSheet, CustomModal } from "../modals-bottom-sheet";
@@ -16,8 +17,8 @@ interface ContactUsModalProps {
 }
 
 export default function ContactUsModal({
-  phoneNumber = "+919999999999",
-  whatsappNumber = "+919999999999",
+  phoneNumber = SUPPORT_PHONE,
+  whatsappNumber = SUPPORT_WHATSAPP,
   defaultWhatsappMessage = "Hi, I need help.",
 }: ContactUsModalProps) {
   const isMobile = useIsMobile();

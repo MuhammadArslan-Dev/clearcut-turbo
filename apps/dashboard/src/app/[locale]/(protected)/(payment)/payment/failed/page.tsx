@@ -20,6 +20,9 @@ import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatin
 import { useRouter } from "@/i18n/navigation";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { useAuth } from "@/providers/AuthProvider";
+import { supportWhatsAppUrl } from "@/lib/support";
+import { trackEvent } from "@/lib/analytics/browser";
 
 export default function FailedPage() {
   const { isOpen, close, mode, open: openCourseModal } = useCourseStore();
@@ -33,6 +36,11 @@ export default function FailedPage() {
   const courseId = get("exam_id") as string;
   const courseName = get("course_name") as string;
   const source = get("source") as string;
+  // The plan that failed (sent by /payment/initiated since CC-64): "Try
+  // again" reopens that same plan instead of the default one.
+  const plan = get("plan") as string | undefined;
+  const failedAutopay = plan === "1month";
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!courseId) {
@@ -51,23 +59,52 @@ export default function FailedPage() {
     [data?.short_name],
   );
 
-  const price = useMemo(() => Number(data?.price) ?? 0, [data?.price]);
+  // The amount the student tried to pay (sent by /payment/initiated). The
+  // exam's own `price` is a JSON string, so Number() of it showed "NaN".
+  const price = useMemo(() => {
+    const n = Number(get("price"));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [get]);
 
   /* ---------------------------------- handlers ---------------------------------- */
   const handleBack = useCallback(() => {
     openCourseModal("payment-failed-warning", data!);
   }, [openCourseModal, data]);
 
-  const handleRetryPayment = useCallback(() => {
-    if (!course) return;
+  const retryUrl = useCallback(
+    (retryPlan?: string) =>
+      `/payment/initiated?exam_id=${courseId}&course_name=${encodeURIComponent(
+        courseName || data?.short_name || "",
+      )}&source=payment_failed_retry_clicked${retryPlan ? `&plan=${retryPlan}` : ""}`,
+    [courseId, courseName, data?.short_name],
+  );
 
-    handleOpenPaywall(router, "payment_failed_retry_clicked", course);
-  }, [router, course]);
+  const handleRetryPayment = useCallback(() => {
+    if (!plan) {
+      if (!course) return;
+      handleOpenPaywall(router, "payment_failed_retry_clicked", course);
+      return;
+    }
+    router.push(retryUrl(plan));
+  }, [router, course, plan, retryUrl]);
+
+  // Autopay (UPI mandate) failures are often the mandate step itself; a
+  // one-time payment skips it (CC-64).
+  const handlePayOnce = useCallback(() => {
+    router.push(retryUrl("1month-onetime"));
+  }, [router, retryUrl]);
 
   const handleNeedHelp = useCallback(() => {
     close();
-    openGlobalModal("helpsport");
-  }, [close, openGlobalModal]);
+    trackEvent("Support Contacted", { source: "payment_failed", channel: "whatsapp" });
+    window.open(
+      supportWhatsAppUrl(
+        modalT("whatsappMessage", { exam: examTitle, phone: user?.phone ?? "" }),
+      ),
+      "_blank",
+      "noopener",
+    );
+  }, [close, modalT, examTitle, user?.phone]);
 
   return (
     <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
@@ -114,15 +151,17 @@ export default function FailedPage() {
 
           <div className="max-w-[352px] w-full flex flex-col gap-5 bg-white p-4 rounded-lg border border-gray-300">
             <div className="p-3 flex flex-col items-center bg-[var(--background-gray-subtle)] rounded-md gap-1">
-              <div className="body-small text-surface-gray-muted flex items-center gap-1">
-                {highlightTextUtil(
-                  modalT("priceNote", { amount: price }),
-                  `₹${price}`,
-                  "heading-xlarge !font-semibold text-surface-gray-normal",
-                )}
-              </div>
+              {price !== null && (
+                <div className="body-small text-surface-gray-muted flex items-center gap-1">
+                  {highlightTextUtil(
+                    modalT("priceNote", { amount: `₹${price}` }),
+                    `₹${price}`,
+                    "heading-xlarge !font-semibold text-surface-gray-normal",
+                  )}
+                </div>
+              )}
 
-              <p className="body-small text-surface-gray-subtle flex items-center gap-2">
+              <div className="body-small text-surface-gray-subtle flex items-center gap-2">
                 <div className="w-8 h-8">
                   <TrophyIcon
                     size={20}
@@ -148,7 +187,7 @@ export default function FailedPage() {
                     })}
                   </span>
                 </div>
-              </p>
+              </div>
 
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5">
@@ -178,11 +217,25 @@ export default function FailedPage() {
                   icon={
                     <LockIcon variant="without-key" size={16} color="white" />
                   }
-                  text={modalT("completePayment", {
+                  text={plan ? modalT("tryAgain") : modalT("completePayment", {
                     exam: examTitle,
                   })}
                 />
               </div>
+
+              {failedAutopay && (
+                <div className="w-full max-w-[400px]">
+                  <Button
+                    onClick={handlePayOnce}
+                    fullWidth
+                    size="md"
+                    sx={{ borderRadius: "50px" }}
+                    variant="outlined"
+                  >
+                    {modalT("payOnceInstead")}
+                  </Button>
+                </div>
+              )}
 
               <div className="flex body-small items-center gap-2 text-surface-gray-muted">
                 <div className="flex items-center gap-2">
@@ -209,7 +262,7 @@ export default function FailedPage() {
                 variant="soft"
               >
                 <div className="flex items-center gap-2">
-                  <span>{modalT("needHelp")}</span>
+                  <span>{modalT("whatsappHelp")}</span>
                 </div>
               </Button>
             </div>

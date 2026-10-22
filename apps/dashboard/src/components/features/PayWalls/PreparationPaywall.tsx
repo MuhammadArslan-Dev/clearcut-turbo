@@ -225,7 +225,7 @@ export default function PreparationPaywall() {
                           {modalT("best_for_upcoming_exam")}
                         </p>
                       </div>
-                      {selectVariant === "6months" ? <CheckIcon size={16} /> : <div className="border border-gray-400 w-4 h-4 rounded-full" />}
+                      {selectVariant === "6months" ? <CheckIcon size={16} /> : <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />}
                     </div>
                   </Card>
                   */}
@@ -258,7 +258,7 @@ export default function PreparationPaywall() {
                         </div>
                         <StatusChip className="!text-brand !bg-brand/9 !body-medium !font-semibold" variant="outline" tone="info" label={modalT("best_value_covers_next_exam")} />
                       </div>
-                      {selectVariant === "15months" ? <CheckIcon size={16} /> : <div className="border border-gray-400 w-4 h-4 rounded-full" />}
+                      {selectVariant === "15months" ? <CheckIcon size={16} /> : <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />}
                     </div>
                   </Card>
                   */}
@@ -302,7 +302,7 @@ export default function PreparationPaywall() {
                       {selectVariant === "1year" ? (
                         <CheckIcon size={16} />
                       ) : (
-                        <div className="border border-gray-400 w-4 h-4 rounded-full" />
+                        <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
                       )}
                     </div>
                   </Card>
@@ -341,8 +341,8 @@ export default function PreparationPaywall() {
                           color="white"
                         />
                       }
-                      text={modalT("cta", {
-                        exam: `₹${oneYearPrice}`,
+                      text={modalT("ctaPrice", {
+                        price: `₹${oneYearPrice}`,
                         // exam:
                         //   selectVariant === "6months"
                         //     ? "₹" + Price?.final_price
