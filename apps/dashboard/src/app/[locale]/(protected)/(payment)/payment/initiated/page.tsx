@@ -72,7 +72,7 @@ const DEFAULT_VARIANT: PaymentType = "1month";
 export default function InitiatedPage() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
   const checkoutT = useTranslations("payment.checkout");
-  const { get, set } = useQueryParams();
+  const { get } = useQueryParams();
   const locale = useLocale(); // "en", "hi", etc.
   const router = useRouter();
   const { user: authUser } = useAuth();
@@ -329,11 +329,11 @@ export default function InitiatedPage() {
     [selectVariant, pricing, data?.short_name],
   );
 
-  useEffect(() => {
-    if (selectedPrice != null) {
-      set({ price: selectedPrice });
-    }
-  }, [selectedPrice]);
+  // The selected plan lives in React state only (CC-61). This page used to
+  // mirror the price into the URL with router.replace — a full App Router
+  // navigation with a server round trip — twice on load (price before and
+  // after the course data) and again on every plan switch, which is what
+  // made the page "load twice". Nothing read that `price` param.
 
   /* ---------------------------------- payment hook ---------------------------------- */
   const { handlePayment, loading, phase: paymentPhase } = useRazorpayPayment({
@@ -751,12 +751,16 @@ export default function InitiatedPage() {
   if (isPageLoading) {
     return (
       <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
-        <div className="w-full sm:max-w-[800px] flex flex-col gap-4">
+        {/* Same frame as the loaded page below (full height on phones,
+            header on top, button at the bottom), so the content replaces
+            the skeleton in place instead of the whole page jumping up
+            (CLS 0.19 on mobile, CC-61). */}
+        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] flex flex-col justify-between items-center gap-4">
           <div className="bg-white w-full px-3 py-4">
             <Skeleton className="h-6 w-40 mx-auto" />
           </div>
 
-          <div className="bg-white p-4 flex justify-center">
+          <div className="w-full bg-white p-4 flex justify-center">
             <div className="max-w-[352px] w-full flex flex-col gap-4">
               <Skeleton className="h-16 w-16 rounded-full mx-auto" />
               <Skeleton className="h-6 w-40 mx-auto" />
@@ -767,7 +771,7 @@ export default function InitiatedPage() {
             </div>
           </div>
 
-          <div className="bg-white p-3">
+          <div className="w-full bg-white p-3">
             <Skeleton className="h-12 w-full rounded-full" />
           </div>
         </div>

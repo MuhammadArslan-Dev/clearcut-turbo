@@ -41,7 +41,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 08 | [Landing main button not responding](08-cc106-landing-cta.md) | CC-106 | ASTRO, (CM) | In Review | Merge; deploy ASTRO (go pages) + landing/blog for the mr redirect; Clarity check after a week; C1/C3 with RD |
 | 09 | [Pay button does nothing](09-cc60-pay-button.md) | CC-60 | CM-dashboard, (BE) | In Review | Razorpay test-mode click-through (local), merge, deploy dashboard; C2 copy with RD |
 | 10 | [Crashes on older phones](10-cc112-older-phone-crashes.md) | CC-112 | CM (all apps), ASTRO | In Review | Merge; deploy landing, dashboard, tools (Pages), blog auto; #2/#5 need stack traces (C4) |
-| 11 | [Payment page loads twice](11-cc61-payment-double-load.md) | CC-61 | CM-dashboard | Not Started | D1, C1 |
+| 11 | [Payment page loads twice](11-cc61-payment-double-load.md) | CC-61 | CM-dashboard | In Review | Merge + deploy dashboard; C1 (deep links) answered by code search: none |
 | 12 | [Trial copy on landing + in-app](12-cc67-trial-copy.md) | CC-67 | ASTRO, CM-landing, CM-dashboard, CMS admin | Not Started | C1–C3 (copy from RD) |
 | 13 | [HPTET landing-page-view tracking (parked)](13-cc115b-hptet-lpv.md) | CC-115 Part B | ASTRO | Not Started | Not in Arslan's list — confirm whether to do it |
 | 14 | [Blog Worker CPU limit (503 / error 1102)](14-blog-worker-limit.md) | — (prod incident 2026-10-21) | CM-blog, Cloudflare | Superseded by 15 (rolled back to Oct 13 build; prerender work parked on `blog-worker-cpu`) | — |
