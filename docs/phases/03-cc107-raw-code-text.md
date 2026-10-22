@@ -1,6 +1,6 @@
 # Phase 03 — CC-107: raw code text ("var e=new IntersectionObserver…") on landing pages
 
-**Status:** Not Started
+**Status:** In Review (ASTRO branch cc-107-badge-link, commit pending merge)
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-107
 **Repos:** ASTRO only
 
@@ -26,4 +26,6 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | (b) keep Sentry off on go pages for now; revisit if errors persist after this fix | User |
+| 2026-10-22 | Link target | Guarantee badge -> /start (course + locale, element_location=guarantee_banner), same as landing.astro | User |
+| 2026-10-22 | Done | Lottie script moved to public/lottie-lazy.js (Astro inlined the component script inside the badge); badge is a /start link on exam/[slug] + htet. Build: 0 pages with inline Lottie code; local preview: badge unchanged visually, animation lazy-loads. | Claude |
