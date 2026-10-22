@@ -31,7 +31,7 @@ export default function GuideLine() {
 
   /* ---------- store ---------- */
   const { closeModal } = usePreparationModalStore();
-  const { course, markGuideAsSeen } = usePreparationStore();
+  const { course, markGuideAsSeen, requestStartGuide } = usePreparationStore();
   useBackHandler({
     isOpen: true,
     onClose: () => closeModal("preparation-guide"),
@@ -44,6 +44,8 @@ export default function GuideLine() {
   const handleClose = useCallback(async () => {
     markGuideAsSeen();
     closeModal("preparation-guide");
+    // Then point at where to start (CC-79 "start here" tour).
+    requestStartGuide();
 
     if (!course?.id) return;
 
@@ -55,7 +57,7 @@ export default function GuideLine() {
     } catch {
       // best-effort — the local flag is already set
     }
-  }, [closeModal, markGuideAsSeen, course?.id, course?.group_code]);
+  }, [closeModal, markGuideAsSeen, requestStartGuide, course?.id, course?.group_code]);
 
   return (
     <Container

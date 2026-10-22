@@ -1,3 +1,4 @@
+import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 import Button from "@clearcut/ui/button";
 import { Card } from "@clearcut/ui/card";
 import Text from "@clearcut/ui/text";
@@ -15,6 +16,8 @@ import { useTranslations } from "next-intl";
 export default function PaywallFloatingWidget() {
   const t = useTranslations();
   const { course } = useGetCurrentCourseStore();
+  // The "start here" tour points at free content; the Unlock bar would cover it (CC-79).
+  const startGuideActive = usePreparationStore((s) => s.startGuideActive);
 
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -84,7 +87,7 @@ export default function PaywallFloatingWidget() {
 
   return (
     hasActive && (
-      <div className="px-3 md:px-4">
+      <div className={startGuideActive ? "hidden" : "px-3 md:px-4"}>
         <Card
           padding="12px 16px"
           bgcolor="bg-white"

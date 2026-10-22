@@ -1,5 +1,6 @@
 "use client";
 
+import { START_GUIDE_IDS } from "@/components/features/preparation/components/startGuideIds";
 import React, { useEffect, useMemo, useRef, useCallback } from "react";
 
 import { usePathname } from "@/i18n/navigation";
@@ -97,6 +98,7 @@ export default function Sidebar() {
     selectedTopic,
     selectedPaperId,
     progressByTopicId,
+    progressLoadedFor,
     selectedChapter,
     sectionsByPaperId,
     selectedArea,
@@ -189,6 +191,19 @@ export default function Sidebar() {
     });
     return map;
   }, [filteredChapters]);
+
+  // "Start here" (CC-79): the first free chapter/topic of this subject. The
+  // badge only shows once this course's progress has loaded and nothing has
+  // been opened yet; StartGuide's tour points at the same two elements.
+  const firstFreeChapter = useMemo(
+    () => filteredChapters?.find((c) => !c.locked),
+    [filteredChapters],
+  );
+  const firstFreeTopicId = firstFreeChapter?.topics?.[0]?.id;
+  const showStartHere =
+    !!course?.group_code &&
+    progressLoadedFor === course.group_code &&
+    Object.keys(progressByTopicId).length === 0;
 
   // Overall progress
   const { completedChapters, totalChapters } = useMemo(() => {
@@ -432,7 +447,10 @@ export default function Sidebar() {
               <React.Fragment key={chapter.id}>
                 <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full"></div>
                 <div className={clsx("flex flex-col gap-3")}>
-                  <div className="sticky -top-4 z-10 bg-white">
+                  <div
+                    id={chapter.id === firstFreeChapter?.id ? START_GUIDE_IDS.chapter : undefined}
+                    className="sticky -top-4 z-10 bg-white"
+                  >
                     <SectionHeaderCard
                       onClick={() =>
                         chapter?.locked
@@ -529,7 +547,16 @@ export default function Sidebar() {
                       return (
                         <div key={topic.id} className="space-y-2">
                           {/* 🔹 Parent Topic Card */}
-                          <div ref={isActive ? activeTopicRef : null}>
+                          <div
+                            ref={isActive ? activeTopicRef : null}
+                            id={topic.id === firstFreeTopicId ? START_GUIDE_IDS.topic : undefined}
+                            className={topic.id === firstFreeTopicId ? "relative" : undefined}
+                          >
+                            {showStartHere && topic.id === firstFreeTopicId && (
+                              <span className="pointer-events-none absolute -top-2.5 left-12 z-[1] rounded-full bg-brand px-2 py-0.5 body-xsmall !font-semibold text-white animate-pulse">
+                                {t("startGuide.badge")}
+                              </span>
+                            )}
                             <TopicListCard
                               cardBgColor="!px-0"
                               showReward={isFreeUser && !chapter?.locked}

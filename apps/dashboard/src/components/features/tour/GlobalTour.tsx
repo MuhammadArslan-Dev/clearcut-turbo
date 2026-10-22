@@ -11,35 +11,78 @@ interface GlobalTourProps {
   steps?: TourStep[];
   isOpen?: boolean;
   onClose: () => void;
+  /** Button labels (translated by the caller). */
+  nextText?: string;
+  prevText?: string;
+  doneText?: string;
+  /**
+   * Turns the "previous" button into a "skip" button on every step (the
+   * start-here guide's "छोड़ें"). Without it the tour behaves as before.
+   */
+  skipAsPrev?: boolean;
+  onStepChange?: (index: number) => void;
+  /** Closed before finishing (✕, skip, overlay click). */
+  onSkip?: (index: number) => void;
+  /** Finished the last step. */
+  onComplete?: () => void;
 }
 
-const GlobalTour: React.FC<GlobalTourProps> = ({
-  steps = [],
-  isOpen = false,
-  onClose,
-}) => {
+const GlobalTour: React.FC<GlobalTourProps> = (props) => {
+  const { steps = [], isOpen = false } = props;
   const tourRef = useRef<Driver | null>(null);
+  // Latest callbacks/labels, read at event time — the effect below only
+  // restarts the tour when it opens or its steps change.
+  const propsRef = useRef(props);
+  propsRef.current = props;
 
   useEffect(() => {
     if (!isOpen || steps.length === 0) return;
 
+    const {
+      nextText = "Next",
+      prevText = "Prev",
+      doneText = "Done",
+      skipAsPrev = false,
+    } = propsRef.current;
+
+    let skipped = false;
+    let finished = false;
+    let lastIndex = 0;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (!skipped && lastIndex >= steps.length - 1) propsRef.current.onComplete?.();
+      else propsRef.current.onSkip?.(lastIndex);
+    };
+
+    const skip = () => {
+      skipped = true;
+      tourRef.current?.destroy();
+    };
+
     tourRef.current = driver({
       showButtons: ["next", "previous", "close"],
-      nextBtnText: "Next",
-      prevBtnText: "Prev",
-      doneBtnText: "Done",
+      nextBtnText: nextText,
+      prevBtnText: prevText,
+      doneBtnText: doneText,
       popoverClass: "driverjs-theme",
       showProgress: true,
       allowClose: true,
       // overlayClickNext: false,
 
-      onCloseClick: () => {
-        onClose();
-        tourRef.current?.destroy();
+      onHighlighted: (_el, _step, { state }) => {
+        lastIndex = state.activeIndex ?? 0;
+        propsRef.current.onStepChange?.(lastIndex);
       },
 
+      onCloseClick: skip,
+
+      ...(skipAsPrev ? { onPrevClick: skip } : {}),
+
       onDestroyed: () => {
-        onClose();
+        finish();
+        propsRef.current.onClose();
       },
 
       steps: steps.map((step) => ({
@@ -47,6 +90,9 @@ const GlobalTour: React.FC<GlobalTourProps> = ({
         popover: {
           ...step.popover,
           showButtons: ['next', 'previous', 'close'],
+          // driver.js disables "previous" on the first step; as "skip" it
+          // must stay usable there too.
+          ...(skipAsPrev ? { disableButtons: [] } : {}),
         },
       })),
     });
@@ -76,7 +122,7 @@ const GlobalTour: React.FC<GlobalTourProps> = ({
       tourRef.current?.destroy();
       tourRef.current = null;
     };
-  }, [isOpen, steps, onClose]);
+  }, [isOpen, steps]);
 
   return null;
 };
