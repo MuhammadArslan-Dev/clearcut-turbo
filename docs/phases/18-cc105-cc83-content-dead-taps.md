@@ -43,7 +43,7 @@ Asks:
 - **Papers tab:** on a slow phone (4× CPU, Slow 4G), nothing changed for about 1.3 s after the tap. Then the Papers page showed "Loading notes...".
 - **Answer options:** the options in the topic page's PYQ modal (`PreviousModal`) and the Papers page's paper modal (`ExamInstanceModal`) looked tappable (`cursor-pointer`) but had no click handler. This is the ~830 dead taps.
 - **Subject card:** "30/150 Marks" was **hardcoded** for every subject, every student (since the first push). The real marks are in `e_sections.total_marks` (HTET English 60, CDP 30, …) but the API didn't send them. "0/0 chapters" showed while the list loaded. The card had no tap handler.
-- **Bigger find (BE):** the trial "first chapter free" rule was `chapter_order == 1`, but `chapter_order` counts across a whole subject. A level's section can start at 10 (HTET L2 English), so trial students got **no free chapter there**, even though CC-67's copy promises one. Locally, 3 of 29 subjects have no chapter with order 1.
+- **Bigger find (BE):** the trial "first chapter free" rule was `chapter_order == 1`, but `chapter_order` counts across a whole subject. A level's section can start at 10 (HTET L2 English), so trial students got **no free chapter there**, even though CC-67's copy promises one. Locally, 3 of 29 subjects have no chapter with order 1. **Production (section-level query, 2026-10-22): 2 sections affected: 8 English (starts at order 10, 36 chapters) and 13 Home Science (starts at 5, 6 chapters).** The fix unlocks exactly their first chapter and changes nothing elsewhere.
 
 ## What was built
 - **BE** `ChapterResource`: the free chapter is the lowest `chapter_order` in that section's list (both callers: preparation + notes).
