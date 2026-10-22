@@ -435,6 +435,25 @@ export default function InitiatedPage() {
         return;
       }
 
+      // CC-58: autopay subscriptions always live on the live Razorpay
+      // account. A test key here would open checkout in Test Mode for a real
+      // student, so don't open it. A missing key (backend from before it
+      // started sending one) still opens as before, but is reported.
+      if (typeof res.key === "string" && res.key.startsWith("rzp_test_")) {
+        logger.error(new Error("Autopay checkout got a Razorpay test key"), {
+          tags: { module: "subscription-payment" },
+          extra: { course_id: courseId },
+        });
+        alert("Payments are temporarily unavailable. Please try again in a few minutes.");
+        return;
+      }
+      if (!res.key) {
+        logger.warn("Autopay checkout opened without a Razorpay key", {
+          tags: { module: "subscription-payment" },
+          extra: { course_id: courseId },
+        });
+      }
+
       // One Payment Outcome per checkout session — see useRazorpayPayment.ts.
       let outcomeReported = false;
 
