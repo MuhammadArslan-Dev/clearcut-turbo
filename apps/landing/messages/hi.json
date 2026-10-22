@@ -2,7 +2,8 @@
   "common": {
     "continueFree": "फ्री तैयारी जारी रखें",
     "continueFreeShort": "फ्री में जारी रखें",
-    "startFree": "फ्री में शुरू करें"
+    "startFree": "फ्री में शुरू करें",
+    "startTrial": "3 दिन का फ्री ट्रायल शुरू करें"
   },
   "nav": {
     "pricing": "प्राइसिंग",

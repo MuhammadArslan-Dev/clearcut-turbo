@@ -82,6 +82,7 @@ function CourseSlideCard({
       bgColor="bg-[#0053A2]"
       price={exam.exam.price}
       badge={exam.status}
+      trialStartedAt={exam.created_at}
       examShortName={exam.exam?.short_name}
       courseName={`${exam.exam?.short_name} Exam`}
       logo={exam.exam?.logo_url}

@@ -34,8 +34,8 @@ const PRICING_COPY: Record<Locale, {
     points: [
       { title: "All subjects included", description: "Study every subject for your exam in one place." },
       { title: "Unlimited practice tests", description: "Practise with mini tests, sectional tests and PYQs, and boost your score." },
-      { title: "Choose your plan", description: "Unlimited access for 6 or 15 months. Study at your own pace, whenever your exam is." },
-      { title: "3-day free trial before paying", description: "Start preparing without paying anything." },
+      { title: "Choose your plan", description: "Pick 1 month or 12 months. Study at your own pace." },
+      { title: "3-day free trial before paying", description: "Try the first chapter of every subject and a test from every chapter. No payment needed." },
     ],
   },
   hi: {
@@ -51,8 +51,8 @@ const PRICING_COPY: Record<Locale, {
     points: [
       { title: "सभी विषय शामिल", description: "अपनी परीक्षा के सभी विषय एक ही जगह पढ़ें।" },
       { title: "असीमित अभ्यास टेस्ट", description: "मिनी टेस्ट, सेक्शनल टेस्ट और PYQs से प्रैक्टिस करें, और अपने नंबर बढ़ाएं।" },
-      { title: "अपना प्लान चुनें", description: "6 या 15 महीने के लिए अनलिमिटेड एक्सेस। अपनी गति से पढ़ें, चाहे परीक्षा कब भी हो।" },
-      { title: "भुगतान से पहले 3 दिन मुफ्त ट्रायल", description: "बिना पैसे दिए तैयारी शुरू करें।" },
+      { title: "अपना प्लान चुनें", description: "1 महीने या 12 महीने का प्लान चुनें। अपनी गति से पढ़ें।" },
+      { title: "भुगतान से पहले 3 दिन मुफ्त ट्रायल", description: "हर विषय का पहला चैप्टर और हर चैप्टर का एक टेस्ट आज़माएं। कोई भुगतान नहीं।" },
     ],
   },
   mr: {
@@ -68,8 +68,8 @@ const PRICING_COPY: Record<Locale, {
     points: [
       { title: "सर्व विषय समाविष्ट", description: "तुमच्या परीक्षेचे सर्व विषय एकाच ठिकाणी अभ्यासा." },
       { title: "अमर्यादित सराव टेस्ट", description: "मिनी टेस्ट, सेक्शनल टेस्ट आणि PYQs सह सराव करा, आणि तुमचे गुण वाढवा." },
-      { title: "तुमची योजना निवडा", description: "6 किंवा 15 महिन्यांसाठी अमर्यादित अ‍ॅक्सेस. तुमच्या गतीने अभ्यास करा, परीक्षा कधीही असो." },
-      { title: "पैसे भरण्यापूर्वी 3 दिवसांची मोफत ट्रायल", description: "विनामूल्य तयारी सुरू करा." },
+      { title: "तुमची योजना निवडा", description: "1 महिना किंवा 12 महिन्यांचा प्लान निवडा. तुमच्या गतीने अभ्यास करा." },
+      { title: "पैसे भरण्यापूर्वी 3 दिवसांची मोफत ट्रायल", description: "प्रत्येक विषयाचा पहिला चॅप्टर आणि प्रत्येक चॅप्टरची एक टेस्ट वापरून पाहा. पेमेंटची गरज नाही." },
     ],
   },
 };

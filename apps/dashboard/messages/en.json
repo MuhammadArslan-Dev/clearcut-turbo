@@ -214,7 +214,7 @@
   },
   "course": {
     "courseStatus": {
-      "trial": "3 days left in FREE Trial",
+      "trial": "{days, plural, one {Last day of FREE trial} other {{daysText} days left in FREE trial}}",
       "trialEnd": "Trial Ended",
       "active": "Active",
       "completed": "Completed",
@@ -236,6 +236,7 @@
     "continueLearningActive": "Continue Learning",
     "addSubjects": "Add Subjects",
     "unlockFullAccess": "Unlock Full Access",
+    "unlockCourse": "Unlock {exam} course",
     "buyFullCourse": "Buy Full Course",
     "priceNote": "₹{price} only • Subscription per month",
     "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only"

@@ -23,6 +23,7 @@ export default function MyCoursesList({ data }: { data?: MyCourse[] }) {
                         <MyCourseCard
                             key={index}
                             badge={course.status.toString()}
+                            trialStartedAt={course.created_at}
                             logo={course.exam.logo_url}
                             courseName={course.exam.short_name}
                             examData={12}
