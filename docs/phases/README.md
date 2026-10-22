@@ -50,7 +50,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 17 | [Sentry lazy loading, keep page-speed data](17-sentry-lazy-loading.md) | — (user request 2026-10-22) | CM dashboard, blog, landing, tools; ASTRO go/academy | In Review | User checks locally; then merge + deploy dashboard, landing, blog (Vercel), tools (Pages) |
 | 18 | [Content + subject-card dead taps](18-cc105-cc83-content-dead-taps.md) | CC-105, CC-83 | CM-dashboard, BE | Built, verified locally (not merged) | Any deploy order (card hides marks until BE is live) |
 | 19 | [Layout shift + payment speed](19-cc116-cc68-layout-shift-speed.md) | CC-116, CC-68 | CM-dashboard | Dashboard fixed (0.78→0.01), not merged | Sentry re-check 3 days after deploy; prep left by decision |
-| 20 | [Resizer: tabs, plain labels, feedback](20-cc92-cc93-resizer-ui.md) | CC-92, CC-93 | CM-tools | Not Started | D1 (look change), D2 (language) |
+| 20 | [Resizer: tabs, plain labels, feedback](20-cc92-cc93-resizer-ui.md) | CC-92, CC-93 | CM-tools | Built, verified locally (not merged) | Build + deploy tools after approval; re-check CC-92 Clarity |
 | 21 | [My Courses clarity + exam logos](21-cc111-cc25-my-courses-and-exam-logos.md) | CC-111, CC-25 | CM-dashboard, (BE) | Not Started | D1 (MyCourseCard "do not restyle"), D2 (logo reference) |
 | 22 | [Landing cards look tappable](22-cc109-landing-cards.md) | CC-109 | ASTRO, (CM-landing) | Not Started | D1 (link to signup vs plain look) |
 | 23 | [Hindi/Marathi payment page + failed-page recovery](23-cc66-cc64-payment-pages.md) | CC-66, CC-64 | CM-dashboard, BE | Not Started | D1 (failed page mockup), D2 (WhatsApp no.), C1 (RD copy) |
