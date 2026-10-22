@@ -248,6 +248,17 @@ interface PreparationState {
   markGuideAsSeen: () => void;
   guideShownThisSession: boolean;
   setGuideShownThisSession: () => void;
+
+  /* "Start here" guide (CC-79) */
+  /** courseId whose learning progress has loaded (so "no progress yet" is real, not "not fetched"). */
+  progressLoadedFor: string | null;
+  setProgressLoadedFor: (courseId: string) => void;
+  /** Set when the first-visit guide modal closes: the pointer tour should run next. */
+  startGuideRequested: boolean;
+  requestStartGuide: () => void;
+  /** True while the pointer tour is on screen (the floating Unlock widget hides). */
+  startGuideActive: boolean;
+  setStartGuideActive: (active: boolean) => void;
 }
 
 /* ----------------------------------
@@ -284,6 +295,9 @@ export const usePreparationStore = create<PreparationState>((set) => ({
   selectedSectionId: undefined,
   selectedArea: null,
   guideShownThisSession: false,
+  progressLoadedFor: null,
+  startGuideRequested: false,
+  startGuideActive: false,
 
   /* ----------------------------------
      HYDRATE
@@ -722,5 +736,9 @@ goToPrevTopic: () =>
     }),
 
   setGuideShownThisSession: () => set({ guideShownThisSession: true }),
+
+  setProgressLoadedFor: (courseId) => set({ progressLoadedFor: courseId }),
+  requestStartGuide: () => set({ startGuideRequested: true }),
+  setStartGuideActive: (active) => set({ startGuideActive: active, ...(active ? { startGuideRequested: false } : {}) }),
 
 }));

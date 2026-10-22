@@ -11,9 +11,19 @@ export type CourseEngagementEventName =
   | "Video Playback Summary"
   | "PYQ Expanded"
   | "App Download Initiated"
-  | "Topic Status Changed";
+  | "Topic Status Changed"
+  | "guide_shown"
+  | "guide_step_viewed"
+  | "guide_skipped"
+  | "guide_completed";
 
 export interface CourseEngagementEventPayloads {
+  // "Start here" pointer tour on the preparation page (CC-79).
+  "guide_shown": { exam_name: string; attempt: number };
+  "guide_step_viewed": { exam_name: string; step: number };
+  "guide_skipped": { exam_name: string; step: number };
+  "guide_completed": { exam_name: string };
+
   "Section Switched": {
     from_section_id?: string;
     from_section_name: string;

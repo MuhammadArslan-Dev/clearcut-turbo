@@ -13,19 +13,10 @@ import RelatedContentWrapper from "../components/RelatedContent/RelatedContentWr
 import BottomBar from "@/components/layout/preparation/BottomBarV2";
 
 import { usePreparationData } from "../hooks/usePreparationData";
-import type { TourStep } from "../../tour/GlobalTour";
 import { useUserInteractionData } from "../hooks/useUserInteractionData";
 
-// GlobalTour always renders null unless `isOpen` (its own driver.js instance
-// only ever spins up inside a `useEffect` gated on that flag), but as a
-// regular import it still pulled the driver.js library + its CSS into this
-// page's main bundle unconditionally — a real cost for a tour that, right
-// now, has no way to open (its trigger button below is commented out).
-// Dynamic-importing it changes nothing observable: same `null` render, same
-// props, just fetched as its own chunk instead of bundled eagerly.
-const GlobalTour = dynamic(() => import("../../tour/GlobalTour"), {
-  ssr: false,
-});
+// The "start here" pointer tour (CC-79); loads driver.js only when it opens.
+import StartGuide from "../components/StartGuide";
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { usePreparationStore } from "../store/usePreparationDataStore";
 
@@ -140,23 +131,6 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
     // the store's selection into it (replace, never a new entry).
   }, [selectedSectionId, selectedChapter?.id, selectedTopic?.id, searchParams]);
 
-  const steps: TourStep[] = [
-    {
-      element: "#step-1",
-      popover: {
-        title: "Welcome",
-        description: "This is the first step",
-      },
-    },
-    {
-      element: "#step-2",
-      popover: {
-        title: "Next",
-        description: "This is the second step",
-      },
-    },
-  ];
-  const [tourOpen, setTourOpen] = React.useState(false);
 
   // if (loading) return <p>Loading syllabus...</p>;
   if (error) return <p>Error loading syllabus</p>;
@@ -167,12 +141,7 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
         {/* Mobile Header */}
         <StickyMobileHeader />
 
-        {/* <button onClick={() => setOpen(true)}>Start Tour</button> */}
-        <GlobalTour
-          steps={steps}
-          isOpen={tourOpen}
-          onClose={() => setTourOpen(false)}
-        />
+        <StartGuide courseId={examId} />
 
         {/* ================= SCROLLABLE CONTENT ================= */}
         <div className="flex flex-col items-center  w-full h-[calc(100vh-126px)] md:max-h-[calc(100vh-6px)] md:min-h-fit overflow-auto  md:py-6">

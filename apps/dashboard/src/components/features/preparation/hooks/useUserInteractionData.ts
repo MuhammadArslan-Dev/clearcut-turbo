@@ -7,6 +7,7 @@ import { useEffect } from "react";
 
 export function useUserInteractionData(examId: number | string) {
   const progressByTopic = usePreparationStore((s) => s.progressByTopic);
+  const setProgressLoadedFor = usePreparationStore((s) => s.setProgressLoadedFor);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["learning-progress-by-topic", examId],
@@ -38,7 +39,8 @@ export function useUserInteractionData(examId: number | string) {
     );
 
     progressByTopic(normalized);
-  }, [data, progressByTopic]);
+    setProgressLoadedFor(String(examId));
+  }, [data, progressByTopic, setProgressLoadedFor, examId]);
 
   return {
     progressByTopic: data,

@@ -328,5 +328,17 @@
     "desc_pause": "Your subscription will be paused and no charges will be made until you resume.",
     "desc_resume": "Your subscription will be resumed and billing will restart from the next cycle.",
     "desc_cancel": "Your subscription will be cancelled. You will keep access until the current period ends."
+  },
+  "startGuide": {
+    "step1Title": "Choose your subject here",
+    "step1Body": "Each tab is one subject of your exam.",
+    "step2Title": "This chapter is free — open it",
+    "step2Body": "Start here; no payment needed.",
+    "step3Title": "Tap here to start",
+    "step3Body": "Watch the video, read the notes, then take a short test.",
+    "next": "Next",
+    "skip": "Skip",
+    "done": "Got it",
+    "badge": "Start here"
   }
 }
