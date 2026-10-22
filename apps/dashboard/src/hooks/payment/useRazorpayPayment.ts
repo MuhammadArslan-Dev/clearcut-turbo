@@ -17,6 +17,7 @@ import {
   createOrder,
   PaymentType,
   pollVerifyPaymentResult,
+  type VerifyPollResult,
 } from "@/lib/payment/payment";
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
@@ -83,6 +84,19 @@ export function useRazorpayPayment({
   const inFlightRef = React.useRef(false);
   const { user: authUser } = useAuth();
 
+  // The guard and `loading` stay on for the WHOLE checkout — until the popup
+  // is closed, the payment fails, or verification has finished — not just
+  // until open() returns. Releasing right after open() let a second tap
+  // through while the popup was still appearing on a slow phone, and after
+  // a payment (20-80 s of checks) paywalls/modals, which have no
+  // "confirming" screen, showed an active button again: a second order,
+  // and a second payment (CC-60 follow-up).
+  const release = () => {
+    inFlightRef.current = false;
+    setLoading(false);
+    setPhase("idle");
+  };
+
   const reportError = (reason: "sdk_failed" | "unknown") => {
     if (onError) onError(reason);
     else alert(reason === "sdk_failed" ? "Razorpay SDK failed to load" : "Something went wrong");
@@ -93,6 +107,7 @@ export function useRazorpayPayment({
     inFlightRef.current = true;
     setLoading(true);
     setPhase("opening");
+    let checkoutOpened = false;
 
     try {
       await trackEvent("Payment Initiated", {
@@ -142,28 +157,41 @@ export function useRazorpayPayment({
           onClose?.();
           setPhase("verifying");
 
-          let verified = await sentryApiClient(
-            () => pollVerifyPaymentResult(order.transaction_id, VERIFY_RETRIES),
-            {
-              endpoint: "/verify-payment-polling",
-              module: "payment-initiation",
-            },
-          );
-          // Webhook late: keep checking for ~60 s more behind an
-          // "activating your course" screen instead of giving up.
-          if ("pending" in verified) {
-            setPhase("activating");
+          let verified: VerifyPollResult;
+          try {
             verified = await sentryApiClient(
-              () => pollVerifyPaymentResult(order.transaction_id, ACTIVATING_RETRIES),
+              () => pollVerifyPaymentResult(order.transaction_id, VERIFY_RETRIES),
               {
                 endpoint: "/verify-payment-polling",
                 module: "payment-initiation",
               },
             );
+            // Webhook late: keep checking for ~60 s more behind an
+            // "activating your course" screen instead of giving up.
+            if ("pending" in verified) {
+              setPhase("activating");
+              verified = await sentryApiClient(
+                () => pollVerifyPaymentResult(order.transaction_id, ACTIVATING_RETRIES),
+                {
+                  endpoint: "/verify-payment-polling",
+                  module: "payment-initiation",
+                },
+              );
+            }
+          } catch (error) {
+            // An unexpected answer (404, a bug) used to leave the student on
+            // "Confirming your payment…" for ever. Razorpay only calls this
+            // handler after the payment went through, so treat it as paid
+            // but not yet activated.
+            logger.error("Payment verification failed unexpectedly", {
+              tags: { module: "payment", type: "verify_unexpected" },
+              extra: { examId, examName, transaction_id: order.transaction_id, error: String(error) },
+            });
+            verified = { success: false, pending: true };
           }
           const success = verified.success;
 
-          await invalidateQuery();
+          await invalidateQuery().catch(() => {});
           // The page's current-course query feeds the course store that
           // PaywallFloatingWidget reads. Refresh it here so the widget hides
           // as soon as the course is active, instead of after its 15-min staleTime.
@@ -256,6 +284,7 @@ export function useRazorpayPayment({
             });
             onFailure();
           }
+          release();
         },
 
         prefill: {
@@ -275,6 +304,8 @@ export function useRazorpayPayment({
         // without this handler a cancelled checkout was never reported at all.
         modal: {
           ondismiss: () => {
+            // Closed without paying: the button works again.
+            if (!outcomeReported) release();
             if (outcomeReported) return;
             outcomeReported = true;
 
@@ -318,20 +349,20 @@ export function useRazorpayPayment({
           extra: { examId, examName, price, type },
         });
 
+        release();
         onFailure();
       });
 
       razorpay.open();
+      checkoutOpened = true;
+      setPhase("idle");
     } catch (error) {
       console.error(error);
-      setPhase("idle");
       reportError("unknown");
     } finally {
-      setLoading(false);
-      inFlightRef.current = false;
-      // The checkout is open now (or failed to open); `verifying` /
-      // `activating` are set by the handler once a payment completes.
-      setPhase((current) => (current === "opening" ? "idle" : current));
+      // Not opened (script, order or Razorpay itself failed): free the
+      // button now. Once opened, the popup's callbacks above release it.
+      if (!checkoutOpened) release();
     }
   };
 

@@ -59,9 +59,10 @@
     "confirming": "Confirming your payment…",
     "activating": "Payment received. Activating your course…",
     "processing": "Processing payment…",
-    "errorSdk": "Couldn't open the payment window. Check your internet and tap Pay again.",
-    "errorGeneric": "Something went wrong. Please tap Pay again.",
+    "errorSdk": "Couldn't open the payment window. Check your internet and try again.",
+    "errorGeneric": "Something went wrong. Please try again.",
     "errorUnavailable": "Payments are temporarily unavailable. Please try again in a few minutes.",
+    "receivedTitle": "Payment received",
     "activatingNote": "Payment received. Your course will be active in a few minutes — no need to pay again."
   }
 }
