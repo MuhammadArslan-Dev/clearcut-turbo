@@ -20,6 +20,7 @@ import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { trackEvent } from "@/lib/analytics/browser";
 import {
+  trackFacebookEventOnce,
   LIVE_FB_PIXEL_ID,
   getFbPixelId,
   trackFacebookEvent,
@@ -32,7 +33,14 @@ import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { isApiError } from "@/lib/api/api-error";
 import { LevelTranslation } from "@/lib/api/onboarding";
-import { createSubscription, getPaymentPricing, PaymentPricing, PaymentType } from "@/lib/payment/payment";
+import {
+  createSubscription,
+  getPaymentPricing,
+  getSubscriptionMetaPurchase,
+  type MetaPurchase,
+  PaymentPricing,
+  PaymentType,
+} from "@/lib/payment/payment";
 import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
@@ -465,7 +473,7 @@ export default function InitiatedPage() {
         key: res.key,
         subscription_id: res.subscription.razorpay_subscription_id,
         name: "Clear Cutoff",
-        handler: (response: {
+        handler: async (response: {
           razorpay_payment_id: string;
           razorpay_subscription_id: string;
           razorpay_signature: string;
@@ -484,24 +492,55 @@ export default function InitiatedPage() {
           // the same rounded, SUBSCRIPTION_VALUE_MULTIPLIER-scaled number
           // (configurable in metaPurchaseConfig.ts) rather than a separate
           // hardcoded ×2 for predicted_ltv.
-          const subscribeValue = computeMetaPurchaseValue(selectedPrice, "1month");
-          trackFacebookEventWithUserData("Subscribe", {
-            value: subscribeValue,
-            currency: "INR",
-            predicted_ltv: subscribeValue,
-          });
-          // Ads optimize on Purchase only — Subscribe alone never fired
-          // Purchase for autopay subscriptions, so every paid plan now
-          // sends one. This `handler` only runs for the browser Razorpay
-          // checkout popup on the user's FIRST payment; autopay renewals
-          // are charged server-side via webhook and never reach this code,
-          // so no separate "first payment only" guard is needed here.
-          trackFacebookEventWithUserData("Purchase", {
-            value: subscribeValue,
-            currency: "INR",
-            amount_paid: selectedPrice,
-            plan: "monthly_autopay",
-          });
+          //
+          // CC-53: the backend decides whether this checkout is the user's
+          // FIRST payment for the course (a course already paid for, e.g.
+          // one-time earlier, is a renewal: nothing is sent) and the value
+          // (plan amount x server-side multiplier). Bounded wait so the
+          // redirect below is never held up; if the backend predates the
+          // endpoint, the client-side values below are used as before.
+          // Autopay renewals are charged by webhook and never reach here.
+          let meta: MetaPurchase | null | undefined;
+          try {
+            meta = await Promise.race([
+              getSubscriptionMetaPurchase(res.subscription.id).then((r) => r.meta_purchase),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+            ]);
+          } catch {
+            meta = undefined;
+          }
+          if (meta) {
+            if (meta.send) {
+              trackFacebookEventOnce(
+                "Subscribe",
+                { value: meta.value, currency: meta.currency, predicted_ltv: meta.value },
+                meta.event_id,
+              );
+              trackFacebookEventOnce(
+                "Purchase",
+                {
+                  value: meta.value,
+                  currency: meta.currency,
+                  amount_paid: meta.amount_paid,
+                  plan: "monthly_autopay",
+                },
+                meta.event_id,
+              );
+            }
+          } else {
+            const subscribeValue = computeMetaPurchaseValue(selectedPrice, "1month");
+            trackFacebookEventWithUserData("Subscribe", {
+              value: subscribeValue,
+              currency: "INR",
+              predicted_ltv: subscribeValue,
+            });
+            trackFacebookEventWithUserData("Purchase", {
+              value: subscribeValue,
+              currency: "INR",
+              amount_paid: selectedPrice,
+              plan: "monthly_autopay",
+            });
+          }
           setRedirecting(true);
           router.push(
             `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}`,

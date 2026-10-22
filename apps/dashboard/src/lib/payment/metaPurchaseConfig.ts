@@ -1,5 +1,11 @@
 import type { PaymentType } from "./payment";
 
+// FALLBACK ONLY (CC-53): the backend now decides Purchase/Subscribe - first
+// payment per course only, value from the charged amount and the server-side
+// multipliers (clearcutoff-main-backend config payment.meta_purchase, env
+// META_PURCHASE_*_MULTIPLIER). These client values are used only when the
+// backend response has no `meta_purchase` (a backend from before that).
+//
 // Ads optimize on Meta's "Purchase" event only, and value a renewing
 // subscription higher than a one-time payment since it's expected to keep
 // billing via autopay. Kept here (not inlined at each call site) so the

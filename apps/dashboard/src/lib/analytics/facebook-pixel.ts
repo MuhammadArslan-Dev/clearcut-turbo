@@ -99,6 +99,8 @@ async function waitForCachedMetaUserIdentifiers(
 export async function trackFacebookEventWithUserData(
   eventName: string,
   params?: Record<string, unknown>,
+  /** Meta de-duplicates events with the same eventID (e.g. a retried Purchase). */
+  eventId?: string,
 ) {
   if (typeof window === "undefined" || !window.fbq) return;
 
@@ -109,5 +111,28 @@ export async function trackFacebookEventWithUserData(
     window.fbq("init", getFbPixelId() ?? LIVE_FB_PIXEL_ID, userData);
   }
 
-  window.fbq("track", eventName, params);
+  if (eventId) window.fbq("track", eventName, params, { eventID: eventId });
+  else window.fbq("track", eventName, params);
+}
+
+const META_SENT_PREFIX = "meta_event_sent:";
+
+/**
+ * Sends a backend-decided Meta event once per event id on this browser
+ * (CC-53). Meta also de-duplicates by eventID; this skips the obvious repeat
+ * (a refresh of the success screen) before it is sent at all.
+ */
+export function trackFacebookEventOnce(
+  eventName: string,
+  params: Record<string, unknown>,
+  eventId: string,
+) {
+  const key = `${META_SENT_PREFIX}${eventId}:${eventName}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
+  } catch {
+    // Storage unavailable: Meta's eventID de-duplication still applies.
+  }
+  void trackFacebookEventWithUserData(eventName, params, eventId);
 }
