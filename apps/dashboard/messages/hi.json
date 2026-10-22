@@ -150,7 +150,9 @@
   },
   "examMode": {
     "online": "ऑनलाइन",
-    "offline": "ऑफ़लाइन"
+    "offline": "ऑफ़लाइन",
+    "offlineDetail": "ऑफ़लाइन (पेन-पेपर)",
+    "onlineDetail": "ऑनलाइन (कंप्यूटर पर)"
   },
   "languages": {
     "english": "अंग्रेज़ी",

@@ -67,6 +67,7 @@ function CourseSlideCard({
   onContinue,
   onEdit,
   onUnlock,
+  onStatusClick,
 }: {
   exam: ExamEnrollmentWithExam;
   // Passed in from MyCoursesWrapTwo's single batched query — this card used
@@ -75,6 +76,7 @@ function CourseSlideCard({
   onContinue: () => void;
   onEdit: () => void;
   onUnlock?: () => void;
+  onStatusClick?: () => void;
 }) {
   return (
     <MyCourseCard
@@ -99,6 +101,7 @@ function CourseSlideCard({
       needsSubjects={!exam.stage_id}
       editClick={onEdit}
       unlockClick={onUnlock}
+      statusClick={onStatusClick}
     />
   );
 }
@@ -129,6 +132,21 @@ export default function MyCoursesWrapTwo({
   const exam = useMemo(() => activeCourse?.exam, [activeCourse?.exam]);
 
   const route = useRouter();
+
+  // "Trial Ended" pill → payment, tagged so the funnel can tell it apart
+  // from the Buy button (CC-111). Only once a subject is picked, like Buy.
+  const trialEndedClick = (enrollment?: ExamEnrollmentWithExam | null) =>
+    enrollment?.status === "trial_end" && enrollment.stage_id
+      ? () => {
+          trackEvent("Purchase Intent Initiated", {
+            entry_point: "trial_ended_badge",
+            product_id: enrollment.exam?.short_name ?? "",
+          });
+          route.push(
+            `/payment/initiated?exam_id=${enrollment.group_code}&course_name=${enrollment.exam?.short_name}&source=trial_ended`,
+          );
+        }
+      : undefined;
 
   const metaData: ExamMetadata =
     typeof exam?.metadata === "string"
@@ -246,6 +264,7 @@ export default function MyCoursesWrapTwo({
             route.push(
               `/payment/initiated?exam_id=${activeExam?.group_code}&course_name=${activeExam?.exam?.short_name}&source=my_courses_card_clicked`,
             ),
+    statusClick: trialEndedClick(activeExam),
     // unlockClick:
     //   activeExam?.status === "active"
     //     ? null
@@ -325,6 +344,7 @@ export default function MyCoursesWrapTwo({
                             );
                           }
                     }
+                    onStatusClick={trialEndedClick(exam)}
                   />
                 )}
               </SwiperSlide>

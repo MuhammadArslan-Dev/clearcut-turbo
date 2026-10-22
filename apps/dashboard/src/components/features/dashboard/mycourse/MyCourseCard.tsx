@@ -21,6 +21,8 @@ export interface MyCOurseCardProps {
   examData?: string | number | null;
   rating?: string | number | null;
   badge?: string;
+  /** Makes the status badge a button (look unchanged) — used for "Trial Ended" → payment (CC-111). */
+  statusClick?: () => void;
   /** Enrollment creation date: the trial badge counts its days left from it (CC-67). */
   trialStartedAt?: string | number | null;
   // Exam `short_name` — drives the per-exam price override (e.g. HPTET)
@@ -60,6 +62,7 @@ export default function MyCourseCard({
   examData,
   rating,
   badge,
+  statusClick,
   trialStartedAt,
   examShortName,
   topics,
@@ -113,14 +116,34 @@ export default function MyCourseCard({
       className={clsx("!max-w-full md:!max-w-[400px]", cardClasses)}
     >
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">
-        <div
-          className={clsx(
-            "absolute flex z-[1000] items-center -top-[10.5px] right-5 rounded-full text-center px-4 h-6 body-small !font-semibold ",
-            color ? color : "bg-brand text-white",
-          )}
-        >
-          {label}
-        </div>
+        {statusClick ? (
+          // "Trial Ended" was tapped ~230 times expecting to renew; same pill,
+          // now a button. Padding/negative margin give it a 44px tap area
+          // without changing how it looks.
+          <button
+            type="button"
+            onClick={statusClick}
+            className="absolute z-[1000] -top-[20.5px] right-5 cursor-pointer py-2.5"
+          >
+            <span
+              className={clsx(
+                "flex items-center rounded-full text-center px-4 h-6 body-small !font-semibold ",
+                color ? color : "bg-brand text-white",
+              )}
+            >
+              {label}
+            </span>
+          </button>
+        ) : (
+          <div
+            className={clsx(
+              "absolute flex z-[1000] items-center -top-[10.5px] right-5 rounded-full text-center px-4 h-6 body-small !font-semibold ",
+              color ? color : "bg-brand text-white",
+            )}
+          >
+            {label}
+          </div>
+        )}
 
         <div className="flex items-center justify-between ">
           <div className="flex items-center gap-3">
