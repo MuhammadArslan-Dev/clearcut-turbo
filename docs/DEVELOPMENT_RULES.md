@@ -87,7 +87,7 @@ Backend: Laravel 12 at `C:\laragon\www\clearcutoff-main-backend`, API at `http:/
 | Text | `@clearcut/ui/text` | `variant` display-*/heading-*/body-*, `weight`, `color` (gray-normal/subtle/muted, primary-normal). Plain elements may use the typography classes `heading-*` / `body-*` directly. |
 | Chip / badge | `@clearcut/ui/chip`, dashboard `StatusChip` | Don't hand-roll pills. |
 | Select | `@clearcut/ui/select` (`Select` + `SelectOption`, `onValueChange`) | Replacement for old MUI Joy select. |
-| Input | `@clearcut/ui/input`, `main-input` | |
+| Input | `@clearcut/ui/input`, `main-input` | Mobile-number fields: pass `normalizeValue={normalizeIndianMobileInput}` (`@clearcut/auth/validators`; strips spaces, +91/91 and leading 0 before cutting to 10, and drops the HTML maxLength that cut pastes) and `focusOnTap` (field box is a `<label>`, a tap on "+91"/padding focuses). Both opt-in, default = old behaviour. Give the input an `id` and make its caption a `<label htmlFor>`. Keep the submit button enabled (except while loading) and show the reason on tap — a disabled button swallows taps (`disabled:pointer-events-none`). |
 | Skeleton | `@/components/ui/skeleton` / `@clearcut/ui/skeleton` | Use for loading states; match final layout. |
 | Link, Breadcrumbs, Separator, Overlay, JsonLd, PageNotFound, SiteFooter | `@clearcut/ui/*` | |
 | Icons | `@clearcut/ui/icons/*`, dashboard icon index (`ChevronIcon`, `TrashIcon`, `LockIcon`, `WarningCircleIcon`, `SandTimerIcon`, `MainAppLogo`…), then `lucide-react` | Don't paste new inline SVGs if an icon exists. `MainAppLogo` default height is 61px. |

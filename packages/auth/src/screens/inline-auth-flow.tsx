@@ -10,11 +10,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import WhatsappIcon from "../icons/whatsapp-icon";
 import FireIcon from "../icons/fire-icon";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl } from "../redirect";
+import { buildPostVerifyRedirectUrl, createLeadId } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
   INDIAN_MOBILE_FIRST_DIGIT_REGEX as FIRST_DIGIT_REGEX,
+  normalizeIndianMobileInput,
 } from "../validators";
 import type { AuthApi } from "../api";
 import {
@@ -127,7 +128,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
     }, []);
 
     const validatePhone = (value: string) => {
-      const cleaned = value.replace(/\D/g, "");
+      const cleaned = normalizeIndianMobileInput(value);
       setPhone(cleaned);
       setAutoSubmitted(false);
       if (!cleaned.length) { setError(""); setSuccess(""); setIsValidPhone(false); return; }
@@ -151,7 +152,13 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
     // the UI flow are identical for a first send and a resend.
     const handleLogin = async (phoneValue?: string, isResend = false) => {
       const number = phoneValue ?? phone;
-      if (!PHONE_REGEX.test(number)) { setError("Enter valid phone number"); return; }
+      // The button now submits too (CC-84; it used to be a no-op, so only
+      // the 10-digit auto-submit ever sent an OTP): say why when it can't.
+      if (!PHONE_REGEX.test(number)) {
+        setError(number ? error || "Enter valid phone number" : "Enter your 10-digit mobile number");
+        setSuccess("");
+        return;
+      }
       setError(""); setSuccess(""); setLoading(true); setDisabled(false);
       try {
         // Sends back the previous attempt's user_id, when there is one, so
@@ -236,7 +243,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         // pick up phone/external_id on the app side's first Pixel init(), so
         // it's minted here as a one-time registration-occurrence token and
         // threaded through the redirect instead of fired on this pixel.
-        const leadId = isNewUser ? crypto.randomUUID() : undefined;
+        const leadId = isNewUser ? createLeadId() : undefined;
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
           token: data.token,
@@ -272,16 +279,17 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
               <div className="space-y-2">
                 <div className="flex gap-3 items-center">
                   <Image src="/images/indian-flage.webp" alt="" width={24} height={24} priority unoptimized />
-                  <p className="body-small font-semibold text-gray-500">Mobile or WhatsApp Number</p>
+                  <label htmlFor="inline-phone" className="body-small font-semibold text-gray-500">Mobile or WhatsApp Number</label>
                 </div>
                 <div className="flex gap-2">
                   <div className="w-full flex items-center gap-2">
-                    <div className="h-[48px] w-[85px] px-4 flex gap-1 items-center justify-center bg-[var(--color-gray-blue)]/12">
+                    {/* A label, so tapping "+91" focuses the number field (CC-84). */}
+                    <label htmlFor="inline-phone" className="h-[48px] w-[85px] px-4 flex gap-1 items-center justify-center bg-[var(--color-gray-blue)]/12 cursor-text">
                       <WhatsappIcon color="var(--color-text-gray-subtle)" size={24} />
-                      <p className="body-large">+91</p>
-                    </div>
+                      <span className="body-large">+91</span>
+                    </label>
                     <div className="max-w-[300px] h-[48px]">
-                      <MainInput value={phone} placeholder="10 digit number" inputType="phone" error={error} maxLength={10} className="h-full sm:max-w-[300px] sm:min-w-[300px]" inputClassName="body-large !font-semibold text-[var(--color-text-gray-normal)]" onChange={(e) => validatePhone(e.target.value)} />
+                      <MainInput id="inline-phone" autoComplete="tel-national" normalizeValue={normalizeIndianMobileInput} focusOnTap value={phone} placeholder="10 digit number" inputType="phone" error={error} maxLength={10} className="h-full sm:max-w-[300px] sm:min-w-[300px]" inputClassName="body-large !font-semibold text-[var(--color-text-gray-normal)]" onChange={(e) => validatePhone(e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -290,7 +298,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
                   <em>Used only for login &amp; exam updates. No spam. OTP will be sent via SMS &amp; WhatsApp.</em>
                 </Text>
                 <div className="w-full justify-center">
-                  <SubmitButton showIcon={false} fullWidth text="Get my selection plan" disabled={disabled} loading={loading} onClick={() => {}} />
+                  <SubmitButton showIcon={false} fullWidth text="Get my selection plan" disabled={loading} loading={loading} onClick={() => handleLogin()} />
                 </div>
               </div>
             </motion.div>

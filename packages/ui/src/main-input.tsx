@@ -16,6 +16,19 @@ interface MainInputProps extends InputHTMLAttributes<HTMLInputElement> {
   maxLength?: number;
   inputClassName?: string;
   inputPrefix?: React.ReactNode;
+  /**
+   * Phone fields only (opt-in): replaces the default "digits only, cut to
+   * maxLength" cleaning, e.g. `normalizeIndianMobileInput` from
+   * @clearcut/auth/validators. The browser's own maxLength is then left off,
+   * because it would cut a pasted "+91 98765 43210" to "+91 98765 " before
+   * this function ever sees it.
+   */
+  normalizeValue?: (value: string) => string;
+  /**
+   * Opt-in: the whole field box (prefix, icon, padding) is a <label>, so a
+   * tap anywhere on it focuses the input instead of doing nothing.
+   */
+  focusOnTap?: boolean;
 }
 
 // Every entry resolves through @clearcut/design-tokens — no literals here.
@@ -51,9 +64,12 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
   inputClassName,
   onChange,
   inputPrefix,
+  normalizeValue,
+  focusOnTap = false,
   ...rest
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
+  const FieldBox = focusOnTap ? "label" : "div";
 
   const getBorderColor = () => {
     if (error) return colors.error;
@@ -73,9 +89,14 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
 
   // ✅ phone-safe change handler
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, ""); // only digits
-    if (maxLength && value.length > maxLength) {
-      value = value.slice(0, maxLength);
+    let value: string;
+    if (normalizeValue) {
+      value = normalizeValue(e.target.value);
+    } else {
+      value = e.target.value.replace(/\D/g, ""); // only digits
+      if (maxLength && value.length > maxLength) {
+        value = value.slice(0, maxLength);
+      }
     }
     if (onChange) {
       onChange({
@@ -96,8 +117,10 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
       {label && (
         <label className="block mb-2 text-base text-gray-900">{label}</label>
       )}
-      <div
+      <FieldBox
         className={`flex items-center border-b-2 px-3  py-1.5 transition-colors ${
+          focusOnTap ? "cursor-text " : ""
+        }${
           className ?? ""
         }`}
         style={{
@@ -128,7 +151,7 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
           ref={ref}
           type={getInputType()}
           inputMode={inputType === "phone" ? "numeric" : undefined}
-          maxLength={inputType === "phone" ? maxLength : undefined}
+          maxLength={inputType === "phone" && !normalizeValue ? maxLength : undefined}
           className={clsx(
             "flex-1  bg-transparent outline-none placeholder-gray-500",
             inputClassName ?? "text-base text-gray-900",
@@ -138,7 +161,7 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
           onChange={inputType === "phone" ? handlePhoneChange : onChange}
           {...rest}
         />
-      </div>
+      </FieldBox>
       {showError && (error || success) && (
         <p
           className={clsx(

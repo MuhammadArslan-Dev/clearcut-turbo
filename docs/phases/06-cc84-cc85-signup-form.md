@@ -1,6 +1,6 @@
 # Phase 06 — CC-84 + CC-85: signup form fixes and the T&C link (/start)
 
-**Status:** Not Started
+**Status:** In Review (branch cc-84-85-signup-form; not merged)
 **Jira:** [CC-84](https://clear-cutoff.atlassian.net/browse/CC-84), [CC-85](https://clear-cutoff.atlassian.net/browse/CC-85)
 **Repos:** CM `apps/landing` (maybe `packages/ui/main-input`, `packages/auth/validators`), optionally ASTRO
 
@@ -29,12 +29,13 @@
 **Side finding:** ASTRO `packages/ui/src/Button.astro:~108` only knows hi/en, so Marathi go-page CTAs open the English `/start`. Fixed in Phase 08.
 
 ## Plan
-- [ ] Keep the submit button enabled except while loading. On tap, validate and show a red error under the field ("10 अंकों का मोबाइल नंबर डालें" + en/mr).
-- [ ] Add a shared `normalizeIndianPhone()` in `@clearcut/auth/validators`: strip spaces, +91/91 (when longer than 10 digits) and a leading 0, **before** truncating. Apply it on type and paste.
-- [ ] Put "+91" as plain text inside the field and make the whole field a `<label>` so a tap anywhere focuses the input. Add `autoComplete="tel-national"`.
-- [ ] Make the "no card needed" line plain small text.
-- [ ] T&C/Privacy: bigger tap targets (≥44px) and translated labels.
-- [ ] Guard `crypto.randomUUID` with a fallback.
+- [x] Keep the submit button enabled except while loading. On tap, validate and show a red error under the field ("10 अंकों का मोबाइल नंबर डालें" + en/mr) and focus the field.
+- [x] Shared `normalizeIndianMobileInput()` in `@clearcut/auth/validators`: digits only, leading 0s off, "91" off when longer than 10 digits, **then** cut to 10. On type and paste (the HTML maxLength is dropped for these fields, it cut pastes first).
+- [x] "+91" stays plain text inside the field; the whole field box is a `<label>` (`MainInput focusOnTap`), caption is `<label htmlFor>`, `autoComplete="tel-national"`.
+- [x] "No card needed" is a plain small line (no box/icon) on /start and in the modal.
+- [x] T&C/Privacy on /start: new tab, ~44px tap targets (padding + negative margin, text doesn't move), hi/mr labels and sentence endings. Modal links (already new tab): bigger tap targets.
+- [x] `createLeadId()` (`@clearcut/auth/redirect`) replaces `crypto.randomUUID()` in /start, otp-screen and inline flow.
+- [x] Found while doing D4: the onboarding inline flow's "Get my selection plan" button was `onClick={() => {}}` and disabled — only the 10-digit auto-submit ever sent the OTP. Now it submits, with the same empty/wrong-number message.
 - [!] 🛑 **D1:** mobile autofocus: re-enable it (brings back the back-gesture problem), only outside FB/IG in-app browsers, or keep it desktop-only?
 - [!] 🛑 **D2:** "always responds": keep or remove the 10-digit auto-submit?
 - [!] 🛑 **D3:** change shared `MainInput` (affects every input in blog, landing and tools), or add an opt-in prop used only by /start? Rule: additive change, default = old behaviour.
@@ -49,4 +50,9 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-22 | D1 | Autofocus on arrival everywhere except FB/IG in-app browsers (UA check, not useIsMobile — that is false during hydration, so the old "desktop-only" focus also ran on mobile) | User |
+| 2026-10-22 | D2 | Keep the 10-digit auto-submit | User |
+| 2026-10-22 | D3 | Additive opt-in props on shared `MainInput` (`normalizeValue`, `focusOnTap`); default unchanged | Claude (per rule §5) |
+| 2026-10-22 | D4 | Same fixes in the login modal (login-screen) and the onboarding inline flow. Modal autofocus unchanged (it opens on a tap) | User |
+| 2026-10-22 | D5 | New tab | User |
+| 2026-10-22 | Copy | Drafted, RD to confirm: errEnter10 en "Enter your 10-digit mobile number" / hi "10 अंकों का मोबाइल नंबर डालें" / mr "10 अंकी मोबाईल नंबर टाका"; links hi "नियम और शर्तें" / "गोपनीयता नीति" (+ "से सहमत हूँ।"), mr "अटी व शर्ती" / "गोपनीयता धोरण" (+ "यांना सहमत आहे."). Modal + inline stay English (as before). Legal pages themselves still English-only | Claude |

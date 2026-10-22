@@ -11,7 +11,7 @@ import { Modal } from "../ui/modal";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
+import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
 import RetryIcon from "../icons/retry-icon";
@@ -202,7 +202,7 @@ export function createOtpScreen({
         // id — a refresh/replay of this same registration must not mint a
         // new Lead), threaded through the redirect so the app side fires
         // Lead exactly once, with a real event_id.
-        const leadId = isNewUser ? crypto.randomUUID() : undefined;
+        const leadId = isNewUser ? createLeadId() : undefined;
 
         const redirectUrl = buildPostVerifyRedirectUrl({
           baseUrl: redirectBaseUrl,
