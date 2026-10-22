@@ -7,7 +7,13 @@ export type MonetizationEventName =
   | 'Payment Initiated'
   | 'Payment Outcome'
   | 'Subscription Status Updated'
-  | 'Support Contacted';
+  | 'Support Contacted'
+  | 'cancel_started'
+  | 'cancel_reason_selected'
+  | 'save_offer_shown'
+  | 'save_offer_accepted'
+  | 'subscription_cancelled'
+  | 'subscription_paused';
 
 export interface MonetizationEventPayloads {
   'Payment Paywall Rendered': {
@@ -36,6 +42,14 @@ export interface MonetizationEventPayloads {
     switch_number: number;
     currency: 'INR';
   };
+
+  // Cancel flow on the Subscriptions tab (CC-97).
+  'cancel_started': { subscription_id: string; course_name: string };
+  'cancel_reason_selected': { subscription_id: string; course_name: string; reason: string };
+  'save_offer_shown': { subscription_id: string; course_name: string; reason: string; offer: string };
+  'save_offer_accepted': { subscription_id: string; course_name: string; reason: string; offer: string };
+  'subscription_cancelled': { subscription_id: string; course_name: string; reason: string; note?: string };
+  'subscription_paused': { subscription_id: string; course_name: string; reason?: string };
 
   // Student opened WhatsApp/phone support (e.g. from /payment/failed, CC-64).
   'Support Contacted': {

@@ -16,6 +16,8 @@ import {
 } from "@/lib/payment/payment";
 import { CustomBottomSheet } from "@/components/modals/modals-bottom-sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { trackEvent } from "@/lib/analytics/browser";
+import CancelFlowContent, { CancelReason } from "./CancelFlowContent";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -104,14 +106,22 @@ function Toast({ message }: { message: string }) {
 function ConfirmSheet({
   isOpen,
   action,
+  sub,
   loading,
+  result,
   onConfirm,
+  onCancelWithReason,
+  onPauseInstead,
   onClose,
 }: {
   isOpen: boolean;
   action: ActionType | null;
+  sub: Subscription | null;
   loading: boolean;
+  result: { action: "cancel" | "pause"; message: string } | null;
   onConfirm: () => void;
+  onCancelWithReason: (reason: CancelReason, note: string) => void;
+  onPauseInstead: (reason: CancelReason) => void;
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
@@ -125,7 +135,21 @@ function ConfirmSheet({
       }
     : null;
 
-  const content = cfg && (
+  // Cancel asks why first and may offer a way to stay (CC-97); pause and
+  // resume keep the one-step confirm below.
+  const content = action === "cancel" && sub ? (
+    <CancelFlowContent
+      key={sub.id}
+      subscriptionId={sub.id}
+      courseName={courseLabel(sub)}
+      canPause={getActions(sub.status).includes("pause")}
+      loading={loading}
+      result={result}
+      onCancel={onCancelWithReason}
+      onPause={onPauseInstead}
+      onClose={onClose}
+    />
+  ) : cfg && (
     <div className="p-6 space-y-5">
       <div className="space-y-1.5">
         <p className="font-semibold text-[#192839]">
@@ -517,6 +541,8 @@ function SubscriptionWrap() {
     action: ActionType;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // Outcome of the cancel flow, shown in the sheet instead of a toast.
+  const [flowResult, setFlowResult] = useState<{ action: "cancel" | "pause"; message: string } | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -534,13 +560,31 @@ function SubscriptionWrap() {
 
   /* ---- Mutations ---- */
   const mutation = useMutation({
-    mutationFn: ({ sub, action }: { sub: Subscription; action: ActionType }) => {
+    mutationFn: ({ sub, action }: {
+      sub: Subscription;
+      action: ActionType;
+      reason?: CancelReason;
+      note?: string;
+      fromFlow?: boolean;
+    }) => {
       if (action === "pause")  return pauseSubscription(sub.id);
       if (action === "resume") return resumeSubscription(sub.id);
       return cancelSubscription(sub.id);
     },
-    onSuccess: (res) => {
+    onSuccess: (res, vars) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      const base = { subscription_id: String(vars.sub.id), course_name: courseLabel(vars.sub) };
+      if (vars.action === "cancel") {
+        trackEvent("subscription_cancelled", { ...base, reason: vars.reason ?? "unknown", ...(vars.note ? { note: vars.note } : {}) });
+      } else if (vars.action === "pause") {
+        trackEvent("subscription_paused", { ...base, ...(vars.reason ? { reason: vars.reason } : {}) });
+      }
+      if (vars.fromFlow && vars.action !== "resume") {
+        // Stay in the sheet with a clear end screen (the backend's message
+        // carries the access end date).
+        setFlowResult({ action: vars.action, message: res.message });
+        return;
+      }
       setConfirm(null);
       showToast(res.message);
     },
@@ -559,6 +603,25 @@ function SubscriptionWrap() {
   const handleConfirm = useCallback(() => {
     if (confirm) mutation.mutate(confirm);
   }, [confirm, mutation]);
+
+  const handleCancelWithReason = useCallback(
+    (reason: CancelReason, note: string) => {
+      if (confirm) mutation.mutate({ sub: confirm.sub, action: "cancel", reason, note, fromFlow: true });
+    },
+    [confirm, mutation],
+  );
+
+  const handlePauseInstead = useCallback(
+    (reason: CancelReason) => {
+      if (confirm) mutation.mutate({ sub: confirm.sub, action: "pause", reason, fromFlow: true });
+    },
+    [confirm, mutation],
+  );
+
+  const closeSheet = useCallback(() => {
+    setConfirm(null);
+    setFlowResult(null);
+  }, []);
 
   /* ---- Derived ---- */
   const all = useMemo(() => data?.subscriptions ?? [], [data]);
@@ -590,9 +653,13 @@ function SubscriptionWrap() {
       <ConfirmSheet
         isOpen={!!confirm}
         action={confirm?.action ?? null}
+        sub={confirm?.sub ?? null}
         loading={mutation.isPending}
+        result={flowResult}
         onConfirm={handleConfirm}
-        onClose={() => setConfirm(null)}
+        onCancelWithReason={handleCancelWithReason}
+        onPauseInstead={handlePauseInstead}
+        onClose={closeSheet}
       />
 
       <div className="space-y-4">
