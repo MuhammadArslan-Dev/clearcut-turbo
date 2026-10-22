@@ -43,6 +43,16 @@ export default function CourseCard({
   bgColor = "",
 }: CourseCardProps) {
   const t = useTranslations();
+  // The backend sends "Offline"/"Online" in English. Shown raw, "Offline"
+  // read like the app's own status (and stayed English on hi/mr pages);
+  // say what it means for the exam itself (CC-111).
+  const mode = String(examMode ?? "").trim().toLowerCase();
+  const modeLabel =
+    mode === "offline"
+      ? t("examMode.offlineDetail")
+      : mode === "online"
+        ? t("examMode.onlineDetail")
+        : examMode;
 
   return (
     <>
@@ -104,7 +114,7 @@ export default function CourseCard({
                         {t("examCard.mode")}
                       </p>
                     </div>
-                    <p className="text-surface-gray-normal">{examMode}</p>
+                    <p className="text-surface-gray-normal">{modeLabel}</p>
                   </div>
                 )}
                 {duration && (

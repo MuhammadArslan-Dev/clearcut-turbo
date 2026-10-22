@@ -42,6 +42,8 @@ NODE_ENV=production NEXT_PUBLIC_LARAVEL_MAIN_BACKEND=https://apptest.clearcutoff
 npx wrangler pages deploy out --project-name=clearcut-tools --branch=main --commit-message="<what changed>"
 ```
 
+`pnpm build` first deletes `.next/cache/fetch-cache` (`scripts/clear-fetch-cache.mjs`). Without that, a build reuses old API responses: production ran on 2026-10-05 data until 2026-10-22 (no exam logos, 4 exams missing). Don't run `next build` directly for a deploy.
+
 `TOOLS_API_URL` is set explicitly because the local `.env` points at the
 Laragon tools backend, whose database is remote: every API call there took
 ~7.6s (vs ~0.4s on the production tools API, measured 2026-10-19), and the

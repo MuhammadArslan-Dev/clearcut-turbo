@@ -55,6 +55,10 @@ export default function BuySigleCourseModal() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  // CC-111: "Continue to Subjects" / "Start Learning" were tapped while still
+  // disabled (no paper/subject picked) and nothing happened. A tap on the
+  // disabled button now says what to do.
+  const [showPickHint, setShowPickHint] = useState(false);
 
   /* ---------------------------------- container (STABLE) ---------------------------------- */
   const Container = useMemo(() => (isMobile ? DrawerSheet : Modal), [isMobile]);
@@ -112,6 +116,7 @@ export default function BuySigleCourseModal() {
     setCurrentParent(null);
     setSubmitting(false);
     setPurchaseError(null);
+    setShowPickHint(false);
   }, []);
 
   useEffect(() => {
@@ -119,6 +124,16 @@ export default function BuySigleCourseModal() {
       resetModalState();
     }
   }, [isOpen, resetModalState]);
+
+  // An exam with a single paper has nothing to choose: pick it, so the
+  // student isn't asked a question with one answer (CC-111).
+  useEffect(() => {
+    if (!isOpen || paper || parent.length !== 1) return;
+    const only = parent[0];
+    setPaper(only);
+    setSelectedPath([only]);
+    setCurrentParent(only.id);
+  }, [isOpen, paper, parent]);
 
   /* ---------------------------------- handlers ---------------------------------- */
   const handleEdit = useCallback(
@@ -146,6 +161,7 @@ export default function BuySigleCourseModal() {
       }
 
       setCurrentParent(item.id);
+      setShowPickHint(false);
 
       const nextChildren = levelsRaw.filter((d) => d.parent_id === item.id);
       setFinalSelection(nextChildren.length === 0 ? item : null);
@@ -239,7 +255,7 @@ export default function BuySigleCourseModal() {
             title={STEPS[step].title}
             titleHeightLight={STEPS[step].highlightText}
             description={STEPS[step].description}
-            goBack={step === 0 ? close : () => setStep(step - 1)}
+            goBack={step === 0 ? close : () => { setShowPickHint(false); setStep(step - 1); }}
           />
         </div>
 
@@ -285,6 +301,7 @@ export default function BuySigleCourseModal() {
                           setPaper(item);
                           setSelectedPath([item]);
                           setCurrentParent(item.id);
+                          setShowPickHint(false);
                         }}
                         content={
                           <span className="flex flex-col items-start">
@@ -390,8 +407,13 @@ export default function BuySigleCourseModal() {
               {purchaseError}
             </p>
           )}
+          {showPickHint && !purchaseError && (
+            <p role="status" className="body-small !font-semibold text-center text-brand w-full max-w-[400px]">
+              {modalT("paperSelection.selectAnyOneOption")}
+            </p>
+          )}
           {step === 0 ? (
-            <div className="w-full max-w-[400px]">
+            <div className="relative w-full max-w-[400px]">
               <ShimmerButton
                 text={
                   currentChildren.length > 0
@@ -402,6 +424,7 @@ export default function BuySigleCourseModal() {
                 loading={submitting}
                 shimmer={nextButtonPhase === "shimmer"}
                 onClick={() => {
+                  setShowPickHint(false);
                   currentChildren.length > 0 ? setStep(1) : handlePurchase();
                 }}
                 icon={
@@ -418,9 +441,18 @@ export default function BuySigleCourseModal() {
                 }
                 iconPosition="right"
               />
+              {!paper && (
+                // A disabled <button> swallows the tap, so this layer catches it.
+                <button
+                  type="button"
+                  aria-label={modalT("paperSelection.selectAnyOneOption")}
+                  onClick={() => setShowPickHint(true)}
+                  className="absolute inset-0 cursor-pointer rounded-full"
+                />
+              )}
             </div>
           ) : (
-            <div className="w-full max-w-[400px]">
+            <div className="relative w-full max-w-[400px]">
               <ShimmerButton
                 text={modalT("subjectSelection.startLearning")}
                 disabled={currentChildren.length > 0}
@@ -441,6 +473,14 @@ export default function BuySigleCourseModal() {
                 }
                 iconPosition="right"
               />
+              {currentChildren.length > 0 && (
+                <button
+                  type="button"
+                  aria-label={modalT("paperSelection.selectAnyOneOption")}
+                  onClick={() => setShowPickHint(true)}
+                  className="absolute inset-0 cursor-pointer rounded-full"
+                />
+              )}
             </div>
           )}
         </div>

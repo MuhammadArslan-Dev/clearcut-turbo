@@ -153,7 +153,9 @@ declare const messages: {
   },
   "examMode": {
     "online": "Online",
-    "offline": "Offline"
+    "offline": "Offline",
+    "offlineDetail": "Offline (pen & paper)",
+    "onlineDetail": "Online (computer-based)"
   },
   "languages": {
     "english": "English",
