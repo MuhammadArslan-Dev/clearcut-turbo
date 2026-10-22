@@ -1,75 +1,65 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PaymentHistoryTable, { PaymentRow } from "./PaymentHistoryTable";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import { DrawerSheet } from "@/components/modals/modals-bottom-sheet";
-import { useResponsiveTabs } from "@/hooks/navigation/useResponsiveTabs";
-import { MobileBackButton } from "@/components/ui/button/mobile-back-button";
-import { AnimatePresence } from "framer-motion";
+import { getPaymentHistory } from "@/lib/payment/payment";
 
+/**
+ * Profile → Payments (CC-100): the student's real successful payments from
+ * GET /v2/payment/history (one-time purchases and autopay charges, amount in
+ * rupees, Razorpay payment id and method when stored).
+ *
+ * If that endpoint is unavailable (a backend from before it existed), it
+ * falls back to the old enrollment-based list, showing only active, paid
+ * enrollments — never "₹NaN", "₹0.00" or a "-" placeholder.
+ */
 export default function PaymentHistoryWrap() {
-  const isMobile = useIsMobile();
-  const { courses, isLoading } = useMyActiveCourses();
+  const history = useQuery({
+    queryKey: ["payment-history"],
+    queryFn: getPaymentHistory,
+    staleTime: 1000 * 60 * 2,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+  const useFallback = history.isError;
+  const { courses, isLoading: coursesLoading } = useMyActiveCourses();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
-  /* -------------------------------------------------
-     DERIVED DATA (NO STATE, NO EFFECT)
-  -------------------------------------------------- */
   const data: PaymentRow[] = useMemo(() => {
-    const allCourses = courses?.courses ?? [];
-
-    return allCourses.map((item) => {
-      let status: PaymentRow["status"];
-
-      switch (item.status) {
-        case "active":
-          status = "active";
-          break;
-        case "trial":
-          status = "trial";
-          break;
-        case "trial_end":
-          status = "trial-ended";
-          break;
-        default:
-          status = "expired";
-      }
-
-      // Amount paid is the enrollment's own `price` (set from the actual
-      // transaction at purchase time), never the exam's catalog price —
-      // and only shown for a currently active enrollment.
-      const paidAmount = Number(item.price ?? 0);
-
-      return {
+    if (!useFallback) {
+      return (history.data?.payments ?? []).map((p) => ({
+        id: p.id,
+        date: p.paid_at,
+        program: p.course?.short_name ?? p.course?.name ?? null,
+        kind: p.type,
+        amount: Number.isFinite(p.amount) ? p.amount : null,
+        method: p.method,
+        paymentId: p.payment_id,
+      }));
+    }
+    return (courses?.courses ?? [])
+      .filter((item) => item.status === "active" && Number(item.price) > 0)
+      .map((item) => ({
         id: item.uuid,
-        date: item.enrolled_at
-          ? new Date(item.enrolled_at).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : "--",
-        program: item.exam?.short_name ?? "—",
-        status,
-        amount:
-          status === "active" && Number.isFinite(paidAmount)
-            ? paidAmount
-            : 0,
-        paymentMethod: "-",
-        invoiceUrl: null,
-      };
-    });
-  }, [courses]);
+        date: item.enrolled_at ?? null,
+        program: item.exam?.short_name ?? null,
+        kind: null,
+        amount: Number(item.price),
+        method: null,
+        paymentId: null,
+      }));
+  }, [useFallback, history.data, courses]);
 
   const totalItems = data.length;
+  const pageRows = useMemo(
+    () => data.slice((page - 1) * pageSize, page * pageSize),
+    [data, page, pageSize],
+  );
 
-  /* -------------------------------------------------
-     STABLE HANDLERS
-  -------------------------------------------------- */
   const handlePageChange = useCallback((p: number) => {
     setPage(p);
   }, []);
@@ -78,26 +68,16 @@ export default function PaymentHistoryWrap() {
     setPageSize(s);
     setPage(1);
   }, []);
-  type Tab = "profile" | "payment";
 
-  const { activeTab, handleTabChange, handleBack } = useResponsiveTabs<Tab>({
-    defaultTab: "profile",
-    queryKey: "tab",
-  });
-
-  const table = (
+  return (
     <PaymentHistoryTable
-      data={data}
+      data={pageRows}
       totalItems={totalItems}
       page={page}
       pageSize={pageSize}
-      loading={isLoading}
+      loading={history.isLoading || (useFallback && coursesLoading)}
       onPageChange={handlePageChange}
       onPageSizeChange={handlePageSizeChange}
     />
   );
-
-  return (
-    table
-  )  
 }

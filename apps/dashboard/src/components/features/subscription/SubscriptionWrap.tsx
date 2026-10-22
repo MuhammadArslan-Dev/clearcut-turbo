@@ -4,6 +4,7 @@ import React, { memo, useMemo, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Button from "@clearcut/ui/button";
 import {
   getSubscriptions,
@@ -13,7 +14,6 @@ import {
   Subscription,
   SubscriptionStatus,
 } from "@/lib/payment/payment";
-import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import { CustomBottomSheet } from "@/components/modals/modals-bottom-sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -26,61 +26,47 @@ const PAGE_SIZE = 5;
 
 type ActionType = "pause" | "resume" | "cancel";
 
-const STATUS_MAP: Record<
-  SubscriptionStatus,
-  { label: string; tone: "success" | "warning" | "info" | "error" | "neutral" }
-> = {
-  active:        { label: "Active",        tone: "success" },
-  authenticated: { label: "Authenticated", tone: "info"    },
-  created:       { label: "Pending",       tone: "warning" },
-  paused:        { label: "Paused",        tone: "neutral" },
-  cancelled:     { label: "Cancelled",     tone: "error"   },
-  completed:     { label: "Completed",     tone: "success" },
-  expired:       { label: "Expired",       tone: "error"   },
+// Status is shown as plain text, not a pill: it isn't tappable (CC-100).
+// Labels come from messages (subscriptionsTab.status_*).
+const STATUS_TEXT_CLASS: Record<SubscriptionStatus, string> = {
+  active: "text-[var(--color-success-strong)]",
+  authenticated: "text-[var(--color-success-strong)]",
+  created: "text-[var(--color-text-gray-muted)]",
+  paused: "text-[var(--color-text-gray-subtle)]",
+  cancelled: "text-[var(--color-text-gray-muted)]",
+  completed: "text-[var(--color-text-gray-subtle)]",
+  expired: "text-[var(--color-text-gray-muted)]",
 };
 
-const ACTION_CONFIG: Record<
-  ActionType,
-  { label: string; description: string; confirmLabel: string; color: "warning" | "success" | "danger" }
-> = {
-  pause: {
-    label: "Pause",
-    description:
-      "Your subscription will be paused and no charges will be made until you resume.",
-    confirmLabel: "Yes, Pause",
-    color: "warning",
-  },
-  resume: {
-    label: "Resume",
-    description:
-      "Your subscription will be resumed and billing will restart from the next cycle.",
-    confirmLabel: "Yes, Resume",
-    color: "success",
-  },
-  cancel: {
-    label: "Cancel",
-    description:
-      "Your subscription will be cancelled. You will retain access until the current period ends.",
-    confirmLabel: "Yes, Cancel",
-    color: "danger",
-  },
+const ACTION_COLOR: Record<ActionType, "warning" | "success" | "danger"> = {
+  pause: "warning",
+  resume: "success",
+  cancel: "danger",
 };
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                              */
 /* ------------------------------------------------------------------ */
 
-const formatCurrency = (paise: number) =>
-  `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
+/** Rupee amounts and dates in the page's language (en-IN / hi-IN / mr-IN). */
+function useFormatters() {
+  const intlLocale = `${useLocale()}-IN`;
+  return {
+    money: (paise: number) =>
+      `₹${(paise / 100).toLocaleString(intlLocale, { minimumFractionDigits: 0 })}`,
+    date: (iso: string | null, withYear = true) =>
+      iso
+        ? new Date(iso).toLocaleDateString(intlLocale, {
+            day: "2-digit",
+            month: "short",
+            ...(withYear ? { year: "numeric" as const } : {}),
+          })
+        : "",
+  };
+}
 
-const formatDate = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
+/** The course name, falling back to the raw group code from older backends. */
+const courseLabel = (sub: Subscription) => sub.course_name || sub.group_code;
 
 const getActions = (status: SubscriptionStatus): ActionType[] => {
   if (status === "active" || status === "authenticated")
@@ -129,13 +115,21 @@ function ConfirmSheet({
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
-  const cfg = action ? ACTION_CONFIG[action] : null;
+  const t = useTranslations("subscriptionsTab");
+  const cfg = action
+    ? {
+        label: t(`action_${action}`),
+        description: t(`desc_${action}`),
+        confirmLabel: t(`confirm_${action}`),
+        color: ACTION_COLOR[action],
+      }
+    : null;
 
   const content = cfg && (
     <div className="p-6 space-y-5">
       <div className="space-y-1.5">
         <p className="font-semibold text-[#192839]">
-          {cfg.label} subscription?
+          {t("confirmTitle", { action: cfg.label })}
         </p>
         <p className="text-sm text-[#40566d] leading-relaxed">{cfg.description}</p>
       </div>
@@ -148,7 +142,7 @@ function ConfirmSheet({
           fullWidth
           rounded="12px"
         >
-          Back
+          {t("back")}
         </Button>
         <Button
           onClick={onConfirm}
@@ -257,14 +251,15 @@ function SubscriptionSkeleton() {
 /* ------------------------------------------------------------------ */
 
 function EmptyState() {
+  const t = useTranslations("subscriptionsTab");
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-[#e8f2fb] flex items-center justify-center mb-4">
         <RotateCcw size={28} className="text-[#0083ff]" />
       </div>
-      <p className="text-[#192839] font-medium text-sm">No subscriptions yet</p>
+      <p className="text-[#192839] font-medium text-sm">{t("empty")}</p>
       <p className="text-[#768ea7] text-xs mt-1 max-w-[200px]">
-        Subscribe to a course to manage it here.
+        {t("emptyHint")}
       </p>
     </div>
   );
@@ -281,6 +276,7 @@ function ActionButtons({
   status: SubscriptionStatus;
   onAction: (a: ActionType) => void;
 }) {
+  const t = useTranslations("subscriptionsTab");
   const actions = getActions(status);
   if (actions.length === 0) return <span className="text-gray-300 text-xs">—</span>;
 
@@ -291,11 +287,11 @@ function ActionButtons({
           key={a}
           size="sm"
           variant="soft"
-          color={ACTION_CONFIG[a].color}
+          color={ACTION_COLOR[a]}
           onClick={() => onAction(a)}
           rounded="8px"
         >
-          {ACTION_CONFIG[a].label}
+          {t(`action_${a}`)}
         </Button>
       ))}
     </div>
@@ -313,38 +309,39 @@ function DesktopTable({
   rows: Subscription[];
   onAction: (sub: Subscription, a: ActionType) => void;
 }) {
+  const t = useTranslations("subscriptionsTab");
+  const fmt = useFormatters();
   return (
     <div className="hidden md:block w-full bg-white border border-[#cbd5e2] rounded-xl overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-[#f1f5fa] text-[#768ea7] text-xs uppercase tracking-wide">
           <tr>
-            <th className="px-4 py-3 text-left font-medium">Plan</th>
-            <th className="px-4 py-3 text-left font-medium">Course</th>
-            <th className="px-4 py-3 text-left font-medium">Status</th>
-            <th className="px-4 py-3 text-left font-medium">Amount</th>
-            <th className="px-4 py-3 text-left font-medium">Next Billing</th>
-            <th className="px-4 py-3 text-left font-medium">Actions</th>
+            <th className="px-4 py-3 text-left font-medium">{t("plan")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("course")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("status")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("amount")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("nextPayment")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("actions")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#f1f5fa]">
           {rows.map((sub) => {
-            const s = STATUS_MAP[sub.status] ?? { label: sub.status, tone: "neutral" as const };
             return (
               <tr key={sub.id} className="hover:bg-[#f1f5fa]/60 transition">
                 <td className="px-4 py-3.5 font-medium text-[#192839]">
-                  {sub.plan?.name ?? "—"}
+                  {t("monthlyPlan")}
                 </td>
-                <td className="px-4 py-3.5 text-[#768ea7] text-xs uppercase tracking-wide">
-                  {sub.group_code}
+                <td className="px-4 py-3.5 text-[#768ea7]">
+                  {courseLabel(sub)}
                 </td>
-                <td className="px-4 py-3.5">
-                  <StatusChip label={s.label} tone={s.tone} variant="soft" />
+                <td className={`px-4 py-3.5 font-medium ${STATUS_TEXT_CLASS[sub.status] ?? ""}`}>
+                  {t(`status_${sub.status}`)}
                 </td>
                 <td className="px-4 py-3.5 font-medium text-[#192839]">
-                  {sub.plan ? `${formatCurrency(sub.plan.amount)} / mo` : "—"}
+                  {sub.plan ? t("perMonth", { amount: fmt.money(sub.plan.amount) }) : ""}
                 </td>
                 <td className="px-4 py-3.5 text-[#40566d]">
-                  {formatDate(sub.next_billing_at)}
+                  {fmt.date(sub.next_billing_at)}
                 </td>
                 <td className="px-4 py-3.5">
                   <ActionButtons
@@ -372,7 +369,10 @@ function MobileCard({
   sub: Subscription;
   onAction: (a: ActionType) => void;
 }) {
-  const s = STATUS_MAP[sub.status] ?? { label: sub.status, tone: "neutral" as const };
+  const t = useTranslations("subscriptionsTab");
+  const fmt = useFormatters();
+  const showsNextPayment =
+    (sub.status === "active" || sub.status === "authenticated") && Boolean(sub.next_billing_at && sub.plan);
 
   return (
     <div className="bg-white border border-[#cbd5e2] rounded-xl p-4 space-y-3">
@@ -380,57 +380,67 @@ function MobileCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-[#192839] text-sm leading-tight">
-            {sub.plan?.name ?? "Subscription Plan"}
+            {courseLabel(sub)}
           </p>
-          <p className="text-[11px] text-[#768ea7] mt-0.5 uppercase tracking-wider">
-            {sub.group_code}
-          </p>
+          <p className="text-[11px] text-[#768ea7] mt-0.5">{t("monthlyPlan")}</p>
         </div>
-        <StatusChip label={s.label} tone={s.tone} variant="soft" size="sm" />
+        <span className={`text-sm font-medium ${STATUS_TEXT_CLASS[sub.status] ?? ""}`}>
+          {t(`status_${sub.status}`)}
+        </span>
       </div>
+
+      {/* "Next payment: ₹99, 12 Nov" in plain words (CC-100). */}
+      {showsNextPayment && sub.plan && (
+        <p className="text-sm font-medium text-[#192839]">
+          {t("nextPaymentLine", {
+            amount: fmt.money(sub.plan.amount),
+            date: fmt.date(sub.next_billing_at, false),
+          })}
+        </p>
+      )}
 
       {/* Info rows */}
       <div className="space-y-1.5 border-t border-[#f1f5fa] pt-3 text-sm">
         {sub.plan && (
           <div className="flex justify-between">
-            <span className="text-[#768ea7]">Amount</span>
+            <span className="text-[#768ea7]">{t("amount")}</span>
             <span className="font-medium text-[#40566d]">
-              {formatCurrency(sub.plan.amount)} / mo
+              {t("perMonth", { amount: fmt.money(sub.plan.amount) })}
             </span>
           </div>
         )}
-        {sub.next_billing_at && (
+        {sub.next_billing_at && !showsNextPayment && (
           <div className="flex justify-between">
-            <span className="text-[#768ea7]">Next billing</span>
+            <span className="text-[#768ea7]">{t("nextPayment")}</span>
             <span className="font-medium text-[#40566d]">
-              {formatDate(sub.next_billing_at)}
+              {fmt.date(sub.next_billing_at)}
             </span>
           </div>
         )}
         {sub.current_end && (
           <div className="flex justify-between">
-            <span className="text-[#768ea7]">Period ends</span>
+            <span className="text-[#768ea7]">{t("periodEnds")}</span>
             <span className="font-medium text-[#40566d]">
-              {formatDate(sub.current_end)}
+              {fmt.date(sub.current_end)}
             </span>
           </div>
         )}
         {sub.cancelled_at && (
           <div className="flex justify-between">
-            <span className="text-[#768ea7]">Cancelled on</span>
+            <span className="text-[#768ea7]">{t("cancelledOn")}</span>
             <span className="font-medium text-[#40566d]">
-              {formatDate(sub.cancelled_at)}
+              {fmt.date(sub.cancelled_at)}
             </span>
           </div>
         )}
         <div className="flex justify-between">
-          <span className="text-[#768ea7]">Started</span>
+          <span className="text-[#768ea7]">{t("started")}</span>
           <span className="font-medium text-[#40566d]">
-            {formatDate(sub.created_at)}
+            {fmt.date(sub.created_at)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#768ea7]">Payments made</span>
+          <span className="text-[#768ea7]">{t("paymentsMade")}</span>
           <span className="font-medium text-[#40566d]">{sub.paid_count}</span>
         </div>
       </div>
@@ -499,6 +509,7 @@ function PaginationFooter({
 /* ------------------------------------------------------------------ */
 
 function SubscriptionWrap() {
+  const t = useTranslations("subscriptionsTab");
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [confirm, setConfirm] = useState<{
@@ -535,7 +546,7 @@ function SubscriptionWrap() {
     },
     onError: () => {
       setConfirm(null);
-      showToast("Something went wrong. Please try again.");
+      showToast(t("genericError"));
     },
   });
 
@@ -564,7 +575,7 @@ function SubscriptionWrap() {
     return (
       <div className="py-10 text-center">
         <p className="text-[#d92d20] text-sm">
-          Failed to load subscriptions. Please try again.
+          {t("loadError")}
         </p>
       </div>
     );
@@ -588,7 +599,7 @@ function SubscriptionWrap() {
         {/* Heading */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[#192839]">
-            My Subscriptions
+            {t("heading")}
             <span className="ml-1.5 text-[#768ea7] font-normal">
               ({all.length})
             </span>
