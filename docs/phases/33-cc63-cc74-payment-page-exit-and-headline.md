@@ -1,6 +1,6 @@
 # Phase 33 — CC-63 + CC-74: an instant "Continue free" with a reason, and a headline that matches what the student tried to unlock
 
-**Status:** Not Started
+**Status:** Partly built (2026-10-23), CM `phase-33-continue-free`: the instant exit only. Bottom sheet (D1/D2) and headlines (C1) wait for decisions.
 **Jira:** [CC-63](https://clear-cutoff.atlassian.net/browse/CC-63), [CC-74](https://clear-cutoff.atlassian.net/browse/CC-74)
 **Repos:** CM `apps/dashboard` (payment page); BE to store the "why not buying" answers (or Amplitude only)
 **Size:** medium
@@ -34,6 +34,16 @@
 - **Since CC-61:** the page doesn't re-navigate. The CC-66 short CTA and `ctaPrice` are in place.
 - **WhatsApp:** `lib/support.ts` (Phase 23).
 - **Answer storage:** no table yet. Amplitude `continue_free_reason` is the simplest v1 (same choice as CC-97).
+
+## What was found and built (2026-10-23)
+- **"Continue free learning" and the back arrow** call `router.back()` (no API or tracking wait; the funnel event added in Phase 29 is fire-and-forget).
+  - But a payment page opened straight from a link (WhatsApp reminder, ad, push, a shared URL) has nothing to go back to: `history.length` is 1. The tap did nothing, a likely source of the rage taps.
+- **Built:** `leavePaymentPage()` goes back as before; if the page is still there 400 ms later, it opens `/preparation/<course>`. No visual change.
+- **Verified locally:**
+  - With history 1 → `/preparation/6a92b987a139f`.
+  - Coming from the dashboard → back to `/dashboard` as before.
+  - eslint equal to main.
+- **Not built (needs a decision):** text-link restyle (D1), the reason bottom sheet + storage (D2), source headlines (C1, RD copy).
 
 ## Plan
 - [ ] **CC-63:**

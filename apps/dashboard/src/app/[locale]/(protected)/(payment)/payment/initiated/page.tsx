@@ -405,6 +405,18 @@ export default function InitiatedPage() {
   });
 
   /* ---------------------------------- handlers ---------------------------------- */
+  // "Continue free" / back arrow (CC-63). Opened straight from a link
+  // (WhatsApp, ad, push) there is no page to go back to, so router.back()
+  // did nothing and the tap looked dead. Go back as before; if we're still
+  // here a moment later, open this course's learning page instead.
+  const leavePaymentPage = useCallback(() => {
+    const before = window.location.href;
+    router.back();
+    window.setTimeout(() => {
+      if (window.location.href === before) router.replace(`/preparation/${courseId}`);
+    }, 400);
+  }, [router, courseId]);
+
   // Shared properties of the CC-69 checkout funnel events on this page.
   const payFunnelProps = () => ({
     exam: data?.short_name,
@@ -858,7 +870,7 @@ export default function InitiatedPage() {
           <div className="flex  w-full gap-4 px-3 py-4">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={leavePaymentPage}
               className="cursor-pointer sm:hidden "
               aria-label="Go back"
             >
@@ -1212,7 +1224,7 @@ export default function InitiatedPage() {
                 // onClick={close} // window.close() — use router.back() instead
                 onClick={() => {
                   trackPayFunnel("continue_free_tap", payFunnelProps());
-                  router.back();
+                  leavePaymentPage();
                 }}
                 fullWidth
                 size="sm"
