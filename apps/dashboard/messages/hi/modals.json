@@ -207,7 +207,14 @@
     "continueFree": "निःशुल्क पढ़ाई जारी रखें",
 
     "paymentInfo": "सिक्योर पेमेंट",
-    "paymentMethods": "यूपीआई / कार्ड / नेट बैंकिंग"
+    "paymentMethods": "यूपीआई / कार्ड / नेट बैंकिंग",
+    "continueFreeReasonTitle": "अभी क्यों नहीं?",
+    "continueFreeReason_expensive": "महँगा है",
+    "continueFreeReason_exploring": "अभी और देखना है",
+    "continueFreeReason_later": "बाद में लूँगा/लूँगी",
+    "continueFreeReason_payment_issue": "पेमेंट में दिक्कत है",
+    "continueFreeSkip": "छोड़ें",
+    "continueFreePaymentHelp": "नमस्ते, Clear Cutoff पर {course} का पेमेंट करने में दिक्कत आ रही है। कृपया मदद करें।"
   },
 
   "topicLockedModal": {

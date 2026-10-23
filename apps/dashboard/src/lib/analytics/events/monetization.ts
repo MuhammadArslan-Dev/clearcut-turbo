@@ -24,7 +24,8 @@ export type PayFunnelEventName =
   | 'rzp_opened'
   | 'rzp_dismissed'
   | 'rzp_failed'
-  | 'continue_free_tap';
+  | 'continue_free_tap'
+  | 'continue_free_reason';
 
 export type PayFunnelProps = {
   exam?: string;
@@ -123,4 +124,8 @@ export interface MonetizationEventPayloads {
   'rzp_dismissed': PayFunnelProps;
   'rzp_failed': PayFunnelProps;
   'continue_free_tap': PayFunnelProps;
+  // CC-63: the answer to "Why not now?" (Amplitude only, by the user's decision).
+  'continue_free_reason': PayFunnelProps & {
+    reason: 'expensive' | 'exploring' | 'later' | 'payment_issue' | 'skipped';
+  };
 }

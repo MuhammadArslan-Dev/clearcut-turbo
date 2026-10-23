@@ -1,6 +1,6 @@
 # Phase 32 — CC-102 + CC-103 + CC-104: test screens respond at once, and test completion is tracked
 
-**Status:** Done (2026-10-23): merged to main and pushed. Open: check `test_submitted` / `report_viewed` in Amplitude; locked-card copy needs RD.
+**Status:** Done (2026-10-23); locked-card line added on branch `phase-33-continue-free-sheet` (not pushed yet).
 **Jira:** [CC-102](https://clear-cutoff.atlassian.net/browse/CC-102), [CC-103](https://clear-cutoff.atlassian.net/browse/CC-103), [CC-104](https://clear-cutoff.atlassian.net/browse/CC-104)
 **Repos:** CM `apps/dashboard` (exam/test-series/report), BE only if submit happens server-side (CC-103 "saved on the server")
 **Size:** medium–large
@@ -83,6 +83,12 @@
 ## Left for a decision
 - **Locked cards "₹99 प्लान में शामिल" (CC-104):** new visible copy on every locked card. Needs RD's OK on copy/design (price from pricing per exam).
 
+## Locked-card line (decided 2026-10-23)
+- **The user approved:** locked test cards (Chapter, Sectional, Full-length) show a small muted line "Included in the ₹{price} plan" (hi/mr too).
+- The price is this exam's monthly plan from `getPriceForVariant("1month", …)`, the app's single price source: HTET 149, CTET 99.
+- Built as an optional `note` prop on `TestCard` (no icon), not the fire-icon `announcement`.
+- Verified: HTET sectional list shows "Included in the ₹149 plan" on each locked card.
+
 ## Plan
 - [ ] **Reproduce** on report/summary-view URLs at 390px with 4× CPU (Playwright): use `elementFromPoint` at the dead-click spots to find the element on top, and time from tap to visible change for each control.
 - [ ] **CC-102 fixes:**
@@ -111,3 +117,4 @@
 | Date | Item | Decision | By |
 |---|---|---|---|
 | | | | |
+| 2026-10-23 | Locked-card copy | Add 'Included in the ₹{price} plan' | User |

@@ -61,6 +61,8 @@ export interface TestCardProps {
   time?: MetricProps;
 
   announcement?: React.ReactNode;
+  /** Small muted line under the card, e.g. which plan a locked test is in (CC-104). */
+  note?: React.ReactNode;
 
   containerClassName?: string;
   cardBg?: string;
@@ -117,6 +119,7 @@ export default function TestCard({
   marks,
   time,
   announcement,
+  note,
   containerClassName,
   cardBg,
   labelClassName,
@@ -354,6 +357,12 @@ export default function TestCard({
           </div>{" "}
         </div>
       </div>
+
+      {note && (
+        <Text as="p" variant="body-small" color="gray-muted" className="mt-2 text-center">
+          {note}
+        </Text>
+      )}
 
       {/* Announcement */}
       {announcement && (

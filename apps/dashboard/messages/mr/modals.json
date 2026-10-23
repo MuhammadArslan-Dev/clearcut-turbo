@@ -59,7 +59,14 @@
     "continueFree": "मोफत शिकणे सुरू ठेवा",
 
     "paymentInfo": "सुरक्षित पेमेंट",
-    "paymentMethods": "UPI / कार्ड / नेट बँकिंग"
+    "paymentMethods": "UPI / कार्ड / नेट बँकिंग",
+    "continueFreeReasonTitle": "आत्ता का नाही?",
+    "continueFreeReason_expensive": "महाग आहे",
+    "continueFreeReason_exploring": "अजून पाहायचे आहे",
+    "continueFreeReason_later": "नंतर घेईन",
+    "continueFreeReason_payment_issue": "पेमेंट करताना अडचण येत आहे",
+    "continueFreeSkip": "वगळा",
+    "continueFreePaymentHelp": "नमस्कार, Clear Cutoff वर {course} चे पेमेंट करताना अडचण येत आहे. कृपया मदत करा."
   },
 
   "topicLockedModal": {

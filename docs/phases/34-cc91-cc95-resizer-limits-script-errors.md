@@ -1,6 +1,6 @@
 # Phase 34 — CC-91 + CC-95: resizer never hands out a file the exam will reject, and "Script error." becomes readable
 
-**Status:** CC-91 merged to main (2026-10-23); goes live with the next manual tools deploy (TOOLS_DEPLOY.md, needs approval). CC-95: findings only; `crossorigin` on Razorpay is a pending risk call.
+**Status:** CC-91 merged to main (2026-10-23); goes live with the next manual tools deploy (needs approval). CC-95: no `crossorigin` on Razorpay (user's decision).
 **Jira:** [CC-91](https://clear-cutoff.atlassian.net/browse/CC-91), [CC-95](https://clear-cutoff.atlassian.net/browse/CC-95)
 **Repos:** CM `apps/tools` (resizer), `apps/dashboard` + `apps/landing` (script tags, Sentry)
 **Size:** small–medium
@@ -88,3 +88,4 @@
 | Date | Item | Decision | By |
 |---|---|---|---|
 | | | | |
+| 2026-10-23 | `crossorigin` on Razorpay checkout.js | No: keep checkout safe; script errors stay unreadable | User |

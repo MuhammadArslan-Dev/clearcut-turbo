@@ -1,6 +1,6 @@
 # Phase 33 — CC-63 + CC-74: an instant "Continue free" with a reason, and a headline that matches what the student tried to unlock
 
-**Status:** Partly done (2026-10-23): the instant exit is merged and pushed. Waiting for decisions: D1 text link, D2 reasons storage, C1 RD headline copy.
+**Status:** CC-63 done (2026-10-23, branch `phase-33-continue-free-sheet`, not pushed yet). CC-74 headlines still wait for RD copy.
 **Jira:** [CC-63](https://clear-cutoff.atlassian.net/browse/CC-63), [CC-74](https://clear-cutoff.atlassian.net/browse/CC-74)
 **Repos:** CM `apps/dashboard` (payment page); BE to store the "why not buying" answers (or Amplitude only)
 **Size:** medium
@@ -45,6 +45,22 @@
   - eslint equal to main.
 - **Not built (needs a decision):** text-link restyle (D1), the reason bottom sheet + storage (D2), source headlines (C1, RD copy).
 
+## CC-63 decisions built (2026-10-23)
+- **D1 (user):** "Continue free learning" is a small underlined text link under the pay button (was a full-width grey button). The unused `Button` import is gone.
+- **D2 (user): Amplitude only.** Tapping the link opens "Why not now?" in the app's standard sheet (`features/Sheets` BottomSheet on mobile / Modal on desktop + `ModalHeader`, like ExamEndConfirmationSheet).
+  - The sheet is `components/features/payment/ContinueFreeSheet.tsx` with four outlined buttons and a Skip text link.
+  - Reasons: expensive / exploring / later / payment issue.
+  - Any answer or Skip sends `continue_free_reason {reason, …funnel props}` and leaves at once (`leavePaymentPage`).
+  - **"Payment issue"** opens WhatsApp support with a prefilled message and stays on the page.
+  - The close button or backdrop just stays.
+  - Copy en/hi/mr in `modals.unlockFullAccessModal.continueFree*`.
+- **Verified locally:**
+  - hi mobile sheet + en desktop modal screenshots.
+  - Payment issue → WhatsApp popup and still on the page; X → stays.
+  - Skip from a direct link → `/preparation/<course>`.
+  - A reason with history → back.
+  - tsc clean; eslint equal to main (44 = 44); check:colors passes.
+
 ## Plan
 - [ ] **CC-63:**
   - Measure the tap → navigation time first.
@@ -68,3 +84,5 @@
 | Date | Item | Decision | By |
 |---|---|---|---|
 | | | | |
+| 2026-10-23 | D1 | Small text link | User |
+| 2026-10-23 | D2 | Reasons in Amplitude only | User |
