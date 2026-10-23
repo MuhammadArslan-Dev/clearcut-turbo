@@ -1,6 +1,6 @@
 # Phase 31 — CC-54 + CC-89: the newest OTP fills in, and students stay in the language they chose
 
-**Status:** Not Started
+**Status:** Built + verified locally (2026-10-23), CM `phase-31-otp-language`. Not merged.
 **Jira:** [CC-54](https://clear-cutoff.atlassian.net/browse/CC-54) (with [CC-86](https://clear-cutoff.atlassian.net/browse/CC-86)), [CC-89](https://clear-cutoff.atlassian.net/browse/CC-89)
 **Repos:** CM `packages/auth` (OTP screens), `apps/landing` (StartAuthForm, /start), `apps/dashboard` (onboarding locale), ASTRO (`/mr` → `/mr/start` links)
 **Size:** medium
@@ -33,6 +33,37 @@
 - **Locale:** `packages/i18n/routing.ts` (en/hi; dashboard has mr too), dashboard `src/proxy.ts` (next-intl middleware, "detection off" per its CLAUDE.md), onboarding `?lang=` handling, `appLanguage` store.
 - **ASTRO:** `/go` `StartLinkEnhancer` builds `/start` links per locale.
 
+## What was found (2026-10-23)
+- **CC-54:**
+  - WebOTP (`navigator.credentials.get`) is already off (20 Oct; the SMS lacks the `@host #code` line). Autofill is the keyboard's one-time-code chip.
+  - On Resend none of the three OTP screens (`otp-screen`, `inline-auth-flow`, landing `StartAuthForm`) cleared the field or remounted it. The old code stayed in it, and the keyboard kept offering the old SMS's code.
+- **CC-89:**
+  - `inline-auth-flow` (landing/blog onboarding login) read the language from `localStorage "locale"`, which nothing in the monorepo writes. Always `""`: `?lang=` empty and **English onboarding for every Hindi/Marathi signup** through that flow. The other screens use the page's path.
+  - A returning student (has a course) was always sent to `/dashboard` (English), whatever the page's language.
+  - Live `/mr/go/*` and `/hi/go/*` CTAs already point to `/mr/start` / `/hi/start` (CC-106). Dashboard routing has `localeDetection: false` and nothing else rewrites the locale from storage, so no ASTRO/dashboard change was needed.
+- **Security note (not changed, user's instruction):**
+  - `POST /api/v2/auth/varify-otp` and `/api/v2/auth/resend/otp` return a Sanctum token for any phone with no OTP check and no auth. That is account takeover by phone number.
+  - The user sends direct login links through them, so they stay. Proposed hardening that keeps the links working: a server-signed, short-lived token in the link, required by these routes. Needs the link format from the user.
+
+## What was built
+- **CC-54:** on a successful Resend, all three screens clear the OTP, clear the error, and remount + refocus the input (`otpFieldKey` / `otpRefocusKey`, the existing remount keys).
+- **CC-89:**
+  - `inline-auth-flow` uses `getCurrentLocale()` (path) like the other screens.
+  - `buildPostVerifyRedirectUrl` keeps the locale prefix for `/dashboard` too.
+
+## Verification (local)
+- [x] Redirects:
+
+  | Lang | Has a course | New student |
+  |---|---|---|
+  | en | `/dashboard` | `/onboarding?lang=en` |
+  | hi | `/hi/dashboard` | `/hi/onboarding?lang=hi` |
+  | mr | `/mr/dashboard` | `/mr/onboarding?lang=mr` |
+
+- [x] Browser: `/hi/dashboard?token=…` and `/mr/dashboard?token=…` take the token, strip it from the URL and stay in hi/mr (Marathi title "शिका | क्लियर कटऑफ").
+- [x] tsc (landing, tools) has no errors in touched files; eslint equal to main (4 = 4).
+- [ ] On a phone: Resend → the keyboard chip shows the new code (Android Gboard + iOS). Ganesh.
+
 ## Plan
 - [ ] **CC-54:**
   - On resend: abort the previous `navigator.credentials.get({otp})`, clear the field, and start a new one.
@@ -53,4 +84,4 @@
 ## Decision log
 | Date | Item | Decision | By |
 |---|---|---|---|
-| | | | |
+| 2026-10-23 | /v2 OTP-less login routes | Keep (direct links use them); nothing is deleted | User |
