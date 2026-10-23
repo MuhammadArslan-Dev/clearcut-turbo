@@ -573,12 +573,18 @@ function SubscriptionWrap() {
     },
     onSuccess: (res, vars) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      const base = { subscription_id: String(vars.sub.id), course_name: courseLabel(vars.sub) };
-      if (vars.action === "cancel") {
-        trackEvent("subscription_cancelled", { ...base, reason: vars.reason ?? "unknown", ...(vars.note ? { note: vars.note } : {}) });
-      } else if (vars.action === "pause") {
-        trackEvent("subscription_paused", { ...base, ...(vars.reason ? { reason: vars.reason } : {}) });
-      }
+      // The existing status event, from the app (CC-97 reason/note on it).
+      // The backend sends it only for changes Razorpay makes on its own.
+      trackEvent("Subscription Status Updated", {
+        new_status: vars.action === "cancel" ? "cancelled" : vars.action === "pause" ? "paused" : "active",
+        plan_name: vars.sub.plan?.name ?? "",
+        exam_id: vars.sub.group_code,
+        exam_name: courseLabel(vars.sub),
+        subscription_id: String(vars.sub.id),
+        source: "app",
+        ...(vars.reason ? { reason: vars.reason } : {}),
+        ...(vars.note ? { note: vars.note } : {}),
+      });
       if (vars.fromFlow && vars.action !== "resume") {
         // Stay in the sheet with a clear end screen (the backend's message
         // carries the access end date).

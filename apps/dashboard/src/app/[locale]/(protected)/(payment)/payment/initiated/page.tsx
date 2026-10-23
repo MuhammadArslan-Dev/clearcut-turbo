@@ -18,7 +18,6 @@ import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
-import { trackEvent } from "@/lib/analytics/browser";
 import {
   trackFacebookEventOnce,
   LIVE_FB_PIXEL_ID,
@@ -48,7 +47,7 @@ import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
-import { inAppBrowserKind, payPlanLabel, trackPayFunnel } from "@/lib/analytics/paymentFunnel";
+import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
@@ -192,17 +191,9 @@ export default function InitiatedPage() {
         const defaultPlan = getPlanAnalytics(DEFAULT_VARIANT, pricing, data?.short_name, planCourseName);
 
         const toPrice = getPriceForVariant(variant, pricing, data?.short_name);
-        trackPayFunnel("plan_selected", {
-          exam: data?.short_name,
-          plan: payPlanLabel(variant, toPrice),
-          price: toPrice,
-          source,
-          language: locale,
-          in_app_browser: inAppBrowserKind(),
-        });
 
         if (from && to && defaultPlan && data?.exam_id) {
-          trackEvent("Plan Switched", {
+          trackPaymentEvent("Plan Switched", {
             exam_id: data.exam_id,
             course_name: planCourseName,
             from_plan_id: from.plan_id,
@@ -216,6 +207,12 @@ export default function InitiatedPage() {
             default_plan_id: defaultPlan.plan_id,
             switch_number: switchCountRef.current,
             currency: "INR",
+            exam: data?.short_name,
+            plan: payPlanLabel(variant, toPrice),
+            price: toPrice,
+            source,
+            language: locale,
+            in_app_browser: inAppBrowserKind(),
           });
         }
       }
@@ -266,13 +263,10 @@ export default function InitiatedPage() {
     if (pageOpenTrackedForRef.current === visitKey) return;
     pageOpenTrackedForRef.current = visitKey;
 
-    trackEvent("Purchase Intent Initiated", {
+    const openingPrice = getPriceForVariant(currentVariantRef.current, pricing, data?.short_name);
+    trackPaymentEvent("Purchase Intent Initiated", {
       entry_point: source,
       product_id: data?.short_name!,
-    });
-
-    const openingPrice = getPriceForVariant(currentVariantRef.current, pricing, data?.short_name);
-    trackPayFunnel("pay_page_view", {
       exam: data?.short_name,
       plan: payPlanLabel(currentVariantRef.current, openingPrice),
       price: openingPrice,
@@ -422,7 +416,7 @@ export default function InitiatedPage() {
   // leaves at once; "payment issue" opens WhatsApp help and stays here.
   const [continueFreeOpen, setContinueFreeOpen] = React.useState(false);
   const handleContinueFreeAnswer = (reason: ContinueFreeReason) => {
-    trackEvent("continue_free_reason", { ...payFunnelProps(), reason });
+    trackPaymentEvent("Continue Free Clicked", { ...payFunnelProps(), reason });
     setContinueFreeOpen(false);
     if (reason === "payment_issue") {
       window.open(
@@ -534,10 +528,11 @@ export default function InitiatedPage() {
       }
 
       // Fire after API so we know whether this is a fresh or resumed session
-      trackEvent("Payment Initiated", {
+      trackPaymentEvent("Payment Initiated", {
         exam_name: data?.short_name ?? "",
         payment_flow: res.message?.includes("Resuming") ? "resumed_session" : "new_attempt",
         final_price: selectedPrice,
+        ...payFunnelProps(),
       });
 
       if (!res.success) {
@@ -596,12 +591,13 @@ export default function InitiatedPage() {
           razorpay_signature: string;
         }) => {
           outcomeReported = true;
-          trackEvent("Payment Outcome", {
+          trackPaymentEvent("Payment Outcome", {
             outcome: "payment_successful",
             billing_type: "auto_renew",
             final_price: selectedPrice,
             exam_name: data?.short_name ?? "",
             payment_session_id: response.razorpay_payment_id,
+            ...payFunnelProps(),
           });
           // selectedPrice is the real, final charged amount (never a list
           // price) — the Razorpay subscription's own order amount. Both
@@ -688,15 +684,15 @@ export default function InitiatedPage() {
             if (!outcomeReported) setSubscriptionLoading(false);
             if (outcomeReported) return;
             outcomeReported = true;
-            trackPayFunnel("rzp_dismissed", payFunnelProps());
 
-            trackEvent("Payment Outcome", {
+            trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",
               billing_type: "auto_renew",
               final_price: selectedPrice,
               exam_name: data?.short_name ?? "",
               failure_reason: "cancelled",
               payment_session_id: res.subscription.razorpay_subscription_id,
+              ...payFunnelProps(),
             });
           },
         },
@@ -718,18 +714,16 @@ export default function InitiatedPage() {
           const { error } = errorResponse;
 
           outcomeReported = true;
-          trackPayFunnel("rzp_failed", {
-            ...payFunnelProps(),
-            error_code: error?.code,
-            error_reason: error?.reason,
-          });
-          trackEvent("Payment Outcome", {
+          trackPaymentEvent("Payment Outcome", {
             outcome: "payment_failed",
             billing_type: "auto_renew",
             final_price: selectedPrice,
             exam_name: data?.short_name ?? "",
             failure_reason: getPaymentFailureReason(error),
             payment_session_id: error.metadata?.payment_id ?? "",
+            error_code: error?.code,
+            error_reason: error?.reason,
+            ...payFunnelProps(),
           });
 
           // Razorpay's own `error.source` distinguishes an expected
@@ -786,7 +780,7 @@ export default function InitiatedPage() {
       );
       razorpay.open();
       checkoutOpened = true;
-      trackPayFunnel("rzp_opened", payFunnelProps());
+      trackPaymentEvent("Checkout Opened", { billing_type: "auto_renew", ...payFunnelProps() });
     } catch (error) {
       logger.error(error, {
         tags: { module: "subscription-payment", type: "unexpected_error" },
@@ -815,7 +809,6 @@ export default function InitiatedPage() {
     if (payBusyRef.current || loading || subscriptionLoading) return;
     payBusyRef.current = true;
     setPayError(null);
-    trackPayFunnel("pay_tap", payFunnelProps());
     trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
     const start = selectVariant === "1month" ? handleSubscriptionPayment : handlePayment;
     void start().finally(() => {
@@ -1242,10 +1235,7 @@ export default function InitiatedPage() {
             <div className="w-full max-w-[400px] flex justify-center">
               <button
                 type="button"
-                onClick={() => {
-                  trackPayFunnel("continue_free_tap", payFunnelProps());
-                  setContinueFreeOpen(true);
-                }}
+                onClick={() => setContinueFreeOpen(true)}
                 className="body-medium text-surface-gray-muted underline underline-offset-4 py-2 px-3 cursor-pointer"
               >
                 {modalT("continueFree")}
@@ -1254,7 +1244,11 @@ export default function InitiatedPage() {
             <ContinueFreeSheet
               isOpen={continueFreeOpen}
               onAnswer={handleContinueFreeAnswer}
-              onClose={() => setContinueFreeOpen(false)}
+              onClose={() => {
+                // Dismissed: the student stays here (CC-63).
+                trackPaymentEvent("Continue Free Clicked", { ...payFunnelProps(), reason: "closed" });
+                setContinueFreeOpen(false);
+              }}
             />
           </div>
         </div>

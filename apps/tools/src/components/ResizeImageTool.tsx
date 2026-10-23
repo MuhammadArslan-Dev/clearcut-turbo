@@ -1068,7 +1068,7 @@ export default function ResizeImageTool({
         });
         setDownloaded(false);
         setStep("result");
-        trackResizer("resizer_processed", {
+        trackResizer("Resizer Image Processed", {
           size_kb: Math.round((blob.size / KB) * 10) / 10,
           within_target:
             (!blob.type || blob.type === "image/jpeg") &&
@@ -1124,7 +1124,7 @@ export default function ResizeImageTool({
 
       if (originalPreviewUrl) URL.revokeObjectURL(originalPreviewUrl);
       setFile(workingFile);
-      trackResizer("resizer_upload", { file_kb: Math.round(workingFile.size / KB) });
+      trackResizer("Resizer Image Uploaded", { file_kb: Math.round(workingFile.size / KB) });
       const previewUrl = URL.createObjectURL(workingFile);
       setOriginalPreviewUrl(previewUrl);
       setBrightness(0);
@@ -1195,7 +1195,7 @@ export default function ResizeImageTool({
   };
 
   const handleReset = () => {
-    trackResizer("resizer_process_another");
+    trackResizer("Resizer Process Another Clicked");
     clearImageState();
   };
 
@@ -1225,7 +1225,7 @@ export default function ResizeImageTool({
     a.click();
     a.remove();
     setDownloaded(true);
-    trackResizer("resizer_download", { in_app_browser: isInAppBrowser() });
+    trackResizer("Resizer Image Downloaded", { in_app_browser: isInAppBrowser() });
   };
 
   const handleShare = async () => {

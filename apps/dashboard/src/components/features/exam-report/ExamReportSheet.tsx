@@ -19,7 +19,7 @@ import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 
 import { motion } from "framer-motion";
 import Text from "@clearcut/ui/text";
-import { trackReportViewed } from "@/lib/analytics/testFunnel";
+import { trackReportOpened, trackReportTab } from "@/lib/analytics/testFunnel";
 import TabSwitchInExamReport from "./TabSwitchInExamReport";
 import SectionSwitchInExamReport from "./SectionSwitchInExamReport";
 import { Card } from "@clearcut/ui/card";
@@ -43,11 +43,6 @@ type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
 export default function ExamReportSheet() {
   const { isOpen, examId, closeModal, stack } = useExamModalStore();
   const [activeTab, setActiveTab] = useState("summary");
-  // CC-103: report_viewed when the report opens and on every tab change.
-  const reportOpen = isOpen && stack[stack.length - 1] === "exam-report";
-  useEffect(() => {
-    if (reportOpen && examId != null) trackReportViewed(String(examId), activeTab);
-  }, [reportOpen, activeTab, examId]);
   const [language, setLanguage] = useState("hi");
   const [questionFilter, setQuestionFilter] = useState<QuestionFilter>("all");
   // Set when a filter with zero questions is tapped; clears itself after a moment.
@@ -107,6 +102,19 @@ export default function ExamReportSheet() {
   });
 
   const { exam, getExamContext } = useExamReportStore();
+
+  // CC-103: the existing report events — Performance Report Viewed when the
+  // report opens (once its data is in), Tab Viewed on every tab change.
+  const reportOpen = isOpen && stack[stack.length - 1] === "exam-report";
+  const reportExamLoaded = Boolean(exam);
+  useEffect(() => {
+    if (reportOpen && examId != null && reportExamLoaded) trackReportOpened(String(examId), exam);
+    // once per opening
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportOpen, examId, reportExamLoaded]);
+  useEffect(() => {
+    if (reportOpen && examId != null) trackReportTab(String(examId), activeTab);
+  }, [reportOpen, activeTab, examId]);
 
   const result = useMemo(() => exam?.result || {}, [exam]);
 

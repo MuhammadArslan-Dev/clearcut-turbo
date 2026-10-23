@@ -29,7 +29,7 @@ import {
   saveAttempt,
 } from "@/lib/payment/paymentAttempt";
 import { useLocale } from "next-intl";
-import { inAppBrowserKind, payPlanLabel, trackPayFunnel } from "@/lib/analytics/paymentFunnel";
+import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@sentry/nextjs";
@@ -189,11 +189,22 @@ export function useRazorpayPayment({
     setPhase("opening");
     let checkoutOpened = false;
 
+    // CC-69 funnel properties, sent on the existing payment events.
+    const funnelProps = {
+      exam: examName,
+      plan: payPlanLabel(type, price),
+      price: Number(price),
+      source: returnParams?.source !== undefined ? String(returnParams.source) : undefined,
+      language: locale,
+      in_app_browser: inAppBrowserKind(),
+    };
+
     try {
-      await trackEvent("Payment Initiated", {
+      trackPaymentEvent("Payment Initiated", {
         exam_name: examName,
         payment_flow: "new_attempt",
         final_price: Number(price),
+        ...funnelProps,
       });
 
       const razorpayLoaded = await sentryApiClient(() => loadRazorpay(), {
@@ -238,15 +249,6 @@ export function useRazorpayPayment({
       // app is open; Razorpay then sends the student back through the
       // backend instead of calling `handler` (CC-59).
       const redirectMode = Boolean(returnParams) && isInAppBrowser();
-      // CC-69 checkout funnel (Amplitude + Clarity).
-      const funnelProps = {
-        exam: examName,
-        plan: payPlanLabel(type, price),
-        price: Number(price),
-        source: returnParams?.source !== undefined ? String(returnParams.source) : undefined,
-        language: locale,
-        in_app_browser: inAppBrowserKind(),
-      };
 
       // 2️⃣ Razorpay options
       // One Payment Outcome per checkout session: set as soon as a success or a
@@ -319,11 +321,12 @@ export function useRazorpayPayment({
           outcomeReported = true;
 
           if (success) {
-            trackEvent("Payment Outcome", {
+            trackPaymentEvent("Payment Outcome", {
               outcome: "payment_successful",
               billing_type: "one_time",
               final_price: Number(price),
               payment_session_id: response.razorpay_payment_id,
+              ...funnelProps,
             });
             // Purchase can fire from paywall modals (MainPaywall,
             // PreparationPaywall, full-course-payment-modal) that never
@@ -423,15 +426,15 @@ export function useRazorpayPayment({
             if (!outcomeReported) release();
             if (outcomeReported) return;
             outcomeReported = true;
-            trackPayFunnel("rzp_dismissed", funnelProps);
 
-            trackEvent("Payment Outcome", {
+            trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",
               billing_type: "one_time",
               final_price: Number(price),
               exam_name: examName,
               failure_reason: "cancelled",
               payment_session_id: order.order.id,
+              ...funnelProps,
             });
           },
         },
@@ -451,19 +454,17 @@ export function useRazorpayPayment({
 
         outcomeReported = true;
         clearAttempt();
-        trackPayFunnel("rzp_failed", {
-          ...funnelProps,
-          error_code: error?.code,
-          error_reason: error?.reason,
-        });
 
-        trackEvent("Payment Outcome", {
+        trackPaymentEvent("Payment Outcome", {
           outcome: "payment_failed",
           billing_type: "one_time",
           final_price: Number(price),
           exam_name: examName,
           failure_reason: getPaymentFailureReason(error),
           payment_session_id: error.metadata?.payment_id ?? "",
+          error_code: error?.code,
+          error_reason: error?.reason,
+          ...funnelProps,
         });
 
         logger.error("Payment failed", {
@@ -478,7 +479,7 @@ export function useRazorpayPayment({
       razorpay.open();
       checkoutOpened = true;
       setPhase("idle");
-      trackPayFunnel("rzp_opened", funnelProps);
+      trackPaymentEvent("Checkout Opened", { billing_type: "one_time", ...funnelProps });
     } catch (error) {
       console.error(error);
       reportError("unknown");
