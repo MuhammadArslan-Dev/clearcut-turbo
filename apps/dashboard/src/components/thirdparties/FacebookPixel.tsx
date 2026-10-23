@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 import { trackEvent } from "@/lib/analytics/browser";
 import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
+import { persistFbcFromUrl } from "@clearcut/utils/meta-fbc";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { LIVE_FB_PIXEL_ID, getFbPixelId } from "@/lib/analytics/facebook-pixel";
 
@@ -109,6 +110,13 @@ export default function FacebookPixel() {
   const [pixelId, setPixelId] = useState<string | null>(null);
   useEffect(() => {
     setPixelId(getFbPixelId());
+  }, []);
+
+  // Meta click id for every later event, Purchase on app.clearcutoff.in
+  // included: `_fbc` on the shared domain as soon as an ad click lands
+  // (CC-130, packages/utils/src/meta-fbc.ts).
+  useEffect(() => {
+    persistFbcFromUrl();
   }, []);
 
   // Set on the very first run, to the pathname that run saw — lets later
