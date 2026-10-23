@@ -1,6 +1,6 @@
 # Phase 32 — CC-102 + CC-103 + CC-104: test screens respond at once, and test completion is tracked
 
-**Status:** Built + verified locally (2026-10-23), CM `phase-32-tests-experience`. Not merged. The locked-card copy is left for a decision.
+**Status:** Done (2026-10-23): merged to main and pushed. Open: check `test_submitted` / `report_viewed` in Amplitude; locked-card copy needs RD.
 **Jira:** [CC-102](https://clear-cutoff.atlassian.net/browse/CC-102), [CC-103](https://clear-cutoff.atlassian.net/browse/CC-103), [CC-104](https://clear-cutoff.atlassian.net/browse/CC-104)
 **Repos:** CM `apps/dashboard` (exam/test-series/report), BE only if submit happens server-side (CC-103 "saved on the server")
 **Size:** medium–large

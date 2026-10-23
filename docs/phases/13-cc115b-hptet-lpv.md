@@ -1,6 +1,6 @@
 # Phase 13 — CC-115 Part B: HPTET ad clicks not credited as landing page views (PARKED)
 
-**Status:** Not Started — **not in Arslan's list** (only Part A was listed). Confirm with the user whether to do it.
+**Status:** Covered by Phase 28 (2026-10-23): /go pixel on page load + shared `_fbc`; HPTET ad URLs still needed from Ganesh (Phase 30).
 **Jira:** https://clear-cutoff.atlassian.net/browse/CC-115
 **Repos:** ASTRO (`FacebookPixel.astro`, Worker, `src/pages/index.astro`)
 

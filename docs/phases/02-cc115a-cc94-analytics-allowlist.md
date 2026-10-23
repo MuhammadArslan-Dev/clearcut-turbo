@@ -1,6 +1,6 @@
 # Phase 02 — CC-115 Part A + CC-94: stop localhost/test traffic reaching Meta Pixel, Amplitude, Clarity
 
-**Status:** In Progress (Meta Pixel only, branch cc-115a-meta-localhost in CM + ASTRO)
+**Status:** Done in Phase 28 (2026-10-23): Meta Pixel only on production hosts (allowlist), merged and pushed. Amplitude/Clarity left unchanged by the user's instruction.
 **Jira:** [CC-115](https://clear-cutoff.atlassian.net/browse/CC-115) (Part A only), [CC-94](https://clear-cutoff.atlassian.net/browse/CC-94)
 **Repos:** CM (`packages/analytics` + all 4 apps), ASTRO, BE, GTM container (outside the repos)
 

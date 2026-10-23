@@ -1,6 +1,6 @@
 # Phase 31 — CC-54 + CC-89: the newest OTP fills in, and students stay in the language they chose
 
-**Status:** Built + verified locally (2026-10-23), CM `phase-31-otp-language`. Not merged.
+**Status:** Done (2026-10-23): merged to main and pushed (dashboard/landing auto-deploy). Open: phone test of Resend autofill (Ganesh); the v2 OTP-less routes wait for the user's link format.
 **Jira:** [CC-54](https://clear-cutoff.atlassian.net/browse/CC-54) (with [CC-86](https://clear-cutoff.atlassian.net/browse/CC-86)), [CC-89](https://clear-cutoff.atlassian.net/browse/CC-89)
 **Repos:** CM `packages/auth` (OTP screens), `apps/landing` (StartAuthForm, /start), `apps/dashboard` (onboarding locale), ASTRO (`/mr` → `/mr/start` links)
 **Size:** medium

@@ -1,6 +1,6 @@
 # Phase 33 — CC-63 + CC-74: an instant "Continue free" with a reason, and a headline that matches what the student tried to unlock
 
-**Status:** Partly built (2026-10-23), CM `phase-33-continue-free`: the instant exit only. Bottom sheet (D1/D2) and headlines (C1) wait for decisions.
+**Status:** Partly done (2026-10-23): the instant exit is merged and pushed. Waiting for decisions: D1 text link, D2 reasons storage, C1 RD headline copy.
 **Jira:** [CC-63](https://clear-cutoff.atlassian.net/browse/CC-63), [CC-74](https://clear-cutoff.atlassian.net/browse/CC-74)
 **Repos:** CM `apps/dashboard` (payment page); BE to store the "why not buying" answers (or Amplitude only)
 **Size:** medium

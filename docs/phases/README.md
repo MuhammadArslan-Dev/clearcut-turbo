@@ -32,7 +32,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 |---|---|---|---|---|---|
 | 00 | [Security findings (outside the tickets)](00-security-findings.md) | — | BE | Blocked – Decision | User: rotate keys / remove routes |
 | 01 | [Razorpay "Test Mode" on live checkout](01-cc58-razorpay-test-mode.md) | CC-58 | BE, CM-dashboard | In Review | Deploy BE then dashboard; live check (no Test Mode); C2 affected-student list |
-| 02 | [Stop test traffic reaching live Pixel/Amplitude/Clarity](02-cc115a-cc94-analytics-allowlist.md) | CC-115A, CC-94 | CM, ASTRO (Meta Pixel only) | In Progress | Review + merge; C1: is there a Meta tag inside GTM? |
+| 02 | [Stop test traffic reaching live Pixel/Amplitude/Clarity](02-cc115a-cc94-analytics-allowlist.md) | CC-115A, CC-94 | CM, ASTRO (Meta Pixel only) | Done in Phase 28 | — |
 | 03 | [Raw code text on landing pages](03-cc107-raw-code-text.md) | CC-107 | ASTRO | In Review | Merge + deploy go pages; C1 (screenshot/session from RD) |
 | 04 | [₹NaN in Payments tab](04-cc100-payments-nan.md) | CC-100 | CM-dashboard, BE | In Review | Merge + deploy BE then dashboard; C1 (columns/wording/plan name) |
 | 05 | [Correct Purchase value to Meta](05-cc53-meta-purchase-value.md) | CC-53 | CM-dashboard, BE | In Review | Merge + deploy BE then dashboard; tell RD Purchase counts/values will change |
@@ -43,7 +43,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 10 | [Crashes on older phones](10-cc112-older-phone-crashes.md) | CC-112 | CM (all apps), ASTRO | In Review | Merge; deploy landing, dashboard, tools (Pages), blog auto; #2/#5 need stack traces (C4) |
 | 11 | [Payment page loads twice](11-cc61-payment-double-load.md) | CC-61 | CM-dashboard | In Review | Merge + deploy dashboard; C1 (deep links) answered by code search: none |
 | 12 | [Trial copy on landing + in-app](12-cc67-trial-copy.md) | CC-67 | ASTRO, CM-landing, CM-dashboard, CMS admin | In Review | Release ASTRO + landing + dashboard together; C3 (live CMS search) |
-| 13 | [HPTET landing-page-view tracking (parked)](13-cc115b-hptet-lpv.md) | CC-115 Part B | ASTRO | Not Started | Not in Arslan's list — confirm whether to do it |
+| 13 | [HPTET landing-page-view tracking (parked)](13-cc115b-hptet-lpv.md) | CC-115 Part B | ASTRO | Covered by Phase 28 | Ganesh: HPTET ad URLs |
 | 14 | [Blog Worker CPU limit (503 / error 1102)](14-blog-worker-limit.md) | — (prod incident 2026-10-21) | CM-blog, Cloudflare | Superseded by 15 (rolled back to Oct 13 build; prerender work parked on `blog-worker-cpu`) | — |
 | 15 | [Move blog to Vercel](15-blog-vercel-migration.md) | — | CM-blog, Vercel, Cloudflare DNS | Not Started | D1–D5, C1–C2 |
 | 16 | [Question rendering: 20/page, render-once HTML, page-only fetch](16-question-rendering-and-page-size.md) | — | CM-blog, (BE for part C) | In Progress | C gated on index check |
@@ -61,10 +61,10 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 28 | [Meta Pixel: test-traffic block, fbc, ex-GST, fee](28-cc115-cc130-cc131-cc132-meta-pixel.md) | CC-115, CC-130, CC-131, CC-132 | CM, ASTRO, (BE) | Built, verified locally (not merged) | After deploy: check fbc coverage + no maintest events in Events Manager; Ganesh: HPTET/HTET ad URLs |
 | 29 | [Checkout + renewal events](29-cc69-cc98-checkout-renewal-events.md) | CC-69, CC-98 | CM-dashboard, BE | Built, verified locally (not merged) | Check events in Amplitude after deploy; /pay link later |
 | 30 | [Investigate autopay drop + signup funnel break](30-cc119-cc128-funnel-investigations.md) | CC-119, CC-128 | read-only | Done (fix live: BE 74897d2) | Prod SQL for Oct autopay by exam; Ganesh: HPTET/HTET ad URLs; Jira comments |
-| 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Not Started | D1 user language field |
-| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Built, verified locally (not merged) | Locked-card copy needs RD; check new events in Amplitude after deploy |
-| 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Not Started | D1 text-link look; D2 store reasons; C1 RD copy |
-| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 built (not merged/deployed); CC-95 findings | Tools deploy approval; crossorigin on Razorpay script (risk call) |
+| 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Done (pushed) | Phone test of Resend autofill; v2 OTP-less routes wait for link format |
+| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Done (pushed) | Check new events in Amplitude; locked-card copy needs RD |
+| 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Partly done (instant exit pushed) | D1 text link, D2 reasons storage, C1 RD headline copy |
+| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 merged; tools deploy pending approval | Tools deploy; crossorigin on Razorpay (risk call) |
 
 ## Cross-phase dependencies
 
