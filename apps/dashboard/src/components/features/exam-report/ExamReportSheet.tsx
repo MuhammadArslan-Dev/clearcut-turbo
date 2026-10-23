@@ -19,6 +19,7 @@ import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 
 import { motion } from "framer-motion";
 import Text from "@clearcut/ui/text";
+import { trackReportViewed } from "@/lib/analytics/testFunnel";
 import TabSwitchInExamReport from "./TabSwitchInExamReport";
 import SectionSwitchInExamReport from "./SectionSwitchInExamReport";
 import { Card } from "@clearcut/ui/card";
@@ -42,6 +43,11 @@ type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
 export default function ExamReportSheet() {
   const { isOpen, examId, closeModal, stack } = useExamModalStore();
   const [activeTab, setActiveTab] = useState("summary");
+  // CC-103: report_viewed when the report opens and on every tab change.
+  const reportOpen = isOpen && stack[stack.length - 1] === "exam-report";
+  useEffect(() => {
+    if (reportOpen && examId != null) trackReportViewed(String(examId), activeTab);
+  }, [reportOpen, activeTab, examId]);
   const [language, setLanguage] = useState("hi");
   const [questionFilter, setQuestionFilter] = useState<QuestionFilter>("all");
   // Set when a filter with zero questions is tapped; clears itself after a moment.
@@ -636,8 +642,10 @@ const QuestionItem = React.memo(function QuestionItem({
                 />
               </div>
 
-              {/* Options */}
-              <div className="grid md:grid-cols-2 gap-3">
+              {/* Options — tapping one opens the answer + explanation, the
+                  same panel as the button below (CC-102 dead taps; same
+                  rule as CC-105's PreviousModal/ExamInstanceModal). */}
+              <div className="grid md:grid-cols-2 gap-3" onClick={() => setIsExplanation(true)}>
                 {translation?.options.map((opt: any, i: number) => (
                   <OptionCard
                     key={i}

@@ -18,9 +18,10 @@ import { useExamFinishNavigation } from "@/components/features/exam/hooks/useExa
 import { useExamStore } from "../../store/useExamStore";
 import { apiFetch } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
+import { trackTestSubmitted } from "@/lib/analytics/testFunnel";
 
 const endExamApi = async ({ examId }: { examId: string }) => {
-  return apiFetch<{ data: { exam: { type: string | null } } }>(
+  return apiFetch<{ data: { exam: { type: string | null }; result?: Record<string, number> | null } }>(
     `/v2/exam/end-exam/${examId}`,
     {
       method: "POST",
@@ -62,6 +63,7 @@ export default function ExamEndConfirmationSheet() {
     try {
       const res = await endExamApi({ examId: exam?.uuid! });
       examType = res.data.exam.type;
+      trackTestSubmitted(exam, res, "manual", language);
     } catch (error) {
       console.error("End exam failed:", error);
     }

@@ -14,9 +14,42 @@ export type TestSeriesEventName =
   | 'Performance Report Tab Viewed'
   | 'Performance Report Shared'
   | 'Report Question Expanded'
-  | 'Test Retake Initiated';
+  | 'Test Retake Initiated'
+  // CC-103 completion funnel (lib/analytics/testFunnel.ts).
+  | 'test_submitted'
+  | 'test_abandoned'
+  | 'report_viewed';
 
 export interface TestSeriesEventPayloads {
+  'test_submitted': {
+    test_id: string;
+    test_type: string;
+    exam?: string;
+    course_id?: string;
+    section_name?: string;
+    total_questions: number;
+    correct: number;
+    wrong: number;
+    unattempted: number;
+    score_percent: number;
+    time_taken_seconds?: number;
+    submission_reason: 'manual' | 'time_up';
+    language: string;
+  };
+
+  'test_abandoned': {
+    test_id: string;
+    test_type: string;
+    course_id?: string;
+    reason: 'page_closed' | 'idle_30m';
+    answered: number;
+  };
+
+  'report_viewed': {
+    test_id: string;
+    tab: string;
+  };
+
   'Test List Filtered': {
     filter_type: string;
   };

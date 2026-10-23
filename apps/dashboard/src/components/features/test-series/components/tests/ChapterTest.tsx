@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@clearcut/ui/button";
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import TestCard from "../cards/TestCard";
 import Text from "@clearcut/ui/text";
 import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/SectionHeaderCard";
@@ -145,6 +145,9 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
       setSelectedSectionId(sections[0].id);
     }
   }, [sections, selectedSectionId, setSelectedSectionId]);
+
+  // The tapped subject tab, shown as active until its list has rendered.
+  const [pendingSectionTab, setPendingSectionTab] = useState<string | null>(null);
 
   const sectionItems = useMemo<TabItem[]>(
     () =>
@@ -415,10 +418,21 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
         <SectionSwitchUI
           layoutId="chapter-test-section-tab"
           items={sectionItems}
-          active={selectedSection?.id?.toString() ?? null}
+          active={pendingSectionTab ?? selectedSection?.id?.toString() ?? null}
           changeSection={(id) => {
             const section = sections.find((s) => String(s.id) === id);
-            if (section) setSelectedSectionId(section.id);
+            if (!section) return;
+            // CC-104: rendering the new subject's chapter list kept the main
+            // thread busy before anything moved, so the tapped tab looked
+            // dead for seconds on slow phones. Move the tab now, swap the
+            // list right after that frame has painted.
+            setPendingSectionTab(id);
+            requestAnimationFrame(() =>
+              setTimeout(() => {
+                setSelectedSectionId(section.id);
+                setPendingSectionTab(null);
+              }, 0),
+            );
           }}
         />
       </div>
@@ -438,7 +452,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
               <React.Fragment key={chapter.id}>
                 <div className="h-0.5 bg-gray-200" />
 
-                <div className="flex flex-col gap-2">
+                <div id={`test-series-chapter-${chapter.id}`} className="flex flex-col gap-2 scroll-mt-28">
                   <SectionHeaderCard
                     trailingIcon={<div className="cursor-pointer">
                       <CounterCard
@@ -482,7 +496,14 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                     }
                     title={getLocalizedName(chapter, contentLocale)}
                     cursor="cursor-pointer"
-                    onClick={() => { }}
+                    // The header and its "N Tests" pill looked tappable but did
+                    // nothing (CC-104: ~755 dead taps). They now bring this
+                    // section's tests into view.
+                    onClick={() =>
+                      document
+                        .getElementById(`test-series-chapter-${chapter.id}`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
                     titleClassName="!heading-small !font-semibold text-surface-gray-normal"
                     breadcrumbClassName="body-medium !font-normal text-surface-gray-muted"
                     radiusClassName="md:rounded-md"

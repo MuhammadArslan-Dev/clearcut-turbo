@@ -31,6 +31,7 @@ import { useModalStore } from "@/store/modal/useModalStore";
 import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import QuestionsDock, { type QuestionDockItem } from "@/components/features/attempt-ui/QuestionsDock";
 import type { AttemptQuestion } from "../types/exam";
+import { trackTestAbandoned, trackTestSubmitted } from "@/lib/analytics/testFunnel";
 
 // ===============================
 // SLIDE ANIMATION
@@ -84,9 +85,36 @@ export default function MainContent({ examId }: { examId: string }) {
   // language itself, but nothing else in this selector list changes when the
   // Topbar's translate button calls `setLanguage`, so without this the
   // component never re-renders and the shown translation stays stale.
-  useExamStore((s) => s.language);
+  const language = useExamStore((s) => s.language);
 
   const { open } = useExamModalStore();
+
+  // CC-103: test_abandoned once per attempt, when the page is closed or the
+  // student does nothing for 30 minutes while the test is in progress.
+  // Submitting navigates in-app (no pagehide), so a finished test never
+  // counts; trackTestAbandoned also ignores anything not "in_progress".
+  const examUuid = exam?.uuid;
+  const examStatus = exam?.status;
+  useEffect(() => {
+    if (!examUuid || examStatus !== "in_progress") return;
+    const answered = () => useExamStore.getState().getStats().answered;
+    const IDLE_MS = 30 * 60 * 1000;
+    let idleTimer = window.setTimeout(() => trackTestAbandoned(useExamStore.getState().exam, "idle_30m", answered()), IDLE_MS);
+    const onActivity = () => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => trackTestAbandoned(useExamStore.getState().exam, "idle_30m", answered()), IDLE_MS);
+    };
+    const onPageHide = () => trackTestAbandoned(useExamStore.getState().exam, "page_closed", answered());
+    window.addEventListener("pointerdown", onActivity, { passive: true });
+    window.addEventListener("keydown", onActivity);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.clearTimeout(idleTimer);
+      window.removeEventListener("pointerdown", onActivity);
+      window.removeEventListener("keydown", onActivity);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [examUuid, examStatus]);
   const openGlobalModal = useModalStore((s) => s.open);
 
   // ===============================
@@ -118,16 +146,17 @@ export default function MainContent({ examId }: { examId: string }) {
     // whatever happened to be in the store at this exact moment.
     let examType: string | null | undefined = exam.type;
     try {
-      const res = await apiFetch<{ data: { exam: { type: string | null } } }>(
+      const res = await apiFetch<{ data: { exam: { type: string | null }; result?: Record<string, number> | null } }>(
         `/v2/exam/end-exam/${exam.uuid}`,
         { method: "POST", cache: "no-store" },
       );
       examType = res.data.exam.type;
+      trackTestSubmitted(exam, res, "time_up", language);
     } catch (error) {
       console.error(error);
     }
     goToReport(exam.course?.group_code, exam.uuid, examType);
-  }, [exam, goToReport]);
+  }, [exam, goToReport, language]);
 
   // The exam countdown + server heartbeat now live in <ExamTimerWatcher />
   // (rendered first in both return paths below). Its `remaining` state ticks

@@ -62,7 +62,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 29 | [Checkout + renewal events](29-cc69-cc98-checkout-renewal-events.md) | CC-69, CC-98 | CM-dashboard, BE | Built, verified locally (not merged) | Check events in Amplitude after deploy; /pay link later |
 | 30 | [Investigate autopay drop + signup funnel break](30-cc119-cc128-funnel-investigations.md) | CC-119, CC-128 | read-only | Done (fix live: BE 74897d2) | Prod SQL for Oct autopay by exam; Ganesh: HPTET/HTET ad URLs; Jira comments |
 | 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Not Started | D1 user language field |
-| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Not Started | D1 price on locked cards from pricing |
+| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Built, verified locally (not merged) | Locked-card copy needs RD; check new events in Amplitude after deploy |
 | 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Not Started | D1 text-link look; D2 store reasons; C1 RD copy |
 | 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | Not Started | crossorigin only where CORS is sent |
 
