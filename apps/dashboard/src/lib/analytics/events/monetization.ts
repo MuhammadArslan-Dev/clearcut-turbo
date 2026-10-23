@@ -13,7 +13,31 @@ export type MonetizationEventName =
   | 'save_offer_shown'
   | 'save_offer_accepted'
   | 'subscription_cancelled'
-  | 'subscription_paused';
+  | 'subscription_paused'
+  | PayFunnelEventName;
+
+/** Checkout funnel, CC-69 (lib/analytics/paymentFunnel.ts). */
+export type PayFunnelEventName =
+  | 'pay_page_view'
+  | 'plan_selected'
+  | 'pay_tap'
+  | 'rzp_opened'
+  | 'rzp_dismissed'
+  | 'rzp_failed'
+  | 'continue_free_tap';
+
+export type PayFunnelProps = {
+  exam?: string;
+  /** "149_autopay" / "229_onetime" / "799_annual". */
+  plan: string;
+  price: number;
+  source?: string;
+  language: string;
+  in_app_browser: 'fb' | 'ig' | 'none';
+  /** rzp_failed only: Razorpay error.code / error.reason. */
+  error_code?: string;
+  error_reason?: string;
+};
 
 export interface MonetizationEventPayloads {
   'Payment Paywall Rendered': {
@@ -91,4 +115,12 @@ export interface MonetizationEventPayloads {
     exam_id: string;
     exam_name: string;
   };
+
+  'pay_page_view': PayFunnelProps;
+  'plan_selected': PayFunnelProps;
+  'pay_tap': PayFunnelProps;
+  'rzp_opened': PayFunnelProps;
+  'rzp_dismissed': PayFunnelProps;
+  'rzp_failed': PayFunnelProps;
+  'continue_free_tap': PayFunnelProps;
 }

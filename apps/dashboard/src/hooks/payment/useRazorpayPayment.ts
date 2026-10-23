@@ -29,6 +29,7 @@ import {
   saveAttempt,
 } from "@/lib/payment/paymentAttempt";
 import { useLocale } from "next-intl";
+import { inAppBrowserKind, payPlanLabel, trackPayFunnel } from "@/lib/analytics/paymentFunnel";
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@sentry/nextjs";
@@ -237,6 +238,15 @@ export function useRazorpayPayment({
       // app is open; Razorpay then sends the student back through the
       // backend instead of calling `handler` (CC-59).
       const redirectMode = Boolean(returnParams) && isInAppBrowser();
+      // CC-69 checkout funnel (Amplitude + Clarity).
+      const funnelProps = {
+        exam: examName,
+        plan: payPlanLabel(type, price),
+        price: Number(price),
+        source: returnParams?.source !== undefined ? String(returnParams.source) : undefined,
+        language: locale,
+        in_app_browser: inAppBrowserKind(),
+      };
 
       // 2️⃣ Razorpay options
       // One Payment Outcome per checkout session: set as soon as a success or a
@@ -413,6 +423,7 @@ export function useRazorpayPayment({
             if (!outcomeReported) release();
             if (outcomeReported) return;
             outcomeReported = true;
+            trackPayFunnel("rzp_dismissed", funnelProps);
 
             trackEvent("Payment Outcome", {
               outcome: "payment_failed",
@@ -440,6 +451,11 @@ export function useRazorpayPayment({
 
         outcomeReported = true;
         clearAttempt();
+        trackPayFunnel("rzp_failed", {
+          ...funnelProps,
+          error_code: error?.code,
+          error_reason: error?.reason,
+        });
 
         trackEvent("Payment Outcome", {
           outcome: "payment_failed",
@@ -462,6 +478,7 @@ export function useRazorpayPayment({
       razorpay.open();
       checkoutOpened = true;
       setPhase("idle");
+      trackPayFunnel("rzp_opened", funnelProps);
     } catch (error) {
       console.error(error);
       reportError("unknown");

@@ -49,6 +49,7 @@ import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@clearcut/ui/button";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
+import { inAppBrowserKind, payPlanLabel, trackPayFunnel } from "@/lib/analytics/paymentFunnel";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
@@ -189,6 +190,16 @@ export default function InitiatedPage() {
         const to = getPlanAnalytics(variant, pricing, data?.short_name, planCourseName);
         const defaultPlan = getPlanAnalytics(DEFAULT_VARIANT, pricing, data?.short_name, planCourseName);
 
+        const toPrice = getPriceForVariant(variant, pricing, data?.short_name);
+        trackPayFunnel("plan_selected", {
+          exam: data?.short_name,
+          plan: payPlanLabel(variant, toPrice),
+          price: toPrice,
+          source,
+          language: locale,
+          in_app_browser: inAppBrowserKind(),
+        });
+
         if (from && to && defaultPlan && data?.exam_id) {
           trackEvent("Plan Switched", {
             exam_id: data.exam_id,
@@ -230,7 +241,7 @@ export default function InitiatedPage() {
         return variant;
       });
     },
-    [pricing, data, courseName],
+    [pricing, data, courseName, source, locale],
   );
 
   const { levels: levelsRaw = [], loading: levelsLoading } = useLevels(
@@ -257,6 +268,16 @@ export default function InitiatedPage() {
     trackEvent("Purchase Intent Initiated", {
       entry_point: source,
       product_id: data?.short_name!,
+    });
+
+    const openingPrice = getPriceForVariant(currentVariantRef.current, pricing, data?.short_name);
+    trackPayFunnel("pay_page_view", {
+      exam: data?.short_name,
+      plan: payPlanLabel(currentVariantRef.current, openingPrice),
+      price: openingPrice,
+      source,
+      language: locale,
+      in_app_browser: inAppBrowserKind(),
     });
 
     // Awaited before InitiateCheckout fires below — setMetaUserData's geo
@@ -384,6 +405,16 @@ export default function InitiatedPage() {
   });
 
   /* ---------------------------------- handlers ---------------------------------- */
+  // Shared properties of the CC-69 checkout funnel events on this page.
+  const payFunnelProps = () => ({
+    exam: data?.short_name,
+    plan: payPlanLabel(selectVariant, selectedPrice),
+    price: Number(selectedPrice),
+    source,
+    language: locale,
+    in_app_browser: inAppBrowserKind(),
+  });
+
   const handleSubscriptionPayment = useCallback(async () => {
     setSubscriptionLoading(true);
     // Busy until the popup is closed or the payment ends, not just until
@@ -627,6 +658,7 @@ export default function InitiatedPage() {
             if (!outcomeReported) setSubscriptionLoading(false);
             if (outcomeReported) return;
             outcomeReported = true;
+            trackPayFunnel("rzp_dismissed", payFunnelProps());
 
             trackEvent("Payment Outcome", {
               outcome: "payment_failed",
@@ -656,6 +688,11 @@ export default function InitiatedPage() {
           const { error } = errorResponse;
 
           outcomeReported = true;
+          trackPayFunnel("rzp_failed", {
+            ...payFunnelProps(),
+            error_code: error?.code,
+            error_reason: error?.reason,
+          });
           trackEvent("Payment Outcome", {
             outcome: "payment_failed",
             billing_type: "auto_renew",
@@ -719,6 +756,7 @@ export default function InitiatedPage() {
       );
       razorpay.open();
       checkoutOpened = true;
+      trackPayFunnel("rzp_opened", payFunnelProps());
     } catch (error) {
       logger.error(error, {
         tags: { module: "subscription-payment", type: "unexpected_error" },
@@ -747,6 +785,7 @@ export default function InitiatedPage() {
     if (payBusyRef.current || loading || subscriptionLoading) return;
     payBusyRef.current = true;
     setPayError(null);
+    trackPayFunnel("pay_tap", payFunnelProps());
     trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
     const start = selectVariant === "1month" ? handleSubscriptionPayment : handlePayment;
     void start().finally(() => {
@@ -1171,7 +1210,10 @@ export default function InitiatedPage() {
             <div className="w-full max-w-[400px]">
               <Button
                 // onClick={close} // window.close() — use router.back() instead
-                onClick={() => router.back()}
+                onClick={() => {
+                  trackPayFunnel("continue_free_tap", payFunnelProps());
+                  router.back();
+                }}
                 fullWidth
                 size="sm"
                 sx={{ borderRadius: "50px" }}
