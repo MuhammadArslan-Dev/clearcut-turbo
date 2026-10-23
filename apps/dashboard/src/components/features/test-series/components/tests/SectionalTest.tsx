@@ -365,7 +365,13 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                 }
                 title={getLocalizedName(section, contentLocale)}
                 cursor="cursor-pointer"
-                onClick={() => {}}
+                // Looked tappable but did nothing (CC-104 dead taps): brings
+                // this section's tests into view.
+                onClick={() =>
+                  document
+                    .getElementById(`test-series-section-${section.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
                 titleClassName="!heading-small !font-semibold text-surface-gray-normal"
                 breadcrumbClassName="body-medium !font-normal text-surface-gray-muted"
                 radiusClassName="md:rounded-md"
