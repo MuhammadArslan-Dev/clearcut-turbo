@@ -62,9 +62,9 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 29 | [Checkout + renewal events](29-cc69-cc98-checkout-renewal-events.md) | CC-69, CC-98 | CM-dashboard, BE | Built, verified locally (not merged) | Check events in Amplitude after deploy; /pay link later |
 | 30 | [Investigate autopay drop + signup funnel break](30-cc119-cc128-funnel-investigations.md) | CC-119, CC-128 | read-only | Done (fix live: BE 74897d2) | Prod SQL for Oct autopay by exam; Ganesh: HPTET/HTET ad URLs; Jira comments |
 | 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Done (pushed) | Phone test of Resend autofill; v2 OTP-less routes wait for link format |
-| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Done (pushed) | Check new events in Amplitude; locked-card copy needs RD |
-| 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Partly done (instant exit pushed) | D1 text link, D2 reasons storage, C1 RD headline copy |
-| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 merged; tools deploy pending approval | Tools deploy; crossorigin on Razorpay (risk call) |
+| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Done (+ locked-card line on branch) | Check new events in Amplitude |
+| 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | CC-63 done (branch, not pushed) | CC-74 headline copy (RD) |
+| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 merged; tools deploy pending | Tools deploy approval |
 
 ## Cross-phase dependencies
 

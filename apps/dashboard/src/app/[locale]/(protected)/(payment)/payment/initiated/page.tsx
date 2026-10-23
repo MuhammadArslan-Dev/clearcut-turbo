@@ -47,9 +47,10 @@ import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
-import { Button } from "@clearcut/ui/button";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
 import { inAppBrowserKind, payPlanLabel, trackPayFunnel } from "@/lib/analytics/paymentFunnel";
+import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
+import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
@@ -416,6 +417,23 @@ export default function InitiatedPage() {
       if (window.location.href === before) router.replace(`/preparation/${courseId}`);
     }, 400);
   }, [router, courseId]);
+
+  // CC-63: "Why not now?" before leaving for free learning. Every answer
+  // leaves at once; "payment issue" opens WhatsApp help and stays here.
+  const [continueFreeOpen, setContinueFreeOpen] = React.useState(false);
+  const handleContinueFreeAnswer = (reason: ContinueFreeReason) => {
+    trackEvent("continue_free_reason", { ...payFunnelProps(), reason });
+    setContinueFreeOpen(false);
+    if (reason === "payment_issue") {
+      window.open(
+        supportWhatsAppUrl(modalT("continueFreePaymentHelp", { course: data?.short_name ?? "" })),
+        "_blank",
+        "noopener,noreferrer",
+      );
+      return;
+    }
+    leavePaymentPage();
+  };
 
   // Shared properties of the CC-69 checkout funnel events on this page.
   const payFunnelProps = () => ({
@@ -1219,25 +1237,25 @@ export default function InitiatedPage() {
               )}
             </div>
 
-            <div className="w-full max-w-[400px]">
-              <Button
-                // onClick={close} // window.close() — use router.back() instead
+            {/* CC-63 (D1, user 2026-10-23): a small text link under the pay
+                button instead of a second full-width button. */}
+            <div className="w-full max-w-[400px] flex justify-center">
+              <button
+                type="button"
                 onClick={() => {
                   trackPayFunnel("continue_free_tap", payFunnelProps());
-                  leavePaymentPage();
+                  setContinueFreeOpen(true);
                 }}
-                fullWidth
-                size="sm"
-                sx={{ borderRadius: "50px" }}
-                color="gray"
-                variant="soft"
+                className="body-medium text-surface-gray-muted underline underline-offset-4 py-2 px-3 cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <ArrowIcon />
-                  <span>{modalT("continueFree")}</span>
-                </div>
-              </Button>
+                {modalT("continueFree")}
+              </button>
             </div>
+            <ContinueFreeSheet
+              isOpen={continueFreeOpen}
+              onAnswer={handleContinueFreeAnswer}
+              onClose={() => setContinueFreeOpen(false)}
+            />
           </div>
         </div>
       </div>

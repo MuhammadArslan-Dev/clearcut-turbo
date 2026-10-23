@@ -58,7 +58,14 @@
     "continueFree": "Continue free learning",
 
     "paymentInfo": "Secure payment",
-    "paymentMethods": "UPI / Card / Net banking"
+    "paymentMethods": "UPI / Card / Net banking",
+    "continueFreeReasonTitle": "Why not now?",
+    "continueFreeReason_expensive": "It's too expensive",
+    "continueFreeReason_exploring": "I want to explore more first",
+    "continueFreeReason_later": "I'll buy later",
+    "continueFreeReason_payment_issue": "I'm having trouble paying",
+    "continueFreeSkip": "Skip",
+    "continueFreePaymentHelp": "Hi, I'm having trouble paying for {course} on Clear Cutoff. Please help."
   },
 
   "topicLockedModal": {

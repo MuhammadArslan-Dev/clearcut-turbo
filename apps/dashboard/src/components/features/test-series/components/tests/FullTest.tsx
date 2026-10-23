@@ -22,6 +22,7 @@ import { ParsedPaperName } from "@/components/layout/preparation/BottomBar";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { LockIcon } from "lucide-react";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import {
   PaywallSource,
@@ -294,6 +295,15 @@ export default function FullTest({ courseId }: FullTestProps) {
                   )
                 : open("attempt-history", { test }),
           }}
+          // CC-104 (user 2026-10-23): a locked test says which plan has it,
+          // with this exam's monthly price.
+          note={
+            isLocked
+              ? cardT("testCard.includedInPlan", {
+                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
+                })
+              : undefined
+          }
         />
       );
     },

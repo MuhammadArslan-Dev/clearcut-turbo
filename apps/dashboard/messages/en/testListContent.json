@@ -93,6 +93,7 @@
     "extraPractice": "Extra practice",
 
     "nextRecommended": "Next recommended sectional test",
-    "nextRecommendedChapter": "Next recommended chapter test"
+    "nextRecommendedChapter": "Next recommended chapter test",
+    "includedInPlan": "Included in the ₹{price} plan"
   }
 }

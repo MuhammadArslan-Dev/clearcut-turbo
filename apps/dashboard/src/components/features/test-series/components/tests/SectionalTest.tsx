@@ -14,6 +14,7 @@ import { LockIcon } from "@/components/ui/icons";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { ChangePaperButton } from "./FullTest";
 import CounterCard from "@/components/ui/cards/CounterCard";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
 import { SectionalTestItem, SectionalSection } from "@/lib/tests/getExam";
@@ -300,6 +301,15 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                 : handleViewHistory(test, section),
           }}
           announcement={isRecommended ? cardT("testCard.nextRecommended") : undefined}
+          // CC-104 (user 2026-10-23): a locked test says which plan has it,
+          // with this exam's monthly price.
+          note={
+            isLocked
+              ? cardT("testCard.includedInPlan", {
+                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
+                })
+              : undefined
+          }
         />
       );
     },
