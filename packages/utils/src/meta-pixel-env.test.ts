@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { META_PIXEL_LOCAL_OPT_IN_KEY, isLocalDevHost, metaPixelId, metaPixelMode } from "./meta-pixel-env";
+import { META_PIXEL_LOCAL_OPT_IN_KEY, isLocalDevHost, isMetaPixelHost, metaPixelId, metaPixelMode } from "./meta-pixel-env";
 
 function fakeWindow(hostname: string, stored: Record<string, string> = {}) {
   vi.stubGlobal("window", {
@@ -21,7 +21,25 @@ describe("isLocalDevHost", () => {
   );
 });
 
+describe("isMetaPixelHost (CC-115 allowlist)", () => {
+  it.each(["clearcutoff.in", "www.clearcutoff.in", "app.clearcutoff.in", "academy.clearcutoff.in", "APP.clearcutoff.in"])(
+    "%s loads the pixel",
+    (host) => expect(isMetaPixelHost(host)).toBe(true),
+  );
+  it.each(["maintest.clearcutoff.in", "localhost", "clearcut-tools.pages.dev", "dashboard-git-x.vercel.app", "clearcutoff.in.evil.com"])(
+    "%s does not",
+    (host) => expect(isMetaPixelHost(host)).toBe(false),
+  );
+});
+
 describe("metaPixelMode / metaPixelId", () => {
+  it("is off on a test subdomain unless opted in", () => {
+    fakeWindow("maintest.clearcutoff.in");
+    expect(metaPixelMode()).toBe("off");
+    fakeWindow("maintest.clearcutoff.in", { [META_PIXEL_LOCAL_OPT_IN_KEY]: "1" });
+    expect(metaPixelMode()).toBe("local-test");
+  });
+
   it("loads the live pixel on real sites", () => {
     fakeWindow("app.clearcutoff.in");
     expect(metaPixelMode()).toBe("live");

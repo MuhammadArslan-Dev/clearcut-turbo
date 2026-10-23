@@ -1,6 +1,7 @@
-// Meta Pixel stays off on local development hosts, so test visits never
-// reach the live pixel's data (CC-115 Part A). Every other tracker
-// (Amplitude, Clarity, GTM) is untouched.
+// Meta Pixel loads only on the production hosts below, so test visits
+// (localhost, a phone on the LAN, maintest/staging subdomains, preview
+// deployments) never reach the live pixel's data (CC-115). Every other
+// tracker (Amplitude, Clarity, GTM) is untouched.
 //
 // To test Pixel events locally, opt in for your own browser:
 //   localStorage.setItem("cc-meta-pixel-local", "1")   // then reload
@@ -10,6 +11,19 @@
 // the live one. Without it they go to the live pixel.
 
 export const META_PIXEL_LOCAL_OPT_IN_KEY = "cc-meta-pixel-local";
+
+/** The only hosts where the live pixel loads (CC-115). Keep in sync with
+ * Astro-marketing-clearcut's packages/auth/src/lib/facebook-pixel.ts. */
+export const META_PIXEL_HOSTS = [
+  "clearcutoff.in",
+  "www.clearcutoff.in",
+  "app.clearcutoff.in",
+  "academy.clearcutoff.in",
+] as const;
+
+export function isMetaPixelHost(hostname: string): boolean {
+  return (META_PIXEL_HOSTS as readonly string[]).includes(hostname.toLowerCase());
+}
 
 /** localhost, *.localhost, loopback and private LAN addresses (a phone
  * testing a dev server over Wi-Fi). */
@@ -29,11 +43,11 @@ export function isLocalDevHost(hostname: string): boolean {
 
 export type MetaPixelMode = "live" | "local-test" | "off";
 
-/** "live" on real sites, "off" on local hosts unless this browser opted in
- * ("local-test"). Browser only: "off" on the server. */
+/** "live" on the production hosts, "off" anywhere else unless this browser
+ * opted in ("local-test"). Browser only: "off" on the server. */
 export function metaPixelMode(): MetaPixelMode {
   if (typeof window === "undefined") return "off";
-  if (!isLocalDevHost(window.location.hostname)) return "live";
+  if (isMetaPixelHost(window.location.hostname)) return "live";
   try {
     return window.localStorage.getItem(META_PIXEL_LOCAL_OPT_IN_KEY) === "1" ? "local-test" : "off";
   } catch {

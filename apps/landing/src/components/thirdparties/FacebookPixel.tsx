@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { persistFbcFromUrl } from "@clearcut/utils/meta-fbc";
 import { getMetaGeoData } from "@clearcut/utils/meta-geo";
 import { metaPixelId } from "@clearcut/utils/meta-pixel-env";
 
@@ -30,6 +31,13 @@ export default function FacebookPixel() {
     setPixelId(
       metaPixelId(FB_PIXEL_ID, process.env.NEXT_PUBLIC_FB_PIXEL_ID_TEST),
     );
+  }, []);
+
+  // Meta click id for every later event, Purchase on app.clearcutoff.in
+  // included: `_fbc` on the shared domain as soon as an ad click lands
+  // (CC-130, packages/utils/src/meta-fbc.ts).
+  useEffect(() => {
+    persistFbcFromUrl();
   }, []);
 
   useEffect(() => {
