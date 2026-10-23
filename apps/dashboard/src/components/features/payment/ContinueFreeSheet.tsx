@@ -10,23 +10,34 @@ import OptionSelectionCard from "@/components/ui/cards/option-selection-card";
 import { CrossIcon } from "@/components/ui/icons";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
-export type ContinueFreeReason = "expensive" | "exploring" | "later" | "payment_issue" | "skipped";
+export type ContinueFreeReason =
+  | "expensive"
+  | "prefer_one_time"
+  | "exploring"
+  | "later"
+  | "payment_issue"
+  | "skipped";
 
-const REASONS: Exclude<ContinueFreeReason, "skipped">[] = ["expensive", "exploring", "later", "payment_issue"];
+type Reason = Exclude<ContinueFreeReason, "skipped">;
 
 /**
  * CC-63: one optional question when a student leaves the payment page for
  * free learning. Built exactly like LanguageModal (the design system's
  * "pick one" sheet): BottomSheet/Modal, heading + close, OptionSelectionCard
  * rows, ShimmerButton to confirm. Continue / Skip leave at once; "payment
- * issue" opens WhatsApp help and keeps the student here; close stays.
+ * issue" opens WhatsApp help and keeps the student here; "prefer one-time"
+ * (shown only while autopay is selected) switches to the one-time plan and
+ * keeps the student here; close stays.
  */
 export default function ContinueFreeSheet({
   isOpen,
   onAnswer,
   onClose,
+  showOneTimeOption = false,
 }: {
   isOpen: boolean;
+  /** Offer "pay once, not autopay" — only makes sense while autopay is selected. */
+  showOneTimeOption?: boolean;
   onAnswer: (reason: ContinueFreeReason) => void;
   onClose: () => void;
 }) {
@@ -34,7 +45,17 @@ export default function ContinueFreeSheet({
   const rootT = useTranslations("");
   const isMobile = useIsMobile();
   const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
-  const [selected, setSelected] = useState<Exclude<ContinueFreeReason, "skipped"> | null>(null);
+  const [selected, setSelected] = useState<Reason | null>(null);
+  const reasons = useMemo<Reason[]>(
+    () => [
+      "expensive",
+      ...(showOneTimeOption ? (["prefer_one_time"] as Reason[]) : []),
+      "exploring",
+      "later",
+      "payment_issue",
+    ],
+    [showOneTimeOption],
+  );
 
   // Fresh choice every time the sheet opens.
   useEffect(() => {
@@ -56,7 +77,7 @@ export default function ContinueFreeSheet({
 
             {/* Reasons */}
             <div className="grid grid-cols-1 gap-4">
-              {REASONS.map((reason) => (
+              {reasons.map((reason) => (
                 <OptionSelectionCard
                   key={reason}
                   content={<p>{t(`continueFreeReason_${reason}`)}</p>}
