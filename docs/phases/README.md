@@ -64,7 +64,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Not Started | D1 user language field |
 | 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Not Started | D1 price on locked cards from pricing |
 | 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Not Started | D1 text-link look; D2 store reasons; C1 RD copy |
-| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | Not Started | crossorigin only where CORS is sent |
+| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 built (not merged/deployed); CC-95 findings | Tools deploy approval; crossorigin on Razorpay script (risk call) |
 
 ## Cross-phase dependencies
 

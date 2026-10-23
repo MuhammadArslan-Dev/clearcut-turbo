@@ -1070,7 +1070,9 @@ export default function ResizeImageTool({
         setStep("result");
         trackResizer("resizer_processed", {
           size_kb: Math.round((blob.size / KB) * 10) / 10,
-          within_target: preset === "signature" || (blob.size >= minKB * KB && blob.size <= maxKB * KB),
+          within_target:
+            (!blob.type || blob.type === "image/jpeg") &&
+            (preset === "signature" || (blob.size >= minKB * KB && blob.size <= maxKB * KB)),
         });
       } catch (err) {
         if (version !== workspaceVersionRef.current) return;
@@ -1244,9 +1246,24 @@ export default function ResizeImageTool({
   const resultSizeLabel = result ? formatKB(result.blob.size) : "";
   // Add Name & Date has no Min/Max KB fields to be "outside the range" of —
   // there's nothing on screen for that warning to point the user back to.
-  const withinTarget = result
-    ? preset === "signature" || (result.blob.size >= minKB * KB && result.blob.size <= maxKB * KB)
-    : false;
+  // CC-91: Download only when the file really meets the exam's rules: a JPG
+  // (some in-app browsers return a PNG from toBlob("image/jpeg") and ignore
+  // the quality, which is how a 10–20KB signature came out at 43KB) inside
+  // the KB range. Add Name & Date has no range, so only the format counts.
+  const sizeIssue: "ok" | "format" | "small" | "large" = !result
+    ? "ok"
+    : result.blob.type && result.blob.type !== "image/jpeg"
+      ? "format"
+      : preset === "signature"
+        ? "ok"
+        : result.blob.size < minKB * KB
+          ? "small"
+          : result.blob.size > maxKB * KB
+            ? "large"
+            : "ok";
+  const withinTarget = Boolean(result) && sizeIssue === "ok";
+  const fill = (text: string, values: Record<string, string>) =>
+    Object.entries(values).reduce((acc, [key, value]) => acc.split(`{${key}}`).join(value), text);
 
   // Only "custom" (unreachable from any tile today) keeps editable dimension
   // and size fields. Signature and Photo both show the read-only requirements
@@ -1803,10 +1820,18 @@ export default function ResizeImageTool({
                     : "bg-warning-strong/10 text-[var(--color-warning-strong)]"
                 }`}
               >
-                {withinTarget ? t.perfectMatch : t.outsideTarget}
+                {sizeIssue === "ok"
+                  ? preset === "signature"
+                    ? t.perfectMatch
+                    : fill(t.fitsExam, { size: resultSizeLabel, dims: `${result.width}×${result.height}px` })
+                  : sizeIssue === "format"
+                    ? t.notJpegForExam
+                    : sizeIssue === "small"
+                      ? fill(t.tooSmallForExam, { size: resultSizeLabel, min: String(minKB) })
+                      : fill(t.tooLargeForExam, { max: String(maxKB) })}
               </div>
 
-              <Button fullWidth sx={{ borderRadius: "50px" }} onClick={handleDownload}>
+              <Button fullWidth sx={{ borderRadius: "50px" }} disabled={!withinTarget} onClick={handleDownload}>
                 {t.downloadImage}
               </Button>
               {downloaded && (
