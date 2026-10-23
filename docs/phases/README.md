@@ -56,6 +56,15 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 23 | [Hindi/Marathi payment page + failed-page recovery](23-cc66-cc64-payment-pages.md) | CC-66, CC-64 | CM-dashboard | Built, verified locally (not merged) | C1 RD copy review; confirm support WhatsApp |
 | 24 | [Start-here guide on preparation](24-cc79-start-here-guide.md) | CC-79 | CM-dashboard | Built, verified locally (not merged) | Ganesh reviews hi/mr copy |
 | 25 | [Cancel flow: reason + offer + confirmation](25-cc97-cancel-flow.md) | CC-97 | CM-dashboard | Built, verified locally (not merged) | RD: 'too expensive' offer; confirm WhatsApp no. |
+| 26 | [Paid access expiry + deleted-account billing](26-cc129-cc120-paid-access-expiry.md) | CC-129, CC-120 | BE, CM-dashboard | Built, verified locally (not merged) | Run preview SQL → RD → then merge; backfill dry-run on server; ops: cancel #118/#1530 |
+| 27 | [One order per attempt + FB/IG app payments](27-cc71-cc59-payment-reliability.md) | CC-71, CC-59 (+CC-49) | BE, CM-dashboard | Not Started — very important | D1 client-trusted amount fix; D2 redirect mode scope; ops: auto-capture |
+| 28 | [Meta Pixel: test-traffic block, fbc, ex-GST, fee](28-cc115-cc130-cc131-cc132-meta-pixel.md) | CC-115, CC-130, CC-131, CC-132 | CM, ASTRO, (BE) | Not Started | Meta-only block (user); fbc browser-only (user); D1 CAPI value |
+| 29 | [Checkout + renewal events](29-cc69-cc98-checkout-renewal-events.md) | CC-69, CC-98 | CM-dashboard, BE | Not Started | D1 phone as user prop; D2 event name clash |
+| 30 | [Investigate autopay drop + signup funnel break](30-cc119-cc128-funnel-investigations.md) | CC-119, CC-128 | read-only | Not Started | Inputs from Ganesh/RD in Jira |
+| 31 | [OTP auto-read + language stays](31-cc54-cc89-otp-autoread-language.md) | CC-54, CC-89 | CM (auth, landing, dashboard), ASTRO | Not Started | D1 user language field |
+| 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Not Started | D1 price on locked cards from pricing |
+| 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | Not Started | D1 text-link look; D2 store reasons; C1 RD copy |
+| 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | Not Started | crossorigin only where CORS is sent |
 
 ## Cross-phase dependencies
 

@@ -112,6 +112,12 @@ export type ExamEnrollment = {
   last_accessed_at: string | null;
   active_level: number | null;
 study_guide_seen: boolean;
+  /** From get-course (CC-129): paid / grace (with days left) / expired / trial / trial_end. */
+  access?: {
+    state: "paid" | "grace" | "expired" | "trial" | "trial_end";
+    valid_till: string | null;
+    grace_days_left: number | null;
+  };
 
   created_at: string;
   updated_at: string;

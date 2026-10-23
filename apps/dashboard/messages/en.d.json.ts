@@ -366,6 +366,9 @@ declare const messages: {
     "skip": "Skip",
     "done": "Got it",
     "badge": "Start here"
+  },
+  "planEnding": {
+    "grace": "Your plan has ended. Access closes in {days, plural, one {# day} other {# days}}."
   }
 };
 export default messages;

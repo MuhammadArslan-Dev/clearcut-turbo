@@ -21,6 +21,10 @@ import {
 
 import { useParams } from "next/navigation";
 import { useFlowNavigation } from "@/hooks/navigation/useFlowNavigation";
+import { apiErrorCode } from "@/lib/api/api-error";
+import { useRouter } from "@/i18n/navigation";
+import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
+import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
 
 /* -------------------------------------------------------------------------- */
 /*                                  CONFIG                                    */
@@ -41,6 +45,8 @@ export default function CountDownModal() {
   const t = useTranslations("modals.countDownModal");
 
   const flow = useFlowNavigation();
+  const router = useRouter();
+  const course = useGetCurrentCourseStore((s) => s.course);
   const { get } = useQueryParams();
   const { courseId } = useParams();
 
@@ -103,6 +109,14 @@ export default function CountDownModal() {
           setAttempt(res.data);
         }
       } catch (error) {
+        // The server now refuses a paid test when the plan has ended
+        // (CC-129); the countdown would otherwise sit there forever.
+        if (apiErrorCode(error) === "renewal_required") {
+          closeModal("pre-test-confirmation");
+          closeModal("test-start-countdown");
+          handleOpenPaywall(router, "renewal_required", course);
+          return;
+        }
         console.error("Failed to create test:", error);
         hasCreatedRef.current = false;
       }

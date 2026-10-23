@@ -25,7 +25,10 @@ export type PaywallSource =
   | "payment_failed_retry_clicked"
   | "next_button_clicked"
   | "daily_test_result_clicked"
-  | "daily_tests_page_clicked";
+  | "daily_tests_page_clicked"
+  // CC-129: server refused a paid test (plan ended) / grace-period widget.
+  | "renewal_required"
+  | "plan_grace_widget";
 interface EditCourseState {
   isOpen: boolean;
   data: Exam | undefined | null;

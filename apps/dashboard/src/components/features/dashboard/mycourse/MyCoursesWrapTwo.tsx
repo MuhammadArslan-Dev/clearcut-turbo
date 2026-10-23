@@ -136,7 +136,7 @@ export default function MyCoursesWrapTwo({
   // "Trial Ended" pill → payment, tagged so the funnel can tell it apart
   // from the Buy button (CC-111). Only once a subject is picked, like Buy.
   const trialEndedClick = (enrollment?: ExamEnrollmentWithExam | null) =>
-    enrollment?.status === "trial_end" && enrollment.stage_id
+    (enrollment?.status === "trial_end" || enrollment?.status === "expired") && enrollment.stage_id
       ? () => {
           trackEvent("Purchase Intent Initiated", {
             entry_point: "trial_ended_badge",
