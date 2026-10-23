@@ -102,6 +102,8 @@ export interface MonetizationEventPayloads {
   // sheet resolves; 'closed' = sheet dismissed, student stayed on the page.
   'Continue Free Clicked': {
     reason: 'expensive' | 'exploring' | 'later' | 'payment_issue' | 'skipped' | 'closed';
+    // link = the "Continue free learning" link; back = browser back / swipe back.
+    trigger?: 'link' | 'back';
   } & PayContext;
 
   // A subscription's status changed. source app = the student did it in the

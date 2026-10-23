@@ -404,10 +404,24 @@ export default function InitiatedPage() {
   // (WhatsApp, ad, push) there is no page to go back to, so router.back()
   // did nothing and the tap looked dead. Go back as before; if we're still
   // here a moment later, open this course's learning page instead.
+  // Browser back / swipe back first shows "Why not now?" (once per visit):
+  // an extra history entry for this same URL is the "guard". The first back
+  // only removes the guard, which opens the sheet; leaving the page skips it.
+  const backGuardRef = React.useRef(false);
+  const ignoreNextPopRef = React.useRef(false);
+
   const leavePaymentPage = useCallback(() => {
     const before = window.location.href;
-    router.back();
+    if (backGuardRef.current) {
+      // Step over the guard and this page in one go.
+      backGuardRef.current = false;
+      ignoreNextPopRef.current = true;
+      window.history.go(-2);
+    } else {
+      router.back();
+    }
     window.setTimeout(() => {
+      ignoreNextPopRef.current = false;
       if (window.location.href === before) router.replace(`/preparation/${courseId}`);
     }, 400);
   }, [router, courseId]);
@@ -415,8 +429,13 @@ export default function InitiatedPage() {
   // CC-63: "Why not now?" before leaving for free learning. Every answer
   // leaves at once; "payment issue" opens WhatsApp help and stays here.
   const [continueFreeOpen, setContinueFreeOpen] = React.useState(false);
+  const continueFreeTriggerRef = React.useRef<"link" | "back">("link");
   const handleContinueFreeAnswer = (reason: ContinueFreeReason) => {
-    trackPaymentEvent("Continue Free Clicked", { ...payFunnelProps(), reason });
+    trackPaymentEvent("Continue Free Clicked", {
+      ...payFunnelProps(),
+      reason,
+      trigger: continueFreeTriggerRef.current,
+    });
     setContinueFreeOpen(false);
     if (reason === "payment_issue") {
       window.open(
@@ -428,6 +447,40 @@ export default function InitiatedPage() {
     }
     leavePaymentPage();
   };
+
+  // Arm the back guard once the page has its content.
+  useEffect(() => {
+    if (!data || backGuardRef.current) return;
+    window.history.pushState({ ...window.history.state, ccPayBackGuard: true }, "", window.location.href);
+    backGuardRef.current = true;
+  }, [data]);
+
+  // A checkout is open or a payment is being confirmed (read inside the
+  // popstate listener below, which is set up once).
+  const checkoutBusyRef = React.useRef(false);
+  checkoutBusyRef.current = loading || subscriptionLoading;
+
+  // Back / swipe back removed the guard: show the sheet instead of leaving.
+  // While a Razorpay checkout or a payment check is running, back belongs to
+  // that flow — re-arm the guard and do nothing else.
+  useEffect(() => {
+    const onPopState = () => {
+      if (ignoreNextPopRef.current) {
+        ignoreNextPopRef.current = false;
+        return;
+      }
+      if (!backGuardRef.current) return;
+      if (payBusyRef.current || checkoutBusyRef.current) {
+        window.history.pushState({ ...window.history.state, ccPayBackGuard: true }, "", window.location.href);
+        return;
+      }
+      backGuardRef.current = false;
+      continueFreeTriggerRef.current = "back";
+      setContinueFreeOpen(true);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   // Shared properties of the CC-69 checkout funnel events on this page.
   const payFunnelProps = () => ({
@@ -1235,7 +1288,10 @@ export default function InitiatedPage() {
             <div className="w-full max-w-[400px] flex justify-center">
               <button
                 type="button"
-                onClick={() => setContinueFreeOpen(true)}
+                onClick={() => {
+                  continueFreeTriggerRef.current = "link";
+                  setContinueFreeOpen(true);
+                }}
                 className="body-medium text-surface-gray-muted underline underline-offset-4 py-2 px-3 cursor-pointer"
               >
                 {modalT("continueFree")}
@@ -1246,7 +1302,11 @@ export default function InitiatedPage() {
               onAnswer={handleContinueFreeAnswer}
               onClose={() => {
                 // Dismissed: the student stays here (CC-63).
-                trackPaymentEvent("Continue Free Clicked", { ...payFunnelProps(), reason: "closed" });
+                trackPaymentEvent("Continue Free Clicked", {
+                  ...payFunnelProps(),
+                  reason: "closed",
+                  trigger: continueFreeTriggerRef.current,
+                });
                 setContinueFreeOpen(false);
               }}
             />
