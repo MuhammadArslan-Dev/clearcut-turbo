@@ -48,6 +48,7 @@ import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@clearcut/ui/button";
+import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
@@ -371,6 +372,15 @@ export default function InitiatedPage() {
       );
     },
     onError: (reason) => setPayError(checkoutT(reason === "sdk_failed" ? "errorSdk" : "errorGeneric")),
+    // Razorpay redirect mode in the Facebook/Instagram app (CC-59): the
+    // backend sends the student to /payment/success or /payment/failed.
+    returnParams: {
+      exam_id: courseId,
+      course_name: data?.short_name,
+      price: selectedPrice,
+      source,
+      plan: selectVariant,
+    },
   });
 
   /* ---------------------------------- handlers ---------------------------------- */
@@ -504,6 +514,21 @@ export default function InitiatedPage() {
         key: res.key,
         subscription_id: res.subscription.razorpay_subscription_id,
         name: "Clear Cutoff",
+        // Inside the Facebook/Instagram app the page often dies during the
+        // mandate; Razorpay then returns through the backend (CC-59).
+        ...(isInAppBrowser()
+          ? {
+              callback_url: checkoutReturnUrl({
+                exam_id: courseId,
+                course_name: data?.short_name,
+                price: selectedPrice,
+                source,
+                plan: selectVariant,
+                lang: locale === "en" ? undefined : locale,
+              }),
+              redirect: true,
+            }
+          : {}),
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_subscription_id: string;

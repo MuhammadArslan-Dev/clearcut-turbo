@@ -19,6 +19,16 @@ import {
   pollVerifyPaymentResult,
   type VerifyPollResult,
 } from "@/lib/payment/payment";
+import {
+  checkoutReturnUrl,
+  clearAttempt,
+  getAttemptStatus,
+  isAlreadyPaidError,
+  isInAppBrowser,
+  readAttempt,
+  saveAttempt,
+} from "@/lib/payment/paymentAttempt";
+import { useLocale } from "next-intl";
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@sentry/nextjs";
@@ -48,6 +58,12 @@ type UseRazorpayPaymentProps = {
    * alert() is often suppressed in in-app WebViews (CC-60).
    */
   onError?: (reason: "sdk_failed" | "unknown") => void;
+  /**
+   * Params for the dashboard success/failed page when Razorpay redirects
+   * back instead of calling the handler (Facebook/Instagram app browsers,
+   * CC-59). Without them those browsers keep the in-page checkout.
+   */
+  returnParams?: Record<string, string | number | undefined>;
 };
 
 /**
@@ -74,7 +90,9 @@ export function useRazorpayPayment({
   onClose,
   onPending,
   onError,
+  returnParams,
 }: UseRazorpayPaymentProps) {
+  const locale = useLocale();
   const invalidateQuery = useInvalidateQuery(MY_COURSES_KEY);
   const queryClient = useQueryClient();
   const [loading, setLoading] = React.useState(false);
@@ -96,6 +114,67 @@ export function useRazorpayPayment({
     setLoading(false);
     setPhase("idle");
   };
+
+  // CC-59: the page came back (reload, back from the UPI app, bfcache) with
+  // an attempt from a checkout whose handler never ran. Ask the backend.
+  const latest = React.useRef({ onSuccess, onFailure, examId });
+  latest.current = { onSuccess, onFailure, examId };
+  React.useEffect(() => {
+    let checking = false;
+    const check = async () => {
+      // A checkout open in this page reports through its own handler.
+      if (checking || inFlightRef.current || document.visibilityState === "hidden") return;
+      const attempt = latest.current.examId ? readAttempt(latest.current.examId) : null;
+      if (!attempt) return;
+      checking = true;
+      try {
+        const status = await getAttemptStatus(attempt.transactionId);
+        if (status.state === "paid") {
+          clearAttempt();
+          const meta = status.meta_purchase;
+          if (meta?.send) {
+            trackFacebookEventOnce(
+              "Purchase",
+              {
+                value: meta.value,
+                currency: meta.currency,
+                amount_paid: meta.amount_paid,
+                ...(meta.plan ? { plan: meta.plan } : {}),
+              },
+              meta.event_id,
+            );
+          }
+          trackEvent("Payment Outcome", {
+            outcome: "payment_successful",
+            billing_type: "one_time",
+            final_price: Number(meta?.amount_paid ?? 0),
+            payment_session_id: String(status.transaction_id ?? attempt.transactionId),
+            confirmed_via: "return_check",
+          });
+          await invalidateQuery().catch(() => {});
+          await queryClient.invalidateQueries({ queryKey: CURRENT_COURSE_QUERY_KEY });
+          latest.current.onSuccess();
+        } else if (status.state === "failed") {
+          clearAttempt();
+        }
+      } catch {
+        // Offline or a blip: the next visibility change tries again.
+      } finally {
+        checking = false;
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    void check();
+    window.addEventListener("pageshow", check);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", check);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examId]);
 
   const reportError = (reason: "sdk_failed" | "unknown") => {
     if (onError) onError(reason);
@@ -126,19 +205,38 @@ export function useRazorpayPayment({
       }
 
       // 1️⃣ Create order
-      const order = await sentryApiClient(
-        () =>
-          createOrder({
-            payment_type: authUser?.phone === "+919988776655" ? "test" : "live",
-            course_id: examId,
-            amount: price ?? "",
-            type: type,
-          }),
-        {
-          endpoint: "/create-order",
-          module: "payment-initiation",
-        },
-      );
+      let order;
+      try {
+        order = await sentryApiClient(
+          () =>
+            createOrder({
+              payment_type: authUser?.phone === "+919988776655" ? "test" : "live",
+              course_id: examId,
+              amount: price ?? "",
+              type: type,
+            }),
+          {
+            endpoint: "/create-order",
+            module: "payment-initiation",
+          },
+        );
+      } catch (error) {
+        // Paid a moment ago (a second tap, or the page came back after the
+        // webhook activated it): never open a second checkout (CC-71).
+        if (isAlreadyPaidError(error)) {
+          clearAttempt();
+          await invalidateQuery().catch(() => {});
+          await queryClient.invalidateQueries({ queryKey: CURRENT_COURSE_QUERY_KEY });
+          onSuccess();
+          return;
+        }
+        throw error;
+      }
+      saveAttempt({ transactionId: order.transaction_id, examId });
+      // Inside the Facebook/Instagram app the page often dies while the UPI
+      // app is open; Razorpay then sends the student back through the
+      // backend instead of calling `handler` (CC-59).
+      const redirectMode = Boolean(returnParams) && isInAppBrowser();
 
       // 2️⃣ Razorpay options
       // One Payment Outcome per checkout session: set as soon as a success or a
@@ -152,8 +250,15 @@ export function useRazorpayPayment({
         currency: "INR",
         name: "Clear Cutoff",
         order_id: order.order.id,
+        ...(redirectMode
+          ? {
+              callback_url: checkoutReturnUrl({ ...returnParams, lang: locale === "en" ? undefined : locale }),
+              redirect: true,
+            }
+          : {}),
 
         handler: async (response: any) => {
+          clearAttempt();
           onClose?.();
           setPhase("verifying");
 
@@ -334,6 +439,7 @@ export function useRazorpayPayment({
         const { error } = errorResponse;
 
         outcomeReported = true;
+        clearAttempt();
 
         trackEvent("Payment Outcome", {
           outcome: "payment_failed",
