@@ -1,6 +1,8 @@
 # Phase 30 — CC-119 + CC-128: why autopay success halved, and what broke the signup funnel in October
 
-**Status:** Investigated (2026-10-23). One fix built (BE `phase-30-deleted-account-resignup`, 21f30ca); the rest are findings for RD/Ganesh.
+**Status:** Done (2026-10-23).
+- Investigation complete; the deleted-account login fix is merged and pushed (BE `74897d2`, live).
+- Open, outside the code: production SQL for October autopay by exam; Ganesh's HPTET/HTET ad URLs; Jira comments on CC-119/CC-128.
 **Jira:** [CC-119](https://clear-cutoff.atlassian.net/browse/CC-119), [CC-128](https://clear-cutoff.atlassian.net/browse/CC-128)
 **Repos:** read-only (git history of CM/ASTRO/BE, Amplitude, Sentry, Clarity); fixes later
 **Size:** medium (analysis)
@@ -103,7 +105,7 @@ GROUP BY m, exam ORDER BY m, exam;
   - It is `Duplicate entry '+91…' for key users_phone_unique`.
   - The number belongs to a **deleted account** (soft-deleted row, e.g. user 4354, deleted 14 Sep). `users.phone` is unique across deleted rows too, so anyone who deleted their account could never sign up or log in again on any path. The race-retry in `login()` couldn't help: the default query hides deleted rows.
   - 63 such accounts in the 23-Sep copy. LARAVEL-BACKEND-HG (Truecaller login failed, 16) is likely the same.
-  - **Fix (user's choice: new empty account):** `User::creating` frees the number. The deleted row's phone becomes `x<id>-<last 10 digits>` and keeps its data; a new account is created.
+  - **Fix (user's choice: new empty account; merged + pushed 2026-10-23, BE `74897d2`):** `User::creating` frees the number. The deleted row's phone becomes `x<id>-<last 10 digits>` and keeps its data; a new account is created.
   - Verified in a rolled-back transaction: the deleted number logs in (200) with a new account; a second login reuses it; a fresh number still works.
 
 ## Proposed next tickets
