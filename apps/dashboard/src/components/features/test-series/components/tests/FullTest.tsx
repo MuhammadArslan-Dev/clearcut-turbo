@@ -380,7 +380,9 @@ export const ChangePaperButton = () => {
   // frame doesn't render on its own (empty) between the md and 2md
   // breakpoints, when previously only the inner pill hid there.
   return (
-    <div className="hidden 2md:flex max-w-[400px] items-center px-4 py-3 md:rounded-xl md:border md:border-brand bg-white">
+    // w-fit (not max-w-[400px]): "Current Paper : <long paper name>" plus the
+    // button is wider than 400px, and the pill overflowed the bordered card.
+    <div className="hidden 2md:flex w-fit max-w-full items-center px-4 py-3 md:rounded-xl md:border md:border-brand bg-white">
       <div className="flex items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-3">
         <Text
           as="span"
@@ -404,7 +406,7 @@ export const ChangePaperButton = () => {
         >
           <div className="flex items-center gap-2">
             <span className="body-small !font-semibold hidden lg:block">
-              {changeP("title")}
+              {changeP("change_paper")}
             </span>
             <CircleIcon size={20} color="#0083ff" />
           </div>
