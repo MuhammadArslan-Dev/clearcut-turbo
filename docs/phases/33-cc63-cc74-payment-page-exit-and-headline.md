@@ -61,6 +61,29 @@
   - A reason with history → back.
   - tsc clean; eslint equal to main (44 = 44); check:colors passes.
 
+## Event names corrected (2026-10-23, user's rule: reuse existing events)
+The first version created new snake_case events next to existing ones. Now:
+
+| Moment | Event (existing unless marked new) | Properties added |
+|---|---|---|
+| Payment page opened | Purchase Intent Initiated | exam, plan, price, source, language, in_app_browser |
+| Plan changed | Plan Switched | exam, plan, price, source, language, in_app_browser |
+| Pay tapped / autopay checkout created | Payment Initiated | plan, price, source, language, in_app_browser (+ `resumed_session` allowed in payment_flow) |
+| Razorpay checkout opened | **Checkout Opened** (new) | billing_type + the same context |
+| Paid / failed / cancelled in checkout | Payment Outcome | error_code, error_reason (failed) + the context |
+| "Continue free" sheet resolved | **Continue Free Clicked** (new) | reason: expensive / exploring / later / payment_issue / skipped / closed + the context |
+| Test saved after end-exam | Test Submitted (catalog, never sent before) | exam, course_id, section_name, total_questions, language |
+| Test left (page closed / 30 min idle) | **Test Abandoned** (new) | test_id, test_type, course_id, reason, answered |
+| Report opened / tab | Performance Report Viewed / Performance Report Tab Viewed (catalog, never sent before) | — |
+| Cancel flow steps | **Cancel Started / Cancel Reason Selected / Save Offer Shown / Save Offer Accepted** (new, renamed from snake_case) | unchanged |
+| Cancel/pause/resume done in the app | Subscription Status Updated | subscription_id, source: app, reason, note |
+| Server: paid / renewal | Payment Completed (name already in Amplitude) | plan, price, billing_type, payment_method, is_renewal, renewal_count, days_since_first_payment, exam, course_id |
+| Server: pending / halted / completed, or cancel/pause/resume by Razorpay | Subscription Status Updated | new_status, plan_name, exam_id, exam_name, subscription_id, source: razorpay, cancelled_by |
+| Resizer (tools) | **Resizer Image Uploaded / Processed / Downloaded, Resizer Process Another Clicked** (renamed to Title Case) | unchanged |
+
+- Clarity gets the same names through `trackPaymentEvent` (lib/analytics/paymentFunnel.ts).
+- Removed names: pay_page_view, plan_selected, pay_tap, rzp_opened, rzp_dismissed, rzp_failed, continue_free_tap, continue_free_reason, test_submitted, test_abandoned, report_viewed, cancel_started, cancel_reason_selected, save_offer_shown, save_offer_accepted, subscription_cancelled, subscription_paused, resizer_*, and server paid, subscription_renewed, renewal_failed, subscription_halted/cancel_confirmed/pause_confirmed/resumed/completed.
+
 ## Plan
 - [ ] **CC-63:**
   - Measure the tap → navigation time first.

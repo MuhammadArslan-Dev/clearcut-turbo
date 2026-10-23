@@ -61,16 +61,16 @@ export default function CancelFlowContent({
   const props = { subscription_id: String(subscriptionId), course_name: courseName };
 
   useEffect(() => {
-    trackEvent("cancel_started", props);
+    trackEvent("Cancel Started", props);
     // once per opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const goNext = () => {
     if (!reason) return;
-    trackEvent("cancel_reason_selected", { ...props, reason });
+    trackEvent("Cancel Reason Selected", { ...props, reason });
     if (offer && offer !== "congrats") {
-      trackEvent("save_offer_shown", { ...props, reason, offer });
+      trackEvent("Save Offer Shown", { ...props, reason, offer });
       setStep("offer");
     } else {
       setStep("confirm");
@@ -141,7 +141,7 @@ export default function CancelFlowContent({
 
   if (step === "offer" && reason && offer) {
     const accept = () => {
-      trackEvent("save_offer_accepted", { ...props, reason, offer });
+      trackEvent("Save Offer Accepted", { ...props, reason, offer });
       if (offer === "pause") onPause(reason);
       if (offer === "whatsapp") {
         window.open(

@@ -1,5 +1,7 @@
 // src/lib/analytics/events/monetization.ts
 
+import type { PayContext } from '../paymentFunnel';
+
 export type MonetizationEventName =
   | 'Payment Paywall Rendered'
   | 'Plan Switched'
@@ -8,37 +10,14 @@ export type MonetizationEventName =
   | 'Payment Outcome'
   | 'Subscription Status Updated'
   | 'Support Contacted'
-  | 'cancel_started'
-  | 'cancel_reason_selected'
-  | 'save_offer_shown'
-  | 'save_offer_accepted'
-  | 'subscription_cancelled'
-  | 'subscription_paused'
-  | PayFunnelEventName;
+  | 'Cancel Started'
+  | 'Cancel Reason Selected'
+  | 'Save Offer Shown'
+  | 'Save Offer Accepted'
+  // New moments with no existing event (CC-69 / CC-63), same naming style.
+  | 'Checkout Opened'
+  | 'Continue Free Clicked';
 
-/** Checkout funnel, CC-69 (lib/analytics/paymentFunnel.ts). */
-export type PayFunnelEventName =
-  | 'pay_page_view'
-  | 'plan_selected'
-  | 'pay_tap'
-  | 'rzp_opened'
-  | 'rzp_dismissed'
-  | 'rzp_failed'
-  | 'continue_free_tap'
-  | 'continue_free_reason';
-
-export type PayFunnelProps = {
-  exam?: string;
-  /** "149_autopay" / "229_onetime" / "799_annual". */
-  plan: string;
-  price: number;
-  source?: string;
-  language: string;
-  in_app_browser: 'fb' | 'ig' | 'none';
-  /** rzp_failed only: Razorpay error.code / error.reason. */
-  error_code?: string;
-  error_reason?: string;
-};
 
 export interface MonetizationEventPayloads {
   'Payment Paywall Rendered': {
@@ -66,15 +45,14 @@ export interface MonetizationEventPayloads {
     // 1 for the first switch on this page visit, 2 for the second, …
     switch_number: number;
     currency: 'INR';
-  };
+  } & PayContext;
 
-  // Cancel flow on the Subscriptions tab (CC-97).
-  'cancel_started': { subscription_id: string; course_name: string };
-  'cancel_reason_selected': { subscription_id: string; course_name: string; reason: string };
-  'save_offer_shown': { subscription_id: string; course_name: string; reason: string; offer: string };
-  'save_offer_accepted': { subscription_id: string; course_name: string; reason: string; offer: string };
-  'subscription_cancelled': { subscription_id: string; course_name: string; reason: string; note?: string };
-  'subscription_paused': { subscription_id: string; course_name: string; reason?: string };
+  // Cancel flow on the Subscriptions tab (CC-97). The cancel/pause itself is
+  // the existing 'Subscription Status Updated' (source: app).
+  'Cancel Started': { subscription_id: string; course_name: string };
+  'Cancel Reason Selected': { subscription_id: string; course_name: string; reason: string };
+  'Save Offer Shown': { subscription_id: string; course_name: string; reason: string; offer: string };
+  'Save Offer Accepted': { subscription_id: string; course_name: string; reason: string; offer: string };
 
   // Student opened WhatsApp/phone support (e.g. from /payment/failed, CC-64).
   'Support Contacted': {
@@ -82,17 +60,19 @@ export interface MonetizationEventPayloads {
     channel: 'whatsapp' | 'phone';
   };
 
+  // Payment page opened. PayContext added for the CC-69 funnel.
   'Purchase Intent Initiated': {
     entry_point: string;
     product_id: string;
-  };
+  } & PayContext;
 
+  // Pay tap (one-time) / autopay checkout created. PayContext: CC-69.
   'Payment Initiated': {
     exam_name: string;
-    payment_flow: 'new_attempt' | 'retry_attempt';
+    payment_flow: 'new_attempt' | 'retry_attempt' | 'resumed_session';
     final_price: number;
     payment_attempt?: number;
-  };
+  } & PayContext;
 
   'Payment Outcome': {
     outcome: 'payment_successful' | 'payment_failed';
@@ -108,24 +88,34 @@ export interface MonetizationEventPayloads {
     // return_check = the payment page came back (in-app browser killed it
     // during UPI) and the backend confirmed the payment (CC-59).
     confirmed_via?: 'return_check';
-  };
+    // Razorpay's own error.code / error.reason on a failed payment (CC-69).
+    error_code?: string;
+    error_reason?: string;
+  } & PayContext;
 
+  // Razorpay checkout actually opened (no existing event covered it, CC-69).
+  'Checkout Opened': {
+    billing_type: 'auto_renew' | 'one_time';
+  } & PayContext;
+
+  // "Continue free learning" → "Why not now?" (CC-63). One event when the
+  // sheet resolves; 'closed' = sheet dismissed, student stayed on the page.
+  'Continue Free Clicked': {
+    reason: 'expensive' | 'exploring' | 'later' | 'payment_issue' | 'skipped' | 'closed';
+  } & PayContext;
+
+  // A subscription's status changed. source app = the student did it in the
+  // Subscriptions tab (CC-97, with the reason); the backend sends the ones
+  // Razorpay reports (CC-98).
   'Subscription Status Updated': {
-    new_status: 'active' | 'expired' | 'cancelled';
+    new_status: 'active' | 'expired' | 'cancelled' | 'paused';
     plan_name: string;
     exam_id: string;
     exam_name: string;
+    subscription_id?: string;
+    source?: 'app';
+    reason?: string;
+    note?: string;
   };
 
-  'pay_page_view': PayFunnelProps;
-  'plan_selected': PayFunnelProps;
-  'pay_tap': PayFunnelProps;
-  'rzp_opened': PayFunnelProps;
-  'rzp_dismissed': PayFunnelProps;
-  'rzp_failed': PayFunnelProps;
-  'continue_free_tap': PayFunnelProps;
-  // CC-63: the answer to "Why not now?" (Amplitude only, by the user's decision).
-  'continue_free_reason': PayFunnelProps & {
-    reason: 'expensive' | 'exploring' | 'later' | 'payment_issue' | 'skipped';
-  };
 }

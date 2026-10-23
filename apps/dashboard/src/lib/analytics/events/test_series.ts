@@ -15,39 +15,16 @@ export type TestSeriesEventName =
   | 'Performance Report Shared'
   | 'Report Question Expanded'
   | 'Test Retake Initiated'
-  // CC-103 completion funnel (lib/analytics/testFunnel.ts).
-  | 'test_submitted'
-  | 'test_abandoned'
-  | 'report_viewed';
+  // CC-103: left an in-progress test (no existing event covered it).
+  | 'Test Abandoned';
 
 export interface TestSeriesEventPayloads {
-  'test_submitted': {
-    test_id: string;
-    test_type: string;
-    exam?: string;
-    course_id?: string;
-    section_name?: string;
-    total_questions: number;
-    correct: number;
-    wrong: number;
-    unattempted: number;
-    score_percent: number;
-    time_taken_seconds?: number;
-    submission_reason: 'manual' | 'time_up';
-    language: string;
-  };
-
-  'test_abandoned': {
+  'Test Abandoned': {
     test_id: string;
     test_type: string;
     course_id?: string;
     reason: 'page_closed' | 'idle_30m';
     answered: number;
-  };
-
-  'report_viewed': {
-    test_id: string;
-    tab: string;
   };
 
   'Test List Filtered': {
@@ -108,31 +85,37 @@ export interface TestSeriesEventPayloads {
     question_state_on_departure: string;
   };
 
+  // Sent since CC-103 (lib/analytics/testFunnel.ts) after end-exam saved it.
   'Test Submitted': {
     test_id: string;
     test_type: string;
     test_session_id: string;
-    attempt_number: number;
+    attempt_number?: number;
     correct_count: number;
     incorrect_count: number;
     unattempted_count: number;
     score: number;
     percent_score: number;
     submission_reason: string;
-    time_taken_seconds: number;
+    time_taken_seconds?: number;
+    exam?: string;
+    course_id?: string;
+    section_name?: string;
+    total_questions?: number;
+    language?: string;
   };
 
   'Performance Report Viewed': {
     test_id: string;
     test_type: string;
-    attempt_number: number;
+    attempt_number?: number;
     score: number;
     entry_point: string;
   };
 
   'Performance Report Tab Viewed': {
     test_id: string;
-    attempt_number: number;
+    attempt_number?: number;
     tab_name: string;
   };
 

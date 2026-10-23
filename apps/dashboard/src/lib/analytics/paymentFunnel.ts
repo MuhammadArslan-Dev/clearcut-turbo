@@ -1,23 +1,42 @@
 import { trackEvent } from "./browser";
-import type { PayFunnelEventName, PayFunnelProps } from "./events/monetization";
+import type { AnalyticsEventName, AnalyticsEventPayload } from "./types";
 
 /**
- * The checkout funnel (CC-69): the same event names in Amplitude and in
- * Clarity, so a session recording can be found from a funnel step and the
- * other way round. These sit next to the older events (Payment Initiated,
- * Payment Outcome, Plan Switched…), which keep firing unchanged. `paid`
- * itself comes from the backend webhook (BE PaymentAnalytics), the one
- * source an in-app browser killing the page can't lose.
+ * The checkout funnel (CC-69) uses the EXISTING payment events —
+ * Purchase Intent Initiated (page open), Plan Switched, Payment Initiated
+ * (pay tap), Payment Outcome (paid / failed / cancelled) — with the extra
+ * properties of `PayContext`. Only moments no event covered got a new one,
+ * in the same naming style: Checkout Opened, Continue Free Clicked.
+ * The backend's Payment Completed is the paid source an in-app browser
+ * can't lose.
+ *
+ * `trackPaymentEvent` sends the event to Amplitude as usual and mirrors the
+ * same name to Clarity, so a recording can be found from a funnel step.
  */
-export function trackPayFunnel(name: PayFunnelEventName, props: PayFunnelProps) {
-  trackEvent(name, props);
+export type PayContext = {
+  exam?: string;
+  /** "149_autopay" / "229_onetime" / "799_annual". */
+  plan?: string;
+  price?: number;
+  /** Where the student came from (`?source=` on the payment page). */
+  source?: string;
+  language?: string;
+  in_app_browser?: "fb" | "ig" | "none";
+};
+
+export function trackPaymentEvent<TName extends AnalyticsEventName>(
+  name: TName,
+  payload: AnalyticsEventPayload<TName>,
+) {
+  trackEvent(name, payload);
 
   try {
     if (typeof window === "undefined" || !window.clarity) return;
     window.clarity("event", name);
-    window.clarity("set", "pay_plan", props.plan);
-    if (props.exam) window.clarity("set", "pay_exam", props.exam);
-    window.clarity("set", "in_app_browser", props.in_app_browser);
+    const ctx = payload as PayContext;
+    if (ctx.plan) window.clarity("set", "pay_plan", ctx.plan);
+    if (ctx.exam) window.clarity("set", "pay_exam", ctx.exam);
+    if (ctx.in_app_browser) window.clarity("set", "in_app_browser", ctx.in_app_browser);
   } catch {
     // Clarity is best-effort.
   }
@@ -31,7 +50,7 @@ export function payPlanLabel(variant: string, price: number | string | undefined
   return `${rupees}_onetime`;
 }
 
-export function inAppBrowserKind(): PayFunnelProps["in_app_browser"] {
+export function inAppBrowserKind(): NonNullable<PayContext["in_app_browser"]> {
   if (typeof navigator === "undefined") return "none";
   const ua = navigator.userAgent;
   if (/Instagram/i.test(ua)) return "ig";
