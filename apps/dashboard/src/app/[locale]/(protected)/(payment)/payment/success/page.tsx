@@ -16,6 +16,8 @@ import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import Text from "@clearcut/ui/text";
+import { clearAttempt, getAttemptStatus } from "@/lib/payment/paymentAttempt";
+import { trackFacebookEventOnce } from "@/lib/analytics/facebook-pixel";
 
 const FEATURES = ["featureVideos", "featureNotes", "featureTests"] as const;
 
@@ -41,6 +43,31 @@ export default function Success() {
       router.push("/dashboard");
     }
   }, [courseId, router]);
+
+  // Razorpay redirect mode (Facebook/Instagram app, CC-59) lands here from
+  // the backend with `tx`; the in-page handler that sends Meta's Purchase
+  // never ran, so send it here (same event id, so never twice).
+  const returnedTx = Number(get("tx"));
+  useEffect(() => {
+    if (!returnedTx) return;
+    clearAttempt();
+    getAttemptStatus(returnedTx)
+      .then((status) => {
+        const meta = status.state === "paid" ? status.meta_purchase : undefined;
+        if (!meta?.send) return;
+        trackFacebookEventOnce(
+          "Purchase",
+          {
+            value: meta.value,
+            currency: meta.currency,
+            amount_paid: meta.amount_paid,
+            ...(meta.plan ? { plan: meta.plan } : {}),
+          },
+          meta.event_id,
+        );
+      })
+      .catch(() => {});
+  }, [returnedTx]);
 
   const course = allCourses?.find((c) => c?.group_code === courseId);
   const data = course?.exam;

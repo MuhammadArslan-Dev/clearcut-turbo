@@ -57,7 +57,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 24 | [Start-here guide on preparation](24-cc79-start-here-guide.md) | CC-79 | CM-dashboard | Built, verified locally (not merged) | Ganesh reviews hi/mr copy |
 | 25 | [Cancel flow: reason + offer + confirmation](25-cc97-cancel-flow.md) | CC-97 | CM-dashboard | Built, verified locally (not merged) | RD: 'too expensive' offer; confirm WhatsApp no. |
 | 26 | [Paid access expiry + deleted-account billing](26-cc129-cc120-paid-access-expiry.md) | CC-129, CC-120 | BE, CM-dashboard | Built, verified locally (not merged) | Run preview SQL → RD → then merge; backfill dry-run on server; ops: cancel #118/#1530 |
-| 27 | [One order per attempt + FB/IG app payments](27-cc71-cc59-payment-reliability.md) | CC-71, CC-59 (+CC-49) | BE, CM-dashboard | Not Started — very important | D1 client-trusted amount fix; D2 redirect mode scope; ops: auto-capture |
+| 27 | [One order per attempt + FB/IG app payments](27-cc71-cc59-payment-reliability.md) | CC-71, CC-59 (+CC-49) | BE, CM-dashboard | Built, verified locally (not merged) | Real FB/IG phone test; ops: auto-capture on + capture stuck authorized; prod check SQL in file |
 | 28 | [Meta Pixel: test-traffic block, fbc, ex-GST, fee](28-cc115-cc130-cc131-cc132-meta-pixel.md) | CC-115, CC-130, CC-131, CC-132 | CM, ASTRO, (BE) | Not Started | Meta-only block (user); fbc browser-only (user); D1 CAPI value |
 | 29 | [Checkout + renewal events](29-cc69-cc98-checkout-renewal-events.md) | CC-69, CC-98 | CM-dashboard, BE | Not Started | D1 phone as user prop; D2 event name clash |
 | 30 | [Investigate autopay drop + signup funnel break](30-cc119-cc128-funnel-investigations.md) | CC-119, CC-128 | read-only | Not Started | Inputs from Ganesh/RD in Jira |
