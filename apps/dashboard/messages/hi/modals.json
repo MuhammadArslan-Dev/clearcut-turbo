@@ -210,6 +210,7 @@
     "paymentMethods": "यूपीआई / कार्ड / नेट बैंकिंग",
     "continueFreeReasonTitle": "अभी क्यों नहीं?",
     "continueFreeReason_expensive": "महँगा है",
+    "continueFreeReason_prefer_one_time": "ऑटोपे नहीं, एक बार पेमेंट करना है",
     "continueFreeReason_exploring": "अभी और देखना है",
     "continueFreeReason_later": "बाद में लूँगा/लूँगी",
     "continueFreeReason_payment_issue": "पेमेंट में दिक्कत है",

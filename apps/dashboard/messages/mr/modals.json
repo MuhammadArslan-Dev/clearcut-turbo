@@ -62,6 +62,7 @@
     "paymentMethods": "UPI / कार्ड / नेट बँकिंग",
     "continueFreeReasonTitle": "आत्ता का नाही?",
     "continueFreeReason_expensive": "महाग आहे",
+    "continueFreeReason_prefer_one_time": "ऑटोपे नको, एकदाच पेमेंट करायचे आहे",
     "continueFreeReason_exploring": "अजून पाहायचे आहे",
     "continueFreeReason_later": "नंतर घेईन",
     "continueFreeReason_payment_issue": "पेमेंट करताना अडचण येत आहे",

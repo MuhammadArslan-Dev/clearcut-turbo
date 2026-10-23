@@ -61,6 +61,7 @@
     "paymentMethods": "UPI / Card / Net banking",
     "continueFreeReasonTitle": "Why not now?",
     "continueFreeReason_expensive": "It's too expensive",
+    "continueFreeReason_prefer_one_time": "I want to pay once, not autopay",
     "continueFreeReason_exploring": "I want to explore more first",
     "continueFreeReason_later": "I'll buy later",
     "continueFreeReason_payment_issue": "I'm having trouble paying",

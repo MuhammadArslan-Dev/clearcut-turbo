@@ -437,6 +437,11 @@ export default function InitiatedPage() {
       trigger: continueFreeTriggerRef.current,
     });
     setContinueFreeOpen(false);
+    // Wants to buy, just not autopay: show the one-time plan and stay.
+    if (reason === "prefer_one_time") {
+      handleSelectVariant("1month-onetime");
+      return;
+    }
     if (reason === "payment_issue") {
       window.open(
         supportWhatsAppUrl(modalT("continueFreePaymentHelp", { course: data?.short_name ?? "" })),
@@ -1300,6 +1305,7 @@ export default function InitiatedPage() {
             <ContinueFreeSheet
               isOpen={continueFreeOpen}
               onAnswer={handleContinueFreeAnswer}
+              showOneTimeOption={selectVariant === "1month"}
               onClose={() => {
                 // Dismissed: the student stays here (CC-63).
                 trackPaymentEvent("Continue Free Clicked", {
