@@ -25,9 +25,17 @@ export default function PaywallFloatingWidget() {
   const priceRowOuterRef = useRef<HTMLDivElement>(null);
   const priceRowRef = useRef<HTMLDivElement>(null);
 
+  // Trial, trial ended, and — since CC-129 — a paid plan that ended
+  // (expired) or is in its last grace days: all of them need a way to pay.
+  const accessState = course?.access?.state;
+  const graceDaysLeft = course?.access?.grace_days_left ?? null;
   const hasActive = useMemo(
-    () => course?.status === "trial" || course?.status === "trial_end",
-    [course?.status],
+    () =>
+      course?.status === "trial" ||
+      course?.status === "trial_end" ||
+      course?.status === "expired" ||
+      accessState === "grace",
+    [course?.status, accessState],
   );
 
   // Mobile: the price row collapses 1:1 with the Topbar's scroll-hide —
@@ -95,6 +103,11 @@ export default function PaywallFloatingWidget() {
           bordercolor="var(--color-brand)"
         >
           <div className="flex w-full flex-col">
+            {accessState === "grace" && graceDaysLeft !== null && (
+              <p role="status" className="body-small !font-semibold text-[var(--color-danger)] mb-2">
+                {t("planEnding.grace", { days: graceDaysLeft })}
+              </p>
+            )}
             <div ref={priceRowOuterRef} style={{ marginBottom: 12 }} className="overflow-hidden">
               <div ref={priceRowRef} className="flex items-center justify-between gap-2">
                 <Text as="h6" variant="heading-large" weight="semibold">
@@ -120,7 +133,11 @@ export default function PaywallFloatingWidget() {
 
             <Button
               onClick={() => {
-                handleOpenPaywall(router, "floating_widget_clicked", course);
+                handleOpenPaywall(
+                  router,
+                  accessState === "grace" ? "plan_grace_widget" : "floating_widget_clicked",
+                  course,
+                );
               }}
               size="md"
               rounded="50px"

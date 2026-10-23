@@ -95,3 +95,14 @@ export function isNetworkFailure(error: unknown): boolean {
 export function truncateBody(body: string, max = 1000): string {
   return body.length > max ? `${body.slice(0, max)}… (truncated)` : body;
 }
+
+/** The backend's machine-readable `error_code` (CC-87) from a failed request, if any. */
+export function apiErrorCode(err: unknown): string | null {
+  if (!(err instanceof ApiError) || !err.responseBody) return null;
+  try {
+    const code = JSON.parse(err.responseBody)?.error_code;
+    return typeof code === "string" ? code : null;
+  } catch {
+    return null;
+  }
+}
