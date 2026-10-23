@@ -265,6 +265,12 @@ export function createOtpScreen({
       try {
         await authApi.loginUser({ phone });
         setResendTimer(RESEND_INTERVAL);
+        // CC-54: a new OTP is on its way, so the old code must not stay in
+        // the field, and the input is remounted (+ refocused) so the
+        // keyboard's one-time-code chip offers the NEW SMS, not the old one.
+        setOtp("");
+        setError("");
+        setOtpFieldKey((k) => k + 1);
 
         resendCountRef.current += 1;
         trackVerificationResent(onEvent, phone, resendCountRef.current);

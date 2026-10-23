@@ -48,8 +48,10 @@ export function buildPostVerifyRedirectUrl(
   // landed on English onboarding (CC-106).
   const localePrefix = lang === "hi" || lang === "mr" ? `/${lang}` : "";
 
+  // A returning student (has a course) also stays in the page's language
+  // (CC-89); `/dashboard` was always English.
   let redirectUrl = hasCourse
-    ? `${baseUrl}/dashboard?token=${encodedToken}&user_type=${userType}`
+    ? `${baseUrl}${localePrefix}/dashboard?token=${encodedToken}&user_type=${userType}`
     : `${baseUrl}${localePrefix}/onboarding?token=${encodedToken}&lang=${encodedLang}`;
 
   if (!hasCourse && selectedCourse) {

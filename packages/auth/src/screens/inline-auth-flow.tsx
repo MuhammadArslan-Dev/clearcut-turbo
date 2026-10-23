@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import WhatsappIcon from "../icons/whatsapp-icon";
 import FireIcon from "../icons/fire-icon";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl, createLeadId } from "../redirect";
+import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
@@ -194,6 +194,11 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         if (isResend) {
           resendCountRef.current += 1;
           trackVerificationResent(onEvent, number, resendCountRef.current);
+          // CC-54: a new OTP is on its way, so the old code must not stay in
+          // the field, and the input is remounted (+ refocused) so the
+          // keyboard's one-time-code chip offers the NEW SMS, not the old one.
+          setOtp("");
+          setOtpFieldKey((k) => k + 1);
         } else {
           resendCountRef.current = 0;
           trackVerificationSent(onEvent, number, { source: "onboarding_steps" });
@@ -242,7 +247,11 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
       // One Authentication Outcome per attempt (see otp-screen.tsx).
       let outcomeTracked = false;
       try {
-        const lang = localStorage.getItem("locale") || "";
+        // The language of the page the student is on (CC-89), like every
+        // other login screen. It read localStorage "locale", which nothing
+        // writes: always "" → `?lang=` empty → English onboarding even for a
+        // Hindi or Marathi signup.
+        const lang = getCurrentLocale();
         const course = localStorage.getItem("course");
         const res = await authApi.verifyOtp({ phone, otp: finalOtp });
         const { data, status } = res.data;

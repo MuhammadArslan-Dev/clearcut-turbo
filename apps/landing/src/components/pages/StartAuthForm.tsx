@@ -525,6 +525,12 @@ export default function StartAuthForm({
     try {
       await authApi.loginUser({ phone, user_id: userId || undefined });
       setResendTimer(RESEND_INTERVAL);
+      // CC-54: a new OTP is on its way, so the old code must not stay in
+      // the field, and the input is remounted (+ refocused) so the
+      // keyboard's one-time-code chip offers the NEW SMS, not the old one.
+      setOtp("");
+      setError("");
+      setOtpRefocusKey((k) => k + 1);
 
       resendCountRef.current += 1;
       trackVerificationResent(logAmplitudeEvent, phone, resendCountRef.current);
