@@ -1,6 +1,6 @@
 # Phase 40 — CC-122: from a Facebook/Instagram in-app browser, the /go CTA opens /start in Chrome
 
-**Status:** Planned (2026-10-24)
+**Status:** Built + verified locally (2026-10-24). ASTRO branch `phase-40-cc122-iab-to-chrome` (4f7b3e9, on top of Phase 36), CM branch `phase-40-cc122-iab-to-chrome` (on top of Phase 39). Not pushed. Real Android phone test still needed.
 **Jira:** [CC-122](https://clear-cutoff.atlassian.net/browse/CC-122)
 **Repos:** ASTRO `apps/go-marketing` (the user's WIP on main must be stashed around this work and restored), CM `apps/landing` (`/start` side)
 **Size:** medium
@@ -51,3 +51,43 @@ The ticket itself asks for more: a separate `-v2` landing variant with an A/B te
 - Separate `-v2` variant page + A/B split (CC-123 monitors it).
 - Meta CAPI Lead/Purchase (there is no CAPI yet).
 - Logged-in skip to the dashboard.
+
+## What was built
+- **ASTRO**
+  - `StartLinkEnhancer.astro`: on Android + FB/IG in-app browser (same UA markers as Truecaller's IAB check), a tap on a `/start` CTA:
+    1. sends `Chrome Escape` `{result: attempted, browser_context}`;
+    2. flushes it (≤300 ms);
+    3. opens `intent://clearcutoff.in/start?…#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=<plain link>;end`.
+  - Carried into Chrome: the link's params + utm/fbclid, `fbp`/`fbc` (from the `_fbp`/`_fbc` cookies), `ampDeviceId`, `src=iab_escape`, `iab=instagram_iab|facebook_iab`.
+  - If the page is still in front 1.5 s later: `Chrome Escape failed` (flushed), then the plain link opens in the app.
+  - A `visibilitychange` guard stops this from firing when the student comes back to the app after Chrome opened.
+  - `PUBLIC_IAB_ESCAPE=off` (build env) turns it off.
+  - `@repo/analytics/amplitude`: `flushAmplitude()`, `getAmplitudeDeviceId()`.
+- **CM**
+  - `packages/utils/meta-fbc.ts` `persistFbcFromUrl()`: an `fbc` param in Meta's format is written as `_fbc` exactly (original timestamp kept; a fresh one would break the click window). An `fbp` param is written as `_fbp` only when the browser has none. Otherwise the old fbclid logic applies. 4 new tests with a real cookie-jar fake.
+  - Landing `services/analytics.ts`: after init, `src=iab_escape` → `Chrome Escape {result: opened, browser_context}`.
+  - The Amplitude SDK itself adopts `ampDeviceId` from the URL (checked in the SDK source), so no extra code was needed for that.
+- **Not built** (rest of the ticket):
+  - A separate `-v2` variant + A/B split.
+  - Pixel `CTA_Click`.
+  - Server CAPI.
+  - Logged-in skip to the dashboard.
+
+## Verification (2026-10-24, local)
+- **ASTRO production build on `localhost:4330`, Playwright with real UA strings.** Requests to `clearcutoff.in/start` and `amplitude.com` were stubbed.
+  - Android Instagram and Android Facebook:
+    - the intent URL carries every param above with the right `iab` value;
+    - Chrome can't open from a desktop browser, so the fallback ran: the plain `/start` link opened ~1.5 s later;
+    - events: `attempted` then `failed`. Before the flush fix, `failed` was lost on navigation.
+  - iOS Instagram and Android Chrome: no intent, normal link, no events.
+- **Landing `/start` (dev)** with `fbc`/`fbp`/`ampDeviceId=iab-device-0001`/`src=iab_escape`:
+  - `_fbc` and `_fbp` equal the passed values;
+  - every Amplitude event (incl. Authentication Initiated etc.) has device id `iab-device-0001`, i.e. the same user as the IAB session;
+  - `Chrome Escape opened/instagram_iab` was sent.
+- utils tests 92/92. Landing typecheck clean, lint unchanged.
+
+## Still needed
+- A real Android phone:
+  - open a `/go` link from an Instagram DM and from the Facebook app, then tap the CTA → Chrome opens `/start`, login works;
+  - test without Chrome / with Chrome disabled → the fallback works.
+- iOS: confirm nothing changed.

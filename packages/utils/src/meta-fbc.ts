@@ -8,8 +8,15 @@
 // `fbclid` opens, on the whole clearcutoff.in domain so every subdomain's
 // pixel (landing, /go, dashboard, academy) reads the same click id.
 // Format is Meta's: fb.<subdomainIndex>.<creationTimeMs>.<fbclid>.
+//
+// Chrome hand-off (CC-122): a /go page opened in the Facebook/Instagram app
+// passes its own `_fbc` / `_fbp` values as `fbc` / `fbp` params. Those exact
+// values are kept (a fresh timestamp would break Meta's click window), and
+// `_fbp` is written only when this browser has none yet.
 
 const FBC_COOKIE = "_fbc";
+const FBP_COOKIE = "_fbp";
+const META_COOKIE_VALUE = /^fb\.\d\.\d{10,}\.[\w.-]{1,500}$/;
 const FBC_MAX_AGE_S = 90 * 24 * 60 * 60;
 
 export function buildFbc(fbclid: string, nowMs: number): string {
@@ -33,18 +40,34 @@ function readCookie(name: string): string | null {
 export function persistFbcFromUrl(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   try {
-    const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+    const params = new URLSearchParams(window.location.search);
+    const domain = fbcCookieDomain(window.location.hostname);
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    const write = (name: string, value: string) => {
+      document.cookie =
+        `${name}=${encodeURIComponent(value)}` +
+        `; Path=/; Max-Age=${FBC_MAX_AGE_S}; SameSite=Lax${secure}` +
+        (domain ? `; Domain=${domain}` : "");
+    };
+
+    // Handed off from an in-app browser: keep its browser id if we have none.
+    const fbp = params.get("fbp");
+    if (fbp && META_COOKIE_VALUE.test(fbp) && !readCookie(FBP_COOKIE)) write(FBP_COOKIE, fbp);
+
+    // ...and its exact click id, timestamp included.
+    const fbc = params.get("fbc");
+    if (fbc && META_COOKIE_VALUE.test(fbc)) {
+      if (readCookie(FBC_COOKIE) !== fbc) write(FBC_COOKIE, fbc);
+      return;
+    }
+
+    const fbclid = params.get("fbclid");
     if (!fbclid || fbclid.length > 500) return;
 
     const existing = readCookie(FBC_COOKIE);
     if (existing && existing.endsWith(`.${fbclid}`)) return;
 
-    const domain = fbcCookieDomain(window.location.hostname);
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie =
-      `${FBC_COOKIE}=${encodeURIComponent(buildFbc(fbclid, Date.now()))}` +
-      `; Path=/; Max-Age=${FBC_MAX_AGE_S}; SameSite=Lax${secure}` +
-      (domain ? `; Domain=${domain}` : "");
+    write(FBC_COOKIE, buildFbc(fbclid, Date.now()));
   } catch {
     // Cookies blocked: the pixel's own handling still applies.
   }

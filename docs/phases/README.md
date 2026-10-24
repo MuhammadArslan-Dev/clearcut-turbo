@@ -70,7 +70,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 37 | [Payment headline by source](37-cc74-payment-headline-by-source.md) | CC-74 | CM-dashboard | Built + verified locally (branch, not pushed) | Push approval |
 | 38 | [Sentry page + language tags](38-cc95-sentry-page-language-tags.md) | CC-95 | CM-dashboard, CM-landing | Built + verified locally (branch, not pushed) | SENTRY_AUTH_TOKEN check on server; top-5 after a week |
 | 39 | [Email to Meta + Amplitude](39-cc113-email-to-meta-and-amplitude.md) | CC-113 | CM-dashboard, packages/utils | Built + verified locally (branch, not pushed) | Push approval; server CAPI is a separate job |
-| 40 | [/go CTA opens /start in Chrome](40-cc122-go-page-opens-start-in-chrome.md) | CC-122 | ASTRO, CM-landing | Planned | Real Android phone test |
+| 40 | [/go CTA opens /start in Chrome](40-cc122-go-page-opens-start-in-chrome.md) | CC-122 | ASTRO, CM-landing | Built + verified locally (branches, not pushed) | Real Android phone test; push approval |
 
 ## Cross-phase dependencies
 

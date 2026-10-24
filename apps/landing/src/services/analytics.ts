@@ -65,6 +65,17 @@ export const initAmplitude = async () => {
   setUserProperties({
     custom_platform: getCustomPlatform(),
   });
+
+  // Arrived in Chrome from a /go page opened in the Facebook/Instagram app
+  // (CC-122). The SDK has already taken the IAB's device id from
+  // `ampDeviceId`, so this lands on the same Amplitude user.
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("src") === "iab_escape") {
+    logAmplitudeEvent("Chrome Escape", {
+      result: "opened",
+      browser_context: params.get("iab") ?? "unknown",
+    });
+  }
 };
 /** Track Event */
 export const logAmplitudeEvent = (
