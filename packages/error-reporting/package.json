@@ -13,7 +13,8 @@
     "./when-idle": "./src/when-idle.ts",
     "./chunk-reload": "./src/chunk-reload.ts",
     "./legacy-polyfills": "./src/legacy-polyfills.ts",
-    "./noise": "./src/noise.ts"
+    "./noise": "./src/noise.ts",
+    "./page-tags": "./src/page-tags.ts"
   },
   "devDependencies": {
     "typescript": "^5",

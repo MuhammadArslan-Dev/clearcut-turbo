@@ -1,5 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { tagPage } from "@clearcut/error-reporting/page-tags";
+import { routing } from "@/i18n/routing";
 
 // Server/edge Sentry for the public landing site — inert until
 // NEXT_PUBLIC_SENTRY_DSN (or SENTRY_DSN) is set. Must live in src/ (not the
@@ -19,6 +21,8 @@ export async function register() {
     tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
     beforeSend(event) {
       scrubSensitiveData(event);
+      // page + language tags for the signup funnel (CC-95).
+      tagPage(event, routing.locales, routing.defaultLocale);
       event.tags = { ...event.tags, runtime: `nextjs-${process.env.NEXT_RUNTIME}`, app: "landing" };
       return event;
     },

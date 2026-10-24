@@ -1,6 +1,7 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
 import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
+import { tagPage } from "@clearcut/error-reporting/page-tags";
 import { routing } from "@/i18n/routing";
 
 // Page-level error reporting (404s, error boundaries) for the public landing site.
@@ -37,6 +38,8 @@ export function loadSentry() {
         tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
         beforeSend(event) {
           scrubSensitiveData(event);
+          // page + language tags for the signup funnel (CC-95).
+          tagPage(event, routing.locales, routing.defaultLocale);
           event.tags = { ...event.tags, runtime: "browser", app: "landing" };
           return event;
         },

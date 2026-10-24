@@ -204,3 +204,42 @@ export function scrubSensitiveData<T extends Record<string, any>>(event: T): T {
 
   return event;
 }
+
+/**
+ * Sentry tags `page` and `language` (CC-95): which funnel page an error came
+ * from, and in which language. Read from the URL path only, never the query
+ * string. Same logic as packages/error-reporting/src/page-tags.ts (blog,
+ * landing, tools); dashboard keeps its own copy like the rest of this file.
+ */
+const PAGE_TAG_LOCALES = ["en", "hi", "mr"];
+const PAGE_TAG_PAGES: readonly (readonly [RegExp, string])[] = [
+  [/^\/payment(?:\/|$)/, "payment"],
+  [/^\/onboarding(?:\/|$)/, "onboarding"],
+  [/^\/start(?:\/|$)/, "start"],
+];
+
+type TaggableEvent = {
+  tags?: Record<string, unknown>;
+  request?: { url?: string };
+  contexts?: Record<string, Record<string, unknown> | undefined>;
+};
+
+export function tagPage<T extends TaggableEvent>(event: T): T {
+  const url = event.request?.url ?? (event.contexts?.nextjs?.request_path as string | undefined);
+  if (!url) return event;
+  let path: string;
+  try {
+    path = new URL(url, "https://placeholder.invalid").pathname;
+  } catch {
+    return event;
+  }
+  const first = path.split("/")[1] ?? "";
+  const prefixed = PAGE_TAG_LOCALES.includes(first);
+  const bare = prefixed ? path.slice(first.length + 1) || "/" : path;
+  event.tags = {
+    ...event.tags,
+    page: PAGE_TAG_PAGES.find(([pattern]) => pattern.test(bare))?.[1] ?? "other",
+    language: prefixed ? first : "en",
+  };
+  return event;
+}
