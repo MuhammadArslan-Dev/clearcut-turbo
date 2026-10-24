@@ -11,6 +11,7 @@ import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
+import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
 
 type TabId = "notes" | "bonus-videos" | "trends" | "concepts";
 
@@ -160,7 +161,7 @@ export default function RelatedContentWrapper() {
   // 1️⃣ Loading → show skeleton
   if (loading) {
     return (
-      <div className="md:rounded-md overflow-hidden bg-white p-4 space-y-4">
+      <div {...TOUR_LOADING} className="md:rounded-md overflow-hidden bg-white p-4 space-y-4">
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
             <Skeleton

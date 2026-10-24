@@ -1,6 +1,6 @@
 "use client";
 
-import { START_GUIDE_IDS } from "@/components/features/preparation/components/startGuideIds";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
 import React, { useEffect, useMemo, useRef, useCallback } from "react";
 
 import { usePathname } from "@/i18n/navigation";
@@ -102,6 +102,7 @@ export default function Sidebar() {
     selectedChapter,
     sectionsByPaperId,
     selectedArea,
+    requestTourReplay,
   } = usePreparationStore();
   // The course's own content language, not the site's UI locale — see
   // courseLanguageToLocale()'s docblock.
@@ -429,6 +430,16 @@ export default function Sidebar() {
               </div>
             </Card>
           </button>
+          {/* Replays the page tours (StartGuide). */}
+          <div className="flex justify-center pt-1">
+            <button
+              type="button"
+              onClick={requestTourReplay}
+              className="body-small text-surface-gray-muted underline underline-offset-4 py-1 px-3 cursor-pointer"
+            >
+              {t("startGuide.replay")}
+            </button>
+          </div>
          <div>
            <AreaTab />
          </div>
@@ -448,7 +459,7 @@ export default function Sidebar() {
                 <div className="h-0.5 my-4 bg-[var(--border-gray-muted)] w-full"></div>
                 <div className={clsx("flex flex-col gap-3")}>
                   <div
-                    id={chapter.id === firstFreeChapter?.id ? START_GUIDE_IDS.chapter : undefined}
+                    data-tour={chapter.id === firstFreeChapter?.id ? PREP_TOUR.freeChapter : undefined}
                     className="sticky -top-4 z-10 bg-white"
                   >
                     <SectionHeaderCard
@@ -549,7 +560,7 @@ export default function Sidebar() {
                           {/* 🔹 Parent Topic Card */}
                           <div
                             ref={isActive ? activeTopicRef : null}
-                            id={topic.id === firstFreeTopicId ? START_GUIDE_IDS.topic : undefined}
+                            data-tour={topic.id === firstFreeTopicId ? PREP_TOUR.firstTopic : undefined}
                             className={topic.id === firstFreeTopicId ? "relative" : undefined}
                           >
                             {showStartHere && topic.id === firstFreeTopicId && (

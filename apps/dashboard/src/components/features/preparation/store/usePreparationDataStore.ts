@@ -259,6 +259,9 @@ interface PreparationState {
   /** True while the pointer tour is on screen (the floating Unlock widget hides). */
   startGuideActive: boolean;
   setStartGuideActive: (active: boolean) => void;
+  /** "How to use this page" was tapped: run every tour step that is on screen. */
+  tourReplayRequested: boolean;
+  requestTourReplay: () => void;
 }
 
 /* ----------------------------------
@@ -298,6 +301,7 @@ export const usePreparationStore = create<PreparationState>((set) => ({
   progressLoadedFor: null,
   startGuideRequested: false,
   startGuideActive: false,
+  tourReplayRequested: false,
 
   /* ----------------------------------
      HYDRATE
@@ -739,6 +743,11 @@ goToPrevTopic: () =>
 
   setProgressLoadedFor: (courseId) => set({ progressLoadedFor: courseId }),
   requestStartGuide: () => set({ startGuideRequested: true }),
-  setStartGuideActive: (active) => set({ startGuideActive: active, ...(active ? { startGuideRequested: false } : {}) }),
+  setStartGuideActive: (active) =>
+    set({
+      startGuideActive: active,
+      ...(active ? { startGuideRequested: false, tourReplayRequested: false } : {}),
+    }),
+  requestTourReplay: () => set({ tourReplayRequested: true }),
 
 }));

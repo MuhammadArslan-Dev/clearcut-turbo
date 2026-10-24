@@ -1,4 +1,4 @@
-import { START_GUIDE_IDS } from "./startGuideIds";
+import { PREP_TOUR } from "./startGuideIds";
 import TabSwitch from "@/components/ui/tabs/TabSwitch";
 import React, { useEffect } from "react";
 import { usePreparationStore } from "../store/usePreparationDataStore";
@@ -58,7 +58,7 @@ export default React.memo(function SectionsTab({
     </div>
   ) : (
     items.length > 1 && (
-      <div id={START_GUIDE_IDS.subjects} className="lg:rounded-l-full overflow-hidden">
+      <div data-tour={PREP_TOUR.subjects} className="lg:rounded-l-full overflow-hidden">
         <SectionSwitchUI
           layoutId={"section-tab-preparation"}
           items={items}

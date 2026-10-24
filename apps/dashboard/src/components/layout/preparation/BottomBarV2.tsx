@@ -22,6 +22,8 @@ import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
+import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
 import BottomBarV1, { type ParsedPaperName } from "./BottomBar";
 
 /**
@@ -138,7 +140,7 @@ function BottomBarV2Desktop() {
 
   if (loading || !currentPaper) {
     return (
-      <div className="h-[72px] max-w-[1002px] w-full flex items-center overflow-hidden px-4 py-3 bg-white">
+      <div {...TOUR_LOADING} className="h-[72px] max-w-[1002px] w-full flex items-center overflow-hidden px-4 py-3 bg-white">
         <div className="flex items-center gap-3 w-full">
           <div className="hidden 2md:block">
             <Skeleton variant="rectangular" width={220} height={48} borderRadius={12} />
@@ -310,7 +312,10 @@ export function BottomBarV2View({
           )}
 
           {showTest && (
-            <div className="min-w-0 flex-1 self-center @[680px]:flex-[2_1_0%]">
+            <div
+              data-tour={PREP_TOUR.startTest}
+              className="min-w-0 flex-1 self-center @[680px]:flex-[2_1_0%]"
+            >
               <Button
                 onClick={onStartTest}
                 size={isMobile ? "md" : "lg"}
@@ -350,6 +355,7 @@ export function BottomBarV2View({
             ) : (
               <TopicNavCard
                 onClick={onNext}
+                tourId={PREP_TOUR.nextTopic}
                 direction="next"
                 label={actions("next_topic")}
                 shortLabel={actions("next")}
@@ -375,9 +381,12 @@ function TopicNavCard({
   clamp,
   locked,
   mode,
+  tourId,
 }: {
   onClick: () => void;
   direction: "prev" | "next";
+  /** `data-tour` id for the page tour. */
+  tourId?: string;
   label: string;
   /** Shown while stacked (< 800px) where the full label would not fit. */
   shortLabel: string;
@@ -398,6 +407,7 @@ function TopicNavCard({
     <button
       type="button"
       onClick={onClick}
+      data-tour={tourId}
       aria-label={label}
       className={clsx(
         "min-w-0 min-h-[48px] flex items-center justify-center gap-2 rounded-xl px-3 py-2 cursor-pointer",

@@ -358,14 +358,21 @@ declare const messages: {
   "startGuide": {
     "step1Title": "Choose your subject here",
     "step1Body": "Each tab is one subject of your exam.",
-    "step2Title": "This chapter is free — open it",
-    "step2Body": "Start here; no payment needed.",
-    "step3Title": "Tap here to start",
+    "step2Title": "This chapter is free",
+    "step2Body": "All its topics are open to you. No payment needed.",
+    "step3Title": "Start with this topic",
     "step3Body": "Watch the video, read the notes, then take a short test.",
     "next": "Next",
     "skip": "Skip",
     "done": "Got it",
-    "badge": "Start here"
+    "badge": "Start here",
+    "startTestTitle": "Test yourself",
+    "startTestBody": "A quick test shows how much you remember.",
+    "nextTopicTitle": "Next topic",
+    "nextTopicBody": "Done here? Move on to the next topic.",
+    "pageSwitchTitle": "Test Series",
+    "pageSwitchBody": "Switch here for full-length mock tests.",
+    "replay": "How to use this page"
   },
   "planEnding": {
     "grace": "Your plan has ended. Access closes in {days, plural, one {# day} other {# days}}."
