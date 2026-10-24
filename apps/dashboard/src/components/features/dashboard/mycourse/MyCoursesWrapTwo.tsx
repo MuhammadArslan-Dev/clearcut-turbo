@@ -142,8 +142,10 @@ export default function MyCoursesWrapTwo({
             entry_point: "trial_ended_badge",
             product_id: enrollment.exam?.short_name ?? "",
           });
+          // A bought plan that ran out is "plan_ended" (its own headline, CC-74).
+          const source = enrollment.status === "expired" ? "plan_ended" : "trial_ended";
           route.push(
-            `/payment/initiated?exam_id=${enrollment.group_code}&course_name=${enrollment.exam?.short_name}&source=trial_ended`,
+            `/payment/initiated?exam_id=${enrollment.group_code}&course_name=${enrollment.exam?.short_name}&source=${source}`,
           );
         }
       : undefined;

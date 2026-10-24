@@ -23,6 +23,10 @@
   "unlockFullAccessModal": {
     "title": "Unlock Full Access",
     "subtitle": "Everything you need to clear {exam}",
+    "headline_full_test": "Unlock this full-length test and every other test",
+    "headline_chapter": "Unlock this chapter and the full {exam} syllabus",
+    "headline_trial_ended": "Your free trial has ended. Keep your preparation going",
+    "headline_plan_ended": "Your plan has ended. Renew to continue",
 
     "features": {
       "latestPattern": "Everything on latest exam pattern",

@@ -1,4 +1,5 @@
 import type * as amplitude from "@amplitude/analytics-browser";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 let amplitudeInstance: typeof amplitude | null = null;
 let initialized = false;
@@ -37,6 +38,8 @@ export const initAmplitude = async () => {
   if (typeof window === "undefined") return;
   if (initialized) return;
   if (!AMPLITUDE_KEY) return;
+  // Production hosts only (CC-94): localhost/maintest/previews stay out.
+  if (!analyticsAllowedHere()) return;
 
   const amp = await import("@amplitude/analytics-browser");
 
@@ -62,6 +65,17 @@ export const initAmplitude = async () => {
   setUserProperties({
     custom_platform: getCustomPlatform(),
   });
+
+  // Arrived in Chrome from a /go page opened in the Facebook/Instagram app
+  // (CC-122). The SDK has already taken the IAB's device id from
+  // `ampDeviceId`, so this lands on the same Amplitude user.
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("src") === "iab_escape") {
+    logAmplitudeEvent("Chrome Escape", {
+      result: "opened",
+      browser_context: params.get("iab") ?? "unknown",
+    });
+  }
 };
 /** Track Event */
 export const logAmplitudeEvent = (

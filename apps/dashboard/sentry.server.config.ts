@@ -8,6 +8,7 @@ import {
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
   scrubSensitiveData,
+  tagPage,
 } from "@/lib/sentry/sentry-shared";
 
 Sentry.init({
@@ -30,6 +31,7 @@ Sentry.init({
 
   beforeSend(event) {
     scrubSensitiveData(event);
+    tagPage(event);
 
     event.tags = {
       ...event.tags,

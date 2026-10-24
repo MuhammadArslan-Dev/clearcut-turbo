@@ -1,5 +1,6 @@
 "use client";
 
+import { usableEmail } from "@clearcut/utils/usable-email";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
@@ -46,22 +47,27 @@ function isPixelSdkLoaded() {
 
 // Reads the auth cache directly (not useAuth()) because this component is
 // mounted as a sibling of AuthProvider, not a child of it — see layout.tsx.
-function getCachedUserData(): { ph?: string; external_id?: string } | null {
+function getCachedUserData(): { ph?: string; em?: string; external_id?: string } | null {
   const cachedUser = getCachedUser<UserPreview>();
   const digits = cachedUser?.phone?.replace(/\D/g, "");
 
-  const userData: { ph?: string; external_id?: string } = {};
+  const userData: { ph?: string; em?: string; external_id?: string } = {};
   if (digits) {
     // Meta expects the country code with no leading "+" and no spaces.
     userData.ph = digits.length === 10 ? `91${digits}` : digits;
   }
   if (cachedUser?.id) userData.external_id = String(cachedUser.id);
+  // Email (Truecaller / account page), only when real (CC-113). Plaintext,
+  // normalised; the Pixel hashes it. No email → no `em` key at all.
+  const em = usableEmail(cachedUser?.email);
+  if (em) userData.em = em;
 
   return Object.keys(userData).length > 0 ? userData : null;
 }
 
 type MetaUserData = {
   ph?: string;
+  em?: string;
   external_id?: string;
 } & Partial<MetaGeoData>;
 

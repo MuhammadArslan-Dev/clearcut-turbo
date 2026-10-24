@@ -14,6 +14,7 @@ import {
   redactSearch,
   redactUrl,
   scrubSensitiveData,
+  tagPage,
 } from "@/lib/sentry/sentry-shared";
 import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
 import { applyLegacyPolyfills } from "@/lib/legacy-polyfills";
@@ -63,6 +64,7 @@ Sentry.init({
 
   beforeSend(event) {
     scrubSensitiveData(event);
+    tagPage(event);
 
     event.tags = {
       ...event.tags,

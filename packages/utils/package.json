@@ -7,13 +7,15 @@
     "test": "vitest run"
   },
   "exports": {
+    "./analytics-hosts": "./src/analytics-hosts.ts",
     "./build-metadata": "./src/build-metadata.ts",
     "./highlight-text": "./src/highlight-text.tsx",
     "./meta-geo": "./src/meta-geo.ts",
     "./meta-fbc": "./src/meta-fbc.ts",
     "./meta-pixel-env": "./src/meta-pixel-env.ts",
     "./text-format": "./src/text-format.ts",
-    "./text-limit": "./src/text-limit.ts"
+    "./text-limit": "./src/text-limit.ts",
+    "./usable-email": "./src/usable-email.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1"

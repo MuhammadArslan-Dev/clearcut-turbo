@@ -1,6 +1,7 @@
 // src/services/analytics.js
 //
-// The SDK is loaded with a dynamic import (its own chunk) instead of a static
+// The SDK is loaded with a dynamic import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
+import (its own chunk) instead of a static
 // one: this module is reachable from the root layout via lib/auth.ts, so a
 // static import put the whole SDK in every page's main bundle and on the
 // hydration path. Every call below goes through `load()`, and the `.then`
@@ -55,6 +56,8 @@ let isInitialized = false;
  */
 export const initAmplitude = () => {
   if (typeof window === "undefined" || !AMPLITUDE_ENABLED || !AMPLITUDE_KEY) return;
+  // Production hosts only (CC-94): localhost/maintest/previews stay out.
+  if (!analyticsAllowedHere()) return;
   if (isInitialized) return;
 
   isInitialized = true;

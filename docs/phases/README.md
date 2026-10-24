@@ -65,6 +65,12 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 32 | [Test screens respond + completion tracked](32-cc102-cc103-cc104-tests-experience.md) | CC-102, CC-103, CC-104 | CM-dashboard | Done (+ locked-card line on branch) | Check new events in Amplitude |
 | 33 | [Continue-free exit + headline by source](33-cc63-cc74-payment-page-exit-and-headline.md) | CC-63, CC-74 | CM-dashboard | CC-63 done (branch, not pushed) | CC-74 headline copy (RD) |
 | 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 merged; tools deploy pending | Tools deploy approval |
+| 35 | [Preparation page tour](35-preparation-page-tour.md) | — | CM-dashboard | Built + tested (branch `prep-tour-audit`, not pushed) | Push approval |
+| 36 | [Test sites out of Clarity + Amplitude](36-cc94-test-hosts-out-of-clarity-amplitude.md) | CC-94 | CM, ASTRO, BE | Built + verified locally (branches, not pushed) | Push approval; maintest BE `AMPLITUDE_ENABLED=false` |
+| 37 | [Payment headline by source](37-cc74-payment-headline-by-source.md) | CC-74 | CM-dashboard | Built + verified locally (branch, not pushed) | Push approval |
+| 38 | [Sentry page + language tags](38-cc95-sentry-page-language-tags.md) | CC-95 | CM-dashboard, CM-landing | Built + verified locally (branch, not pushed) | SENTRY_AUTH_TOKEN check on server; top-5 after a week |
+| 39 | [Email to Meta + Amplitude](39-cc113-email-to-meta-and-amplitude.md) | CC-113 | CM-dashboard, packages/utils | Built + verified locally (branch, not pushed) | Push approval; server CAPI is a separate job |
+| 40 | [/go CTA opens /start in Chrome](40-cc122-go-page-opens-start-in-chrome.md) | CC-122 | ASTRO, CM-landing | Built + verified locally (branches, not pushed) | Real Android phone test; push approval |
 
 ## Cross-phase dependencies
 
@@ -78,3 +84,5 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 ## Change log
 
 - 2026-10-21: created folder, 14 phase files, investigation results copied in.
+
+- 2026-10-24: added phases 35–40 (tour, CC-94, CC-74, CC-95 rest, CC-113, CC-122). Jira: CC-51 → Testing; CC-1, CC-44, CC-86 → Done.

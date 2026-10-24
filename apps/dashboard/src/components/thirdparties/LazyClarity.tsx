@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;
 
@@ -15,6 +16,8 @@ export default function LazyClarity() {
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !CLARITY_ID) return;
+    // Production hosts only (CC-94): localhost/maintest/previews stay out.
+    if (!analyticsAllowedHere()) return;
 
     const enable = () => setLoadClarity(true);
 

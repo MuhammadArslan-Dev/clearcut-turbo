@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 export default function LazyGTM() {
   const [loadGTM, setLoadGTM] = useState(false);
 
   useEffect(() => {
+    // Production hosts only (CC-94): localhost/maintest/previews stay out.
+    if (!analyticsAllowedHere()) return;
+
     const enableGTM = () => setLoadGTM(true);
 
     // Trigger on first interaction

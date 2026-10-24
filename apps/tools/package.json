@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@clearcut/utils": "workspace:*",
     "@amplitude/analytics-browser": "^2.45.1",
     "@clearcut/analytics": "workspace:*",
     "@clearcut/api": "workspace:*",

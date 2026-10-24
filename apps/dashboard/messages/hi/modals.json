@@ -175,6 +175,10 @@
   "unlockFullAccessModal": {
     "title": "फुल एक्सेस अनलॉक करें",
     "subtitle": "{exam} क्लियर करने के लिए आपको जो चाहिए सब कुछ",
+    "headline_full_test": "यह फुल-लेंथ टेस्ट और बाकी सभी टेस्ट अनलॉक करें",
+    "headline_chapter": "यह चैप्टर और पूरा {exam} सिलेबस अनलॉक करें",
+    "headline_trial_ended": "आपका फ्री ट्रायल खत्म हो गया है। अपनी तैयारी जारी रखें",
+    "headline_plan_ended": "आपका प्लान खत्म हो गया है। जारी रखने के लिए रिन्यू करें",
     "courseTitle": "{exam}",
     "features": {
       "latestPattern": "लेटेस्ट एग्ज़ाम पैटर्न पर आधारित पूरा कंटेंट",
