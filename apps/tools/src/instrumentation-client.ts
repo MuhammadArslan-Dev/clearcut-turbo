@@ -7,6 +7,7 @@ import { installChunkErrorReload } from "@clearcut/error-reporting/chunk-reload"
 import { applyLegacyPolyfills } from "@clearcut/error-reporting/legacy-polyfills";
 import { whenIdleAfterLoad } from "@clearcut/error-reporting/when-idle";
 import { loadSentry } from "@/lib/page-errors";
+import { PUBLIC_SENTRY_DSN } from "@clearcut/error-reporting/public-project";
 
 // CC-112, before anything else runs: `.at()` for old phones' browsers, and
 // one reload when a chunk from a previous deploy can't be loaded. Both run
@@ -14,4 +15,4 @@ import { loadSentry } from "@/lib/page-errors";
 applyLegacyPolyfills();
 installChunkErrorReload();
 
-if (process.env.NEXT_PUBLIC_SENTRY_DSN) whenIdleAfterLoad(() => void loadSentry());
+if (PUBLIC_SENTRY_DSN) whenIdleAfterLoad(() => void loadSentry());

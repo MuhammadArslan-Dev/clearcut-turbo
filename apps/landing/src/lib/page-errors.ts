@@ -1,6 +1,7 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
 import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
+import { PUBLIC_SENTRY_DSN, publicSentryAllowedHere } from "@clearcut/error-reporting/public-project";
 import { tagPage } from "@clearcut/error-reporting/page-tags";
 import { routing } from "@/i18n/routing";
 
@@ -11,7 +12,8 @@ import { routing } from "@/i18n/routing";
 // nothing is bundled or sent. If instrumentation-client.ts already
 // initialised Sentry, that client is reused; otherwise it is initialised
 // here, the first time a page error actually happens.
-const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
+// clearcutoff-public (see @clearcut/error-reporting/public-project).
+const DSN = PUBLIC_SENTRY_DSN;
 
 let loading: Promise<typeof import("@sentry/nextjs")> | null = null;
 
@@ -23,7 +25,8 @@ let loading: Promise<typeof import("@sentry/nextjs")> | null = null;
  * happened to win.
  */
 export function loadSentry() {
-  if (!DSN) return null;
+  // Real sites only: localhost, maintest and previews never report.
+  if (!DSN || !publicSentryAllowedHere()) return null;
   loading ??= import("@sentry/nextjs").then((Sentry) => {
     if (!Sentry.getClient()) {
       Sentry.init({
