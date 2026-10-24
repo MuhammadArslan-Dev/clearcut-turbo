@@ -17,6 +17,7 @@
 // (Amplitude's own cookie) is shared and a visitor who logs in here stays
 // one user across the site.
 import type * as amplitude from "@amplitude/analytics-browser";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 // Same public client key apps/blog and apps/landing fall back to.
 const AMPLITUDE_KEY =
@@ -30,7 +31,8 @@ const AMPLITUDE_ENABLED = process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED !== "false";
 let sdk: Promise<typeof amplitude> | null = null;
 
 function load(): Promise<typeof amplitude> {
-  if (!AMPLITUDE_ENABLED) return Promise.reject(new Error("Amplitude disabled"));
+  // Production hosts only (CC-94): localhost and *.pages.dev previews stay out.
+  if (!AMPLITUDE_ENABLED || !analyticsAllowedHere()) return Promise.reject(new Error("Amplitude disabled"));
 
   sdk ??= import("@amplitude/analytics-browser").then((amp) => {
     amp.init(AMPLITUDE_KEY, {

@@ -1,4 +1,5 @@
 import type * as amplitude from "@amplitude/analytics-browser";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 let amplitudeInstance: typeof amplitude | null = null;
 let initialized = false;
@@ -37,6 +38,8 @@ export const initAmplitude = async () => {
   if (typeof window === "undefined") return;
   if (initialized) return;
   if (!AMPLITUDE_KEY) return;
+  // Production hosts only (CC-94): localhost/maintest/previews stay out.
+  if (!analyticsAllowedHere()) return;
 
   const amp = await import("@amplitude/analytics-browser");
 

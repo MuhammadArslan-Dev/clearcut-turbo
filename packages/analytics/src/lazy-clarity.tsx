@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import { INTERACTION_EVENTS } from "./constants";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 import { CLARITY_ID, isAnalyticsEnabled } from "./env";
 
 /**
@@ -21,7 +22,8 @@ export default function LazyClarity({ clarityId = CLARITY_ID }: { clarityId?: st
   const enabled = isAnalyticsEnabled(clarityId);
 
   useEffect(() => {
-    if (!enabled) return;
+    // Host check here, not in render: the server can't know the hostname (CC-94).
+    if (!enabled || !analyticsAllowedHere()) return;
 
     const onInteract = () => setInteracted(true);
 

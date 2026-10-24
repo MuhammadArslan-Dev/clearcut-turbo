@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { INTERACTION_EVENTS } from "./constants";
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 import { GTM_ID, isAnalyticsEnabled } from "./env";
 
 /**
@@ -32,8 +33,9 @@ export default function LazyGTM({ gtmId = GTM_ID }: { gtmId?: string }) {
   useEffect(() => {
     // Bail before attaching listeners at all when analytics is off. The effect
     // still runs unconditionally so the hook order never changes between
-    // renders.
-    if (!enabled) return;
+    // renders. The host check runs here, not in render: the server can't
+    // know the hostname (CC-94).
+    if (!enabled || !analyticsAllowedHere()) return;
 
     const onInteract = () => setInteracted(true);
 

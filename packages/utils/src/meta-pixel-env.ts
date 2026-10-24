@@ -10,20 +10,16 @@
 // PUBLIC_FB_PIXEL_ID_TEST), local test events go to that pixel instead of
 // the live one. Without it they go to the live pixel.
 
+import { PRODUCTION_ANALYTICS_HOSTS, isProductionAnalyticsHost } from "./analytics-hosts";
+
 export const META_PIXEL_LOCAL_OPT_IN_KEY = "cc-meta-pixel-local";
 
-/** The only hosts where the live pixel loads (CC-115). Keep in sync with
+/** The only hosts where the live pixel loads (CC-115): the same list as the
+ * rest of analytics (analytics-hosts.ts, CC-94). Keep in sync with
  * Astro-marketing-clearcut's packages/auth/src/lib/facebook-pixel.ts. */
-export const META_PIXEL_HOSTS = [
-  "clearcutoff.in",
-  "www.clearcutoff.in",
-  "app.clearcutoff.in",
-  "academy.clearcutoff.in",
-] as const;
+export const META_PIXEL_HOSTS = PRODUCTION_ANALYTICS_HOSTS;
 
-export function isMetaPixelHost(hostname: string): boolean {
-  return (META_PIXEL_HOSTS as readonly string[]).includes(hostname.toLowerCase());
-}
+export const isMetaPixelHost = isProductionAnalyticsHost;
 
 /** localhost, *.localhost, loopback and private LAN addresses (a phone
  * testing a dev server over Wi-Fi). */

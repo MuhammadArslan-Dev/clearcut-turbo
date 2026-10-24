@@ -7,6 +7,7 @@ import {
     identify as amplitudeIdentify,
     setUserId as amplitudeSetUserId,
 } from '@amplitude/analytics-browser';
+import { analyticsAllowedHere } from '@clearcut/utils/analytics-hosts';
 import type {
     AnalyticsEventName,
     AnalyticsEventPayload,
@@ -46,7 +47,8 @@ function internalInit() {
     if (isInitialized) return;
     if (typeof window === 'undefined') return;
 
-    if (!AMPLITUDE_ENABLED || !AMPLITUDE_API_KEY) {
+    // Production hosts only (CC-94): localhost/maintest/previews stay out.
+    if (!AMPLITUDE_ENABLED || !AMPLITUDE_API_KEY || !analyticsAllowedHere()) {
         // if (process.env.MODE === 'development') {
         //   console.info(
         //     '[analytics] Amplitude disabled (missing key or flag is false)',
