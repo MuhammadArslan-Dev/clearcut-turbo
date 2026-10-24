@@ -67,7 +67,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 34 | [Resizer limits + readable script errors](34-cc91-cc95-resizer-limits-script-errors.md) | CC-91, CC-95 | CM-tools, CM | CC-91 merged; tools deploy pending | Tools deploy approval |
 | 35 | [Preparation page tour](35-preparation-page-tour.md) | — | CM-dashboard | Built + tested (branch `prep-tour-audit`, not pushed) | Push approval |
 | 36 | [Test sites out of Clarity + Amplitude](36-cc94-test-hosts-out-of-clarity-amplitude.md) | CC-94 | CM, ASTRO, BE | Built + verified locally (branches, not pushed) | Push approval; maintest BE `AMPLITUDE_ENABLED=false` |
-| 37 | [Payment headline by source](37-cc74-payment-headline-by-source.md) | CC-74 | CM-dashboard | Planned | — |
+| 37 | [Payment headline by source](37-cc74-payment-headline-by-source.md) | CC-74 | CM-dashboard | Built + verified locally (branch, not pushed) | Push approval |
 | 38 | [Sentry page + language tags](38-cc95-sentry-page-language-tags.md) | CC-95 | CM-dashboard, CM-landing | Planned | SENTRY_AUTH_TOKEN check on server |
 | 39 | [Email to Meta + Amplitude](39-cc113-email-to-meta-and-amplitude.md) | CC-113 | CM, BE (read) | Planned | Server CAPI is a separate job |
 | 40 | [/go CTA opens /start in Chrome](40-cc122-go-page-opens-start-in-chrome.md) | CC-122 | ASTRO, CM-landing | Planned | Real Android phone test |

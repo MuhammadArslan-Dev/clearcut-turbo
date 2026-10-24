@@ -23,6 +23,10 @@
   "unlockFullAccessModal": {
     "title": "पूर्ण अ‍ॅक्सेस अनलॉक करा",
     "subtitle": "{exam} पास करण्यासाठी आवश्यक असलेले सर्व काही",
+    "headline_full_test": "ही फुल-लेंथ टेस्ट आणि इतर सर्व टेस्ट अनलॉक करा",
+    "headline_chapter": "हे प्रकरण आणि संपूर्ण {exam} अभ्यासक्रम अनलॉक करा",
+    "headline_trial_ended": "तुमचा फ्री ट्रायल संपला आहे. तुमची तयारी सुरू ठेवा",
+    "headline_plan_ended": "तुमचा प्लॅन संपला आहे. सुरू ठेवण्यासाठी रिन्यू करा",
     "courseTitle": "{exam}",
 
     "features": {

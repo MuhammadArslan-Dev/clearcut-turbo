@@ -51,6 +51,7 @@ import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analyti
 import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
+import { paymentHeadlineKey } from "@/lib/payment/paymentHeadline";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
 import React, { useCallback, useEffect, useMemo } from "react";
@@ -948,7 +949,7 @@ export default function InitiatedPage() {
 
             <div className="w-full">
               <div className="heading-medium sm:text-center !font-semibold text-surface-gray-normal">
-                {modalT("title")}
+                {modalT(paymentHeadlineKey(source), { exam: examTitle })}
               </div>
               <div className="body-small sm:text-center !font-normal text-surface-gray-muted">
                 {modalT("subtitle", { exam: examTitle })}
