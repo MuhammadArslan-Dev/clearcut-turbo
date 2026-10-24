@@ -29,4 +29,7 @@ export const DENY_URLS: RegExp[] = [
   /connect\.facebook\.net/i,
   /clarity\.ms/i,
   /iab_inner_frame/i,
+  // Facebook's in-app browser injects `browser_declutter` (its own script);
+  // its SyntaxErrors land on our global handler (CLEARCUTOFF-NEXTJS-APP-7K/-AC).
+  /browser_declutter/i,
 ];

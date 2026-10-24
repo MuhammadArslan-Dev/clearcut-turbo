@@ -106,6 +106,9 @@ export const DENY_URLS: RegExp[] = [
   // scheme, since that's also how OUR OWN real bundle paths are reported
   // (`app:///_next/static/chunks/...`) — those must keep reporting normally.
   /iab_inner_frame/i,
+  // Facebook's in-app browser injects `browser_declutter` (its own script);
+  // its SyntaxErrors land on our global handler (CLEARCUTOFF-NEXTJS-APP-7K/-AC).
+  /browser_declutter/i,
   /clarity\.ms/i,
 ];
 

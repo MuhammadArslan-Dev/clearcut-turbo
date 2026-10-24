@@ -146,7 +146,12 @@ export default function FacebookPixel() {
     if (!getFbPixelId()) return;
     const timer = setTimeout(() => {
       const loaded = isPixelSdkLoaded();
-      if (!loaded) reportPixelFailure("sdk_not_loaded_after_timeout");
+      // Slow network / blocker / WebView: nothing in our code to fix, and the
+      // Amplitude canary below already counts it — breadcrumb, not an issue
+      // (CLEARCUTOFF-NEXTJS-APP-AS). Init/track exceptions still report.
+      if (!loaded) {
+        Sentry.addBreadcrumb({ category: "meta-pixel", level: "warning", message: "sdk_not_loaded_after_timeout" });
+      }
       trackEvent("Meta Pixel Status", {
         pixel_loaded: loaded,
         page_context: window.location.pathname,

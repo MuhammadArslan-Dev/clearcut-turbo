@@ -9,6 +9,14 @@ const withNextIntl = createNextIntlPlugin({
 });
 
 const config: NextConfig = {
+  // A Facebook post/ad links to the misspelled /onboading (CLEARCUTOFF-NEXTJS-APP-AQ).
+  // The query string (incl. ?token=) is kept.
+  async redirects() {
+    return [
+      { source: "/onboading", destination: "/onboarding", permanent: false },
+      { source: "/:locale(hi|mr)/onboading", destination: "/:locale/onboarding", permanent: false },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true, // allows build even with type errors
   },
