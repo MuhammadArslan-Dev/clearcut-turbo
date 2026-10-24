@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/nextjs";
 import {
   IGNORE_ERRORS,
   SENTRY_DSN,
+  SENTRY_ENABLED,
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
   scrubSensitiveData,
@@ -17,7 +18,7 @@ Sentry.init({
   // set anywhere, so every server-side error went unreported.
   dsn: SENTRY_DSN,
   environment: SENTRY_ENVIRONMENT,
-  enabled: Boolean(SENTRY_DSN),
+  enabled: SENTRY_ENABLED,
 
   tracesSampleRate: TRACES_SAMPLE_RATE,
   enableLogs: true,

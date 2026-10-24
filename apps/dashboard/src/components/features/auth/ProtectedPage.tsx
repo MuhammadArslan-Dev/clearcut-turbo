@@ -34,11 +34,9 @@ export default function ProtectedPage({
     }
 
     if (user) {
-      Sentry.setUser({
-        id: user.id,
-        email: user.email || undefined,
-        phone: user.phone || undefined,
-      });
+      // Id only: the backend user id finds the student; email and phone
+      // stay out of Sentry.
+      Sentry.setUser({ id: user.id });
     }
   }, [user, loading]);
 
