@@ -1,12 +1,13 @@
 // src/services/analytics.js
 //
-// The SDK is loaded with a dynamic import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
-import (its own chunk) instead of a static
+// The SDK is loaded with a dynamic import (its own chunk) instead of a static
 // one: this module is reachable from the root layout via lib/auth.ts, so a
 // static import put the whole SDK in every page's main bundle and on the
 // hydration path. Every call below goes through `load()`, and the `.then`
 // callbacks run in call order, so events keep their order. Init still happens
 // right after hydration (InitAmplitude's effect), as before.
+
+import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 
 /** @type {Promise<typeof import("@amplitude/analytics-browser")> | null} */
 let sdk = null;
