@@ -364,7 +364,6 @@ export default function Sidebar() {
 
             <button
               type="button"
-              data-tour={PREP_TOUR.index}
               onClick={() => open("chapter-index")}
               className="w-[115px] h-9 shrink-0 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white "
             >

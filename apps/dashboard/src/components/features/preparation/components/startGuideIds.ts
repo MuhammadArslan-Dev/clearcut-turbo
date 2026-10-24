@@ -9,13 +9,8 @@ export const PREP_TOUR = {
   subjects: "prep-subjects",
   freeChapter: "prep-free-chapter",
   firstTopic: "prep-first-topic",
-  studyPath: "prep-study-path",
-  video: "prep-video",
-  contentTabs: "prep-content-tabs",
   startTest: "prep-start-test",
   nextTopic: "prep-next-topic",
-  paper: "prep-paper",
-  index: "prep-index",
   pageSwitch: "prep-page-switch",
 } as const;
 

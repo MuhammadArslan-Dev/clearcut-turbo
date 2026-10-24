@@ -11,7 +11,6 @@ import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
-import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
 import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
 
 type TabId = "notes" | "bonus-videos" | "trends" | "concepts";
@@ -197,7 +196,7 @@ export default function RelatedContentWrapper() {
   }
 
   return (
-    <div data-tour={PREP_TOUR.contentTabs} className="md:rounded-md overflow-hidden">
+    <div className="md:rounded-md overflow-hidden">
       <Tabs
         items={availableTabs.map((t) => ({
           ...t,

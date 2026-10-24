@@ -3,10 +3,11 @@
 **Status:** built and tested locally (2026-10-24), not pushed.
 **Repos:** CM `apps/dashboard` (+ `.github/workflows/ci.yml`)
 **Decision (user, 2026-10-24):** two tours. The CC-79 "start here" tour stays short; a second tour runs the first time a topic is opened; a "How to use this page" link replays everything.
+**Trimmed (user, same day):** 11 steps was too many — only the important ones stay (6). Study path, video, notes tabs, paper and index were dropped: the start tour's last step already says "video → notes → test", and the rest are self-explanatory or rarely used.
 
 ## Inventory and gap table
 
-The page has 11 places a student needs to understand. Before this phase the tour (CC-79) pointed at 3 of them.
+The page has 11 places a student could be shown. Before this phase the tour (CC-79) pointed at 3 of them; after the trim it points at 6 (rows 1–3, 7, 8, 11). Rows 4, 5, 6, 9, 10 are listed for the record but are not tour steps.
 
 | # | Component (file) | Before | Issue | Fix |
 |---|---|---|---|---|
@@ -50,14 +51,9 @@ Ids: `src/components/features/preparation/components/startGuideIds.ts` (`PREP_TO
 | 1 | subjects | start | next step | |
 | 2 | freeChapter | start | next step | free / trial students only |
 | 3 | firstTopic | start | next step (on phones this opens the topic → topic tour follows) | required |
-| 4 | studyPath | topic | next step | required |
-| 5 | video | topic | ends tour | skipped when the topic has no video |
-| 6 | contentTabs | topic | next step | |
-| 7 | startTest | topic | ends tour | skipped when the topic has no test |
-| 8 | nextTopic | topic | ends tour | skipped when next is locked / last topic |
-| 9 | paper | topic | ends tour | |
-| 10 | index | topic | ends tour | |
-| 11 | pageSwitch | topic | ends tour | |
+| 4 | startTest | topic | ends tour | skipped when the topic has no test |
+| 5 | nextTopic | topic | ends tour | skipped when next is locked / last topic |
+| 6 | pageSwitch | topic | ends tour | desktop only (the phone topic view has no top bar) |
 
 When each runs:
 - **start:** after the first-visit modal, or on a later visit while nothing has been opened; at most 2 times per course (`cc-start-guide:<courseId>`, unchanged).
@@ -73,13 +69,8 @@ Analytics: the existing `guide_shown` / `guide_step_viewed` / `guide_skipped` / 
 | subjects | Choose your subject here | Each tab is one subject of your exam. |
 | freeChapter | This chapter is free | All its topics are open to you. No payment needed. |
 | firstTopic | Start with this topic | Watch the video, read the notes, then take a short test. |
-| studyPath | Your study path | Video, then notes, then a short test. Follow this order for each topic. |
-| video | Watch the lesson | Start with the video for this topic. |
-| contentTabs | More on this topic | Notes, key concepts, exam trends and extra videos are here. |
 | startTest | Test yourself | A quick test shows how much you remember. |
 | nextTopic | Next topic | Done here? Move on to the next topic. |
-| paper | Your paper | Switch to another paper of your exam, or add one. |
-| index | All chapters | Open the index to jump to any chapter. |
 | pageSwitch | Test Series | Switch here for full-length mock tests. |
 | link | How to use this page | — |
 
@@ -119,3 +110,9 @@ Setup: clear `cc-start-guide:<courseId>` and `cc-topic-guide` in localStorage. F
 | 16 | `pnpm --filter dashboard check:tour` | passes; fails when a target is removed | pass |
 
 Not run: Marathi on screen (copy checked by the guard), a real iPhone / Android WebView, and a course where every chapter of the current subject is locked. In that last case the start tour has no topic to point at; it doesn't start, and tries again when the subject changes.
+
+## Re-test after the trim (2026-10-24)
+- Guard: 6 targets, 6 steps, en/hi/mr — pass.
+- Desktop, picking another topic: topic tour = Test yourself → Next topic → Test Series (3 of 3) — pass.
+- Phone, opening a topic: Test yourself → Next topic — pass. Replay from the list: subjects, free chapter, first topic, Course/Test Series — pass.
+- Desktop replay: 6 steps — pass. No overlay left, no page errors.

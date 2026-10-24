@@ -258,9 +258,7 @@ export function BottomBarV2View({
     <div className="@container w-full max-w-[1002px]">
       <div className="min-h-[72px] flex flex-col gap-2 px-3 py-2 @[960px]:flex-row @[960px]:items-stretch @[960px]:gap-3 @[960px]:px-4 md:rounded-xl md:border md:border-brand bg-white">
         {paperAction && (
-          <div
-            data-tour={PREP_TOUR.paper}
-            className="flex items-center justify-between gap-3 @[960px]:flex-none @[960px]:justify-start @[960px]:border-r @[960px]:border-gray-200 @[960px]:pr-3">
+          <div className="flex items-center justify-between gap-3 @[960px]:flex-none @[960px]:justify-start @[960px]:border-r @[960px]:border-gray-200 @[960px]:pr-3">
             {currentPaperName && (
               <div
                 className="flex min-w-0 items-center gap-2"

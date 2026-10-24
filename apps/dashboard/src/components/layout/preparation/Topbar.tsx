@@ -88,7 +88,7 @@ export default function Topbar() {
         {/* RIGHT SECTION */}
         <div className="md:flex justify-end items-center max-w-[770px] md:bg-[var(--color-brand-dark)] w-full lg:rounded-l-full overflow-hidden">
           {/* Paper Switch (mobile / tablet) */}
-          <div data-tour={PREP_TOUR.paper} className="flex lg:hidden justify-start px-3 ">
+          <div className="flex lg:hidden justify-start px-3 ">
             <PaperSwitch />
           </div>
 
