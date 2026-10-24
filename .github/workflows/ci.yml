@@ -35,6 +35,8 @@ jobs:
       # because it is fast and gives the clearest failure message.
       - name: Design tokens — no new hardcoded colours
         run: pnpm check:colors
+      - name: Preparation tour coverage
+        run: pnpm --filter dashboard check:tour
 
       - name: Typecheck
         run: pnpm turbo run typecheck

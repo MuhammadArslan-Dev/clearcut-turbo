@@ -7,6 +7,7 @@ import { Button } from "@clearcut/ui/button";
 import PageSwitchTab from "@/components/features/preparation/components/PageSwitchTab";
 import SectionsTab from "@/components/features/preparation/components/SectionsTab";
 import PaperSwitch from "@/components/features/preparation/components/PaperSwitch";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
 
 import Text from "@clearcut/ui/text";
 import { ChevronIcon } from "@/components/ui/icons";
@@ -78,7 +79,7 @@ export default function Topbar() {
             </div>
 
             {/* Page Switch Tabs */}
-            <div>
+            <div data-tour={PREP_TOUR.pageSwitch}>
               <PageSwitchTab />
             </div>
           </div>
@@ -87,7 +88,7 @@ export default function Topbar() {
         {/* RIGHT SECTION */}
         <div className="md:flex justify-end items-center max-w-[770px] md:bg-[var(--color-brand-dark)] w-full lg:rounded-l-full overflow-hidden">
           {/* Paper Switch (mobile / tablet) */}
-          <div className="flex lg:hidden justify-start px-3 ">
+          <div data-tour={PREP_TOUR.paper} className="flex lg:hidden justify-start px-3 ">
             <PaperSwitch />
           </div>
 

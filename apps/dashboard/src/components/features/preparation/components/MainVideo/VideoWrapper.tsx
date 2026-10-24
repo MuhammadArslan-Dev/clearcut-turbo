@@ -16,6 +16,8 @@ import { ContentItem, VideoContent } from "../../types/topic-content-type";
 import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
+import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
 
 export default function VideoWrapper() {
   const queryClient = useQueryClient();
@@ -135,7 +137,7 @@ export default function VideoWrapper() {
    */
   if (loading || !selectedTopic) {
     return (
-      <div className="w-full flex justify-center">
+      <div {...TOUR_LOADING} className="w-full flex justify-center">
         <div className="max-w-3xl w-full space-y-3">
           <Skeleton
             variant="rectangular"
@@ -159,7 +161,7 @@ export default function VideoWrapper() {
    */
   return (
     <div className="w-full flex justify-center">
-      <div className="max-w-3xl w-full">
+      <div data-tour={PREP_TOUR.video} className="max-w-3xl w-full">
         <VideoCard onClick={markVideoWatch} url={mainVideo?.video_link ?? ""} />
         <VideoHeader data={mainVideo} />
         {/* <VideoProgress /> */}

@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { getLocalizedName } from "../../util/getLocalizedName";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
 
 export default function ChapterDetailHeader() {
   const flow = useFlowNavigation();
@@ -101,7 +102,10 @@ export default function ChapterDetailHeader() {
         </div>
 
         {/* RIGHT — Study Path */}
-        <div className="flex w-full md:w-auto justify-center items-center gap-2">
+        <div
+          data-tour={PREP_TOUR.studyPath}
+          className="flex w-full md:w-auto justify-center items-center gap-2"
+        >
           <Text
             as="p"
             variant="body-medium"

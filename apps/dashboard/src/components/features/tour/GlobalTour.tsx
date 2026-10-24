@@ -5,7 +5,14 @@ import { driver, Driver, DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
 import "../../../styles/tour.css"
 
-export interface TourStep extends DriveStep {}
+export interface TourStep extends DriveStep {
+  /**
+   * Tapping the highlighted element: true (default) moves to the next step
+   * after the tap has done its own work; false ends the tour (the tap opened
+   * a modal or another page, so the next step would point at nothing).
+   */
+  advanceOnClick?: boolean;
+}
 
 interface GlobalTourProps {
   steps?: TourStep[];
@@ -85,7 +92,9 @@ const GlobalTour: React.FC<GlobalTourProps> = (props) => {
         propsRef.current.onClose();
       },
 
-      steps: steps.map((step) => ({
+      // advanceOnClick is ours, not a driver.js option.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      steps: steps.map(({ advanceOnClick, ...step }) => ({
         ...step,
         popover: {
           ...step.popover,
@@ -99,26 +108,28 @@ const GlobalTour: React.FC<GlobalTourProps> = (props) => {
 
     tourRef.current.drive();
 
-    // Automatically move next when highlighted element is clicked
-    const observer = new MutationObserver(() => {
-      const highlighted = document.querySelector(
-        ".driver-highlighted"
-      ) as HTMLElement | null;
+    // A tap on the highlighted element. Capture phase, then a tick later, so
+    // the element's own handler (switch subject, open topic) runs first.
+    const onClick = (event: MouseEvent) => {
+      const tour = tourRef.current;
+      const active = tour?.getActiveElement();
+      if (!tour || !active || !(event.target instanceof Node) || !active.contains(event.target)) return;
+      const advance = steps[tour.getActiveIndex() ?? 0]?.advanceOnClick !== false;
+      window.setTimeout(() => {
+        if (tourRef.current !== tour) return;
+        if (advance) tour.moveNext();
+        else skip();
+      }, 0);
+    };
+    document.addEventListener("click", onClick, true);
 
-      if (highlighted) {
-        highlighted.onclick = () => {
-          tourRef.current?.moveNext();
-        };
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    // Back / swipe back (e.g. closing the mobile topic view) moves the page
+    // away from the elements the tour points at.
+    window.addEventListener("popstate", skip);
 
     return () => {
-      observer.disconnect();
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", skip);
       tourRef.current?.destroy();
       tourRef.current = null;
     };

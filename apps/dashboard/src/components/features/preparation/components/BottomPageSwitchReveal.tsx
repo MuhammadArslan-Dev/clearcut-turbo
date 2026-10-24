@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import PageSwitchTab from "./PageSwitchTab";
+import { PREP_TOUR } from "./startGuideIds";
 import { useScrollRevealWidth } from "@/hooks/useTopbarScrollHide";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -23,7 +24,12 @@ export default function BottomPageSwitchReveal() {
   useScrollRevealWidth(outerRef, wrapRef, isMobile);
 
   return (
-    <div ref={outerRef} style={{ width: 0, opacity: 0 }} className="overflow-hidden shrink-0">
+    <div
+      ref={outerRef}
+      data-tour={PREP_TOUR.pageSwitch}
+      style={{ width: 0, opacity: 0 }}
+      className="overflow-hidden shrink-0"
+    >
       <div ref={wrapRef} className="inline-block">
         {/* Distinct layoutScopeId — see PageSwitchTab's prop doc. This one
             is mounted at the same time as Topbar's own copy during the

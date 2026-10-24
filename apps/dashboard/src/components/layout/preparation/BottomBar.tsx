@@ -24,6 +24,8 @@ import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
+import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
+import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
 
 // `px: 2` was Joy `sx` shorthand (2 x Joy's 8px spacing unit = 16px inline
 // padding). The shared Button's sx supports paddingX/paddingY but not Joy's `px`,
@@ -114,7 +116,7 @@ export default function BottomBar({
   // 🦴 Skeleton UI instead of null
   if (loading || !currentPaper) {
     return (
-      <div className="h-[72px] max-w-[1002px] w-full flex items-center overflow-hidden  px-4 py-3 bg-white">
+      <div {...TOUR_LOADING} className="h-[72px] max-w-[1002px] w-full flex items-center overflow-hidden  px-4 py-3 bg-white">
         <div className="flex items-center justify-between w-full">
           {/* Left block */}
 
@@ -240,7 +242,7 @@ export default function BottomBar({
         )}
 
         {showTopicTestButton && (
-          <div className="max-w-[200px] w-full">
+          <div data-tour={PREP_TOUR.startTest} className="max-w-[200px] w-full">
             <Button
               onClick={() => open("mini-test", {}, true)}
               size={isMobile ? "md" : "lg"}
@@ -264,7 +266,7 @@ export default function BottomBar({
         )}
 
         <div className="flex items-center flex-col">
-          <div>
+          <div data-tour={nextTopicLocked ? undefined : PREP_TOUR.nextTopic}>
             {nextTopicLocked ? (
               // Same "Unlock" pill design as the locked chapter card in
               // Sidebar.tsx — keeps the paywall trigger visually consistent

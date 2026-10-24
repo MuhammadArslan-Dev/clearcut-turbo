@@ -17,12 +17,16 @@ export type CourseEngagementEventName =
   | "guide_skipped"
   | "guide_completed";
 
+type PrepTourRun = "start" | "topic" | "replay";
+
 export interface CourseEngagementEventPayloads {
-  // "Start here" pointer tour on the preparation page (CC-79).
-  "guide_shown": { exam_name: string; attempt: number };
-  "guide_step_viewed": { exam_name: string; step: number };
-  "guide_skipped": { exam_name: string; step: number };
-  "guide_completed": { exam_name: string };
+  // Preparation page tours (CC-79 "start here", the topic tour, and the
+  // "How to use this page" replay). `tour` tells them apart; `step_name` is
+  // the step's target (prepTourSteps.ts).
+  "guide_shown": { exam_name: string; attempt: number; tour?: PrepTourRun };
+  "guide_step_viewed": { exam_name: string; step: number; step_name?: string; tour?: PrepTourRun };
+  "guide_skipped": { exam_name: string; step: number; step_name?: string; tour?: PrepTourRun };
+  "guide_completed": { exam_name: string; tour?: PrepTourRun };
 
   "Section Switched": {
     from_section_id?: string;
