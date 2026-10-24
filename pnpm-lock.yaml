@@ -709,6 +709,10 @@ importers:
   packages/design-tokens: {}
 
   packages/error-reporting:
+    dependencies:
+      '@clearcut/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       typescript:
         specifier: ^5

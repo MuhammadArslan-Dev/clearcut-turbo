@@ -164,8 +164,9 @@ export default withSentryConfig(composedConfig, {
     excludeReplayIframe: true,
     excludeReplayWorker: true,
   },
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+  // Source maps go to the public sites' project (needs SENTRY_AUTH_TOKEN).
+  org: process.env.SENTRY_ORG || "clear-cutoff",
+  project: process.env.SENTRY_PROJECT || "clearcutoff-public",
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
   widenClientFileUpload: true,

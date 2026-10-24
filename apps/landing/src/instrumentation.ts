@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { PUBLIC_SENTRY_DSN, PUBLIC_SENTRY_SERVER_ENABLED } from "@clearcut/error-reporting/public-project";
 import { tagPage } from "@clearcut/error-reporting/page-tags";
 import { routing } from "@/i18n/routing";
 
@@ -8,10 +9,11 @@ import { routing } from "@/i18n/routing";
 // project root): with `src/app`, Next only looks for instrumentation.ts next
 // to the app dir. It used to sit at the project root, where Next never loaded
 // it, so no server error or onRequestError report ever left this app.
-const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? process.env.SENTRY_DSN;
+const DSN = process.env.SENTRY_DSN || PUBLIC_SENTRY_DSN;
 
 export async function register() {
-  if (!DSN) return;
+  // Production builds only (clearcutoff-public project).
+  if (!DSN || !PUBLIC_SENTRY_SERVER_ENABLED) return;
   if (process.env.NEXT_RUNTIME !== "nodejs" && process.env.NEXT_RUNTIME !== "edge") return;
 
   Sentry.init({

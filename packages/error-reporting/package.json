@@ -14,7 +14,11 @@
     "./chunk-reload": "./src/chunk-reload.ts",
     "./legacy-polyfills": "./src/legacy-polyfills.ts",
     "./noise": "./src/noise.ts",
-    "./page-tags": "./src/page-tags.ts"
+    "./page-tags": "./src/page-tags.ts",
+    "./public-project": "./src/public-project.ts"
+  },
+  "dependencies": {
+    "@clearcut/utils": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5",

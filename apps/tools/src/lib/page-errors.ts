@@ -1,6 +1,7 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
 import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
 import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
+import { PUBLIC_SENTRY_DSN, publicSentryAllowedHere } from "@clearcut/error-reporting/public-project";
 
 // Page-level error reporting (404s, error boundaries) for the tools app.
 //
@@ -11,7 +12,8 @@ import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
 // otherwise), so normal page views download none of it and, with no DSN,
 // nothing is bundled or sent. It is initialised the first time a page error
 // actually happens.
-const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
+// clearcutoff-public (see @clearcut/error-reporting/public-project).
+const DSN = PUBLIC_SENTRY_DSN;
 
 let loading: Promise<typeof import("@sentry/browser")> | null = null;
 
@@ -21,7 +23,8 @@ let loading: Promise<typeof import("@sentry/browser")> | null = null;
  * below. A static export, so the DSN must be set at BUILD time.
  */
 export function loadSentry() {
-  if (!DSN) return null;
+  // Real sites only: localhost, maintest and previews never report.
+  if (!DSN || !publicSentryAllowedHere()) return null;
   loading ??= import("@sentry/browser").then((Sentry) => {
     if (!Sentry.getClient()) {
       Sentry.init({
