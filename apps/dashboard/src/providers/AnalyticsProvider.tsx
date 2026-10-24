@@ -1,5 +1,6 @@
 'use client';
 
+import { usableEmail } from '@clearcut/utils/usable-email';
 import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
@@ -26,6 +27,8 @@ export function AnalyticsProvider({ children }: Props) {
 
     setAnalyticsUser(user?.uuid, {
       phone: user?.phone,
+      // Real email or null, which removes the property (CC-113).
+      email: usableEmail(user?.email),
       plan: 'free',
     });
   }, [user]);

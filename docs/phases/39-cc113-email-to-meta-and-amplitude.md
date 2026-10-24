@@ -1,6 +1,6 @@
 # Phase 39 — CC-113: the student's email (Truecaller and others) goes to Meta and Amplitude
 
-**Status:** Planned (2026-10-24)
+**Status:** Built + verified locally (2026-10-24), branch `phase-39-cc113-email-matching` (on top of Phase 38). Not pushed. Server-side CAPI not in scope (user agreed).
 **Jira:** [CC-113](https://clear-cutoff.atlassian.net/browse/CC-113)
 **Repos:** CM `apps/dashboard`, `apps/landing`, `packages/auth`; BE (read only, unless `/auth-user` lacks `email`)
 **Size:** small–medium
@@ -32,3 +32,32 @@
   - Meta Pixel Helper or the request query shows advanced matching.
   - Amplitude `Identify` request contains `email` / `$unset`.
 - Production check after deploy: Events Manager → Test Events shows `em` for a logged-in test account. Compare EMQ after 7 days (baseline: Purchase 7.6, CompleteRegistration 7.8).
+
+## What was built
+- `packages/utils/src/usable-email.ts`: `usableEmail(raw)`.
+  - Trims and lower-cases.
+  - Returns null for empty or invalid values, and for placeholders: phone-number addresses like `9876543210@…`, `test…@`, `noreply@` / `no-reply@`, `@example.com`.
+  - Tests: `usable-email.test.ts` (17).
+- Dashboard Meta Pixel: `em` is added next to `ph` / `external_id` in both user-data builders:
+  - `lib/analytics/facebook-pixel.ts` (event-time advanced matching);
+  - `components/thirdparties/FacebookPixel.tsx` (the first `init()`).
+  - No email → no `em` key at all.
+- Dashboard Amplitude: `AnalyticsProvider` sends `email: usableEmail(user.email)`.
+  - `setAnalyticsUser` now treats `null` as "remove the property" (`$unset`); `undefined` still means "leave as is".
+  - So a student without an email has no stale `email` property.
+- Landing / packages/auth: unchanged. A student who logs in there is sent straight to the dashboard, and Lead etc. fire from the dashboard Pixel's first init.
+- The email itself comes from `users.email`, which Truecaller login already fills (backend `AuthController`, unchanged).
+
+## Verification (2026-10-24, local dashboard)
+Requests to `facebook.com/tr` and `amplitude.com` were intercepted in Playwright and never reached Meta or Amplitude. Pixel and analytics opt-ins were on, with Amplitude enabled for the run.
+- **Test user without email:**
+  - PageView and InitiateCheckout carry `ud[ph]`, `ud[external_id]`, geo, and no `ud[em]`.
+  - Amplitude `$identify` has `$unset: {email}`.
+- **Same user with a test email** (set in the local DB, removed afterwards):
+  - PageView and InitiateCheckout carry `ud[em]`, equal to SHA-256 of the normalised email.
+  - Amplitude `$set: {email}`.
+- Typecheck clean, lint unchanged (old problems only).
+
+## After deploy
+- Events Manager → Test Events: `em` shows on PageView / InitiateCheckout for a logged-in account that has an email.
+- After 7 days, compare EMQ against the baseline (Purchase 7.6, CompleteRegistration 7.8, Lead 7.8, PageView 7.3).

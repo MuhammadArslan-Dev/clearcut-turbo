@@ -2,6 +2,7 @@ import { getCachedUser } from "@/lib/auth-token-client";
 import type { UserPreview } from "@/types/User";
 import { getMetaGeoData, type MetaGeoData } from "@clearcut/utils/meta-geo";
 import { metaPixelId } from "@clearcut/utils/meta-pixel-env";
+import { usableEmail } from "@clearcut/utils/usable-email";
 
 // Same live pixel ID every app's own FacebookPixel.tsx uses.
 export const LIVE_FB_PIXEL_ID = "1126041265682766";
@@ -39,16 +40,20 @@ type MetaUserData = {
 // auth cache directly (not useAuth()) so this also works from non-component
 // call sites like useRazorpayPayment.ts, which isn't rendered inside
 // AuthProvider's tree.
-function getCachedMetaUserIdentifiers(): { ph?: string; external_id?: string } {
+function getCachedMetaUserIdentifiers(): { ph?: string; em?: string; external_id?: string } {
   const cachedUser = getCachedUser<UserPreview>();
   const digits = cachedUser?.phone?.replace(/\D/g, "");
 
-  const userData: { ph?: string; external_id?: string } = {};
+  const userData: { ph?: string; em?: string; external_id?: string } = {};
   if (digits) {
     // Meta expects the country code with no leading "+" and no spaces.
     userData.ph = digits.length === 10 ? `91${digits}` : digits;
   }
   if (cachedUser?.id) userData.external_id = String(cachedUser.id);
+  // Email (Truecaller / account page), only when real (CC-113). Plaintext,
+  // normalised; the Pixel hashes it. No email → no `em` key at all.
+  const em = usableEmail(cachedUser?.email);
+  if (em) userData.em = em;
 
   return userData;
 }
@@ -68,7 +73,7 @@ function getCachedMetaUserIdentifiers(): { ph?: string; external_id?: string } {
 async function waitForCachedMetaUserIdentifiers(
   maxWaitMs = 4000,
   intervalMs = 250,
-): Promise<{ ph?: string; external_id?: string }> {
+): Promise<{ ph?: string; em?: string; external_id?: string }> {
   const deadline = Date.now() + maxWaitMs;
   let identifiers = getCachedMetaUserIdentifiers();
   while (Object.keys(identifiers).length === 0 && Date.now() < deadline) {

@@ -107,8 +107,11 @@ export function setAnalyticsUser(
   if (traits) {
     const identify = new Identify();
 
+    // undefined = leave as is; null = remove the property (e.g. no email, CC-113).
     Object.entries(traits).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
+      if (value === null) {
+        identify.unset(key);
+      } else if (value !== undefined) {
         identify.set(key, value as never);
       }
     });

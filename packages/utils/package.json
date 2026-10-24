@@ -14,7 +14,8 @@
     "./meta-fbc": "./src/meta-fbc.ts",
     "./meta-pixel-env": "./src/meta-pixel-env.ts",
     "./text-format": "./src/text-format.ts",
-    "./text-limit": "./src/text-limit.ts"
+    "./text-limit": "./src/text-limit.ts",
+    "./usable-email": "./src/usable-email.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1"
