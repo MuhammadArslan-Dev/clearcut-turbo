@@ -27,6 +27,8 @@ describe("question-bank route caching", () => {
 
   it("regenerates at most once a day (content changes revalidate on demand)", () => {
     expect(QUESTION_PAGE_REVALIDATE).toBeGreaterThanOrEqual(3600);
-    expect(QUESTION_PAGE_REVALIDATE).toBeLessThanOrEqual(86400);
+    // At most a week: freshness comes from /api/revalidate, this is the
+    // safety net (Hobby ISR write budget, see route-cache.ts).
+    expect(QUESTION_PAGE_REVALIDATE).toBeLessThanOrEqual(604800);
   });
 });
