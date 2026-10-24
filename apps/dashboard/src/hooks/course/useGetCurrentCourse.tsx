@@ -8,6 +8,7 @@ import {
   MyCoursesResponse,
 } from "@/lib/dashboard/learning";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
+import { isApiError } from "@/lib/api/api-error";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -54,7 +55,8 @@ export function useGetCurrentCourse({
     refetch,
   } = useQuery<CurrentCourseResponse>({
     ...currentCourseQueryOptions(courseId),
-    retry: 1,
+    // A 404 (unknown / not-enrolled course) won't change on retry.
+    retry: (failures, error) => !(isApiError(error) && error.status === 404) && failures < 1,
     refetchOnWindowFocus: false,
   });
 

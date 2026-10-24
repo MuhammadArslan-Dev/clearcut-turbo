@@ -820,15 +820,19 @@ export default function InitiatedPage() {
             },
           };
 
-          if (error.source === "customer") {
-            // Breadcrumb only, not warn(): a customer declining their own
-            // payment (insufficient funds, wrong OTP, cancelled) happens to
-            // some fraction of real transactions regardless of the code —
-            // reporting it as a Sentry issue (CLEARCUTOFF-NEXTJS-APP-85)
-            // just paged on-call for routine declines with nothing to fix.
+          // Only Razorpay's own integration faults (`business` / `internal`)
+          // are bugs. A decline by the customer, their bank or the gateway
+          // (insufficient funds, card not eligible for autopay, invalid card)
+          // is a normal outcome — already counted by Amplitude "Payment
+          // Outcome" above — so it is a breadcrumb, not a Sentry issue
+          // (CLEARCUTOFF-NEXTJS-APP-85, -82: sources were gateway and
+          // remitter_bank, never customer). code/reason in the message keeps
+          // one issue per kind instead of one per description text.
+          const isIntegrationFault = error.source === "business" || error.source === "internal";
+          if (!isIntegrationFault) {
             logger.breadcrumb(`Subscription payment declined: ${error.description}`, logContext);
           } else {
-            logger.error(new Error(`Subscription payment failed: ${error.description}`), logContext);
+            logger.error(new Error(`Subscription payment failed: ${error.code}/${error.reason}`), logContext);
           }
 
           setRedirecting(true);

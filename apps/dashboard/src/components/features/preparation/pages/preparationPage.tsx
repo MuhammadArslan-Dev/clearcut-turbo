@@ -19,6 +19,7 @@ import { useUserInteractionData } from "../hooks/useUserInteractionData";
 import StartGuide from "../components/StartGuide";
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { usePreparationStore } from "../store/usePreparationDataStore";
+import { useRouter } from "@/i18n/navigation";
 
 /* =========================
    Reusable Layout Blocks
@@ -74,6 +75,14 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
 
   const searchParams = useSearchParams();
   const urlParamsApplied = useRef(false);
+  const router = useRouter();
+
+  // A link built from a missing group_code (`/preparation/null`) has no
+  // course to show — back to the dashboard instead of an empty page
+  // (CLEARCUTOFF-NEXTJS-APP-B3).
+  useEffect(() => {
+    if (courseId === "null" || courseId === "undefined") router.replace("/dashboard");
+  }, [courseId, router]);
 
   const { selectedSectionId, selectedChapter, selectedTopic, selectSection } =
     usePreparationStore();
