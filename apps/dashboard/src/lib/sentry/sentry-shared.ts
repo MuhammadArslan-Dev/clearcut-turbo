@@ -13,10 +13,13 @@
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
- * Which deployment an event came from. Falls back to NODE_ENV so local runs
- * show up as "development" instead of being lumped in with production.
+ * Which deployment an event came from. A Vercel preview build is always
+ * "preview" — the project's NEXT_PUBLIC_SENTRY_ENVIRONMENT is shared by
+ * preview and production, so preview events used to be filed as production.
+ * Otherwise the configured name, else NODE_ENV.
  */
 export const SENTRY_ENVIRONMENT =
+  (process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" ? "preview" : undefined) ??
   process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ??
   process.env.NODE_ENV ??
   "development";
@@ -29,6 +32,15 @@ export const SENTRY_ENVIRONMENT =
  */
 export const SENTRY_DSN =
   process.env.NEXT_PUBLIC_SENTRY_DSN ?? process.env.SENTRY_DSN ?? "";
+
+/**
+ * Reporting is on for builds (`next build`: production and preview) and off
+ * for `next dev`, whatever the local .env holds — local compile errors and
+ * test data were the top issues in the live project. To test Sentry from a
+ * dev server, set NEXT_PUBLIC_SENTRY_LOCAL=1 (it reports as "development").
+ */
+export const SENTRY_ENABLED =
+  Boolean(SENTRY_DSN) && (isProduction || process.env.NEXT_PUBLIC_SENTRY_LOCAL === "1");
 
 /**
  * Performance tracing is billed per transaction. Full sampling locally where

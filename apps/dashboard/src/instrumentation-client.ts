@@ -9,6 +9,7 @@ import {
   DENY_URLS,
   IGNORE_ERRORS,
   SENTRY_DSN,
+  SENTRY_ENABLED,
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
   redactSearch,
@@ -30,7 +31,7 @@ Sentry.init({
 
   // With no DSN the SDK no-ops anyway; being explicit makes a missing env var
   // obvious rather than mysterious.
-  enabled: Boolean(SENTRY_DSN),
+  enabled: SENTRY_ENABLED,
 
   // Session Replay is added later, once the page is idle — see the end of
   // this file (Phase 17).

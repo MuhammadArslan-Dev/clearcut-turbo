@@ -14,11 +14,8 @@ export const setSentryUser = (user: any) => {
     Sentry.setUser(null);
     return;
   }
-  Sentry.setUser({
-    id: user.id,
-    email: user.email || undefined, // optional
-    username: user.full_name || undefined, // optional
-  });
+  // Id only, like ProtectedPage: no email, phone or name in Sentry.
+  Sentry.setUser({ id: user.id });
 };
 
 export const logger = {
