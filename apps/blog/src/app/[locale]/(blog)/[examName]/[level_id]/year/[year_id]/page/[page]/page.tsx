@@ -3,7 +3,7 @@ import YearQuestionsPage, { yearPageMetadata, type YearParams } from "@/componen
 // Page N (>= 2) of a year paper's questions. "/page/1" 308s to the year URL.
 
 // Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 86400;
+export const revalidate = 604800;
 export async function generateStaticParams() {
   return [];
 }

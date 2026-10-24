@@ -7,7 +7,7 @@ import SubjectQuestionsPage, {
 // the same module (components/question-bank/pages/subject-questions-page).
 
 // Cached and regenerated in the background — see lib/question-bank/route-cache.ts.
-export const revalidate = 86400;
+export const revalidate = 604800;
 export async function generateStaticParams() {
   return [];
 }
