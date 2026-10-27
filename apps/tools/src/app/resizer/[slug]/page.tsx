@@ -4,7 +4,8 @@ import PageJsonLd from "@/components/PageJsonLd";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
+import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug } from "@/lib/resizerExams";
+import { ageCalculatorSlugFor, spokeJsonLdFaqs, teachingSeo, usesTeachingTemplate } from "@/lib/teachingTemplate";
 import { getOfficialRequirements } from "@/lib/officialRequirements";
 
 // Exam pages (clearcutoff.in/tools/resizer/{examSlug}) and category pages
@@ -30,6 +31,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (exam) {
     const title = `${exam.shortName} Photo & Signature Resizer - Free Tool | Clear Cutoff`;
     const description = `Resize and compress your photo or signature to ${exam.shortName} (${exam.fullName}) application-form specs. Free, private, processed entirely in your browser.`;
+    if (usesTeachingTemplate(exam, "en")) {
+      // Teaching exams (CC-159): "{Exam} Photo & Signature Size {Year} ({KB})".
+      const seo = teachingSeo(exam, "en");
+      return buildMetadata({ locale: "en", path: `/resizer/${exam.slug}`, title: seo.title, description: seo.description });
+    }
     return buildMetadata({ locale: "en", path: `/resizer/${exam.slug}`, title, description });
   }
 
@@ -48,11 +54,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const exam = await getResizerExamBySlug(slug);
   if (exam) {
-    const faqs = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, "en", { photoLive: isPhotoLiveCapture(exam) });
+    const faqs = spokeJsonLdFaqs(exam, "en");
 
-    const [categories, officialRequirements] = await Promise.all([
+    const [categories, officialRequirements, ageCalculatorSlug] = await Promise.all([
       getResizerCategories(),
       getOfficialRequirements(exam.slug),
+      usesTeachingTemplate(exam, "en") ? ageCalculatorSlugFor(exam.slug) : undefined,
     ]);
     const category = categories.find((c) => c.label === exam.category);
 
@@ -68,7 +75,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           app={{ name: `${exam.shortName} Photo & Signature Resizer`, description: `Resize and compress your photo or signature to ${exam.shortName} (${exam.fullName}) application-form specs. Free, private, processed entirely in your browser.` }}
           faqs={faqs}
         />
-        <ResizerSpokePage exam={exam} category={category} officialRequirements={officialRequirements} />
+        <ResizerSpokePage exam={exam} category={category} officialRequirements={officialRequirements} ageCalculatorSlug={ageCalculatorSlug} />
       </>
     );
   }

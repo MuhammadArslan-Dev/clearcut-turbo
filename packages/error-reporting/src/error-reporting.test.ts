@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { redactSearch, redactUrl, scrubSensitiveData } from "./redact";
+import { redactSearch, redactUrl, scrubSensitiveData, scrubSpan, scrubTransaction } from "./redact";
 import { classifyNotFound, routeShape } from "./not-found";
 
 describe("redact", () => {
@@ -35,6 +35,46 @@ describe("redact", () => {
     expect(JSON.stringify(ev)).not.toContain("SECRET");
     expect(ev.request.headers.cookie).toBeUndefined();
     expect(ev.request.headers.authorization).toBeUndefined();
+  });
+
+  // CC-143: the login handoff URL reached Sentry through transaction spans.
+  it("scrubs span descriptions and attributes", () => {
+    const span = scrubSpan({
+      op: "browser.request",
+      description: "GET https://app.in/hi/dashboard?token=366|SECRET&user_type=old",
+      data: {
+        url: "https://app.in/hi/dashboard?token=SECRET",
+        "http.query": "?token=SECRET",
+        "url.query": "code=SECRET&a=1",
+        "http.method": "GET",
+        count: 3,
+      },
+    });
+    expect(JSON.stringify(span)).not.toContain("SECRET");
+    expect(span.description).toMatch(/^GET https:\/\/app\.in\/hi\/dashboard\?token=%5Bredacted%5D&user_type=old$/);
+    expect(span.data["http.method"]).toBe("GET");
+    expect(span.data.count).toBe(3);
+  });
+
+  it("scrubs a bare-URL span description and leaves clean spans alone", () => {
+    expect(scrubSpan({ description: "/dashboard?token=SECRET" }).description).toBe("/dashboard?token=%5Bredacted%5D");
+    expect(scrubSpan({ description: "GET /api/x?y=1" }).description).toBe("GET /api/x?y=1");
+    expect(scrubSpan({ description: "ui.click" }).description).toBe("ui.click");
+  });
+
+  it("scrubs a whole transaction", () => {
+    const ev = scrubTransaction({
+      type: "transaction",
+      transaction: "/:locale/dashboard",
+      request: { url: "https://app.in/dashboard?token=SECRET" },
+      contexts: { trace: { op: "pageload", data: { "url.full": "https://app.in/dashboard?token=SECRET" } } },
+      spans: [
+        { op: "browser.request", description: "https://app.in/dashboard?token=SECRET" },
+        { op: "browser.DNS", description: "https://app.in/dashboard?token=SECRET&user_type=old" },
+      ],
+    });
+    expect(JSON.stringify(ev)).not.toContain("SECRET");
+    expect(ev.transaction).toBe("/:locale/dashboard");
   });
 });
 

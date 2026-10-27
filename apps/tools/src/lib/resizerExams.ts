@@ -32,6 +32,10 @@ export interface ExamDocument {
   format: string;
   required: boolean;
   verification: string;
+  /** Official notice/portal this spec was checked against (CC-159). */
+  sourceUrl: string | null;
+  /** ISO date (YYYY-MM-DD) of that check. */
+  verifiedOn: string | null;
 }
 
 export interface ResizerExamSpec {
@@ -46,6 +50,14 @@ export interface ResizerExamSpec {
   signatureSpec: { widthPx: number; heightPx: number; minKB: number; maxKB: number };
   /** Which documents this exam asks for, in display order. Never empty (falls back to photo + signature). */
   documents: ExamDocument[];
+  /** Application session for titles ("2026", "Dec 2026"); null → the default year. */
+  sessionTag: string | null;
+  /** Slug of clearcutoff.in/teaching/<slug>, when the exam has one. */
+  teachingPageSlug: string | null;
+  /** Portal error messages captured verbatim (never paraphrased), each with a fix. */
+  portalErrors: { message: string; fix: string; capturedOn?: string }[];
+  /** Documents whose official notice states only a maximum size; the page then says "up to X KB" and skips "too small". */
+  noMinimumDocs: ExamDocumentType[];
 }
 
 /** True when the exam's photograph is captured live on the portal instead of uploaded. */

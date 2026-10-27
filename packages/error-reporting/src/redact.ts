@@ -110,3 +110,40 @@ export function scrubSensitiveData<T extends AnyEvent>(event: T): T {
 
   return event;
 }
+
+/**
+ * Redacts span attributes in place: query attributes (`http.query`,
+ * `url.query`) and any URL-looking value (`url`, `http.url`, `url.full`, …).
+ */
+function scrubAttributes(data: AnyEvent | undefined): void {
+  if (!data || typeof data !== "object") return;
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value !== "string" || (!value.includes("?") && !/query/i.test(key))) continue;
+    if (/query/i.test(key)) data[key] = redactSearch(value);
+    else if (/^(\/|[a-z][a-z0-9+.-]*:)/i.test(value)) data[key] = redactUrl(value);
+  }
+}
+
+/** Redacts a span's description (e.g. `GET /dashboard?token=…`) and attributes. Use as `beforeSendSpan` (CC-143). */
+export function scrubSpan<T extends AnyEvent>(span: T): T {
+  if (typeof span?.description === "string" && span.description.includes("?")) {
+    // Descriptions are "<METHOD> <url>" for http spans, or just the URL.
+    const match = /^(\S+ )?([\s\S]*)$/.exec(span.description);
+    if (match) (span as AnyEvent).description = (match[1] ?? "") + redactUrl(match[2]);
+  }
+  scrubAttributes(span?.data);
+  return span;
+}
+
+/**
+ * `beforeSend` only sees errors. Page-load/navigation transactions carry the
+ * landing URL — `?token=` included — in the request, the root span and the
+ * `browser.request`/`resource.*` child spans, so they need this (CC-143).
+ */
+export function scrubTransaction<T extends AnyEvent>(event: T): T {
+  scrubSensitiveData(event);
+  if (typeof event?.transaction === "string") (event as AnyEvent).transaction = redactUrl(event.transaction);
+  scrubAttributes(event?.contexts?.trace?.data);
+  for (const span of event?.spans ?? []) scrubSpan(span);
+  return event;
+}

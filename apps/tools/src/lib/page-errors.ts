@@ -1,7 +1,8 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
-import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { scrubSensitiveData, scrubSpan, scrubTransaction } from "@clearcut/error-reporting/redact";
 import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
 import { PUBLIC_SENTRY_DSN, publicSentryAllowedHere } from "@clearcut/error-reporting/public-project";
+import { landingTrafficTags } from "@clearcut/error-reporting/traffic-tags";
 
 // Page-level error reporting (404s, error boundaries) for the tools app.
 //
@@ -14,6 +15,25 @@ import { PUBLIC_SENTRY_DSN, publicSentryAllowedHere } from "@clearcut/error-repo
 // actually happens.
 // clearcutoff-public (see @clearcut/error-reporting/public-project).
 const DSN = PUBLIC_SENTRY_DSN;
+
+// exam / utm_campaign / has_fbclid / in_app_browser of the landing URL,
+// read now (module load) before anything strips the query (CC-144).
+const TRAFFIC_TAGS = landingTrafficTags();
+
+/**
+ * Static export: no Next route info reaches @sentry/browser, so page loads
+ * would be named by their raw URL (one bucket per exam page). Name them by
+ * route instead, e.g. "/:locale?/tools/resizer/:slug" (CC-144).
+ */
+export function toolsTransactionName(pathname: string): string {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  const locale = /^\/(hi|mr)(?=\/)/.test(path) ? "/:locale" : "";
+  const bare = locale ? path.replace(/^\/(hi|mr)/, "") : path;
+  const named = bare
+    .replace(/^\/tools\/resizer\/[^/]+$/, "/tools/resizer/:slug")
+    .replace(/^\/tools\/age-eligibility-calculator\/(?!all$)[^/]+$/, "/tools/age-eligibility-calculator/:examSlug");
+  return `${locale}${named}`;
+}
 
 let loading: Promise<typeof import("@sentry/browser")> | null = null;
 
@@ -36,11 +56,22 @@ export function loadSentry() {
         denyUrls: DENY_URLS,
         // Page-load tracing + Web Vitals (Phase 17); they still arrive though
         // the SDK starts after the page has loaded (buffered observers).
-        integrations: [Sentry.browserTracingIntegration()],
+        integrations: [
+          Sentry.browserTracingIntegration({
+            beforeStartSpan: (context) => ({ ...context, name: toolsTransactionName(window.location.pathname) }),
+          }),
+        ],
         tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+        // CC-143: transactions/spans carry the page URL and its query string.
+        beforeSendTransaction(event) {
+          scrubTransaction(event);
+          event.tags = { ...event.tags, ...TRAFFIC_TAGS, app: "tools" };
+          return event;
+        },
+        beforeSendSpan: scrubSpan,
         beforeSend(event) {
           scrubSensitiveData(event);
-          event.tags = { ...event.tags, runtime: "browser", app: "tools" };
+          event.tags = { ...event.tags, ...TRAFFIC_TAGS, runtime: "browser", app: "tools" };
           return event;
         },
       });

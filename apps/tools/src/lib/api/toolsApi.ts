@@ -73,6 +73,9 @@ interface ApiDocument {
   format: string | null;
   required: boolean;
   verification: string;
+  /** Official notice/portal the spec was checked against, and when (CC-159). */
+  sourceUrl?: string | null;
+  verifiedOn?: string | null;
 }
 
 interface ApiToolExamDetail extends ApiToolExamListItem {
@@ -81,6 +84,14 @@ interface ApiToolExamDetail extends ApiToolExamListItem {
     photoSpec?: ApiSpec;
     signatureSpec?: ApiSpec;
     officialRequirements?: ApiOfficialRequirements | null;
+    /** Application session shown in titles, e.g. "2026" or "Dec 2026" (CC-159). */
+    sessionTag?: string | null;
+    /** Slug of the exam's clearcutoff.in/teaching/<slug> page, when one exists. */
+    teachingPageSlug?: string | null;
+    /** Upload error messages captured verbatim from the live portal, with a one-line fix. */
+    portalErrors?: { message: string; fix: string; capturedOn?: string }[] | null;
+    /** Document types whose official notice gives only a maximum size ("less than 20 kb"). */
+    noMinimumDocs?: string[] | null;
   } | null;
 }
 
@@ -143,8 +154,8 @@ function buildDocuments(
     // No documents in the backend for this exam yet: the same photo +
     // signature pair the tool always offered, from data_json.
     return [
-      { type: "photo", mode: "upload", spec: dataPhoto ?? null, format: detail.data?.photoSpec?.format ?? "jpg", required: true, verification: "unverified" },
-      { type: "signature", mode: "upload", spec: dataSignature ?? null, format: detail.data?.signatureSpec?.format ?? "jpg", required: true, verification: "unverified" },
+      { type: "photo", mode: "upload", spec: dataPhoto ?? null, format: detail.data?.photoSpec?.format ?? "jpg", required: true, verification: "unverified", sourceUrl: null, verifiedOn: null },
+      { type: "signature", mode: "upload", spec: dataSignature ?? null, format: detail.data?.signatureSpec?.format ?? "jpg", required: true, verification: "unverified", sourceUrl: null, verifiedOn: null },
     ];
   }
 
@@ -158,6 +169,8 @@ function buildDocuments(
       format: d.format || "jpg",
       required: d.required,
       verification: d.verification,
+      sourceUrl: d.sourceUrl ?? null,
+      verifiedOn: d.verifiedOn ?? null,
     } satisfies ExamDocument;
   });
 }
@@ -247,6 +260,10 @@ async function loadResizerData(): Promise<ResizerData> {
       photoSpec,
       signatureSpec,
       documents,
+      sessionTag: detail.data?.sessionTag?.trim() || null,
+      teachingPageSlug: detail.data?.teachingPageSlug?.trim() || null,
+      portalErrors: (detail.data?.portalErrors ?? []).filter((e) => e?.message?.trim() && e?.fix?.trim()),
+      noMinimumDocs: (detail.data?.noMinimumDocs ?? []).filter((d): d is ExamDocumentType => (DOC_TYPES as string[]).includes(d)),
     };
     exams.push(exam);
 
