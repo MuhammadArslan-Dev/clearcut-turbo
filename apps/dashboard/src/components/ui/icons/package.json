@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "Icon components only import React and have no side effects, so sideEffects:false lets the bundler drop the icons a page does not use. Without it the barrel index.ts pulled all 44 modules (incl. a 55 KB illustration) into one shared chunk that every page downloaded.",
+  "sideEffects": false
+}

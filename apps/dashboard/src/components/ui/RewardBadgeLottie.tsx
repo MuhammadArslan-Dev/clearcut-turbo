@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { loadLottieAsset } from "@/lib/lottie/loadLottieAsset";
+import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
 
 const REWARD_LOTTIE_SRC = "/lotifiles/current-chapter.lottie";
 
@@ -25,15 +26,22 @@ export default function RewardBadgeLottie({ size }: { size: number }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadLottieAsset(REWARD_LOTTIE_SRC).then((buffer) => {
-      if (!cancelled) setData(buffer);
+    // Decoration: fetched only once the page has loaded and the browser is
+    // idle, so on a slow connection it no longer competes with the page's own
+    // data (a Facebook in-app trace spent 19 s on it, CC-146).
+    whenIdleAfterLoad(() => {
+      if (cancelled) return;
+      loadLottieAsset(REWARD_LOTTIE_SRC).then((buffer) => {
+        if (!cancelled) setData(buffer);
+      });
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (!data) return null;
+  // Same box while the animation loads, so the row doesn't shift when it appears.
+  if (!data) return <span aria-hidden="true" className="inline-block shrink-0" style={{ width: size, height: size }} />;
 
   return (
     <DotLottieReact

@@ -161,6 +161,8 @@
   "actions": {
     "add": "जोडा",
     "delete": "Delete",
+    "deleteAccount": "खाते हटवा",
+    "editDetails": "तपशील संपादित करा",
     "save": "सेव्ह करा",
     "back": "मागे",
     "next": "पुढे",
@@ -187,11 +189,19 @@
       "email": "ईमेल",
       "phone": "फोन",
       "notAdded": "जोडलेले नाही",
+      "paneTitle": "वैयक्तिक तपशील",
+      "paneSubtitle": "तुमची वैयक्तिक माहिती पहा आणि व्यवस्थापित करा.",
+      "basicInfo": "मूलभूत माहिती",
+      "basicInfoSubtitle": "ही माहिती तुमचा शिकण्याचा अनुभव अधिक चांगला करण्यास मदत करते.",
       "edit": "एडिट करा",
       "add": "जोडा"
     }
   },
   "profileMenu": {
+    "heading": {
+      "title": "प्रोफाइल",
+      "subtitle": "तुमचे खाते आणि प्राधान्ये व्यवस्थापित करा"
+    },
     "personalDetails": {
       "title": "वैयक्तिक तपशील",
       "subtitle": "नाव, वय, लिंग आणि इतर"
@@ -279,11 +289,25 @@
     "paid": "पेमेंट झाले",
     "empty": "अजून कोणतेही पेमेंट नाही",
     "emptyHint": "कोर्ससाठी केलेली पेमेंट्स इथे दिसतील.",
+    "autopayHint": "तुमचे ऑटोपे प्लॅन शोधत आहात?",
+    "autopayLink": "सभासदत्व पहा",
     "showing": "{total} पैकी {start}–{end}",
     "rowsPerPage": "ओळी / पान",
     "previous": "मागील पान",
     "next": "पुढील पान",
     "paymentId": "पेमेंट ID",
+    "paneTitle": "पेमेंट",
+    "paneSubtitle": "तुमच्या कोर्स खरेदी आणि पेमेंट इतिहास पहा.",
+    "totalPurchases": "एकूण खरेदी",
+    "coursesBought": "खरेदी केलेले कोर्स",
+    "totalSpent": "एकूण खर्च",
+    "lastPayment": "शेवटचे पेमेंट",
+    "paymentMethod": "पेमेंट पद्धत",
+    "status": "स्थिती",
+    "success": "यशस्वी",
+    "searchPlaceholder": "कोर्स नाव, पेमेंट आयडीने शोधा...",
+    "newestFirst": "नवीन आधी",
+    "oldestFirst": "जुने आधी",
     "method_upi": "UPI",
     "method_card": "कार्ड",
     "method_netbanking": "नेट बँकिंग",
@@ -296,6 +320,23 @@
     "plan": "प्लॅन",
     "course": "कोर्स",
     "status": "स्थिती",
+    "paneTitle": "सभासदत्व",
+    "paneSubtitle": "तुमचे सक्रिय प्लॅन आणि खरेदी केलेले कोर्स पहा आणि व्यवस्थापित करा.",
+    "currentPlan": "सध्याचा प्लॅन",
+    "courseTitle": "{course} कंप्लीट कोर्स",
+    "courseBlurb": "संपूर्ण कोर्स कंटेंट, चाचण्या आणि नोट्स",
+    "coursePlan": "कोर्स / प्लॅन",
+    "type": "प्रकार",
+    "purchaseDate": "खरेदी तारीख",
+    "amountPaid": "भरलेली रक्कम",
+    "action": "कृती",
+    "viewCourse": "कोर्स पहा",
+    "typeSubscription": "सभासदत्व",
+    "accessActive": "सक्रिय",
+    "accessExpired": "संपले",
+    "filter_all": "सर्व प्लॅन",
+    "filter_active": "सक्रिय",
+    "filter_expired": "संपले",
     "amount": "रक्कम",
     "nextPayment": "पुढील पेमेंट",
     "actions": "पर्याय",
@@ -308,6 +349,11 @@
     "paymentsMade": "केलेली पेमेंट्स",
     "empty": "अजून कोणतीही सदस्यता नाही",
     "emptyHint": "कोर्सची सदस्यता घ्या, ती इथे व्यवस्थापित करता येईल.",
+    "oneTimeHint": "एकदा पेमेंटने कोर्स खरेदी केला?",
+    "oneTimeLink": "पेमेंट पहा",
+    "paymentsTitle": "या प्लॅनचे पेमेंट",
+    "showPayments": "पेमेंट दाखवा ({count})",
+    "hidePayments": "पेमेंट लपवा",
     "loadError": "सदस्यता लोड होऊ शकली नाही. कृपया पुन्हा प्रयत्न करा.",
     "genericError": "काहीतरी चुकले. कृपया पुन्हा प्रयत्न करा.",
     "back": "मागे",
@@ -373,5 +419,10 @@
   },
   "planEnding": {
     "grace": "तुमचा प्लॅन संपला आहे, {days} दिवसांत access बंद होईल."
+  },
+  "slowLoad": {
+    "title": "नेहमीपेक्षा जास्त वेळ लागत आहे",
+    "body": "तुमचे इंटरनेट हळू दिसत आहे. थोडी वाट पहा किंवा पुन्हा प्रयत्न करा.",
+    "retry": "पुन्हा प्रयत्न करा"
   }
 }

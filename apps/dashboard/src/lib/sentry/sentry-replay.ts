@@ -2,9 +2,9 @@
 //
 // instrumentation-client.ts imports this module with a dynamic import() once
 // the page has loaded and the browser is idle, then adds the integration to
-// the already-running client. Replay is ~40 KB gzip of the dashboard's ~91 KB
-// Sentry; nothing else needs it up front. The session (5%) and on-error
-// (100%) sample rates stay in Sentry.init's options.
+// the already-running client - and only for sessions that replay-sampling.ts
+// sampled (5%), so most visitors never download it. Replay is ~40 KB gzip of
+// the dashboard's ~91 KB Sentry; nothing else needs it up front.
 import { replayIntegration } from "@sentry/nextjs";
 
 export function createReplayIntegration() {

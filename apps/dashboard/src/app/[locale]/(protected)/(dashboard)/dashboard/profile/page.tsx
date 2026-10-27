@@ -95,7 +95,7 @@ export default function DashboardLayout() {
 
                 <section className="flex-1 overflow-y-auto">
                   <div className="py-0 px-3">
-                    <ProfilePage activeTab={activeTab} />
+                    <ProfilePage activeTab={activeTab} onTabChange={handleTabChange} />
                   </div>
                 </section>
               </>
@@ -131,7 +131,7 @@ export default function DashboardLayout() {
                     className={contentClass}
                   >
                     <MobileBackButton onBack={handleBack} label="Back" />
-                    <ProfilePage activeTab={activeTab} />
+                    <ProfilePage activeTab={activeTab} onTabChange={handleTabChange} />
                   </motion.section>
                 )}
               </AnimatePresence>

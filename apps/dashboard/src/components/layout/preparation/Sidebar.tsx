@@ -36,6 +36,8 @@ import { useSearchParams } from "next/navigation";
 
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 import { useChapterData } from "@/components/features/preparation/hooks/useChapterData";
+import { useSlowLoad } from "@/hooks/useSlowLoad";
+import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
 
 import { Chapter, Topic } from "@/components/features/preparation/types/types";
 
@@ -111,6 +113,14 @@ export default function Sidebar() {
   // Fetch chapters for selected section
   const { syllabus } = useChapterData(selectedSectionId);
   const searchParams = useSearchParams();
+
+  // Chapter list still empty after 10 s: "Taking longer than usual" + Try
+  // again (CC-152). The list waits on two queries in a chain (syllabus →
+  // chapters), so Try again refetches whichever of them is on screen.
+  const { slow: chaptersSlow, retry: retryChapters } = useSlowLoad(!chapters, "preparation", [
+    ["preparation"],
+    ["chapter"],
+  ]);
   const urlParamsApplied = useRef(false);
 
   // Sync fetched syllabus into store; on first load apply URL chapter/topic params
@@ -444,6 +454,11 @@ export default function Sidebar() {
            <AreaTab />
          </div>
 
+          {!chapters && chaptersSlow && (
+            <div className="px-4 pb-3">
+              <SlowLoadNotice onRetry={retryChapters} />
+            </div>
+          )}
           {!chapters && <TopicListSkeleton />}
 
           {filteredChapters?.map((chapter, chapterIndex) => {

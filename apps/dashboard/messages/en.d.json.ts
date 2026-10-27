@@ -164,6 +164,8 @@ declare const messages: {
   "actions": {
     "add": "Add",
     "delete": "Delete",
+    "deleteAccount": "Delete Account",
+    "editDetails": "Edit Details",
     "save": "Save",
     "back": "Back",
     "next": "Next",
@@ -190,11 +192,19 @@ declare const messages: {
       "email": "Email",
       "phone": "Phone",
       "notAdded": "Not added",
+      "paneTitle": "Personal Details",
+      "paneSubtitle": "View and manage your personal information.",
+      "basicInfo": "Basic Information",
+      "basicInfoSubtitle": "This information helps us personalize your learning experience.",
       "edit": "Edit",
       "add": "Add"
     }
   },
   "profileMenu": {
+    "heading": {
+      "title": "Profile",
+      "subtitle": "Manage your account and preferences"
+    },
     "personalDetails": {
       "title": "Personal Details",
       "subtitle": "Name, age, gender and more"
@@ -282,11 +292,25 @@ declare const messages: {
     "paid": "Paid",
     "empty": "No payments yet",
     "emptyHint": "Payments you make for a course will show here.",
+    "autopayHint": "Looking for your autopay plans?",
+    "autopayLink": "View Subscriptions",
     "showing": "Showing {start}–{end} of {total}",
     "rowsPerPage": "rows / page",
     "previous": "Previous page",
     "next": "Next page",
     "paymentId": "Payment ID",
+    "paneTitle": "Payments",
+    "paneSubtitle": "View your course purchases and payment history.",
+    "totalPurchases": "Total Purchases",
+    "coursesBought": "Courses bought",
+    "totalSpent": "Total Spent",
+    "lastPayment": "Last Payment",
+    "paymentMethod": "Payment Method",
+    "status": "Status",
+    "success": "Success",
+    "searchPlaceholder": "Search by course name, payment ID...",
+    "newestFirst": "Newest First",
+    "oldestFirst": "Oldest First",
     "method_upi": "UPI",
     "method_card": "Card",
     "method_netbanking": "Net banking",
@@ -299,6 +323,23 @@ declare const messages: {
     "plan": "Plan",
     "course": "Course",
     "status": "Status",
+    "paneTitle": "Subscriptions",
+    "paneSubtitle": "View and manage your active plans and purchased courses.",
+    "currentPlan": "Current Plan",
+    "courseTitle": "{course} Complete Course",
+    "courseBlurb": "Full course content, tests and notes",
+    "coursePlan": "Course / Plan",
+    "type": "Type",
+    "purchaseDate": "Purchase Date",
+    "amountPaid": "Amount Paid",
+    "action": "Action",
+    "viewCourse": "View Course",
+    "typeSubscription": "Subscription",
+    "accessActive": "Active",
+    "accessExpired": "Expired",
+    "filter_all": "All Plans",
+    "filter_active": "Active",
+    "filter_expired": "Expired",
     "amount": "Amount",
     "nextPayment": "Next payment",
     "actions": "Actions",
@@ -311,6 +352,11 @@ declare const messages: {
     "paymentsMade": "Payments made",
     "empty": "No subscriptions yet",
     "emptyHint": "Subscribe to a course to manage it here.",
+    "oneTimeHint": "Bought a course with a one-time payment?",
+    "oneTimeLink": "View Payments",
+    "paymentsTitle": "Payments on this plan",
+    "showPayments": "Show payments ({count})",
+    "hidePayments": "Hide payments",
     "loadError": "Failed to load subscriptions. Please try again.",
     "genericError": "Something went wrong. Please try again.",
     "back": "Back",
@@ -376,6 +422,11 @@ declare const messages: {
   },
   "planEnding": {
     "grace": "Your plan has ended. Access closes in {days, plural, one {# day} other {# days}}."
+  },
+  "slowLoad": {
+    "title": "Taking longer than usual",
+    "body": "Your internet seems slow. Wait a little more, or try again.",
+    "retry": "Try again"
   }
 };
 export default messages;

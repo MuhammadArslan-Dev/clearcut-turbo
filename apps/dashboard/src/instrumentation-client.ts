@@ -12,18 +12,21 @@ import {
   SENTRY_ENABLED,
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
+  TRACE_PROPAGATION_TARGETS,
   redactSearch,
   redactUrl,
   scrubSensitiveData,
+  scrubSpan,
+  scrubTransaction,
   tagPage,
 } from "@/lib/sentry/sentry-shared";
 import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
+import { isReplaySampledThisSession } from "@/lib/sentry/replay-sampling";
 import { applyLegacyPolyfills } from "@/lib/legacy-polyfills";
 
 // `.at()` for old phones' browsers, before anything else runs (CC-112).
 applyLegacyPolyfills();
 
-const isProduction = process.env.NODE_ENV === "production";
 
 Sentry.init({
   dsn: SENTRY_DSN,
@@ -48,12 +51,16 @@ Sentry.init({
   ],
 
   tracesSampleRate: TRACES_SAMPLE_RATE,
+  // Link page loads to the Laravel transactions they cause (CC-145).
+  tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
   enableLogs: true,
 
-  // Session replays are expensive; sample a slice of ordinary sessions but
-  // always keep the one where an error actually happened.
-  replaysSessionSampleRate: isProduction ? 0.05 : 0,
-  replaysOnErrorSampleRate: 1.0,
+  // Replay is only added for sessions that lib/sentry/replay-sampling.ts has
+  // already sampled (5%), so within one of those every session records.
+  // On-error buffering is off: it made every visitor pay for a recording they
+  // would almost never need (CC-150 D2).
+  replaysSessionSampleRate: 1.0,
+  replaysOnErrorSampleRate: 0,
 
   // Off: we attach the fields we actually need (user id/email via
   // setSentryUser, endpoint/status via ApiError) instead of shipping
@@ -62,6 +69,10 @@ Sentry.init({
 
   ignoreErrors: IGNORE_ERRORS,
   denyUrls: DENY_URLS,
+
+  // CC-143: transactions/spans carry the landing URL (`?token=` handoff).
+  beforeSendTransaction: scrubTransaction,
+  beforeSendSpan: scrubSpan,
 
   beforeSend(event) {
     scrubSensitiveData(event);
@@ -103,9 +114,10 @@ if (typeof window !== "undefined") {
 
 // Session Replay (~40 KB gzip) is not part of the first page load (Phase 17):
 // its own chunk is fetched once the page has loaded and the browser is idle,
-// then added to the running client. Errors and page-speed data don't need it.
-// Trade-off: an error in the first ~1-3 s of a visit has no replay attached.
-if (SENTRY_DSN) {
+// then added to the running client - and only for the sampled slice of sessions
+// (replay-sampling.ts, CC-150 D2); everyone else never downloads it.
+// Trade-off: an error outside that slice has no replay attached.
+if (SENTRY_DSN && isReplaySampledThisSession()) {
   whenIdleAfterLoad(() => {
     void import("@/lib/sentry/sentry-replay")
       .then(({ createReplayIntegration }) => Sentry.addIntegration(createReplayIntegration()))

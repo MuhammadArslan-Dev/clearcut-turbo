@@ -1,9 +1,10 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { ComponentType, memo, useEffect, useMemo, useState } from "react";
 import { Button } from "@clearcut/ui/button";
 import { Input } from "@clearcut/ui/input";
 import { Select, SelectOption } from "@clearcut/ui/select";
 import Skeleton from "@clearcut/ui/skeleton";
-import { PencilLineIcon, Check, X, AlertCircle } from "lucide-react";
+import { PencilLineIcon, Check, X, AlertCircle, UsersRound, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, EmailIcon, PhoneIcon, ProfileIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useModalStore } from "@/store/modal/useModalStore";
@@ -33,17 +34,26 @@ type ProfileCardProps = {
    Config
 ======================= */
 
+/**
+ * `icon` and `wide` drive the read-only tile grid the design shows; the edit
+ * form ignores both. Icons are the closest existing ones — Calendar/Email/Phone
+ * are exact, Name reuses ProfileIcon, and Gender falls back to lucide (the
+ * icon ladder's last step) since no gender glyph exists in either icon set.
+ */
 const FIELD_CONFIG = [
-  { key: "name",   label: "Name",          required: true,  placeholder: "John Doe"         },
-  { key: "gender", label: "Gender",         required: true,  placeholder: "Select gender"    },
-  { key: "dob",    label: "Date of birth",  required: true,  placeholder: "YYYY-MM-DD"       },
-  { key: "email",  label: "Email",          required: true,  placeholder: "john@example.com" },
-  { key: "phone",  label: "Phone",          required: false, placeholder: "1234567890"       },
+  { key: "name",   label: "Name",          required: true,  placeholder: "John Doe",         icon: ProfileIcon,  wide: false },
+  { key: "gender", label: "Gender",         required: true,  placeholder: "Select gender",    icon: UsersRound,   wide: false },
+  { key: "dob",    label: "Date of birth",  required: true,  placeholder: "YYYY-MM-DD",       icon: CalendarIcon, wide: false },
+  { key: "email",  label: "Email",          required: true,  placeholder: "john@example.com", icon: EmailIcon,    wide: false },
+  { key: "phone",  label: "Phone",          required: false, placeholder: "1234567890",       icon: PhoneIcon,    wide: true  },
 ] as const satisfies readonly {
   key: keyof Profile;
   label: string;
   required: boolean;
   placeholder: string;
+  icon: ComponentType<{ size?: number; color?: string }>;
+  /** Spans both grid columns in the read-only view. */
+  wide: boolean;
 }[];
 
 /* =======================
@@ -203,6 +213,36 @@ function ProfileCard({
     setIsEditing(false);
   };
 
+  // Same two actions and the same handlers as before — only the labels changed
+  // to the design's "Delete Account" / "Edit Details", and they moved into the
+  // pane heading.
+  const actionButtons = (
+    <div className="flex gap-2 items-center">
+      <Button
+        sx={{ borderRadius: "50px" }}
+        size="sm"
+        color="danger"
+        variant="outlined"
+        startDecorator={<Trash2 size={16} />}
+        onClick={() => open("account-delete")}
+      >
+        {t("actions.deleteAccount")}
+      </Button>
+      <Button
+        sx={{ borderRadius: "50px" }}
+        size="sm"
+        variant="outlined"
+        startDecorator={<PencilLineIcon size={16} />}
+        onClick={async () => {
+          await trackEvent("Profile Edit Started", { section_edited: "personal_details" });
+          setIsEditing(true);
+        }}
+      >
+        {t("actions.editDetails")}
+      </Button>
+    </div>
+  );
+
   return (
     <div className="w-full h-full md:bg-white p-1 md:p-5 rounded-lg">
       {/* Server / general error banner */}
@@ -213,12 +253,107 @@ function ProfileCard({
         </div>
       )}
 
+      {/* Pane heading + actions. Read-only only: in edit mode the form is the
+          whole subject of the pane and the Save/Cancel pair sits with it. */}
+      {!isEditing && (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="heading-large !font-semibold text-surface-gray-normal">
+                {profileT("personalDetails.paneTitle")}
+              </p>
+              <p className="body-small !font-normal text-surface-gray-muted">
+                {profileT("personalDetails.paneSubtitle")}
+              </p>
+            </div>
+            {actionButtons}
+          </div>
+
+          {/* Identity summary */}
+          <div className="mt-5 flex flex-col items-center gap-4 rounded-xl bg-[var(--color-background-gray-subtle)] p-5 text-center sm:flex-row sm:text-left sm:gap-6">
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+              <ProfileIcon size={44} variant="person" color="white" />
+            </span>
+            <span className="min-w-0">
+              <span className="heading-large !font-semibold block truncate text-surface-gray-normal">
+                {draft.name || profileT("personalDetails.notAdded")}
+              </span>
+              {draft.phone ? (
+                <span className="body-medium !font-normal block truncate text-surface-gray-muted">
+                  {draft.phone}
+                </span>
+              ) : null}
+              {draft.email ? (
+                <span className="body-medium !font-normal block truncate text-surface-gray-muted">
+                  {draft.email}
+                </span>
+              ) : null}
+            </span>
+          </div>
+
+          <div className="mt-6">
+            <p className="heading-medium !font-semibold text-surface-gray-normal">
+              {profileT("personalDetails.basicInfo")}
+            </p>
+            <p className="body-small !font-normal text-surface-gray-muted">
+              {profileT("personalDetails.basicInfoSubtitle")}
+            </p>
+          </div>
+        </>
+      )}
+
       <div className="flex md:flex-row flex-col gap-6 md:gap-3">
-        {/* Fields */}
-        <div className="flex-1 flex flex-col gap-4">
-          {FIELD_CONFIG.map(({ key, placeholder }) => {
+        {/* Fields — a tile grid when reading, the original stacked form when editing. */}
+        <div
+          className={
+            isEditing
+              ? "flex-1 flex flex-col gap-4"
+              : "mt-4 flex-1 grid gap-3 md:grid-cols-2"
+          }
+        >
+          {FIELD_CONFIG.map(({ key, placeholder, icon: Icon, wide }) => {
             const value = String(draft[key] ?? "");
             const error = mergedErrors[key];
+
+            if (!isEditing) {
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center gap-3 rounded-xl bg-[var(--color-background-gray-subtle)] p-4 ${
+                    wide ? "md:col-span-2" : ""
+                  }`}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                    <Icon size={20} color="var(--color-brand)" />
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="body-small !font-normal block text-surface-gray-muted">
+                      {profileT(`personalDetails.${key}`)}
+                    </span>
+                    <span className="body-large !font-semibold block truncate text-surface-gray-normal">
+                      {value
+                        ? key === "gender"
+                          ? value.charAt(0).toUpperCase() + value.slice(1)
+                          : value
+                        : profileT("personalDetails.notAdded")}
+                    </span>
+                  </span>
+
+                  {!value && (
+                    <Button
+                      sx={{ borderRadius: "50px" }}
+                      size="sm"
+                      variant="outlined"
+                      startDecorator={<Plus size={16} />}
+                      onClick={() => setIsEditing(true)}
+                    >
+                      {t("actions.add")}
+                    </Button>
+                  )}
+                </div>
+              );
+            }
 
             return (
               <div key={key}>
@@ -272,60 +407,16 @@ function ProfileCard({
                       </p>
                     )}
                   </>
-                ) : (
-                  <h5 className="body-large !font-semibold text-surface-gray-subtle">
-                    {value ? (
-                      key === "gender" ? (
-                        value.charAt(0).toUpperCase() + value.slice(1)
-                      ) : (
-                        value
-                      )
-                    ) : (
-                      <Button
-                        sx={{ borderRadius: "50px" }}
-                        size="sm"
-                        variant="outlined"
-                        startDecorator={<PencilLineIcon size={16} />}
-                        onClick={() => setIsEditing(true)}
-                      >
-                        {t("actions.add")}
-                      </Button>
-                    )}
-                  </h5>
-                )}
+                ) : null}
               </div>
             );
           })}
         </div>
 
-        {/* Action buttons */}
+        {/* Save / Cancel. The read-only Delete Account + Edit Details pair now
+            sits in the pane heading above, where the design puts it. */}
         <div className="flex items-start justify-end">
-          {!isEditing ? (
-            <div className="flex gap-2 items-center">
-              <Button
-                sx={{ borderRadius: "50px" }}
-                size="sm"
-                color="danger"
-                variant="outlined"
-                startDecorator={<PencilLineIcon size={16} />}
-                onClick={() => open("account-delete")}
-              >
-                {t("actions.delete")}
-              </Button>
-              <Button
-                sx={{ borderRadius: "50px" }}
-                size="sm"
-                variant="outlined"
-                startDecorator={<PencilLineIcon size={16} />}
-                onClick={async () => {
-                  await trackEvent("Profile Edit Started", { section_edited: "personal_details" });
-                  setIsEditing(true);
-                }}
-              >
-                {t("actions.edit")}
-              </Button>
-            </div>
-          ) : (
+          {isEditing && (
             <div className="flex gap-2">
               <Button
                 size="sm"

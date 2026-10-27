@@ -20,6 +20,8 @@ import { useTranslations } from "next-intl";
 import Text from "@clearcut/ui/text";
 import { MainLoader } from "@/components/FullScreenLoader";
 import dynamic from "next/dynamic";
+import { useSlowLoad } from "@/hooks/useSlowLoad";
+import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
 
 // Same split as ExamShell/TestSeriesShell/PreparationShell — all four are
 // gated behind a store flag at their render site below, so lazy-loading
@@ -79,6 +81,12 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
     setLoading(isLoading);
   }, [isLoading, setLoading]);
 
+  // Syllabus still loading after 10 s: "Taking longer than usual" + Try
+  // again under the spinner (CC-152).
+  const { slow: syllabusSlow, retry: retrySyllabus } = useSlowLoad(isLoading, "content", [
+    P_QUERY_KEY(courseId),
+  ]);
+
   const { isOpen, stack } = useExamModalStore();
   const activeModal = useMemo(
     () => (stack.length ? stack[stack.length - 1] : null),
@@ -131,8 +139,9 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
                 course's content — react-query serves cached syllabus data
                 instantly on later navigations between notes/pyqs. */}
             {isLoading ? (
-              <div className="flex h-full w-full items-center justify-center">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-4">
                 <MainLoader />
+                {syllabusSlow && <SlowLoadNotice className="w-full max-w-[480px]" onRetry={retrySyllabus} />}
               </div>
             ) : (
               children

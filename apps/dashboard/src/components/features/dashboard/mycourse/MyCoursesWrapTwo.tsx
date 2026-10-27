@@ -28,6 +28,9 @@ import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
 import { useCoursesProgressSummary } from "@/hooks/course/useCourseProgressSummary";
 import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
 import { prefetchLevels } from "@/hooks/onboarding/useLevels";
+import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import { useSlowLoad } from "@/hooks/useSlowLoad";
+import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
 
 // These modals are only ever visible after a user action (edit/buy/payment
 // result) — loading them as separate chunks instead of bundling them into
@@ -167,6 +170,11 @@ export default function MyCoursesWrapTwo({
   // also filled one render after the data lands (useMyActiveCourses' effect).
   const showSlideSkeleton =
     courses.length === 0 && (!data || isLoading || (data.courses?.length ?? 0) > 0);
+
+  // No course data yet after 10 s (slow network or a failed request): say
+  // so and offer Try again (CC-152). `!data`, not `!exam` — a student with
+  // no course yet has data and must not see it.
+  const { slow: coursesSlow, retry: retryCourses } = useSlowLoad(!data, "learn", [MY_COURSES_KEY]);
 
   const orderedCourses = activeExam
     ? [activeExam, ...courses.filter((course) => course?.id !== activeExam.id)]
@@ -396,6 +404,8 @@ export default function MyCoursesWrapTwo({
             <MyCourseCard {...cardProps} />
           )}
         </div>
+
+        {coursesSlow && <SlowLoadNotice className="mt-3" onRetry={retryCourses} />}
       </div>
 
       {/* Global modal */}

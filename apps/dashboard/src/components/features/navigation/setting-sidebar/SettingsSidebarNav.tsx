@@ -144,8 +144,11 @@ export default function SettingsSidebarNav({ activeTab, onTabChange }: Props) {
         <div
           key={item.tab}
           onClick={() => handleClick(item)}
-          className={`p-2 rounded-[4px] cursor-pointer transition
-            ${isActive ? "bg-[#006bd1]/9" : "hover:bg-[#006bd1]/9"}`}
+          // The active item gains a brand-blue left bar, as the design shows.
+          // border-l-4 is always present (transparent when inactive) so the
+          // row's text never shifts sideways as the selection moves.
+          className={`p-2 rounded-[4px] cursor-pointer transition border-l-4
+            ${isActive ? "bg-[#006bd1]/9 border-l-brand" : "border-l-transparent hover:bg-[#006bd1]/9"}`}
         >
           <ProfileItemList
             icon={
@@ -166,6 +169,17 @@ export default function SettingsSidebarNav({ activeTab, onTabChange }: Props) {
 
   return (
     <div data-nav-no-indicator className={clsx("p-3", SPACE_Y)}>
+      {/* Desktop-only: on mobile this card IS the screen and the topbar
+          already names it, so a second heading would just repeat. */}
+      <div className="hidden md:block px-2 pb-1">
+        <p className="heading-large !font-semibold text-surface-gray-normal">
+          {profileMenu("heading.title")}
+        </p>
+        <p className="body-small !font-normal text-surface-gray-muted">
+          {profileMenu("heading.subtitle")}
+        </p>
+      </div>
+
       {renderItems(SECTION_1)}
 
       <div className={clsx("block md:hidden", SPACE_Y)}>

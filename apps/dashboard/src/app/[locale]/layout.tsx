@@ -17,7 +17,7 @@ import FacebookPixel from "@/components/thirdparties/FacebookPixel";
 import GlobalModalReset from "@/components/thirdparties/GlobalModalReset";
 import ChunkErrorReload from "@/components/thirdparties/ChunkErrorReload";
 import { SoundProvider } from "@/context/SoundContext";
-import { Agentation } from "agentation";
+import DevAgentation from "@/components/thirdparties/DevAgentation";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 
 const notoSans = Noto_Sans({
@@ -147,7 +147,7 @@ export default async function LocaleLayout({
         {/* </> */}
         {/* )} */}
 
-        {process.env.NODE_ENV === "development" && <Agentation />}
+        <DevAgentation />
       </body>
     </html>
   );

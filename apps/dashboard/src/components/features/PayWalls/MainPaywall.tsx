@@ -5,7 +5,6 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 
 import {
   ArrowIcon,
-  CheckIcon,
   LockIcon,
   PaymentCardIcon,
 } from "@/components/ui/icons";
@@ -26,11 +25,10 @@ import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { usePaywallsStore } from "./usePaywallsStore";
 import { BottomSheet } from "../Sheets/BottomSheet";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
-import { Card } from "@clearcut/ui/card";
-import Text from "@clearcut/ui/text";
 import StarIcon from "@/components/ui/icons/star-icon";
 import { PaymentType } from "@/lib/payment/payment";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import PlanCard from "@/components/features/payment/PlanCard";
 import { useRouter } from "@/i18n/navigation";
 
 export const FALLBACK_IMAGE =
@@ -203,117 +201,25 @@ export default function MainPaywall() {
 
                 {/* pricing    */}
                 <div className="flex flex-col gap-4">
-                  {/* 6-month plan — replaced by 1-year plan at ₹599
-                  <Card
-                    padding={"8px 20px"}
-                    borderRadius={4}
-                    cursor="pointer"
-                    bgcolor={
-                      selectVariant === "6months"
-                        ? "var(--color-primary-subtle)"
-                        : "white"
-                    }
-                    bordercolor={
-                      selectVariant === "6months"
-                        ? "var(--color-brand)"
-                        : "#ccc"
-                    }
-                    className={`exam-card transition-all duration-200 ease-out `}
-                    onClick={() => { setSelectVariant("6months"); }}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex flex-col">
-                        <p className="heading-medium !font-semibold text-surface-gray-normal">
-                          {modalT("months", { count: 6 })} • {"₹" + Price?.final_price}{" "}
-                          <Text className="line-through" variant="body-small">{"₹" + Price?.actual_price}</Text>
-                        </p>
-                        <p className="body-small !font-normal text-surface-gray-muted">
-                          {modalT("best_for_upcoming_exam")}
-                        </p>
-                      </div>
-                      {selectVariant === "6months" ? <CheckIcon size={16} /> : <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />}
-                    </div>
-                  </Card>
-                  */}
+                  {/* The 6-month and 15-month plans were replaced by the 1-year
+                      plan; their markup is gone rather than left commented out,
+                      since it was a copy of what PlanCard now owns. */}
 
-                  {/* 15-month plan — replaced by 1-year plan at ₹599
-                  <Card
-                    padding={"8px 20px"}
-                    borderRadius={4}
-                    cursor="pointer"
-                    bgcolor={
-                      selectVariant === "15months"
-                        ? "var(--color-primary-subtle)"
-                        : "white"
-                    }
-                    bordercolor={
-                      selectVariant === "15months"
-                        ? "var(--color-brand)"
-                        : "#ccc"
-                    }
-                    className={`exam-card transition-all duration-200 ease-out `}
-                    onClick={() => { setSelectVariant("15months"); }}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex flex-col gap-1">
-                        <p className="heading-medium !font-semibold text-surface-gray-normal">
-                          {modalT("months", { count: 15 })} • {"₹" + comboPrice?.final_price}{" "}
-                          <Text className="line-through" variant="body-small">{"₹" + comboPrice?.actual_price}</Text>
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <StarIcon />
-                          <p className="body-small !font-normal text-surface-gray-muted">{modalT("most_popular")}</p>
-                        </div>
-                        <StatusChip className="!text-brand !bg-brand/9 !body-medium !font-semibold" variant="outline" tone="info" label={modalT("best_value_covers_next_exam")} />
-                      </div>
-                      {selectVariant === "15months" ? <CheckIcon size={16} /> : <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />}
-                    </div>
-                  </Card>
-                  */}
-
-                  {/* 1-year plan */}
-                  <Card
-                    padding={"8px 20px"}
-                    borderRadius={4}
-                    cursor="pointer"
-                    bgcolor={
-                      selectVariant === "1year"
-                        ? "var(--color-primary-subtle)"
-                        : "white"
-                    }
-                    bordercolor={
-                      selectVariant === "1year" ? "var(--color-brand)" : "#ccc"
-                    }
-                    className={`exam-card transition-all duration-200 ease-out`}
-                    onClick={() => setSelectVariant("1year")}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex flex-col gap-1">
-                        <p className="heading-medium !font-semibold text-surface-gray-normal">
-                          {modalT("months", { count: 12 })} •{" "}
-                          {`₹${oneYearPrice}`}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <StarIcon />
-                          <p className="body-small !font-normal text-surface-gray-muted">
-                            {modalT("most_popular")}
-                          </p>
-                        </div>
-                        <StatusChip
-                          className="!text-brand !bg-brand/9 !body-medium !font-semibold"
-                          variant="outline"
-                          tone="info"
-                          label={modalT("best_value_covers_next_exam")}
-                        />
-                      </div>
-
-                      {selectVariant === "1year" ? (
-                        <CheckIcon size={16} />
-                      ) : (
-                        <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                      )}
-                    </div>
-                  </Card>
+                  {/* 1-year plan. Shares PlanCard with the payment page — the
+                      two used to carry copies of this markup and drifted. */}
+                  <PlanCard
+                    durationLabel={modalT("months", { count: 12 })}
+                    price={`₹${oneYearPrice}`}
+                    subtitle={modalT("best_value_covers_next_exam")}
+                    badge={{
+                      label: modalT("most_popular"),
+                      placement: "inline",
+                      tone: "warning",
+                      iconLeft: <StarIcon />,
+                    }}
+                    selected={selectVariant === "1year"}
+                    onSelect={() => setSelectVariant("1year")}
+                  />
                 </div>
 
                 <div className="flex items-center justify-center gap-1">
