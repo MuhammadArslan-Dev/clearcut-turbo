@@ -19,7 +19,10 @@ if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
   );
 }
 
-const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 300 });
+// 24 h, same as the blog listing/post pages that use it (CC-151) — a
+// shorter fetch window would cap those pages' ISR lifetime. The CMS exam
+// list changes rarely.
+const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 86400 });
 
 // Normalize for comparison: lowercase, drop spaces/hyphens/underscores.
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]/g, "");

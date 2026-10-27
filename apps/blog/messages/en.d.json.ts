@@ -67,14 +67,11 @@ declare const messages: {
   },
 
   "examCard": {
-    "date": "Date:",
-    "mode": "Mode:",
-
-    "duration": "Duration:",
-
-    "cutoff": "Cutoff:",
-
-    "ctaTrial": "Start {days}-day FREE Trial"
+    "examDate": "Exam Date",
+    "examMode": "Exam Mode",
+    "duration": "Duration",
+    "cutoff": "Cutoff",
+    "viewExam": "View Exam"
   },
 
   "PricingSection": {
@@ -243,6 +240,30 @@ declare const messages: {
     },
     "cancel": "Cancel",
     "submit": "Submit report"
+  },
+  "blogHome": {
+    "title": "Exams on Clear Cutoff",
+    "titleHighlight": "Clear Cutoff",
+    "subtitle": "Start your journey of success with Clear Cutoff Academy",
+    "searchPlaceholder": "Search exams (e.g. CTET, HTET...)",
+    "filterAll": "All Exams",
+    "filterCentral": "Central Exams",
+    "filterState": "State Exams",
+    "sectionCentral": "Central Teaching Exams",
+    "sectionCentralHighlight": "Central",
+    "sectionState": "State Teaching Exams",
+    "sectionStateHighlight": "State",
+    "emptyTitle": "No exams found",
+    "emptyBody": "Try a different search or pick another filter."
+  },
+  "examPage": {
+    "title": "{exam} Exam on Clear Cutoff",
+    "subtitle": "Select the paper you want to practice. You can change it anytime.",
+    "choosePaper": "Choose your paper",
+    "chooseLevel": "Choose your {group}",
+    "paperHint": "{exam} has {count, plural, one {# paper} other {# papers}}. Each paper has different subjects and syllabus.",
+    "switchPapersInfo": "You can switch between papers anytime from the top menu.",
+    "loadingLevels": "Loading levels…"
   }
 };
 export default messages;

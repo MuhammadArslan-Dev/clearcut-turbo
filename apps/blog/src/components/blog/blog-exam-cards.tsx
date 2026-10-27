@@ -1,257 +1,238 @@
 "use client";
+
 import React from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
-import { Link } from "@/i18n/navigation";
 import { useSelectedDataStore } from "@/store/blog/useSelectedDataStore";
-import { Card } from "@clearcut/ui/card";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
-import Image from "next/image";
-import CourseCheckBadge from "../ui/badge/course-check-badge";
 import { formatToSlug } from "@/utils/slugify";
-import CalendarIcon from "@clearcut/ui/icons/calendar-icon";
-import CircleClockIcon from "@clearcut/ui/icons/circle-clock-icon";
-import WarningCirleIcon from "@clearcut/ui/icons/warning-circle-icon";
-import ChartSuccessBarIcon from "../ui/icons/chart-success-bar-icon";
-import CourseCard from "../ui/exam/CourseCard";
-import { Button } from "@clearcut/ui/button";
-import { useTranslations } from "next-intl";
-import CheckIcon from "../ui/icons/check-icon";
 import { ALLOWED_EXAMS } from "@/lib/exams";
+import CourseCard from "@/components/ui/exam/CourseCard";
 
-// A real <a href> (locale-aware Link) so crawlers can follow it; it used
-// to be a click handler calling router.push, which search engines don't run.
-const ExamCourseCard = ({
-  item,
-  href,
-  onClick,
-  bgcolor,
-}: {
-  item: Exam;
-  href: string;
-  onClick: () => void;
-  bgcolor?: string;
-}) => {
-  const t = useTranslations("");
+type ExamFilter = "all" | "central" | "state";
 
-  const metadata = JSON.parse(item?.metadata);
-  const points = [
-    {
-      id: 1,
-      icon: <CalendarIcon />,
-      name: "Exam Date",
-      value: metadata?.exam_date,
-    },
-    {
-      id: 2,
-      icon: <WarningCirleIcon />,
-      name: "Exam Mode",
-      value: metadata?.exam_mode,
-    },
-    {
-      id: 3,
-      icon: <CircleClockIcon />,
-      name: "Duration",
-      value: metadata?.duration,
-    },
-    {
-      id: 4,
-      icon: <ChartSuccessBarIcon />,
-      name: "Cutoff",
-      value: metadata?.cutoff,
-    },
-  ];
-  return (
-    <Link href={href} onClick={onClick} className="block">
-    <Card
-      bgcolor={bgcolor}
-      minWidth={"250px"}
-      padding={0}
-      maxWidth={"350px"}
-    >
-      <div className="flex flex-col gap-3 px-1 pt-3 pb-2 relative cursor-pointer">
-        <div className="flex justify-center px-2 gap-4 2xl:gap-1">
-          <div className="min-w-[100px] max-w-[200px] col-span-4 flex flex-col gap-1 items-center">
-            <div className="relative w-auto h-[64px] rounded-full ">
-              <Image
-                src={
-                  item.logo_url ||
-                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYAyuu-blwzsEjTj92dldM2I2UvueiguRwA&s"
-                }
-                alt=""
-                width={64}
-                height={64}
-                className="w-[64px] h-[64px] object-cover rounded-full grayscale opacity-70"
-              />
-              <div className="absolute bottom-0 flex items-center justify-center rounded-full right-0 w-5 h-5 bg-white">
-                <CheckIcon variant="design" size={16} />
-              </div>
-            </div>
-            {/* <div className=''> */}
-            <div className="flex flex-col items-center">
-              <p className="heading-small !font-semibold text-surface-gray-normal whitespace-nowrap">
-                {item.short_name}
-              </p>
-              <p className="body-medium surface-text-gray-muted whitespace-nowrap">
-                {item.exam_type}
-              </p>
-            </div>
-            {/* </div> */}
-          </div>
-
-          <div className="flex-1 min-w-0 h-full">
-            <div className="col-span-8 h-full flex flex-col justify-center gap-2">
-              {points.map((point) => (
-                <div
-                  key={point.id}
-                  className="body-small !font-normal flex gap-1 items-center mb-0.5"
-                >
-                  <div className="flex items-center gap-2 shrink-0">
-                    {point.icon}
-                    <p className="body-medium !font-normal surface-text-gray-muted whitespace-nowrap">
-                      {point?.name} :
-                    </p>
-                  </div>
-                  <p className="text-surface-gray-normal ">{point.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Card>
-    </Link>
-  );
+type ExamMetadata = {
+  exam_date?: string;
+  exam_mode?: string;
+  duration?: string;
+  cutoff?: string;
 };
 
+/**
+ * `metadata` arrives as a JSON *string* on the exam payload and is occasionally
+ * null for a newly-added exam. The previous card called JSON.parse on it
+ * unguarded, so one bad row took the whole listing down — parse defensively and
+ * let the row render without its detail lines instead.
+ */
+function parseMetadata(raw: unknown): ExamMetadata {
+  if (!raw) return {};
+  if (typeof raw === "object") return raw as ExamMetadata;
+  try {
+    return JSON.parse(raw as string) as ExamMetadata;
+  } catch {
+    return {};
+  }
+}
+
+// The backend marks a nationwide exam by putting "India" in `state` rather than
+// by a dedicated flag, so that string is the only signal for the Central vs
+// State split the design asks for.
+const isCentral = (exam: Exam) => exam.state?.toLowerCase().includes("india");
+const isActive = (exam: Exam) => exam.status?.toLowerCase().includes("active");
+
+/**
+ * `translation` is a JSON string holding per-locale copies of the display
+ * fields, e.g. {"en":{"state":"Haryana"},"hi":{"state":"<hi>"}}. The state
+ * sub-heading is the one place on this page that shows a translated value, so
+ * fall back to the raw column whenever the locale has no entry (or the row has
+ * an empty string, which several rows do).
+ */
+function localisedState(exam: Exam, locale: string): string {
+  try {
+    const translation = exam.translation ? JSON.parse(exam.translation) : null;
+    const translated = translation?.[locale]?.state;
+    if (typeof translated === "string" && translated.trim()) return translated;
+  } catch {
+    /* fall through to the raw column */
+  }
+  return exam.state;
+}
+
 export default function BlogExamCardsSection({ data }: { data: Exam[] }) {
+  const t = useTranslations("blogHome");
+  const locale = useLocale();
   const setSelectedCourse = useSelectedDataStore((s) => s.setSelectedCourse);
+
+  const [query, setQuery] = React.useState("");
+  const [filter, setFilter] = React.useState<ExamFilter>("all");
+
   // The card's Link navigates; this only keeps the client-side store in step.
   const onSelect = (item: Exam) => setSelectedCourse(item);
   // Clean lowercase exam URL, e.g. "/ctet".
   const examHref = (item: Exam) => `/${formatToSlug(item.short_name)}`;
 
-  // Only show exams that have a real exam page to land on. `onSelect` below
-  // routes to `/${formatToSlug(short_name)}`, and that route redirects home
-  // for anything outside `ALLOWED_EXAMS` (see [examName]/page.tsx) — without
-  // this filter, exams like REET render a card here whose only destination
-  // is a dead-end bounce back to this same page.
-  const allowedData = data?.filter((item) =>
-    ALLOWED_EXAMS.includes(formatToSlug(item.short_name)),
+  // Only show exams that have a real exam page to land on. The card routes to
+  // `/${formatToSlug(short_name)}`, and that route 404s for anything outside
+  // ALLOWED_EXAMS (see [examName]/page.tsx) — without this filter, exams like
+  // REET render a card here whose only destination is a dead end.
+  const allowed = React.useMemo(
+    () =>
+      (data ?? []).filter(
+        (item) => ALLOWED_EXAMS.includes(formatToSlug(item.short_name)) && isActive(item),
+      ),
+    [data],
   );
 
-  const centralExams = allowedData?.filter(
-    (item) =>
-      item.state.toLowerCase().includes("india") &&
-      item.status.toLowerCase().includes("active"),
-  );
-  const stateExams = allowedData
-    ?.filter(
-      (item) =>
-        !item.state.toLowerCase().includes("india") &&
-        item.status.toLowerCase().includes("active"),
-    )
-    .reduce(
-      (groups, exam) => {
-        const key = exam.state;
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(exam);
-        return groups;
-      },
-      {} as Record<string, Exam[]>,
+  const visible = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return allowed.filter((item) => {
+      if (filter === "central" && !isCentral(item)) return false;
+      if (filter === "state" && isCentral(item)) return false;
+      if (!needle) return true;
+      // Match the short name a visitor would type ("ctet") as well as the full
+      // name and the state, so "haryana" finds HTET.
+      return [item.short_name, item.name, item.state]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(needle));
+    });
+  }, [allowed, filter, query]);
+
+  const centralExams = visible.filter(isCentral);
+
+  // State exams group under their own state name, in the order the API returns
+  // them, so a new state needs no change here.
+  const stateExams = visible
+    .filter((item) => !isCentral(item))
+    .reduce<Record<string, Exam[]>>((groups, exam) => {
+      const key = localisedState(exam, locale);
+      (groups[key] ??= []).push(exam);
+      return groups;
+    }, {});
+
+  // Both sections below render an identical card; CourseCard is presentational
+  // (flat props), so the Exam → props mapping lives here, once.
+  const renderCard = (item: Exam) => {
+    const metadata = parseMetadata(item.metadata);
+    return (
+      <CourseCard
+        key={item.id}
+        logo={item.logo_url}
+        courseName={item.short_name}
+        examType={item.exam_type}
+        examDate={metadata.exam_date}
+        examMode={metadata.exam_mode}
+        duration={metadata.duration}
+        cutoff={metadata.cutoff}
+        href={examHref(item)}
+        onClick={() => onSelect(item)}
+      />
     );
+  };
+
+  const filters: { id: ExamFilter; label: string }[] = [
+    { id: "all", label: t("filterAll") },
+    { id: "central", label: t("filterCentral") },
+    { id: "state", label: t("filterState") },
+  ];
 
   return (
-    <MainContainer
-      padding="py-4 px-3"
-      bgColor="transparent"
-      maxWidth="max-w-[900px]"
-    >
+    // 1100, not the old 900: the white section panels below are the page's
+    // main surface and were too narrow for them. The cards inside stay capped
+    // at 540px, so this widens the panels without stretching a card.
+    <MainContainer padding="py-4 px-3" bgColor="transparent" maxWidth="max-w-[1100px]">
       <section className="space-y-8">
         <CustomizableHeader
           showEyebrow={false}
-          heading={"Exams on Clear Cutoff"}
-          highlightText={"Clear Cutoff"}
-          subheading={"Start your journey of success with Clear Cutoff Academy"}
+          heading={t("title")}
+          highlightText={t("titleHighlight")}
+          subheading={t("subtitle")}
           headingColor="text-gray-900"
           highlightColor="text-blue-500"
-          subheadingColor="text-gray-600 "
+          subheadingColor="text-gray-600"
           alignment="md:text-center text-left"
           headingClasses="!mb-1"
           headingSize="heading-2xlarge !font-semibold"
         />
 
-        <div className="space-y-6">
-          {centralExams?.length > 0 && (
-            <div className="w-full">
-              <div className="heading-xlarge font-semibold">
-                {highlightTextUtil("Central Teaching Exams", "Central")}
-              </div>
-              <div className="mt-5 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
-                {centralExams.map((item) => {
-                  return (
-                    <ExamCourseCard
-                      bgcolor="white"
-                      key={item.id}
-                      item={item}
-                      href={examHref(item)}
-                      onClick={() => onSelect(item)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        {/* Search + filter chips */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+          <div className="relative w-full sm:max-w-[420px]">
+            <MagnifyingGlassIcon
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm text-gray-900 shadow-sm outline-none placeholder:text-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
 
-          {Object.entries(stateExams)?.length > 0 && (
-            <div className="w-full">
-              <div className="heading-xlarge">
-                {highlightTextUtil("State Teaching Exams", "State")}
+          <div className="flex flex-wrap items-center gap-2">
+            {filters.map((option) => {
+              const selected = filter === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setFilter(option.id)}
+                  className={[
+                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                    selected
+                      ? "border-blue-500 bg-blue-500 text-white"
+                      : "border-slate-200 bg-white text-gray-700 hover:border-blue-300 hover:text-blue-700",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="rounded-xl bg-white px-5 py-10 text-center shadow-sm">
+            <p className="body-large !font-medium text-gray-900">{t("emptyTitle")}</p>
+            <p className="body-medium !font-normal mt-1 text-gray-600">{t("emptyBody")}</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {centralExams.length > 0 && (
+              <div className="w-full rounded-xl bg-white p-5 shadow-sm">
+                <h2 className="heading-xlarge !font-semibold">
+                  {highlightTextUtil(t("sectionCentral"), t("sectionCentralHighlight"))}
+                </h2>
+                <div className="mt-5 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(280px,540px))]">
+                  {centralExams.map(renderCard)}
+                </div>
               </div>
-              <div className="mt-4 md:mt-5 grid items-start gap-5 ">
-                {Object.entries(stateExams).map(([state, exams]) => {
-                  return (
+            )}
+
+            {Object.keys(stateExams).length > 0 && (
+              <div className="w-full rounded-xl bg-white p-5 shadow-sm">
+                <h2 className="heading-xlarge !font-semibold">
+                  {highlightTextUtil(t("sectionState"), t("sectionStateHighlight"))}
+                </h2>
+                <div className="mt-4 space-y-6 md:mt-5">
+                  {Object.entries(stateExams).map(([state, exams]) => (
                     <div key={state}>
-                      <h3 className="heading-large  neutral-blueGrayLight">
-                        {state}
-                      </h3>
-                      <div className="mt-4 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(250px,350px))]">
-                        {exams.map((item) => {
-                          return (
-                            <ExamCourseCard
-                              bgcolor="white"
-                              key={item.id}
-                              item={item}
-                              href={examHref(item)}
-                      onClick={() => onSelect(item)}
-                            />
-                          );
-                        })}
+                      <h3 className="heading-large !font-semibold text-gray-900">{state}</h3>
+                      <div className="mt-4 grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(280px,540px))]">
+                        {exams.map(renderCard)}
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-        {/* <div className=" text-center space-y-6">
-                    <p className="text-xl md:text-2xl text-gray-700">
-                        Used by <span className="font-bold text-blue-600">10,000+</span> students to clear TET exams.
-                    </p>
-                    <p className="text-gray-500 max-w-3xl mx-auto text-sm md:text-base">
-                        Join thousands of successful TET aspirants who chose smart, affordable learning over expensive coaching!
-                    </p>
-                    <div className="flex items-center justify-center gap-2 text-gray-700">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200">
-                            <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden>
-                                <path fill="currentColor" d="M10 0a10 10 0 1010 10A10.011 10.011 0 0010 0zm4.707 8.293l-5.5 5.5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 011.414-1.414L8.5 11.586l4.793-4.793a1 1 0 011.414 1.414z" />
-                            </svg>
-                        </span>
-                        <span className="font-semibold">4.9+</span>
-                        <span className="text-gray-500">Average Rating by our Students!</span>
-                    </div>
-                </div> */}
+            )}
+          </div>
+        )}
       </section>
     </MainContainer>
   );

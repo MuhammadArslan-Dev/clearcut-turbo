@@ -155,6 +155,8 @@ interface Exam {
     combo_price: number;
     marking_schema: string; // or you can parse it to a JSON object
     metadata: string; // or you can parse it to a JSON object
+    /** JSON string of per-locale display fields, e.g. {"en":{"state":"Haryana"},"hi":{…}} */
+    translation?: string;
     createdAt: string;
     updatedAt: string;
 }

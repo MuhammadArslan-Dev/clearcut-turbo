@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { scrubSensitiveData, scrubSpan, scrubTransaction } from "@clearcut/error-reporting/redact";
 import { PUBLIC_SENTRY_DSN, PUBLIC_SENTRY_SERVER_ENABLED } from "@clearcut/error-reporting/public-project";
 
 // Server/edge Sentry for the public blog — inert until NEXT_PUBLIC_SENTRY_DSN
@@ -17,6 +17,9 @@ export async function register() {
     environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
     sendDefaultPii: false,
     tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+    // CC-143: transactions/spans carry the request URL and its query string.
+    beforeSendTransaction: scrubTransaction,
+    beforeSendSpan: scrubSpan,
     beforeSend(event) {
       scrubSensitiveData(event);
       event.tags = { ...event.tags, runtime: `nextjs-${process.env.NEXT_RUNTIME}`, app: "blog" };

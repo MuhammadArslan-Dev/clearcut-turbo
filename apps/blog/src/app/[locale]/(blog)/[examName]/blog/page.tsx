@@ -18,6 +18,17 @@ type Params = {
   params: Promise<{ locale: string; examName: string }>;
 };
 
+/* Cached (ISR), rendered on first visit, regenerated in the background at
+   most once a day (CC-151). It rendered on every request before (TTFB
+   0.65–1.75 s). 24 h, not 1 h: each regeneration costs ~20 Vercel ISR write
+   units and the Hobby plan has 200K a month (see
+   lib/question-bank/route-cache.ts). A CMS edit shows within a day. */
+export const revalidate = 86400;
+
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: Params): Promise<Metadata> {
