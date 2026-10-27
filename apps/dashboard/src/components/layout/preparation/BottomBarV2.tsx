@@ -17,8 +17,7 @@ import {
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { limitChars } from "@clearcut/utils/text-limit";
 import { useTranslations } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { useMiniTestAvailability } from "@/components/features/preparation/hooks/useMiniTestAvailability";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
@@ -118,23 +117,14 @@ function BottomBarV2Desktop() {
 
   // Same query key + params as V1 / ChapterDetailHeader, so all three share one
   // cached request per topic.
-  const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
-    queryKey: ["minitest-check", selectedTopic?.id],
-    queryFn: async () => {
-      const res = await getMiniTestQuestions(
-        selectedTopic?.id,
-        `?topicId=${selectedTopic?.id}&random=true&limit=1&courseId=${course?.group_code}`,
-      );
-      return res.data ?? [];
-    },
-    enabled: !!selectedTopic?.id,
-    staleTime: 1000 * 60 * 10,
-    refetchOnWindowFocus: false,
-  });
+  const { status: testStatus } = useMiniTestAvailability(
+    selectedTopic?.id,
+    course?.group_code,
+  );
 
   // Optimistic until the check resolves (no layout jump when a test exists);
   // hidden completely once we know the topic has none.
-  const showTest = !topicCheckFetched || (topicQuestionsCheck?.length ?? 0) > 0;
+  const showTest = testStatus !== "none";
 
   const currentPaper = papers.find((p) => p.id === selectedPaperId);
 
@@ -172,6 +162,7 @@ function BottomBarV2Desktop() {
       hasNext={nextTopicLocked || !!nextTopic}
       nextLocked={nextTopicLocked}
       showTest={showTest}
+      testLoading={testStatus === "loading"}
       currentPaperName={getPaperDisplayName(currentPaper.name, contentLocale)}
       prevName={prevTopic ? getLocalizedName(prevTopic, contentLocale) : ""}
       nextName={nextTopic ? getLocalizedName(nextTopic, contentLocale) : ""}
@@ -201,6 +192,8 @@ type ViewProps = {
   hasNext: boolean;
   nextLocked: boolean;
   showTest: boolean;
+  /** Count not known yet: the Test slot is kept (invisible) so nothing jumps. */
+  testLoading?: boolean;
   /** Display name of the selected paper, shown on the paper card. */
   currentPaperName: string;
   prevName: string;
@@ -233,6 +226,7 @@ export function BottomBarV2View({
   hasNext,
   nextLocked,
   showTest,
+  testLoading = false,
   currentPaperName,
   prevName,
   nextName,
@@ -314,10 +308,12 @@ export function BottomBarV2View({
           {showTest && (
             <div
               data-tour={PREP_TOUR.startTest}
-              className="min-w-0 flex-1 self-center @[680px]:flex-[2_1_0%]"
+              aria-hidden={testLoading || undefined}
+              className={`min-w-0 flex-1 self-center @[680px]:flex-[2_1_0%] ${testLoading ? "invisible pointer-events-none" : ""}`}
             >
               <Button
                 onClick={onStartTest}
+                disabled={testLoading}
                 size={isMobile ? "md" : "lg"}
                 sx={{ borderRadius: "12px" }}
                 className="min-h-[48px] @[680px]:!min-h-[56px]"

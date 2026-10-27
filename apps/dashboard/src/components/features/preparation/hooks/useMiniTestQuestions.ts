@@ -40,7 +40,8 @@ export function useMiniTestQuestions(
   ------------------------------- */
   const { data, isLoading, error, refetch } = useQuery<QuestionNew[]>({
     queryKey: QUERY_KEY(topicId),
-    enabled: !!topicId,
+    // courseId scopes the questions to the enrolled exam; without it the API 404s.
+    enabled: !!topicId && !!courseId,
 
     queryFn: async () => {
       const res = await sentryApiClient(
