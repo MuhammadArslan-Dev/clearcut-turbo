@@ -19,8 +19,7 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { limitChars } from "@clearcut/utils/text-limit";
 import Text from "@clearcut/ui/text";
 import { useTranslations } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { useMiniTestAvailability } from "@/components/features/preparation/hooks/useMiniTestAvailability";
 import { useAddPaper } from "@/components/features/preparation/hooks/useAddPaper";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
@@ -75,21 +74,15 @@ export default function BottomBar({
   // inside that switcher's modal instead.
   const showAddPaperInBar = canAddPaper && papers.length === 1;
 
-  const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
-    queryKey: ["minitest-check", selectedTopic?.id],
-    queryFn: async () => {
-      const res = await getMiniTestQuestions(
-        selectedTopic?.id,
-        `?topicId=${selectedTopic?.id}&random=true&limit=1&courseId=${course?.group_code}`,
-      );
-      return res.data ?? [];
-    },
-    enabled: !!selectedTopic?.id,
-    staleTime: 1000 * 60 * 10,
-    refetchOnWindowFocus: false,
-  });
+  const { status: testStatus } = useMiniTestAvailability(
+    selectedTopic?.id,
+    course?.group_code,
+  );
 
-  const showTopicTestButton = !topicCheckFetched || (topicQuestionsCheck?.length ?? 0) > 0;
+  // While the count loads the button's slot is reserved (invisible) so the bar
+  // does not jump; a topic with no questions removes it entirely.
+  const showTopicTestButton = testStatus !== "none";
+  const testLoading = testStatus === "loading";
 
   const currentPaper = useMemo(() => {
     return papers.find((p) => p.id === selectedPaperId);
@@ -242,9 +235,14 @@ export default function BottomBar({
         )}
 
         {showTopicTestButton && (
-          <div data-tour={PREP_TOUR.startTest} className="max-w-[200px] w-full">
+          <div
+            data-tour={PREP_TOUR.startTest}
+            aria-hidden={testLoading || undefined}
+            className={`max-w-[200px] w-full ${testLoading ? "invisible pointer-events-none" : ""}`}
+          >
             <Button
               onClick={() => open("mini-test", {}, true)}
+              disabled={testLoading}
               size={isMobile ? "md" : "lg"}
               sx={{
                 borderRadius: "50px",

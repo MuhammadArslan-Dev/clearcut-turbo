@@ -12,8 +12,7 @@ import Text from "@clearcut/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckIcon, NoteIcon, MediaPlayerIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { getMiniTestQuestions } from "@/lib/tests/getMiniTestQuestions";
+import { useMiniTestAvailability } from "@/components/features/preparation/hooks/useMiniTestAvailability";
 import { getLocalizedName } from "../../util/getLocalizedName";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
@@ -34,21 +33,13 @@ export default function ChapterDetailHeader() {
     ? getLocalizedName(selectedTopic, contentLocale)
     : undefined;
 
-  const { data: topicQuestionsCheck, isFetched: topicCheckFetched } = useQuery({
-    queryKey: ["minitest-check", selectedTopic?.id],
-    queryFn: async () => {
-      const res = await getMiniTestQuestions(
-        selectedTopic?.id,
-        `?topicId=${selectedTopic?.id}&random=true&limit=1&courseId=${course?.group_code}`,
-      );
-      return res.data ?? [];
-    },
-    enabled: !!selectedTopic?.id,
-    staleTime: 1000 * 60 * 10,
-    refetchOnWindowFocus: false,
-  });
+  const { status: testStatus } = useMiniTestAvailability(
+    selectedTopic?.id,
+    course?.group_code,
+  );
 
-  const hasTopicTest = !topicCheckFetched || (topicQuestionsCheck?.length ?? 0) > 0;
+  const hasTopicTest = testStatus !== "none";
+  const testLoading = testStatus === "loading";
 
   return (
     <div className="min-h-[60px] w-full bg-white flex items-center px-3 py-2 md:py-3 md:px-4">
@@ -143,7 +134,10 @@ export default function ChapterDetailHeader() {
             {hasTopicTest && (
               <>
                 <ChevronIcon color="var(--icon-gray-muted)" />
-                <div className="flex items-center gap-1 md:gap-2">
+                <div
+                  aria-hidden={testLoading || undefined}
+                  className={`flex items-center gap-1 md:gap-2 ${testLoading ? "invisible" : ""}`}
+                >
                   {topicProgress?.miniTestDone ? (
                     <CircleTickIcon size={16} variant="filled" value="true" />
                   ) : (
