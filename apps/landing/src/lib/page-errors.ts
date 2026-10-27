@@ -1,8 +1,9 @@
 import { createPageErrorReporter } from "@clearcut/error-reporting/page-errors";
-import { scrubSensitiveData } from "@clearcut/error-reporting/redact";
+import { scrubSensitiveData, scrubSpan, scrubTransaction } from "@clearcut/error-reporting/redact";
 import { DENY_URLS, IGNORE_ERRORS } from "@clearcut/error-reporting/noise";
 import { PUBLIC_SENTRY_DSN, publicSentryAllowedHere } from "@clearcut/error-reporting/public-project";
 import { tagPage } from "@clearcut/error-reporting/page-tags";
+import { landingTrafficTags } from "@clearcut/error-reporting/traffic-tags";
 import { routing } from "@/i18n/routing";
 
 // Page-level error reporting (404s, error boundaries) for the public landing site.
@@ -14,6 +15,10 @@ import { routing } from "@/i18n/routing";
 // here, the first time a page error actually happens.
 // clearcutoff-public (see @clearcut/error-reporting/public-project).
 const DSN = PUBLIC_SENTRY_DSN;
+
+// exam / utm_campaign / has_fbclid / in_app_browser of the landing URL,
+// read now (module load) before anything strips the query (CC-144).
+const TRAFFIC_TAGS = landingTrafficTags();
 
 let loading: Promise<typeof import("@sentry/nextjs")> | null = null;
 
@@ -39,11 +44,18 @@ export function loadSentry() {
         // Page-load tracing + Web Vitals. The SDK starts after the page has
         // loaded; the vitals still arrive (buffered PerformanceObserver).
         tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+        // CC-143: transactions/spans carry the page URL and its query string.
+        beforeSendTransaction(event) {
+          scrubTransaction(event);
+          event.tags = { ...event.tags, ...TRAFFIC_TAGS, app: "landing" };
+          return event;
+        },
+        beforeSendSpan: scrubSpan,
         beforeSend(event) {
           scrubSensitiveData(event);
           // page + language tags for the signup funnel (CC-95).
           tagPage(event, routing.locales, routing.defaultLocale);
-          event.tags = { ...event.tags, runtime: "browser", app: "landing" };
+          event.tags = { ...event.tags, ...TRAFFIC_TAGS, runtime: "browser", app: "landing" };
           return event;
         },
       });
