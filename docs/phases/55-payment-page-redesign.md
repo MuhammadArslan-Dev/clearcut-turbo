@@ -125,3 +125,9 @@ tsc **95 = baseline** · `PlanCard` lint 0/0, no new warnings elsewhere · `chec
 
 tsc 95 baseline · eslint · check:colors · Playwright (Sonnet) desktop + 390, en + hi ·
 payment funnel events confirmed unchanged.
+
+## Mobile pass (2026-10-27, user feedback via Agentation)
+- Exam block: logo left, text right, group centered, text left-aligned; "All levels included" sits under the chips.
+- "Choose your plan" card: full width, square corners, no gap above/below on mobile; subtitle hidden on mobile only (`hidden lg:block`).
+- Result: no scroll at 400x650, 375x667, 390x740, 412x823; CLS 0. Skeleton heights mirror it (exam 77, card 342, footer 116).
+- **Plan order swapped and default changed:** one-time 1-month (Rs 139) is first and preselected (`DEFAULT_VARIANT = "1month-onetime"`); autopay 1-month (Rs 99) is second. Side effects: Meta InitiateCheckout value and `default_plan_id` now follow the default (Rs 139); "Cancel autopay anytime" shows only when autopay is selected; `?plan=1month` still preselects autopay.

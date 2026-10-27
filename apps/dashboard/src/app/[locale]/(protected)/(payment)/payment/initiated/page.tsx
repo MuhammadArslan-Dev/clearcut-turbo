@@ -84,8 +84,9 @@ const BENEFITS = [
 // PaywallFloatingWidget, MyCourseCard, ...).
 
 // The plan preselected when the page loads — reported on every Plan Switched
-// as `default_plan_id`, and the starting point for detecting a switch.
-const DEFAULT_VARIANT: PaymentType = "1month";
+// as `default_plan_id`, and the starting point for detecting a switch. It is
+// the one-time 1-month plan (the first card), not the autopay one.
+const DEFAULT_VARIANT: PaymentType = "1month-onetime";
 // Plans this page offers (the ones a `?plan=` may preselect).
 const PLAN_VARIANTS = ["1month", "1month-onetime", "1year"] as const;
 
@@ -297,8 +298,8 @@ export default function InitiatedPage() {
     // them, never inside track()'s own custom-data object.
     const trackInitiateCheckout = async () => {
       await setMetaUserData();
-      // Page just opened — selectVariant is still its "1month" default.
-      const initiateCheckoutPrice = getPriceForVariant("1month", pricing, data?.short_name);
+      // Page just opened — selectVariant is still DEFAULT_VARIANT.
+      const initiateCheckoutPrice = getPriceForVariant(DEFAULT_VARIANT, pricing, data?.short_name);
       trackFacebookEventWithUserData("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
 
       if (data?.id) {
@@ -928,7 +929,7 @@ export default function InitiatedPage() {
             below, so the content replaces the skeleton in place instead of the
             whole page jumping (CLS 0.19 on mobile, CC-61; 0.456 after the
             redesign until this was brought back in step). */}
-        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
           <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
             <div className="flex h-[74px] w-full flex-col items-center justify-center gap-2 px-3 lg:h-[58px]">
               <Skeleton className="h-5 w-44" />
@@ -936,16 +937,18 @@ export default function InitiatedPage() {
             </div>
           </div>
 
-          <div className="w-full flex justify-center p-4 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
-            <div className="flex h-[163px] w-full max-w-[352px] flex-col items-center gap-3 rounded-lg bg-white p-4 lg:h-full lg:min-h-[550px] lg:max-w-none lg:items-start lg:p-6">
-              <Skeleton className="h-16 w-16 rounded-full" />
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-5 w-48 rounded-full" />
+          <div className="w-full flex justify-center px-4 pt-3 pb-3 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
+            <div className="flex h-[77px] w-full max-w-[352px] flex-row items-center justify-center gap-3 rounded-lg bg-white p-3 lg:h-full lg:min-h-[550px] lg:max-w-none lg:flex-col lg:items-start lg:justify-start lg:p-6">
+              <Skeleton className="h-14 w-14 shrink-0 rounded-full lg:h-16 lg:w-16" />
+              <div className="flex flex-col gap-2 lg:gap-3">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-48 rounded-full" />
+              </div>
             </div>
           </div>
 
-          <div className="w-full flex justify-center px-4 pb-4 lg:p-0 lg:col-start-2 lg:row-start-2">
-            <div className="flex h-[388px] w-full max-w-[352px] flex-col gap-4 rounded-lg bg-white p-4 lg:h-[380px] lg:max-w-none lg:rounded-b-none lg:p-6 lg:pb-0">
+          <div className="w-full flex justify-center lg:p-0 lg:col-start-2 lg:row-start-2">
+            <div className="flex h-[342px] w-full flex-col gap-3 rounded-none bg-white p-3 lg:gap-4 lg:h-[380px] lg:max-w-none lg:rounded-lg lg:rounded-b-none lg:p-6 lg:pb-0">
               <Skeleton className="h-6 w-36" />
               <Skeleton className="h-[88px] w-full rounded-lg" />
               <Skeleton className="h-[88px] w-full rounded-lg" />
@@ -953,7 +956,7 @@ export default function InitiatedPage() {
             </div>
           </div>
 
-          <div className="sticky bottom-0 z-10 flex h-[154px] w-full flex-col items-center gap-3 bg-white px-3 py-3 max-lg:mt-auto lg:static lg:col-start-2 lg:row-start-3 lg:-mt-5 lg:h-[170px] lg:rounded-b-lg lg:px-6">
+          <div className="sticky bottom-0 z-10 flex h-[116px] w-full flex-col items-center gap-3 bg-white px-3 py-3 max-lg:mt-auto lg:static lg:col-start-2 lg:row-start-3 lg:-mt-5 lg:h-[170px] lg:rounded-b-lg lg:px-6">
             <Skeleton className="h-12 w-full max-w-[400px] rounded-full" />
             <Skeleton className="h-4 w-56" />
             <Skeleton className="h-4 w-40" />
@@ -971,7 +974,7 @@ export default function InitiatedPage() {
       {/* lg:items-stretch (not the flex row's items-center) so the two columns
           end at the same height: the left card spans both right-hand rows and
           stretches to the plan card + CTA total. */}
-      <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+      <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
         <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
           <div className="flex  w-full gap-4 px-3 py-4 lg:justify-center lg:py-2">
             <button
@@ -1000,19 +1003,19 @@ export default function InitiatedPage() {
             `row-span-2` this card alone sizes row 2, and since it is taller
             than the plan card the CTA below was pushed down by the difference
             — a 124 px gap between the plan card and its own CTA. */}
-        <div className="w-full flex justify-center p-4 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
-          <div className="max-w-[352px] w-full lg:max-w-none lg:h-full flex flex-col gap-5 lg:gap-6 lg:bg-white lg:p-6 lg:rounded-lg">
+        <div className="w-full flex justify-center px-4 pt-3 pb-3 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
+          <div className="max-w-[352px] w-full lg:max-w-none lg:h-full flex flex-col gap-2 lg:gap-6 lg:bg-white lg:p-6 lg:rounded-lg">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col items-center gap-1 lg:flex-row lg:items-center lg:gap-4">
+              <div className="flex flex-row items-center justify-center gap-3 lg:justify-start lg:gap-4">
                 <Image
                   src={examLogo}
                   alt={data?.short_name || "Course logo"}
                   width={64}
                   height={64}
-                  className="w-[64px] h-[64px] object-cover rounded-full"
+                  className="h-[56px] w-[56px] shrink-0 rounded-full object-cover lg:h-[64px] lg:w-[64px]"
                   priority
                 />
-                <div className="flex flex-col items-center gap-1 lg:items-start">
+                <div className="flex min-w-0 flex-col items-start gap-1">
                   <div className="heading-large !font-semibold text-surface-gray-normal">
                     {examTitle}
                   </div>
@@ -1026,16 +1029,16 @@ export default function InitiatedPage() {
                       />
                     ) : null}
                   </div>
+                  {/* Mobile: sits beside the logo, under the chips, instead of on its own row. */}
+                  <div className="flex items-center gap-1 lg:hidden">
+                    <SheildIcon size={16}
+                      color="var(--color-surface-gray-subtle)" />
+                    <p className="body-small text-surface-gray-subtle">
+                      {modalT("all_levels_one_plan")}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-1 lg:hidden">
-              <SheildIcon size={20}
-                color="var(--color-surface-gray-subtle)" />
-              <p className="body-medium text-surface-gray-subtle">
-                {modalT("all_levels_one_plan")}
-              </p>
             </div>
 
             {/* Desktop-only: what the plan actually gets you. */}
@@ -1072,13 +1075,13 @@ export default function InitiatedPage() {
         </div>
 
         {/* Right: plan picker */}
-        <div className="w-full flex justify-center px-4 pb-4 lg:p-0 lg:col-start-2 lg:row-start-2">
-          <div className="max-w-[352px] w-full lg:max-w-none lg:h-full flex flex-col gap-5 bg-white p-4 lg:p-6 rounded-lg lg:rounded-b-none lg:pb-0">
+        <div className="w-full flex justify-center lg:p-0 lg:col-start-2 lg:row-start-2">
+          <div className="w-full lg:max-w-none lg:h-full flex flex-col gap-3 lg:gap-5 bg-white p-3 lg:p-6 rounded-none lg:rounded-lg lg:rounded-b-none lg:pb-0">
             <div>
               <p className="heading-large !font-semibold text-surface-gray-normal">
                 {modalT("choosePlan")}
               </p>
-              <p className="body-small !font-normal text-surface-gray-muted">
+              <p className="hidden lg:block body-small !font-normal text-surface-gray-muted">
                 {modalT("choosePlanSubtitle")}
               </p>
             </div>
@@ -1087,7 +1090,17 @@ export default function InitiatedPage() {
             {/* The 6-month and 15-month plans were replaced by the 1-year plan;
                 their markup is gone rather than left commented out, since it
                 was a copy of the old hand-written card that PlanCard replaced. */}
-            <div className="flex flex-col gap-4" role="radiogroup" aria-label={modalT("choosePlan")}>
+            <div className="flex flex-col gap-2.5 lg:gap-4" role="radiogroup" aria-label={modalT("choosePlan")}>
+              {/* 1-month one-time plan */}
+              <PlanCard
+                durationLabel={modalT("months", { count: 1 })}
+                price={`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}
+                strikePrice="₹1,499"
+                subtitle={modalT("one_time_no_renewal")}
+                selected={selectVariant === "1month-onetime"}
+                onSelect={() => handleSelectVariant("1month-onetime")}
+              />
+
               {/* 1-month plan (subscription) */}
               <PlanCard
                 durationLabel={modalT("months", { count: 1 })}
@@ -1101,16 +1114,6 @@ export default function InitiatedPage() {
                 }}
                 selected={selectVariant === "1month"}
                 onSelect={() => handleSelectVariant("1month")}
-              />
-
-              {/* 1-month one-time plan */}
-              <PlanCard
-                durationLabel={modalT("months", { count: 1 })}
-                price={`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}
-                strikePrice="₹1,499"
-                subtitle={modalT("one_time_no_renewal")}
-                selected={selectVariant === "1month-onetime"}
-                onSelect={() => handleSelectVariant("1month-onetime")}
               />
 
               {/* 1-year plan */}
@@ -1151,7 +1154,7 @@ export default function InitiatedPage() {
             column, with the negative top margin closing the grid's row gap so
             the two read as one card. */}
         <div className="sticky bottom-0 z-10 px-3 py-2 bg-white w-full max-lg:mt-auto lg:static lg:col-start-2 lg:row-start-3 lg:-mt-5 lg:rounded-b-lg lg:px-6 lg:pb-6">
-          <div className="w-full flex flex-col items-center gap-4">
+          <div className="w-full flex flex-col items-center gap-1 lg:gap-4">
             <div className="w-full flex flex-col items-center gap-1">
               <div className="w-full max-w-[400px]">
                 <ShimmerButton
@@ -1215,7 +1218,7 @@ export default function InitiatedPage() {
                   continueFreeTriggerRef.current = "link";
                   setContinueFreeOpen(true);
                 }}
-                className="body-medium text-surface-gray-muted underline underline-offset-4 py-2 px-3 cursor-pointer"
+                className="body-medium text-surface-gray-muted underline underline-offset-4 py-1 px-3 lg:py-2 cursor-pointer"
               >
                 {modalT("continueFree")}
               </button>
