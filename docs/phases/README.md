@@ -71,6 +71,21 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 38 | [Sentry page + language tags](38-cc95-sentry-page-language-tags.md) | CC-95 | CM-dashboard, CM-landing | Built + verified locally (branch, not pushed) | SENTRY_AUTH_TOKEN check on server; top-5 after a week |
 | 39 | [Email to Meta + Amplitude](39-cc113-email-to-meta-and-amplitude.md) | CC-113 | CM-dashboard, packages/utils | Built + verified locally (branch, not pushed) | Push approval; server CAPI is a separate job |
 | 40 | [/go CTA opens /start in Chrome](40-cc122-go-page-opens-start-in-chrome.md) | CC-122 | ASTRO, CM-landing | Built + verified locally (branches, not pushed) | Real Android phone test; push approval |
+| 42 | [Login token out of URLs](42-cc143-token-out-of-urls.md) | CC-143 | CM auth + dashboard, ASTRO, BE | Parked — Sentry span/transaction scrub built + Playwright-tested (not committed) | Code flow + revoke: end of wave |
+| 43 | [Teaching resizer SEO (7-day target)](43-cc159-teaching-resizer-seo.md) | CC-159 (+CC-160) | CM-tools, tools BE | Built + Playwright-tested (not committed) | Team: sheet edits (43-sheet-edits.md); user: Search Console + deploy tools BE then tools |
+| 44 | [Request storm on navigation](44-cc146-request-storm.md) | CC-146 | CM-dashboard | Built + Playwright-tested (not committed) | Deploy dashboard; Clarity/Meta gateway left by user |
+| 45 | [Laravel performance tracing](45-cc145-laravel-tracing.md) | CC-145 | BE, CM-dashboard | Built + unit-tested (not committed) | Deploy BE + dashboard; user sets SENTRY_TRACES_SAMPLE_RATE=0.1 |
+| 46 | [Razorpay webhooks → Amplitude](46-cc163-razorpay-webhooks-amplitude.md) | CC-163 | BE | Built + verified locally (not committed) | Deploy BE; user runs the backfill (dry run, then --send) |
+| 47 | [Money-path error triage](47-cc153-error-triage.md) | CC-153 | read-only | Mapping done, posted on CC-153 | User: Razorpay reconciliation SQL + Sentry alerts |
+| 48 | [Public pages Sentry coverage](48-cc144-public-sentry-coverage.md) | CC-144 | CM public apps, ASTRO | Not Started | D1 sampling, D2 CC-142 |
+| 49 | [Backend TTFB + slow endpoints](49-cc149-backend-ttfb.md) | CC-149 | BE | Not Started | 3 days of phase 45 data |
+| 50 | [Front-end bundles + LCP](50-cc150-frontend-bundles-lcp.md) | CC-150 | CM-dashboard, blog | First pass built + measured: JS -9% dashboard / -22% onboarding (target -25%), not committed | D1 Amplitude defer, D2 Replay cost, D3 prefetch, D4 LazyMotion, auth-spinner LCP |
+| 51 | [Public pages delivery](51-cc151-public-delivery.md) | CC-151 | CM public, ASTRO, infra | Not Started | D1 infra |
+| 52 | [Slow-network UX](52-cc152-slow-network-ux.md) | CC-152 | CM-dashboard | Built on 4 screens; Playwright found the retry sent no request — fixed, **re-test blocked on an auth token** | User: approve a local-only test token |
+| 53 | [Guardrails + close epic](53-cc154-guardrails-cc141-close.md) | CC-154, CC-141 | CI, Sentry | Not Started | after 42–52 |
+| 54 | [Blog home + exam page redesign](54-blog-home-exam-redesign.md) | — | CM-blog | Built + Playwright-tested, 1 bug found and fixed (not committed) | Commit approval |
+| 55 | [Payment page redesign](55-payment-page-redesign.md) | — | CM-dashboard | Built + Playwright-tested; 4 fixes applied, behaviour unchanged (not committed) | Commit approval |
+| 56 | [Profile screens redesign](56-profile-screens-redesign.md) | — | CM-dashboard | All 3 screens built + browser-tested on real data, behaviour unchanged (not committed) | hi/mr + 390 px pass |
 
 ## Cross-phase dependencies
 
@@ -84,5 +99,8 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 ## Change log
 
 - 2026-10-21: created folder, 14 phase files, investigation results copied in.
+
+- 2026-10-27: added phases 42–53 (wave 2: CC-143, 159, 146, 145, 163, 153, 144, 149, 150, 151, 152, 154, 141).
+- 2026-10-27: added phase 54 (blog home + exam page redesign from design screenshots).
 
 - 2026-10-24: added phases 35–40 (tour, CC-94, CC-74, CC-95 rest, CC-113, CC-122). Jira: CC-51 → Testing; CC-1, CC-44, CC-86 → Done.

@@ -10,6 +10,8 @@ import {
   SENTRY_ENVIRONMENT,
   TRACES_SAMPLE_RATE,
   scrubSensitiveData,
+  scrubSpan,
+  scrubTransaction,
   tagPage,
 } from "@/lib/sentry/sentry-shared";
 
@@ -25,6 +27,10 @@ Sentry.init({
   sendDefaultPii: false,
 
   ignoreErrors: IGNORE_ERRORS,
+
+  // CC-143: transactions/spans carry the landing URL (`?token=` handoff).
+  beforeSendTransaction: scrubTransaction,
+  beforeSendSpan: scrubSpan,
 
   beforeSend(event) {
     scrubSensitiveData(event);

@@ -15,6 +15,7 @@
     "./legacy-polyfills": "./src/legacy-polyfills.ts",
     "./noise": "./src/noise.ts",
     "./page-tags": "./src/page-tags.ts",
+    "./traffic-tags": "./src/traffic-tags.ts",
     "./public-project": "./src/public-project.ts"
   },
   "dependencies": {

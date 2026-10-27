@@ -1,6 +1,6 @@
 // src/lib/analytics/events/system.ts
 
-export type SystemEventName = 'Error Occurred' | 'Meta Pixel Status';
+export type SystemEventName = 'Error Occurred' | 'Meta Pixel Status' | 'Slow Load Shown' | 'Slow Load Retried';
 
 export interface SystemEventPayloads {
   'Error Occurred': {
@@ -15,5 +15,16 @@ export interface SystemEventPayloads {
   'Meta Pixel Status': {
     pixel_loaded: boolean;
     page_context: string;
+  };
+  // CC-152: a screen's data had not arrived after 10 s, so the "Taking
+  // longer than usual" notice was shown (once per wait) / its Try again was
+  // tapped. No existing event covers this moment.
+  'Slow Load Shown': {
+    page_context: string;
+    seconds_waited: number;
+  };
+  'Slow Load Retried': {
+    page_context: string;
+    seconds_waited: number;
   };
 }

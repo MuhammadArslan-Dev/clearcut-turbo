@@ -72,6 +72,15 @@ async function examIdOf(examName: string) {
   return (await resolveExamId(examName)) ?? examName;
 }
 
+/* Cached (ISR), rendered on first visit, regenerated in the background at
+   most once a day (CC-151). Same reasoning as the listing page: ~20 ISR
+   write units per regeneration against the Hobby plan's 200K a month. */
+export const revalidate = 86400;
+
+export async function generateStaticParams() {
+  return [];
+}
+
 /* =========================================================
    METADATA
 ========================================================= */

@@ -11,7 +11,7 @@ import { AuthProvider, AuthModal } from "@/lib/auth";
 import { buildMetadata } from "@clearcut/utils/build-metadata";
 import AnalyticsProvider from "@clearcut/analytics/provider";
 import InitAmplitude from "@/components/analytics/InitAmplitude";
-import { Agentation } from "agentation";
+import DevAgentation from "@/components/DevAgentation";
 
 export const dynamicParams = true;
 
@@ -83,7 +83,7 @@ export default async function LocaleLayout({
           <AnalyticsProvider />
           <InitAmplitude />
 
-          {process.env.NODE_ENV === "development" && <Agentation />}
+          <DevAgentation />
       </body>
     </html>
   );

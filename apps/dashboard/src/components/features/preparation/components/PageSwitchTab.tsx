@@ -6,6 +6,7 @@ import { usePathname } from "@/i18n/navigation";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
+import { useAllowPrefetch } from "@/hooks/useAllowPrefetch";
 
 interface PageSwitchTabProps {
   // Two copies of this component can be mounted at once — Topbar's own and
@@ -25,6 +26,9 @@ export default React.memo(function PageSwitchTab({
   const params = useParams();
   const courseId = params.courseId as string;
   const t = useTranslations("common");
+  // Slow / Save-Data connections don't prefetch the other tab while this
+  // page is still loading (CC-146).
+  const allowPrefetch = useAllowPrefetch();
 
   // ✅ Keep IDs SIMPLE and STATIC
   const [tab, setTab] = useState<"course" | "test-series" | null>(null);
@@ -55,6 +59,7 @@ export default React.memo(function PageSwitchTab({
   return (
     <TabSwitch
       type="link"
+      prefetch={allowPrefetch}
       layoutScopeId={layoutScopeId}
       scrollable
       items={[

@@ -8,7 +8,14 @@ import { useEffect } from "react";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { SettingFooter } from "@/components/features/navigation/setting-sidebar/SettingsSidebarFooter";
 
-export default function ProfilePage({ activeTab }: { activeTab: Tab | null }) {
+export default function ProfilePage({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: Tab | null;
+  /** Lets a tab point the student at its sibling (Payments ↔ Subscriptions). */
+  onTabChange?: (tab: Tab) => void;
+}) {
   const { close } = useCourseStore();
 
   useEffect(() => {
@@ -18,7 +25,7 @@ export default function ProfilePage({ activeTab }: { activeTab: Tab | null }) {
   if (activeTab === "payment") {
     return (
       <div className="px-3">
-        <PaymentHistoryWrap />
+        <PaymentHistoryWrap onSwitchTab={onTabChange} />
       </div>
     );
   }
@@ -34,7 +41,7 @@ export default function ProfilePage({ activeTab }: { activeTab: Tab | null }) {
   if (activeTab === "subscription") {
     return (
       <div className="px-3 py-2">
-        <SubscriptionWrap />
+        <SubscriptionWrap onSwitchTab={onTabChange} />
       </div>
     );
   }

@@ -227,5 +227,36 @@
     },
     "cancel": "रद्द करें",
     "submit": "रिपोर्ट भेजें"
+  },
+  "examCard": {
+    "examDate": "परीक्षा तिथि",
+    "examMode": "परीक्षा मोड",
+    "duration": "अवधि",
+    "cutoff": "कटऑफ",
+    "viewExam": "परीक्षा देखें"
+  },
+  "blogHome": {
+    "title": "Clear Cutoff पर परीक्षाएं",
+    "titleHighlight": "Clear Cutoff",
+    "subtitle": "Clear Cutoff Academy के साथ अपनी सफलता की यात्रा शुरू करें",
+    "searchPlaceholder": "परीक्षा खोजें (जैसे CTET, HTET...)",
+    "filterAll": "सभी परीक्षाएं",
+    "filterCentral": "केंद्रीय परीक्षाएं",
+    "filterState": "राज्य परीक्षाएं",
+    "sectionCentral": "केंद्रीय शिक्षण परीक्षाएं",
+    "sectionCentralHighlight": "केंद्रीय",
+    "sectionState": "राज्य शिक्षण परीक्षाएं",
+    "sectionStateHighlight": "राज्य",
+    "emptyTitle": "कोई परीक्षा नहीं मिली",
+    "emptyBody": "कोई दूसरा नाम खोजें या फ़िल्टर बदलें।"
+  },
+  "examPage": {
+    "title": "{exam} परीक्षा Clear Cutoff पर",
+    "subtitle": "वह पेपर चुनें जिसकी आप तैयारी करना चाहते हैं। आप इसे कभी भी बदल सकते हैं।",
+    "choosePaper": "अपना पेपर चुनें",
+    "chooseLevel": "अपना {group} चुनें",
+    "paperHint": "{exam} में {count, plural, one {# पेपर} other {# पेपर}} हैं। हर पेपर के विषय और पाठ्यक्रम अलग हैं।",
+    "switchPapersInfo": "आप ऊपर दिए गए मेन्यू से कभी भी पेपर बदल सकते हैं।",
+    "loadingLevels": "लोड हो रहा है…"
   }
 }

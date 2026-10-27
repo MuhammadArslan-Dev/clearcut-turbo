@@ -6,13 +6,16 @@ import FAQAccordion, { AccordionItem } from "./FAQAccordion";
 import RecentExamTracker from "./RecentExamTracker";
 import AppDownloadWidget from "./AppDownloadWidget";
 import { FadeIn } from "./motion";
-import { ResizerExamSpec, ResizerCategory, ExamDocument, ExamDocumentType, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
+import { ResizerExamSpec, ResizerCategory, ExamDocument, ExamDocumentType, isPhotoLiveCapture } from "@/lib/resizerExams";
 import type { PresetKey } from "./ResizeImageTool";
 import { ExamOfficialRequirements } from "@/lib/officialRequirements";
 import { getCategoryLabel, getDict, Locale } from "@/lib/dictionary";
 import LocaleLink from "./LocaleLink";
 import RelatedExams from "./RelatedExams";
 import OfficialRequirements from "./OfficialRequirements";
+import UploadProblems, { VerifiedSourcesNote } from "./UploadProblems";
+import TeachingLinks from "./TeachingLinks";
+import { showsUploadProblems, spokeFaqs, teachingSeo, usesTeachingTemplate, verifiedSources } from "@/lib/teachingTemplate";
 
 const DOC_LABEL_KEY = {
   photo: "specPhoto",
@@ -31,7 +34,16 @@ const PRESET_BY_DOC = {
   handwritten_declaration: "declaration",
 } as const satisfies Record<ExamDocumentType, PresetKey>;
 
-function SpecTable({ documents, locale }: { documents: ExamDocument[]; locale: Locale }) {
+function SpecTable({
+  documents,
+  noMinimumDocs = [],
+  locale,
+}: {
+  documents: ExamDocument[];
+  /** Official notice gives only a maximum → "up to X KB" (CC-159, HPTET). */
+  noMinimumDocs?: ExamDocumentType[];
+  locale: Locale;
+}) {
   const t = getDict(locale).spoke;
 
   return (
@@ -60,7 +72,11 @@ function SpecTable({ documents, locale }: { documents: ExamDocument[]; locale: L
                     {doc.spec ? `${doc.spec.widthPx}×${doc.spec.heightPx}px` : "—"}
                   </td>
                   <td className="px-4 py-3 body-medium text-text-gray-muted">
-                    {doc.spec ? `${doc.spec.minKB}–${doc.spec.maxKB}KB` : "—"}
+                    {doc.spec
+                      ? noMinimumDocs.includes(doc.type)
+                        ? getDict(locale).teaching.upToKB(doc.spec.maxKB)
+                        : `${doc.spec.minKB}–${doc.spec.maxKB}KB`
+                      : "—"}
                   </td>
                 </>
               )}
@@ -82,11 +98,14 @@ export default function ResizerSpokePage({
   exam,
   category,
   officialRequirements,
+  ageCalculatorSlug,
   locale = "en",
 }: {
   exam: ResizerExamSpec;
   category?: ResizerCategory;
   officialRequirements?: ExamOfficialRequirements;
+  /** Teaching-template exams link to their age calculator when it exists (CC-159). */
+  ageCalculatorSlug?: string;
   locale?: Locale;
 }) {
   const t = getDict(locale).spoke;
@@ -98,7 +117,12 @@ export default function ResizerSpokePage({
   const uploadDocs = exam.documents.filter((d) => d.mode === "upload");
   const allowedPresets: PresetKey[] = uploadDocs.length ? uploadDocs.map((d) => PRESET_BY_DOC[d.type]) : ["photo", "draw"];
   const specOf = (type: ExamDocumentType) => uploadDocs.find((d) => d.type === type)?.spec ?? undefined;
-  const faqItems: AccordionItem[] = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, locale, { photoLive }).map(
+  // Teaching exams (CC-159): "{Exam} Photo & Signature Size {Year}" H1, exam
+  // FAQ, upload-problems section (verified specs only) and cross-links.
+  const template = usesTeachingTemplate(exam, locale);
+  const showProblems = showsUploadProblems(exam, locale);
+  const specTable = <SpecTable documents={exam.documents} noMinimumDocs={exam.noMinimumDocs} locale={locale} />;
+  const faqItems: AccordionItem[] = spokeFaqs(exam, locale).map(
     (faq, i) => ({
       id: `faq-${i}`,
       title: faq.q,
@@ -113,7 +137,7 @@ export default function ResizerSpokePage({
       <div className="px-4 md:px-6 py-10 md:py-14">
         <FadeIn className="max-w-[620px] mx-auto text-center flex flex-col items-center gap-4 mb-10">
           <h1 className="heading-xlarge !text-[32px] md:!text-[48px] md:!leading-[1.25] !font-bold text-text-gray-normal">
-            {t.h1(exam.shortName)}
+            {template ? teachingSeo(exam, locale).h1 : t.h1(exam.shortName)}
           </h1>
           <p className="body-large !text-[17px] md:!text-[19px] text-text-gray-muted">{t.lead(exam.shortName, exam.fullName)}</p>
         </FadeIn>
@@ -129,16 +153,20 @@ export default function ResizerSpokePage({
           </div>
         )}
 
-        <ResizeImageTool
-          photoSpec={specOf("photo") ?? exam.photoSpec}
-          signatureSpec={specOf("signature") ?? exam.signatureSpec}
-          thumbSpec={specOf("left_thumb")}
-          rightThumbSpec={specOf("right_thumb")}
-          declarationSpec={specOf("handwritten_declaration")}
-          allowedPresets={allowedPresets}
-          locale={locale}
-          examName={exam.shortName}
-        />
+        <div id="resizer" className="scroll-mt-24">
+          <ResizeImageTool
+            photoSpec={specOf("photo") ?? exam.photoSpec}
+            signatureSpec={specOf("signature") ?? exam.signatureSpec}
+            thumbSpec={specOf("left_thumb")}
+            rightThumbSpec={specOf("right_thumb")}
+            declarationSpec={specOf("handwritten_declaration")}
+            allowedPresets={allowedPresets}
+            locale={locale}
+            examName={exam.shortName}
+          />
+        </div>
+
+        {showProblems && <UploadProblems exam={exam} locale={locale} specBox={specTable} />}
 
         {category && (
           <RelatedExams
@@ -149,12 +177,18 @@ export default function ResizerSpokePage({
           />
         )}
 
-        <div className="mt-16 md:mt-20 flex flex-col items-center gap-4">
-          <h2 className="heading-large !font-bold text-text-gray-normal text-center">
-            {hasExtraDocs ? t.specsTitleDocs(exam.shortName) : t.specsTitle(exam.shortName)}
-          </h2>
-          <SpecTable documents={exam.documents} locale={locale} />
-        </div>
+        {template && <TeachingLinks exam={exam} ageCalculatorSlug={ageCalculatorSlug} locale={locale} />}
+
+        {/* With the upload-problems section on the page, the spec table is its spec box. */}
+        {!showProblems && (
+          <div className="mt-16 md:mt-20 flex flex-col items-center gap-4">
+            <h2 className="heading-large !font-bold text-text-gray-normal text-center">
+              {hasExtraDocs ? t.specsTitleDocs(exam.shortName) : t.specsTitle(exam.shortName)}
+            </h2>
+            {specTable}
+            {template && <VerifiedSourcesNote sources={verifiedSources(exam)} locale={locale} />}
+          </div>
+        )}
 
         {officialRequirements && (
           <OfficialRequirements shortName={exam.shortName} data={officialRequirements} locale={locale} />

@@ -4,7 +4,8 @@ import PageJsonLd from "@/components/PageJsonLd";
 import { notFound } from "next/navigation";
 import ResizerSpokePage from "@/components/ResizerSpokePage";
 import CategoryPage from "@/components/CategoryPage";
-import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug, getExamFaqs, isPhotoLiveCapture } from "@/lib/resizerExams";
+import { getResizerExams, getResizerExamBySlug, getResizerCategories, getResizerCategoryBySlug } from "@/lib/resizerExams";
+import { ageCalculatorSlugFor, spokeJsonLdFaqs, teachingSeo, usesTeachingTemplate } from "@/lib/teachingTemplate";
 import { getOfficialRequirements } from "@/lib/officialRequirements";
 import { getCategoryLabel } from "@/lib/dictionary";
 
@@ -27,6 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (exam) {
     const title = `${exam.shortName} फ़ोटो और हस्ताक्षर रिसाइज़र - मुफ़्त टूल | Clear Cutoff`;
     const description = `${exam.shortName} (${exam.fullName}) आवेदन-फॉर्म की आवश्यकताओं के अनुसार अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।`;
+    if (usesTeachingTemplate(exam, "hi")) {
+      // Teaching exams (CC-159): "{Exam} Photo & Signature Size {Year} ({KB})".
+      const seo = teachingSeo(exam, "hi");
+      return buildMetadata({ locale: "hi", path: `/resizer/${exam.slug}`, title: seo.title, description: seo.description });
+    }
     return buildMetadata({ locale: "hi", path: `/resizer/${exam.slug}`, title, description });
   }
 
@@ -46,11 +52,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const exam = await getResizerExamBySlug(slug);
   if (exam) {
-    const faqs = getExamFaqs(exam.shortName, exam.photoSpec, exam.signatureSpec, "hi", { photoLive: isPhotoLiveCapture(exam) });
+    const faqs = spokeJsonLdFaqs(exam, "hi");
 
-    const [categories, officialRequirements] = await Promise.all([
+    const [categories, officialRequirements, ageCalculatorSlug] = await Promise.all([
       getResizerCategories(),
       getOfficialRequirements(exam.slug),
+      usesTeachingTemplate(exam, "hi") ? ageCalculatorSlugFor(exam.slug) : undefined,
     ]);
     const category = categories.find((c) => c.label === exam.category);
 
@@ -66,7 +73,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           app={{ name: `${exam.shortName} फ़ोटो और हस्ताक्षर रिसाइज़र`, description: `${exam.shortName} (${exam.fullName}) आवेदन-फॉर्म की आवश्यकताओं के अनुसार अपनी फ़ोटो या हस्ताक्षर को रिसाइज़ और कंप्रेस करें। मुफ़्त, निजी, पूरी तरह आपके ब्राउज़र में प्रोसेस होता है।` }}
           faqs={faqs}
         />
-        <ResizerSpokePage exam={exam} locale="hi" category={category} officialRequirements={officialRequirements} />
+        <ResizerSpokePage exam={exam} locale="hi" category={category} officialRequirements={officialRequirements} ageCalculatorSlug={ageCalculatorSlug} />
       </>
     );
   }

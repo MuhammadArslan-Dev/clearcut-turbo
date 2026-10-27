@@ -21,7 +21,10 @@ if (!process.env.NEXT_PUBLIC_PAYLOAD_URL) {
   );
 }
 
-const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 60 });
+// 24 h, same as the blog listing/post pages' `revalidate` (CC-151). A page's
+// cache lives only as long as its shortest fetch: at 60 s these pages
+// regenerated every minute, ~20 Vercel ISR write units each.
+const client = createFetchClient({ baseUrl: PAYLOAD_URL, defaultRevalidate: 86400 });
 
 interface GetPostBySlugOptions {
   // Payload locale to request (e.g. 'en', 'hi'). Drives both localized fields

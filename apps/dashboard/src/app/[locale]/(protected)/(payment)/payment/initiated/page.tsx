@@ -2,18 +2,20 @@
 import { FALLBACK_IMAGE } from "@/components/features/PayWalls/MainPaywall";
 import { MainLoader } from "@/components/FullScreenLoader";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
-import { Card } from "@clearcut/ui/card";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import {
   ArrowIcon,
-  CheckIcon,
+  ChartSuccessBarIcon,
+  ClipBoardIcon,
+  ClockIcon,
+  GraduationCapIcon,
   LockIcon,
+  NoteIcon,
   PaymentCardIcon,
   SheildIcon,
 } from "@/components/ui/icons";
 import StarIcon from "@/components/ui/icons/star-icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import Text from "@clearcut/ui/text";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
@@ -49,6 +51,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
+import PlanCard from "@/components/features/payment/PlanCard";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
 import { paymentHeadlineKey } from "@/lib/payment/paymentHeadline";
@@ -56,7 +59,19 @@ import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
 import React, { useCallback, useEffect, useMemo } from "react";
 
-const PRICE_CARD_ROUNDING = 12;
+/**
+ * The desktop design's left column. Each entry reads two message keys —
+ * `benefits.<key>` and `benefits.<key>Sub`. Icons are the closest existing
+ * dashboard icons rather than new SVGs; none of them is a pixel match for the
+ * mock's set, which is a deliberate trade against adding icon assets.
+ */
+const BENEFITS = [
+  { key: "allSubjects", Icon: GraduationCapIcon },
+  { key: "practiceQuestions", Icon: ClipBoardIcon },
+  { key: "examPattern", Icon: ChartSuccessBarIcon },
+  { key: "studyAnytime", Icon: ClockIcon },
+  { key: "freeNotes", Icon: NoteIcon },
+] as const;
 
 // const ALLOWED_PHONES = ["9988776655", "7210708599"];
 
@@ -908,29 +923,40 @@ export default function InitiatedPage() {
 
   if (isPageLoading) {
     return (
-      <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
-        {/* Same frame as the loaded page below (full height on phones,
-            header on top, button at the bottom), so the content replaces
-            the skeleton in place instead of the whole page jumping up
-            (CLS 0.19 on mobile, CC-61). */}
-        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] flex flex-col justify-between items-center gap-4">
-          <div className="bg-white w-full px-3 py-4">
-            <Skeleton className="h-6 w-40 mx-auto" />
-          </div>
-
-          <div className="w-full bg-white p-4 flex justify-center">
-            <div className="max-w-[352px] w-full flex flex-col gap-4">
-              <Skeleton className="h-16 w-16 rounded-full mx-auto" />
-              <Skeleton className="h-6 w-40 mx-auto" />
-              <Skeleton className="h-6 w-32 mx-auto rounded-full" />
-
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
+      <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
+        {/* Same frame, same four blocks and the same heights as the loaded page
+            below, so the content replaces the skeleton in place instead of the
+            whole page jumping (CLS 0.19 on mobile, CC-61; 0.456 after the
+            redesign until this was brought back in step). */}
+        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+          <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
+            <div className="flex h-[74px] w-full flex-col items-center justify-center gap-2 px-3 lg:h-[58px]">
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-3.5 w-60" />
             </div>
           </div>
 
-          <div className="w-full bg-white p-3">
-            <Skeleton className="h-12 w-full rounded-full" />
+          <div className="w-full flex justify-center p-4 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
+            <div className="flex h-[163px] w-full max-w-[352px] flex-col items-center gap-3 rounded-lg bg-white p-4 lg:h-full lg:min-h-[550px] lg:max-w-none lg:items-start lg:p-6">
+              <Skeleton className="h-16 w-16 rounded-full" />
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-48 rounded-full" />
+            </div>
+          </div>
+
+          <div className="w-full flex justify-center px-4 pb-4 lg:p-0 lg:col-start-2 lg:row-start-2">
+            <div className="flex h-[388px] w-full max-w-[352px] flex-col gap-4 rounded-lg bg-white p-4 lg:h-[380px] lg:max-w-none lg:rounded-b-none lg:p-6 lg:pb-0">
+              <Skeleton className="h-6 w-36" />
+              <Skeleton className="h-[88px] w-full rounded-lg" />
+              <Skeleton className="h-[88px] w-full rounded-lg" />
+              <Skeleton className="h-[88px] w-full rounded-lg" />
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 z-10 flex h-[154px] w-full flex-col items-center gap-3 bg-white px-3 py-3 max-lg:mt-auto lg:static lg:col-start-2 lg:row-start-3 lg:-mt-5 lg:h-[170px] lg:rounded-b-lg lg:px-6">
+            <Skeleton className="h-12 w-full max-w-[400px] rounded-full" />
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-4 w-40" />
           </div>
         </div>
       </div>
@@ -938,10 +964,16 @@ export default function InitiatedPage() {
   }
 
   return (
-    <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
-      <div className="w-full sm:h-auto h-screen sm:max-w-[800px]  flex flex-col justify-between items-center gap-4">
-        <div className="bg-white w-full">
-          <div className="flex  w-full gap-4 px-3 py-4">
+    <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
+      {/* Below lg this stays the original single flex column. From lg it
+          becomes the design's two-column layout: the hero spans both, the
+          info card sits left, and the plan card + its CTA stack on the right. */}
+      {/* lg:items-stretch (not the flex row's items-center) so the two columns
+          end at the same height: the left card spans both right-hand rows and
+          stretches to the plan card + CTA total. */}
+      <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+        <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
+          <div className="flex  w-full gap-4 px-3 py-4 lg:justify-center lg:py-2">
             <button
               type="button"
               onClick={leavePaymentPage}
@@ -952,21 +984,26 @@ export default function InitiatedPage() {
             </button>
 
             <div className="w-full">
-              <div className="heading-medium sm:text-center !font-semibold text-surface-gray-normal">
+              <div className="heading-medium sm:text-center !font-semibold text-surface-gray-normal lg:heading-2xlarge">
                 {modalT(paymentHeadlineKey(source), { exam: examTitle })}
               </div>
-              <div className="body-small sm:text-center !font-normal text-surface-gray-muted">
+              <div className="body-small sm:text-center !font-normal text-surface-gray-muted lg:body-large">
                 {modalT("subtitle", { exam: examTitle })}
               </div>
             </div>
           </div>
         </div>
 
-        {/* content  */}
-        <div className="w-full flex justify-center p-4">
-          <div className="max-w-[352px] w-full flex flex-col gap-5 bg-white p-4 rounded-lg">
+        {/* Left: exam identity. The benefits and the green strip below it are
+            desktop-only, exactly as the two mocks differ. */}
+        {/* Spans both of the right column's rows (plan card + CTA). Without
+            `row-span-2` this card alone sizes row 2, and since it is taller
+            than the plan card the CTA below was pushed down by the difference
+            — a 124 px gap between the plan card and its own CTA. */}
+        <div className="w-full flex justify-center p-4 lg:p-0 lg:col-start-1 lg:row-start-2 lg:row-span-2">
+          <div className="max-w-[352px] w-full lg:max-w-none lg:h-full flex flex-col gap-5 lg:gap-6 lg:bg-white lg:p-6 lg:rounded-lg">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-1 lg:flex-row lg:items-center lg:gap-4">
                 <Image
                   src={examLogo}
                   alt={data?.short_name || "Course logo"}
@@ -975,249 +1012,121 @@ export default function InitiatedPage() {
                   className="w-[64px] h-[64px] object-cover rounded-full"
                   priority
                 />
-                <div className="heading-large !font-semibold text-surface-gray-normal">
-                  {examTitle}
-                </div>
-                <div className="">
-                  {levelsLoading ? (
-                    <Skeleton className="h-6 rounded-full" />
-                  ) : papers.length > 0 ? (
-                    <StatusChip
-                      className="!text-brand-dark !bg-brand/9 !body-medium !font-semibold"
-                      label={papers.map((item) => item.name).join(" + ")}
-                    />
-                  ) : null}
+                <div className="flex flex-col items-center gap-1 lg:items-start">
+                  <div className="heading-large !font-semibold text-surface-gray-normal">
+                    {examTitle}
+                  </div>
+                  <div className="">
+                    {levelsLoading ? (
+                      <Skeleton className="h-6 rounded-full" />
+                    ) : papers.length > 0 ? (
+                      <StatusChip
+                        className="!text-brand-dark !bg-brand/9 !body-medium !font-semibold"
+                        label={papers.map((item) => item.name).join(" + ")}
+                      />
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-1 lg:hidden">
               <SheildIcon size={20}
                 color="var(--color-surface-gray-subtle)" />
               <p className="body-medium text-surface-gray-subtle">
-                {modalT("everything_included_one_price")}
+                {modalT("all_levels_one_plan")}
+              </p>
+            </div>
+
+            {/* Desktop-only: what the plan actually gets you. */}
+            <div className="hidden lg:flex lg:flex-col lg:gap-4">
+              {BENEFITS.map(({ key, Icon }) => (
+                <div key={key} className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)]">
+                    <Icon size={20} color="var(--color-brand)" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="body-large !font-semibold block text-surface-gray-normal">
+                      {modalT(`benefits.${key}`)}
+                    </span>
+                    <span className="body-small !font-normal block text-surface-gray-muted">
+                      {modalT(`benefits.${key}Sub`)}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden lg:flex lg:items-start lg:gap-3 rounded-lg bg-green-50 p-4">
+              <SheildIcon size={20} color="var(--color-success)" />
+              <span className="min-w-0">
+                <span className="body-medium !font-semibold block text-surface-gray-normal">
+                  {modalT("everything_included_one_price")}
+                </span>
+                <span className="body-small !font-normal block text-surface-gray-muted">
+                  {modalT("no_hidden_charges")}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: plan picker */}
+        <div className="w-full flex justify-center px-4 pb-4 lg:p-0 lg:col-start-2 lg:row-start-2">
+          <div className="max-w-[352px] w-full lg:max-w-none lg:h-full flex flex-col gap-5 bg-white p-4 lg:p-6 rounded-lg lg:rounded-b-none lg:pb-0">
+            <div>
+              <p className="heading-large !font-semibold text-surface-gray-normal">
+                {modalT("choosePlan")}
+              </p>
+              <p className="body-small !font-normal text-surface-gray-muted">
+                {modalT("choosePlanSubtitle")}
               </p>
             </div>
 
             {/* pricing    */}
-            <div className="flex flex-col gap-4">
-              {/* 1-month plan */}
-              <Card
-                padding={"8px 20px"}
-                borderRadius={PRICE_CARD_ROUNDING}
-                cursor="pointer"
-                borderwidth={2}
-                bgcolor={
-                  selectVariant === "1month"
-                    ? "var(--color-primary-subtle)"
-                    : "white"
-                }
-                bordercolor={
-                  selectVariant === "1month" ? "var(--color-brand)" : "var(--color-primary-subtle)"
-                }
-                className={`exam-card transition-all duration-200 ease-out`}
-                onClick={() => handleSelectVariant("1month")}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col gap-1">
-                    <p className="heading-medium !font-semibold text-surface-gray-normal">
-                      {modalT("months", { count: 1 })} •{" "}
-                      {`₹${getPriceForVariant("1month", pricing, data?.short_name)}`}{" "}
-                      <Text className="line-through" variant="body-small">
-                        {"₹1,499"}
-                      </Text>
-                    </p>
-                    <p className="body-small !font-normal text-surface-gray-muted">
-                      {modalT("best_for_new_students")}
-                    </p>
-                    {/* <StatusChip
-                      className="!text-brand !bg-brand/9 !body-medium !font-semibold"
-                      variant="outline"
-                      tone="info"
-                      label={modalT("last_minute_revision")}
-                    /> */}
-                  </div>
-
-                  {selectVariant === "1month" ? (
-                    <CheckIcon size={16} />
-                  ) : (
-                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                  )}
-                </div>
-              </Card>
+            {/* The 6-month and 15-month plans were replaced by the 1-year plan;
+                their markup is gone rather than left commented out, since it
+                was a copy of the old hand-written card that PlanCard replaced. */}
+            <div className="flex flex-col gap-4" role="radiogroup" aria-label={modalT("choosePlan")}>
+              {/* 1-month plan (subscription) */}
+              <PlanCard
+                durationLabel={modalT("months", { count: 1 })}
+                price={`₹${getPriceForVariant("1month", pricing, data?.short_name)}`}
+                strikePrice="₹1,499"
+                subtitle={modalT("full_access_all_levels")}
+                badge={{
+                  label: modalT("best_for_new_students"),
+                  placement: "ribbon",
+                  tone: "info",
+                }}
+                selected={selectVariant === "1month"}
+                onSelect={() => handleSelectVariant("1month")}
+              />
 
               {/* 1-month one-time plan */}
-              <Card
-                padding={"8px 20px"}
-                borderRadius={PRICE_CARD_ROUNDING}
-                cursor="pointer"
-                borderwidth={2}
-                bgcolor={
-                  selectVariant === "1month-onetime"
-                    ? "var(--color-primary-subtle)"
-                    : "white"
-                }
-                bordercolor={
-                  selectVariant === "1month-onetime" ? "var(--color-brand)" : "var(--color-primary-subtle)"
-                }
-                className={`exam-card transition-all duration-200 ease-out`}
-                onClick={() => handleSelectVariant("1month-onetime")}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col gap-1">
-                    <p className="heading-medium !font-semibold text-surface-gray-normal">
-                      {modalT("months", { count: 1 })} •{" "}
-                      {`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}{" "}
-                      <Text className="line-through" variant="body-small">
-                        {"₹1,499"}
-                      </Text>
-                    </p>
-                    <p className="body-small !font-normal text-surface-gray-muted">
-                      {modalT("one_time_no_renewal")}
-                    </p>
-                  </div>
-
-                  {selectVariant === "1month-onetime" ? (
-                    <CheckIcon size={16} />
-                  ) : (
-                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                  )}
-                </div>
-              </Card>
-
-              {/* 6-month plan — replaced by 1-year plan at ₹599
-              <Card
-                padding={"8px 20px"}
-                borderRadius={PRICE_CARD_ROUNDING}
-                cursor="pointer"
-                bgcolor={
-                  selectVariant === "6months"
-                    ? "var(--color-primary-subtle)"
-                    : "white"
-                }
-                bordercolor={
-                  selectVariant === "6months" ? "var(--color-brand)" : "#ccc"
-                }
-                className={`exam-card transition-all duration-200 ease-out `}
-                onClick={() => {
-                  setSelectVariant("6months");
-                }}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col">
-                    <p className="heading-medium !font-semibold text-surface-gray-normal">
-                      {modalT("months", { count: 6 })} •{" "}
-                      {"₹" + Price?.final_price}{" "}
-                      <Text className="line-through" variant="body-small">
-                        {"₹" + Price?.actual_price}
-                      </Text>
-                    </p>
-                    <p className="body-small !font-normal text-surface-gray-muted">
-                      {modalT("best_for_upcoming_exam")}
-                    </p>
-                  </div>
-                  {selectVariant === "6months" ? (
-                    <CheckIcon size={16} />
-                  ) : (
-                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                  )}
-                </div>
-              </Card>
-              */}
-
-              {/* 15-month plan — replaced by 1-year plan at ₹599
-              <Card
-                padding={"8px 20px"}
-                borderRadius={4}
-                cursor="pointer"
-                bgcolor={
-                  selectVariant === "15months"
-                    ? "var(--color-primary-subtle)"
-                    : "white"
-                }
-                bordercolor={
-                  selectVariant === "15months" ? "var(--color-brand)" : "#ccc"
-                }
-                className={`exam-card transition-all duration-200 ease-out `}
-                onClick={() => {
-                  setSelectVariant("15months");
-                }}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col gap-1">
-                    <p className="heading-medium !font-semibold text-surface-gray-normal">
-                      {modalT("months", { count: 15 })} •{" "}
-                      {"₹" + comboPrice?.final_price}{" "}
-                      <Text className="line-through" variant="body-small">
-                        {"₹" + comboPrice?.actual_price}
-                      </Text>
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <StarIcon />
-                      <p className="body-small !font-normal text-surface-gray-muted">
-                        {modalT("most_popular")}
-                      </p>
-                    </div>
-                    <StatusChip
-                      className="!text-brand !bg-brand/9 !body-medium !font-semibold"
-                      variant="outline"
-                      tone="info"
-                      label={modalT("best_value_covers_next_exam")}
-                    />
-                  </div>
-                  {selectVariant === "15months" ? (
-                    <CheckIcon size={16} />
-                  ) : (
-                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                  )}
-                </div>
-              </Card>
-              */}
+              <PlanCard
+                durationLabel={modalT("months", { count: 1 })}
+                price={`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}
+                strikePrice="₹1,499"
+                subtitle={modalT("one_time_no_renewal")}
+                selected={selectVariant === "1month-onetime"}
+                onSelect={() => handleSelectVariant("1month-onetime")}
+              />
 
               {/* 1-year plan */}
-              <Card
-                padding={"8px 20px"}
-                borderRadius={PRICE_CARD_ROUNDING}
-                cursor="pointer"
-                borderwidth={2}
-                bgcolor={
-                  selectVariant === "1year"
-                    ? "var(--color-primary-subtle)"
-                    : "white"
-                }
-                bordercolor={
-                  selectVariant === "1year" ? "var(--color-brand)" : "var(--color-primary-subtle)"
-                }
-                className={`exam-card transition-all duration-200 ease-out`}
-                onClick={() => handleSelectVariant("1year")}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col gap-1">
-                    <p className="heading-medium !font-semibold text-surface-gray-normal">
-                      {modalT("months", { count: 12 })} •{" "}
-                      {`₹${getPriceForVariant("1year", pricing, data?.short_name)}`}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <StarIcon />
-                      <p className="body-small !font-normal text-surface-gray-muted">
-                        {modalT("most_popular")}
-                      </p>
-                    </div>
-                    <StatusChip
-                      className="!text-brand !bg-brand/9 !body-medium !font-semibold"
-                      variant="outline"
-                      tone="info"
-                      label={modalT("best_value_covers_next_exam")}
-                    />
-                  </div>
-
-                  {selectVariant === "1year" ? (
-                    <CheckIcon size={16} />
-                  ) : (
-                    <div className="shrink-0 border border-gray-400 w-4 h-4 rounded-full" />
-                  )}
-                </div>
-              </Card>
+              <PlanCard
+                durationLabel={modalT("months", { count: 12 })}
+                price={`₹${getPriceForVariant("1year", pricing, data?.short_name)}`}
+                subtitle={modalT("best_value_covers_next_exam")}
+                badge={{
+                  label: modalT("most_popular"),
+                  placement: "inline",
+                  tone: "warning",
+                  iconLeft: <StarIcon />,
+                }}
+                selected={selectVariant === "1year"}
+                onSelect={() => handleSelectVariant("1year")}
+              />
             </div>
 
             {/* <div className="flex items-center justify-center gap-1">
@@ -1236,8 +1145,12 @@ export default function InitiatedPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 z-10 px-3 py-2 bg-white w-full">
+        {/* Footer. Below lg it stays the pinned bottom bar it has always been
+            (`mt-auto` reproduces what `justify-between` did before the grid).
+            From lg it becomes the bottom of the plan card: static, in the right
+            column, with the negative top margin closing the grid's row gap so
+            the two read as one card. */}
+        <div className="sticky bottom-0 z-10 px-3 py-2 bg-white w-full max-lg:mt-auto lg:static lg:col-start-2 lg:row-start-3 lg:-mt-5 lg:rounded-b-lg lg:px-6 lg:pb-6">
           <div className="w-full flex flex-col items-center gap-4">
             <div className="w-full flex flex-col items-center gap-1">
               <div className="w-full max-w-[400px]">
@@ -1323,6 +1236,7 @@ export default function InitiatedPage() {
             />
           </div>
         </div>
+
       </div>
     </div>
   );

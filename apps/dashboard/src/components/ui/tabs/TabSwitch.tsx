@@ -25,6 +25,8 @@ interface TabSwitchProps {
   value?: string | null;
   layoutScopeId: string;
   onChange?: (id: string) => void;
+  /** Link mode only: prefetch the tabs' routes (default true — unchanged for existing callers). */
+  prefetch?: boolean;
 
   variant?: "pill" | "underline";
   size?: "sm" | "md" | "lg";
@@ -85,6 +87,7 @@ const TabSwitch: React.FC<TabSwitchProps> = ({
   size = "md",
   scrollable = false,
   layoutScopeId = "default",
+  prefetch = true,
 
   /* 🎛️ Design defaults */
   tabFontSize = "body-small",
@@ -231,7 +234,7 @@ const TabSwitch: React.FC<TabSwitchProps> = ({
           <Link
             key={item.id}
             href={item.href ?? "#"}
-            prefetch={true}
+            prefetch={prefetch}
             onClick={(e) => {
               if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               setPendingTab({ id: item.id, from: pathname });

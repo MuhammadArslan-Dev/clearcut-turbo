@@ -1,9 +1,9 @@
 "use client";
 
-import React, { memo, useMemo, useState, useCallback } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, MoreVertical, RotateCcw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Button from "@clearcut/ui/button";
 import {
@@ -13,11 +13,19 @@ import {
   resumeSubscription,
   Subscription,
   SubscriptionStatus,
+  type PaymentHistoryItem,
 } from "@/lib/payment/payment";
 import { CustomBottomSheet } from "@/components/modals/modals-bottom-sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { trackEvent } from "@/lib/analytics/browser";
 import CancelFlowContent, { CancelReason } from "./CancelFlowContent";
+import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
+import { PaymentCardIcon, TrophyIcon } from "@/components/ui/icons";
+import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { usePaymentHistory } from "@/hooks/payment/usePaymentHistory";
+import SwitchTabLink from "@/components/features/profile/SwitchTabLink";
+import type { Tab } from "@/app/[locale]/(protected)/(dashboard)/dashboard/profile/page";
+import { useRouter } from "@/i18n/navigation";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -26,19 +34,11 @@ import CancelFlowContent, { CancelReason } from "./CancelFlowContent";
 const QUERY_KEY = ["subscriptions"];
 const PAGE_SIZE = 5;
 
+type PlanFilter = "all" | "active" | "expired";
+const FILTERS: PlanFilter[] = ["all", "active", "expired"];
+
 type ActionType = "pause" | "resume" | "cancel";
 
-// Status is shown as plain text, not a pill: it isn't tappable (CC-100).
-// Labels come from messages (subscriptionsTab.status_*).
-const STATUS_TEXT_CLASS: Record<SubscriptionStatus, string> = {
-  active: "text-[var(--color-success-strong)]",
-  authenticated: "text-[var(--color-success-strong)]",
-  created: "text-[var(--color-text-gray-muted)]",
-  paused: "text-[var(--color-text-gray-subtle)]",
-  cancelled: "text-[var(--color-text-gray-muted)]",
-  completed: "text-[var(--color-text-gray-subtle)]",
-  expired: "text-[var(--color-text-gray-muted)]",
-};
 
 const ACTION_COLOR: Record<ActionType, "warning" | "success" | "danger"> = {
   pause: "warning",
@@ -56,6 +56,9 @@ function useFormatters() {
   return {
     money: (paise: number) =>
       `₹${(paise / 100).toLocaleString(intlLocale, { minimumFractionDigits: 0 })}`,
+    /** Already-rupee amounts (payment history sends rupees, plans send paise). */
+    rupees: (amount: number) =>
+      `₹${amount.toLocaleString(intlLocale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
     date: (iso: string | null, withYear = true) =>
       iso
         ? new Date(iso).toLocaleDateString(intlLocale, {
@@ -69,6 +72,60 @@ function useFormatters() {
 
 /** The course name, falling back to the raw group code from older backends. */
 const courseLabel = (sub: Subscription) => sub.course_name || sub.group_code;
+
+/**
+ * What the Amount column shows. A recurring plan reads "₹99 / month" — its
+ * cycle price, not what the student has paid so far — while a one-time
+ * purchase is the single sum it cost.
+ */
+function amountText(
+  row: PlanRow,
+  fmt: ReturnType<typeof useFormatters>,
+  perMonth: (amount: string) => string,
+): string {
+  if (row.sub?.plan) return perMonth(fmt.money(row.sub.plan.amount));
+  return row.amount !== null ? fmt.rupees(row.amount) : "";
+}
+
+/* ------------------------------------------------------------------ */
+/* Row model                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * This tab is the student's RECURRING (autopay) plans, and only those.
+ * One-time purchases live under Profile → Payments; the two tabs used to list
+ * the same one-time purchase twice, so they are now split by kind and each
+ * links to the other (SwitchTabLink).
+ *
+ * Each row's Active/Expired state is looked up from the student's enrolment,
+ * the only source that actually knows whether access is still live; the plan's
+ * own status is just the fallback. No new endpoint.
+ */
+type PlanRow = {
+  id: string;
+  courseName: string;
+  purchasedAt: string | null;
+  /** Rupees — the price of ONE cycle (₹99/month), not what has been paid. */
+  amount: number | null;
+  /**
+   * This plan's autopay charges, newest first - the rows revealed when the plan
+   * is expanded. The Payments tab no longer lists autopay charges, so this is
+   * the only place a student (or support) can find a charge's payment ID.
+   */
+  charges: PaymentHistoryItem[];
+  /**
+   * Rupees actually paid on this plan: the sum of `charges`. The plan's
+   * `amount` is one cycle; the student has usually paid it several times, and
+   * "Amount Paid" must say so. `null` while the history is unavailable, so we
+   * show nothing rather than a wrong zero.
+   */
+  totalPaid: number | null;
+  access: "active" | "expired";
+  groupCode: string;
+  sub: Subscription;
+};
+
+const ACTIVE_ENROLMENT_STATUSES = new Set(["active"]);
 
 const getActions = (status: SubscriptionStatus): ActionType[] => {
   if (status === "active" || status === "authenticated")
@@ -152,10 +209,10 @@ function ConfirmSheet({
   ) : cfg && (
     <div className="p-6 space-y-5">
       <div className="space-y-1.5">
-        <p className="font-semibold text-[#192839]">
+        <p className="font-semibold text-[var(--color-text-gray-normal)]">
           {t("confirmTitle", { action: cfg.label })}
         </p>
-        <p className="text-sm text-[#40566d] leading-relaxed">{cfg.description}</p>
+        <p className="text-sm text-[var(--color-text-gray-subtle)] leading-relaxed">{cfg.description}</p>
       </div>
       <div className="flex gap-3">
         <Button
@@ -220,20 +277,20 @@ function SubscriptionSkeleton() {
   return (
     <>
       {/* Desktop skeleton */}
-      <div className="hidden md:block w-full bg-white border border-[#cbd5e2] rounded-xl overflow-hidden animate-pulse">
-        <div className="px-4 py-3 bg-[#f1f5fa] grid grid-cols-5 gap-4">
+      <div className="hidden md:block w-full bg-white border border-[var(--color-border-gray-subtle)] rounded-xl overflow-hidden animate-pulse">
+        <div className="px-4 py-3 bg-[var(--color-background-gray-subtle)] grid grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-4 bg-[#cbd5e2] rounded" />
+            <div key={i} className="h-4 bg-[var(--color-border-gray-subtle)] rounded" />
           ))}
         </div>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="px-4 py-4 grid grid-cols-5 gap-4 border-t border-[#f1f5fa]">
+          <div key={i} className="px-4 py-4 grid grid-cols-5 gap-4 border-t border-[var(--color-background-gray-subtle)]">
             {Array.from({ length: 5 }).map((_, j) => (
               <div key={j} className="h-4 bg-[#edf0f3] rounded" />
             ))}
           </div>
         ))}
-        <div className="px-4 py-3 border-t border-[#f1f5fa] flex justify-between">
+        <div className="px-4 py-3 border-t border-[var(--color-background-gray-subtle)] flex justify-between">
           <div className="h-4 w-36 bg-[#edf0f3] rounded" />
           <div className="h-8 w-24 bg-[#edf0f3] rounded" />
         </div>
@@ -244,23 +301,23 @@ function SubscriptionSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white border border-[#cbd5e2] rounded-xl p-4 space-y-3"
+            className="bg-white border border-[var(--color-border-gray-subtle)] rounded-xl p-4 space-y-3"
           >
             <div className="flex justify-between items-start">
               <div className="space-y-1.5">
                 <div className="h-4 w-28 bg-[#edf0f3] rounded" />
-                <div className="h-3 w-20 bg-[#f1f5fa] rounded" />
+                <div className="h-3 w-20 bg-[var(--color-background-gray-subtle)] rounded" />
               </div>
               <div className="h-6 w-16 bg-[#edf0f3] rounded-full" />
             </div>
-            <div className="space-y-2 pt-1 border-t border-[#f1f5fa]">
+            <div className="space-y-2 pt-1 border-t border-[var(--color-background-gray-subtle)]">
               <div className="flex justify-between">
-                <div className="h-3 w-20 bg-[#f1f5fa] rounded" />
-                <div className="h-3 w-24 bg-[#f1f5fa] rounded" />
+                <div className="h-3 w-20 bg-[var(--color-background-gray-subtle)] rounded" />
+                <div className="h-3 w-24 bg-[var(--color-background-gray-subtle)] rounded" />
               </div>
               <div className="flex justify-between">
-                <div className="h-3 w-24 bg-[#f1f5fa] rounded" />
-                <div className="h-3 w-20 bg-[#f1f5fa] rounded" />
+                <div className="h-3 w-24 bg-[var(--color-background-gray-subtle)] rounded" />
+                <div className="h-3 w-20 bg-[var(--color-background-gray-subtle)] rounded" />
               </div>
             </div>
           </div>
@@ -274,17 +331,23 @@ function SubscriptionSkeleton() {
 /* Empty state                                                          */
 /* ------------------------------------------------------------------ */
 
-function EmptyState() {
+function EmptyState({ onSwitchTab }: { onSwitchTab?: (tab: Tab) => void }) {
   const t = useTranslations("subscriptionsTab");
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-[#e8f2fb] flex items-center justify-center mb-4">
         <RotateCcw size={28} className="text-[#0083ff]" />
       </div>
-      <p className="text-[#192839] font-medium text-sm">{t("empty")}</p>
-      <p className="text-[#768ea7] text-xs mt-1 max-w-[200px]">
+      <p className="text-[var(--color-text-gray-normal)] font-medium text-sm">{t("empty")}</p>
+      <p className="text-[var(--color-surface-gray-muted)] text-xs mt-1 max-w-[200px]">
         {t("emptyHint")}
       </p>
+      <SwitchTabLink
+        className="mt-4"
+        hint={t("oneTimeHint")}
+        label={t("oneTimeLink")}
+        onClick={onSwitchTab && (() => onSwitchTab("payment"))}
+      />
     </div>
   );
 }
@@ -293,7 +356,13 @@ function EmptyState() {
 /* Action Buttons (shared)                                              */
 /* ------------------------------------------------------------------ */
 
-function ActionButtons({
+/**
+ * The row's overflow menu. The design's action column shows only "View Course",
+ * but pause/resume/cancel are live capabilities that must not disappear (D2-b),
+ * so they moved in here. Local to this file and modelled on the existing
+ * ProfileDropdown pattern — the repo has no generic menu primitive and no Radix.
+ */
+function RowMenu({
   status,
   onAction,
 }: {
@@ -301,23 +370,62 @@ function ActionButtons({
   onAction: (a: ActionType) => void;
 }) {
   const t = useTranslations("subscriptionsTab");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const actions = getActions(status);
-  if (actions.length === 0) return <span className="text-gray-300 text-xs">—</span>;
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
+
+  if (actions.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {actions.map((a) => (
-        <Button
-          key={a}
-          size="sm"
-          variant="soft"
-          color={ACTION_COLOR[a]}
-          onClick={() => onAction(a)}
-          rounded="8px"
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        aria-label={t("actions")}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[var(--color-surface-gray-muted)] hover:bg-[var(--color-background-gray-subtle)]"
+      >
+        <MoreVertical size={18} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5"
         >
-          {t(`action_${a}`)}
-        </Button>
-      ))}
+          {actions.map((a) => (
+            <button
+              key={a}
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onAction(a);
+              }}
+              className={`block w-full cursor-pointer px-4 py-2 text-left text-sm hover:bg-[var(--color-background-gray-subtle)] ${
+                a === "cancel" ? "text-[var(--color-danger)]" : "text-[var(--color-text-gray-normal)]"
+              }`}
+            >
+              {t(`action_${a}`)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -326,54 +434,215 @@ function ActionButtons({
 /* Desktop Table                                                         */
 /* ------------------------------------------------------------------ */
 
+/** Type and Active/Expired pills, shared by the table and the mobile cards. */
+function KindChip() {
+  const t = useTranslations("subscriptionsTab");
+  return (
+    <StatusChip
+      variant="soft"
+      tone="info"
+      radius="full"
+      size="sm"
+      label={t("typeSubscription")}
+    />
+  );
+}
+
+function AccessChip({ access }: { access: PlanRow["access"] }) {
+  const t = useTranslations("subscriptionsTab");
+  return (
+    <StatusChip
+      variant="soft"
+      tone={access === "active" ? "success" : "neutral"}
+      radius="full"
+      size="sm"
+      label={access === "active" ? t("accessActive") : t("accessExpired")}
+    />
+  );
+}
+
+const KNOWN_METHODS = ["upi", "card", "netbanking", "wallet", "emandate"] as const;
+
+/**
+ * The charges behind one autopay plan: date, amount, method, Razorpay payment
+ * ID, status. A table from md up and a stacked list below it, so the same
+ * component serves both the desktop row and the mobile card. Column headings
+ * and method labels reuse the Payments tab's `paymentHistory` messages.
+ */
+function PlanCharges({ charges }: { charges: PaymentHistoryItem[] }) {
+  const t = useTranslations("subscriptionsTab");
+  const tp = useTranslations("paymentHistory");
+  const fmt = useFormatters();
+
+  const methodLabel = (method: string | null) => {
+    if (!method) return "";
+    const key = method.toLowerCase();
+    return (KNOWN_METHODS as readonly string[]).includes(key)
+      ? tp(`method_${key}` as "method_upi")
+      : method;
+  };
+
+  if (charges.length === 0) {
+    return <p className="text-sm text-[var(--color-surface-gray-muted)]">{tp("empty")}</p>;
+  }
+
+  const successChip = (
+    <StatusChip variant="soft" tone="success" radius="full" size="sm" label={tp("success")} />
+  );
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-surface-gray-muted)]">
+        {t("paymentsTitle")}
+      </p>
+
+      <table className="hidden w-full text-sm md:table">
+        <thead className="text-xs text-[var(--color-surface-gray-muted)]">
+          <tr>
+            <th className="py-2 pr-4 text-left font-medium">{tp("date")}</th>
+            <th className="py-2 pr-4 text-left font-medium">{tp("amount")}</th>
+            <th className="py-2 pr-4 text-left font-medium">{tp("paymentMethod")}</th>
+            <th className="py-2 pr-4 text-left font-medium">{tp("paymentId")}</th>
+            <th className="py-2 text-left font-medium">{tp("status")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[var(--color-border-gray-subtle)]">
+          {charges.map((c) => (
+            <tr key={c.id}>
+              <td className="py-2 pr-4 text-[var(--color-text-gray-subtle)]">{fmt.date(c.paid_at)}</td>
+              <td className="py-2 pr-4 font-medium text-[var(--color-text-gray-normal)]">{fmt.rupees(c.amount)}</td>
+              <td className="py-2 pr-4 text-[var(--color-text-gray-subtle)]">
+                {c.method && (
+                  <span className="inline-flex items-center gap-2">
+                    <PaymentCardIcon size={16} variant="outline" color="var(--color-brand)" />
+                    {methodLabel(c.method)}
+                  </span>
+                )}
+              </td>
+              <td className="py-2 pr-4 font-mono text-xs text-[var(--color-surface-gray-muted)]">{c.payment_id ?? ""}</td>
+              <td className="py-2">{successChip}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <ul className="space-y-2 md:hidden">
+        {charges.map((c) => (
+          <li key={c.id} className="rounded-lg bg-white p-3 text-sm ring-1 ring-[var(--color-border-gray-subtle)]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-[var(--color-text-gray-normal)]">{fmt.rupees(c.amount)}</span>
+              {successChip}
+            </div>
+            <p className="mt-1 text-[var(--color-text-gray-subtle)]">
+              {fmt.date(c.paid_at)}
+              {c.method ? ` \u00b7 ${methodLabel(c.method)}` : ""}
+            </p>
+            {c.payment_id && (
+              <p className="mt-1 break-all font-mono text-xs text-[var(--color-surface-gray-muted)]">{c.payment_id}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ViewCourseButton({ row, onView }: { row: PlanRow; onView: (r: PlanRow) => void }) {
+  const t = useTranslations("subscriptionsTab");
+  if (!row.groupCode) return null;
+  return (
+    <Button size="sm" variant="outlined" rounded="8px" onClick={() => onView(row)}>
+      {t("viewCourse")}
+    </Button>
+  );
+}
+
 function DesktopTable({
   rows,
+  expanded,
+  onToggle,
   onAction,
+  onView,
 }: {
-  rows: Subscription[];
+  rows: PlanRow[];
+  expanded: ReadonlySet<string>;
+  onToggle: (id: string) => void;
   onAction: (sub: Subscription, a: ActionType) => void;
+  onView: (row: PlanRow) => void;
 }) {
   const t = useTranslations("subscriptionsTab");
   const fmt = useFormatters();
   return (
-    <div className="hidden md:block w-full bg-white border border-[#cbd5e2] rounded-xl overflow-hidden">
+    <div className="hidden md:block w-full bg-white border border-[var(--color-border-gray-subtle)] rounded-xl overflow-visible">
       <table className="w-full text-sm">
-        <thead className="bg-[#f1f5fa] text-[#768ea7] text-xs uppercase tracking-wide">
+        <thead className="bg-[var(--color-background-gray-subtle)] text-[var(--color-surface-gray-muted)] text-xs uppercase tracking-wide">
           <tr>
-            <th className="px-4 py-3 text-left font-medium">{t("plan")}</th>
-            <th className="px-4 py-3 text-left font-medium">{t("course")}</th>
-            <th className="px-4 py-3 text-left font-medium">{t("status")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("coursePlan")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("type")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("purchaseDate")}</th>
             <th className="px-4 py-3 text-left font-medium">{t("amount")}</th>
-            <th className="px-4 py-3 text-left font-medium">{t("nextPayment")}</th>
-            <th className="px-4 py-3 text-left font-medium">{t("actions")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("status")}</th>
+            <th className="px-4 py-3 text-left font-medium">{t("action")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#f1f5fa]">
-          {rows.map((sub) => {
+        <tbody className="divide-y divide-[var(--color-background-gray-subtle)]">
+          {rows.map((row) => {
+            const isOpen = expanded.has(row.id);
             return (
-              <tr key={sub.id} className="hover:bg-[#f1f5fa]/60 transition">
-                <td className="px-4 py-3.5 font-medium text-[#192839]">
-                  {t("monthlyPlan")}
-                </td>
-                <td className="px-4 py-3.5 text-[#768ea7]">
-                  {courseLabel(sub)}
-                </td>
-                <td className={`px-4 py-3.5 font-medium ${STATUS_TEXT_CLASS[sub.status] ?? ""}`}>
-                  {t(`status_${sub.status}`)}
-                </td>
-                <td className="px-4 py-3.5 font-medium text-[#192839]">
-                  {sub.plan ? t("perMonth", { amount: fmt.money(sub.plan.amount) }) : ""}
-                </td>
-                <td className="px-4 py-3.5 text-[#40566d]">
-                  {fmt.date(sub.next_billing_at)}
-                </td>
-                <td className="px-4 py-3.5">
-                  <ActionButtons
-                    status={sub.status}
-                    onAction={(a) => onAction(sub, a)}
-                  />
-                </td>
-              </tr>
+              <React.Fragment key={row.id}>
+                <tr className="hover:bg-[var(--color-background-gray-subtle)]/60 transition">
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={`charges-${row.id}`}
+                        aria-label={
+                          isOpen
+                            ? t("hidePayments")
+                            : t("showPayments", { count: row.charges.length })
+                        }
+                        onClick={() => onToggle(row.id)}
+                        className="mt-0.5 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-surface-gray-muted)] hover:bg-[var(--color-border-gray-subtle)]"
+                      >
+                        <ChevronDown
+                          size={16}
+                          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      <div>
+                        <p className="font-semibold text-[var(--color-text-gray-normal)]">
+                          {t("courseTitle", { course: row.courseName })}
+                        </p>
+                        <p className="text-xs text-[var(--color-surface-gray-muted)]">{t("courseBlurb")}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <KindChip />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3.5 text-[var(--color-text-gray-subtle)]">{fmt.date(row.purchasedAt)}</td>
+                  <td className="whitespace-nowrap px-4 py-3.5 font-medium text-[var(--color-text-gray-normal)]">
+                    {amountText(row, fmt, (amount) => t("perMonth", { amount }))}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <AccessChip access={row.access} />
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-1">
+                      <ViewCourseButton row={row} onView={onView} />
+                      <RowMenu status={row.sub.status} onAction={(a) => onAction(row.sub, a)} />
+                    </div>
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr id={`charges-${row.id}`} className="bg-[var(--color-background-gray-subtle)]/60">
+                    <td colSpan={6} className="px-4 py-3 pl-12">
+                      <PlanCharges charges={row.charges} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             );
           })}
         </tbody>
@@ -387,98 +656,101 @@ function DesktopTable({
 /* ------------------------------------------------------------------ */
 
 function MobileCard({
-  sub,
+  row,
+  isOpen,
+  onToggle,
   onAction,
+  onView,
 }: {
-  sub: Subscription;
+  row: PlanRow;
+  isOpen: boolean;
+  onToggle: (id: string) => void;
   onAction: (a: ActionType) => void;
+  onView: (row: PlanRow) => void;
 }) {
   const t = useTranslations("subscriptionsTab");
   const fmt = useFormatters();
-  const showsNextPayment =
-    (sub.status === "active" || sub.status === "authenticated") && Boolean(sub.next_billing_at && sub.plan);
+  const sub = row.sub;
+  // Only a live recurring plan has a next charge worth naming (CC-100).
+  const nextPayment =
+    sub && sub.plan && sub.next_billing_at &&
+    (sub.status === "active" || sub.status === "authenticated")
+      ? t("nextPaymentLine", {
+          amount: fmt.money(sub.plan.amount),
+          date: fmt.date(sub.next_billing_at, false),
+        })
+      : null;
 
   return (
-    <div className="bg-white border border-[#cbd5e2] rounded-xl p-4 space-y-3">
-      {/* Header row */}
+    <div className="bg-white border border-[var(--color-border-gray-subtle)] rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-[#192839] text-sm leading-tight">
-            {courseLabel(sub)}
+        <div className="min-w-0">
+          <p className="font-semibold text-[var(--color-text-gray-normal)] text-sm leading-tight">
+            {t("courseTitle", { course: row.courseName })}
           </p>
-          <p className="text-[11px] text-[#768ea7] mt-0.5">{t("monthlyPlan")}</p>
+          <p className="text-[11px] text-[var(--color-surface-gray-muted)] mt-0.5">{t("courseBlurb")}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <KindChip />
+            <AccessChip access={row.access} />
+          </div>
         </div>
-        <span className={`text-sm font-medium ${STATUS_TEXT_CLASS[sub.status] ?? ""}`}>
-          {t(`status_${sub.status}`)}
-        </span>
+        <RowMenu status={sub.status} onAction={onAction} />
       </div>
 
-      {/* "Next payment: ₹99, 12 Nov" in plain words (CC-100). */}
-      {showsNextPayment && sub.plan && (
-        <p className="text-sm font-medium text-[#192839]">
-          {t("nextPaymentLine", {
-            amount: fmt.money(sub.plan.amount),
-            date: fmt.date(sub.next_billing_at, false),
-          })}
-        </p>
+      {nextPayment && (
+        <p className="text-sm font-medium text-[var(--color-text-gray-normal)]">{nextPayment}</p>
       )}
 
-      {/* Info rows */}
-      <div className="space-y-1.5 border-t border-[#f1f5fa] pt-3 text-sm">
-        {sub.plan && (
-          <div className="flex justify-between">
-            <span className="text-[#768ea7]">{t("amount")}</span>
-            <span className="font-medium text-[#40566d]">
-              {t("perMonth", { amount: fmt.money(sub.plan.amount) })}
-            </span>
-          </div>
-        )}
-        {sub.next_billing_at && !showsNextPayment && (
-          <div className="flex justify-between">
-            <span className="text-[#768ea7]">{t("nextPayment")}</span>
-            <span className="font-medium text-[#40566d]">
-              {fmt.date(sub.next_billing_at)}
-            </span>
-          </div>
-        )}
-        {sub.current_end && (
-          <div className="flex justify-between">
-            <span className="text-[#768ea7]">{t("periodEnds")}</span>
-            <span className="font-medium text-[#40566d]">
-              {fmt.date(sub.current_end)}
-            </span>
-          </div>
-        )}
-        {sub.cancelled_at && (
-          <div className="flex justify-between">
-            <span className="text-[#768ea7]">{t("cancelledOn")}</span>
-            <span className="font-medium text-[#40566d]">
-              {fmt.date(sub.cancelled_at)}
-            </span>
-          </div>
-        )}
+      <div className="space-y-1.5 border-t border-[var(--color-background-gray-subtle)] pt-3 text-sm">
         <div className="flex justify-between">
-          <span className="text-[#768ea7]">{t("started")}</span>
-          <span className="font-medium text-[#40566d]">
-            {fmt.date(sub.created_at)}
-          </span>
+          <span className="text-[var(--color-surface-gray-muted)]">{t("purchaseDate")}</span>
+          <span className="font-medium text-[var(--color-text-gray-subtle)]">{fmt.date(row.purchasedAt)}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-[#768ea7]">{t("paymentsMade")}</span>
-          <span className="font-medium text-[#40566d]">{sub.paid_count}</span>
-        </div>
+        {amountText(row, fmt, (amount) => t("perMonth", { amount })) && (
+          <div className="flex justify-between">
+            <span className="text-[var(--color-surface-gray-muted)]">{t("amount")}</span>
+            <span className="font-medium text-[var(--color-text-gray-normal)]">
+              {amountText(row, fmt, (amount) => t("perMonth", { amount }))}
+            </span>
+          </div>
+        )}
+        {sub?.cancelled_at && (
+          <div className="flex justify-between">
+            <span className="text-[var(--color-surface-gray-muted)]">{t("cancelledOn")}</span>
+            <span className="font-medium text-[var(--color-text-gray-subtle)]">{fmt.date(sub.cancelled_at)}</span>
+          </div>
+        )}
       </div>
 
-      {/* Action buttons */}
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`charges-${row.id}`}
+        onClick={() => onToggle(row.id)}
+        className="flex w-full cursor-pointer items-center justify-between rounded-lg bg-[var(--color-background-gray-subtle)] px-3 py-2 text-sm font-medium text-[var(--color-text-gray-subtle)]"
+      >
+        <span>
+          {isOpen ? t("hidePayments") : t("showPayments", { count: row.charges.length })}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div id={`charges-${row.id}`}>
+          <PlanCharges charges={row.charges} />
+        </div>
+      )}
+
       <div className="pt-1">
-        <ActionButtons status={sub.status} onAction={onAction} />
+        <ViewCourseButton row={row} onView={onView} />
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Pagination Footer                                                     */
+
 /* ------------------------------------------------------------------ */
 
 function PaginationFooter({
@@ -498,7 +770,7 @@ function PaginationFooter({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between px-1 text-sm text-[#768ea7]">
+    <div className="flex items-center justify-between px-1 text-sm text-[var(--color-surface-gray-muted)]">
       <p>
         {start}–{end} of {total}
       </p>
@@ -532,10 +804,22 @@ function PaginationFooter({
 /* Main                                                                  */
 /* ------------------------------------------------------------------ */
 
-function SubscriptionWrap() {
+function SubscriptionWrap({ onSwitchTab }: { onSwitchTab?: (tab: Tab) => void }) {
   const t = useTranslations("subscriptionsTab");
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<PlanFilter>("all");
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const toggleExpanded = useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   const [confirm, setConfirm] = useState<{
     sub: Subscription;
     action: ActionType;
@@ -549,7 +833,7 @@ function SubscriptionWrap() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  /* ---- Query ---- */
+  /* ---- Queries ---- */
   const { data, isLoading, isError } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: getSubscriptions,
@@ -557,6 +841,12 @@ function SubscriptionWrap() {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  // The other half of the row list (D1-a) plus the enrolment statuses that say
+  // whether access is still live. Both are already cached by the Payments tab
+  // and the dashboard, so this usually costs no extra request.
+  const history = usePaymentHistory();
+  const { courses } = useMyActiveCourses();
 
   /* ---- Mutations ---- */
   const mutation = useMutation({
@@ -629,12 +919,112 @@ function SubscriptionWrap() {
     setFlowResult(null);
   }, []);
 
-  /* ---- Derived ---- */
-  const all = useMemo(() => data?.subscriptions ?? [], [data]);
-  const totalPages = useMemo(() => Math.ceil(all.length / PAGE_SIZE), [all]);
+  /* ---- Derived: the merged row list (D1-a) ---- */
+  const accessByGroup = useMemo(() => {
+    const map = new Map<string, "active" | "expired">();
+    for (const c of courses?.courses ?? []) {
+      if (!c?.group_code) continue;
+      map.set(
+        c.group_code,
+        ACTIVE_ENROLMENT_STATUSES.has(String(c.status)) ? "active" : "expired",
+      );
+    }
+    return map;
+  }, [courses]);
+
+  // Which plan each autopay charge belongs to. The history carries the course
+  // but not the subscription, and a student who cancels and re-subscribes has
+  // two plans for one course - so a charge goes to the NEWEST plan for its
+  // course that already existed when it was paid. Each charge lands on exactly
+  // one plan, never both. (A charge dated before every plan, from clock skew,
+  // falls to the oldest rather than vanishing.)
+  const chargesBySub = useMemo(() => {
+    const subs = data?.subscriptions ?? [];
+    const map = new Map<number, PaymentHistoryItem[]>(subs.map((sb) => [sb.id, []]));
+    const plansOfCourse = new Map<string, Subscription[]>();
+    for (const sb of subs) {
+      const list = plansOfCourse.get(sb.group_code) ?? [];
+      list.push(sb);
+      plansOfCourse.set(sb.group_code, list);
+    }
+    for (const list of plansOfCourse.values()) {
+      list.sort((x, y) => Date.parse(y.created_at) - Date.parse(x.created_at));
+    }
+
+    for (const pay of history.data?.payments ?? []) {
+      const group = pay.course?.group_code;
+      if (pay.type !== "autopay" || !group || !pay.paid_at) continue;
+      const candidates = plansOfCourse.get(group);
+      if (!candidates?.length) continue;
+      const paidAt = Date.parse(pay.paid_at);
+      const owner =
+        candidates.find((sb) => Date.parse(sb.created_at) <= paidAt) ??
+        candidates[candidates.length - 1];
+      map.get(owner.id)?.push(pay);
+    }
+    for (const list of map.values()) {
+      list.sort((x, y) => Date.parse(y.paid_at ?? "") - Date.parse(x.paid_at ?? ""));
+    }
+    return map;
+  }, [data, history.data]);
+
+  const all: PlanRow[] = useMemo(() => {
+    const subs = (data?.subscriptions ?? []).map<PlanRow>((sub) => ({
+      id: `sub-${sub.id}`,
+      courseName: courseLabel(sub),
+      purchasedAt: sub.created_at,
+      amount: sub.plan ? sub.plan.amount / 100 : null,
+      charges: chargesBySub.get(sub.id) ?? [],
+      totalPaid: history.data
+        ? (chargesBySub.get(sub.id) ?? []).reduce(
+            (sum, c) => sum + (Number.isFinite(c.amount) ? c.amount : 0),
+            0,
+          )
+        : null,
+      // The enrolment answers "is access live"; the plan's own status is only
+      // the fallback when no enrolment is on record.
+      access:
+        accessByGroup.get(sub.group_code) ??
+        (sub.status === "active" || sub.status === "authenticated" ? "active" : "expired"),
+      groupCode: sub.group_code,
+      sub,
+    }));
+
+    return subs.sort((x, y) =>
+      (y.purchasedAt ?? "").localeCompare(x.purchasedAt ?? ""),
+    );
+  }, [data, accessByGroup, chargesBySub, history.data]);
+
+  const counts = useMemo(
+    () => ({
+      all: all.length,
+      active: all.filter((r) => r.access === "active").length,
+      expired: all.filter((r) => r.access === "expired").length,
+    }),
+    [all],
+  );
+
+  const filteredRows = useMemo(() => {
+    return filter === "all" ? all : all.filter((r) => r.access === filter);
+  }, [all, filter]);
+
+  /** The hero: the newest row that still has live access. */
+  const currentPlan = useMemo(
+    () => all.find((r) => r.access === "active") ?? null,
+    [all],
+  );
+
+  const totalPages = useMemo(() => Math.ceil(filteredRows.length / PAGE_SIZE), [filteredRows]);
   const paginated = useMemo(
-    () => all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [all, page]
+    () => filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredRows, page]
+  );
+
+  const handleView = useCallback(
+    (row: PlanRow) => {
+      if (row.groupCode) router.push(`/preparation/${row.groupCode}`);
+    },
+    [router],
   );
 
   /* ---- Render ---- */
@@ -650,7 +1040,7 @@ function SubscriptionWrap() {
     );
   }
 
-  if (all.length === 0) return <EmptyState />;
+  if (all.length === 0) return <EmptyState onSwitchTab={onSwitchTab} />;
 
   return (
     <>
@@ -670,28 +1060,106 @@ function SubscriptionWrap() {
 
       <div className="space-y-4">
         {/* Heading */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#192839]">
-            {t("heading")}
-            <span className="ml-1.5 text-[#768ea7] font-normal">
-              ({all.length})
-            </span>
-          </h2>
+        <div>
+          <p className="heading-large !font-semibold text-surface-gray-normal">
+            {t("paneTitle")}
+          </p>
+          <p className="body-small !font-normal text-surface-gray-muted">
+            {t("paneSubtitle")}
+          </p>
+        </div>
+
+        {/* Current plan */}
+        {currentPlan && (
+          <div className="flex flex-col gap-4 rounded-xl bg-[var(--color-background-gray-subtle)] p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-subtle)]">
+                <TrophyIcon size={26} color="var(--color-brand)" />
+              </span>
+              <div className="min-w-0">
+                <p className="body-small !font-normal text-surface-gray-muted">
+                  {t("currentPlan")}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="heading-medium !font-semibold text-surface-gray-normal">
+                    {t("courseTitle", { course: currentPlan.courseName })}
+                  </p>
+                  <AccessChip access={currentPlan.access} />
+                </div>
+                <p className="body-small !font-normal text-surface-gray-muted">
+                  {t("courseBlurb")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-5">
+              <div>
+                <p className="body-small !font-normal text-surface-gray-muted">
+                  {t("purchaseDate")}
+                </p>
+                <p className="body-medium !font-semibold text-surface-gray-normal">
+                  {fmt.date(currentPlan.purchasedAt)}
+                </p>
+              </div>
+              {currentPlan.totalPaid !== null && (
+                <div>
+                  <p className="body-small !font-normal text-surface-gray-muted">
+                    {t("amountPaid")}
+                  </p>
+                  <p className="body-medium !font-semibold text-surface-gray-normal">
+                    {fmt.rupees(currentPlan.totalPaid)}
+                  </p>
+                </div>
+              )}
+              <ViewCourseButton row={currentPlan} onView={handleView} />
+            </div>
+          </div>
+        )}
+
+        {/* Filter chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map((f) => {
+            const selected = filter === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  setFilter(f);
+                  setPage(1);
+                }}
+                className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                  selected
+                    ? "border-brand bg-brand text-white"
+                    : "border-[var(--color-border-gray-subtle)] bg-white text-[var(--color-text-gray-subtle)] hover:border-blue-300"
+                }`}
+              >
+                {t(`filter_${f}`)} ({counts[f]})
+              </button>
+            );
+          })}
         </div>
 
         {/* Desktop table */}
         <DesktopTable
           rows={paginated}
+          expanded={expanded}
+          onToggle={toggleExpanded}
           onAction={handleAction}
+          onView={handleView}
         />
 
         {/* Mobile cards */}
         <div className="md:hidden space-y-3">
-          {paginated.map((sub) => (
+          {paginated.map((row) => (
             <MobileCard
-              key={sub.id}
-              sub={sub}
-              onAction={(a) => handleAction(sub, a)}
+              key={row.id}
+              row={row}
+              isOpen={expanded.has(row.id)}
+              onToggle={toggleExpanded}
+              onAction={(a) => handleAction(row.sub, a)}
+              onView={handleView}
             />
           ))}
         </div>
@@ -706,6 +1174,12 @@ function SubscriptionWrap() {
             onPageChange={setPage}
           />
         )}
+
+        <SwitchTabLink
+          hint={t("oneTimeHint")}
+          label={t("oneTimeLink")}
+          onClick={onSwitchTab && (() => onSwitchTab("payment"))}
+        />
       </div>
     </>
   );

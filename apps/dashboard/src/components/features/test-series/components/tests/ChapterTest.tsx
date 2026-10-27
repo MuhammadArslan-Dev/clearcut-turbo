@@ -30,6 +30,8 @@ import { ArrowRightIcon } from "lucide-react";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
+import { useSlowLoad } from "@/hooks/useSlowLoad";
+import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
 
 interface ChapterTestProps {
   courseId?: string | number;
@@ -400,9 +402,24 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
     [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall],
   );
 
+  // Still loading after 10 s: "Taking longer than usual" + Try again (CC-152).
+  const { slow: testsSlow, retry: retryTests } = useSlowLoad(isLoading, "test_series", [
+    chapterTestQueryOptions(courseId, explicitPaperId).queryKey,
+  ]);
+
   /* ================= LOADING / ERROR STATES ================= */
 
-  if (isLoading) return <ChapterTestSkeleton />;
+  if (isLoading)
+    return (
+      <>
+        {testsSlow && (
+          <div className="px-3 pb-3">
+            <SlowLoadNotice onRetry={retryTests} />
+          </div>
+        )}
+        <ChapterTestSkeleton />
+      </>
+    );
 
   if (error)
     return (

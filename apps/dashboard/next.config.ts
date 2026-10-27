@@ -1,6 +1,14 @@
+import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+
+// `ANALYZE=true pnpm --filter dashboard build` writes the treemaps to
+// .next/analyze/. Off by default, so a normal build is unchanged. Same
+// switch apps/landing uses.
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const withNextIntl = createNextIntlPlugin({
   experimental: {
@@ -87,7 +95,7 @@ const config: NextConfig = {
   },
 };
 
-export default withSentryConfig(withNextIntl(config), {
+export default withSentryConfig(bundleAnalyzer(withNextIntl(config)), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 

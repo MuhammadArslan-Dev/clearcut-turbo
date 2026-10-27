@@ -5,7 +5,8 @@ declare const messages: {
   "common": {
     "continueFree": "Continue Free Prep",
     "continueFreeShort": "Continue for Free",
-    "startFree": "Start for free"
+    "startFree": "Start for free",
+    "startTrial": "Start 3-day FREE trial"
   },
   "nav": {
     "pricing": "Pricing",

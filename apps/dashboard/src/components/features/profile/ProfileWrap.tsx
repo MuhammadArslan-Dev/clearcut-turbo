@@ -97,7 +97,10 @@ const ProfileWrap = () => {
 
   /* ---------------- RENDER ---------------- */
   return (
-    <div className="max-w-[500px]">
+    // Was max-w-[500px], which left the pane a narrow column beside the nav
+    // card. The design fills the content area, and the field tiles need the
+    // width to sit two-up.
+    <div className="w-full">
       <ProfileCard
         profile={profile}
         loading={isLoading}

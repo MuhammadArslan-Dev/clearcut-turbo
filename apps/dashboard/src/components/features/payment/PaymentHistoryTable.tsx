@@ -2,6 +2,9 @@ import React, { memo, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import PaymentHistorySkeleton from "./PaymentHistorySkeleton";
+import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
+import { Select, SelectOption } from "@clearcut/ui/select";
+import { PaymentCardIcon } from "@/components/ui/icons";
 
 /* ----------------------------------
  * Types
@@ -89,14 +92,16 @@ function PaymentHistoryTable({
               <th className="px-4 py-3 text-left">{t("course")}</th>
               <th className="px-4 py-3 text-left">{t("type")}</th>
               <th className="px-4 py-3 text-left">{t("amount")}</th>
-              <th className="px-4 py-3 text-left">{t("payment")}</th>
+              <th className="px-4 py-3 text-left">{t("paymentMethod")}</th>
+              <th className="px-4 py-3 text-left">{t("paymentId")}</th>
+              <th className="px-4 py-3 text-left">{t("status")}</th>
             </tr>
           </thead>
 
           <tbody>
             {isEmpty ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
                   <p className="font-medium">{t("empty")}</p>
                   <p className="text-xs mt-1">{t("emptyHint")}</p>
                 </td>
@@ -110,10 +115,27 @@ function PaymentHistoryTable({
                   <td className="px-4 py-3 text-gray-600">{kindLabel(row.kind)}</td>
                   <td className="px-4 py-3 font-medium">{formatAmount(row.amount)}</td>
                   <td className="px-4 py-3">
-                    {methodLabel(row.method)}
-                    {row.paymentId && (
-                      <span className="block text-xs text-gray-500 font-mono">{row.paymentId}</span>
+                    {row.method && (
+                      <span className="inline-flex items-center gap-2">
+                        <PaymentCardIcon size={16} variant="outline" color="var(--color-brand)" />
+                        {methodLabel(row.method)}
+                      </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">
+                    {row.paymentId ?? ""}
+                  </td>
+                  {/* /v2/payment/history returns successful payments only, so
+                      every row here is a success — this is a real status, not a
+                      hardcoded decoration. */}
+                  <td className="px-4 py-3">
+                    <StatusChip
+                      variant="soft"
+                      tone="success"
+                      radius="full"
+                      size="sm"
+                      label={t("success")}
+                    />
                   </td>
                 </tr>
               ))
@@ -171,17 +193,20 @@ function PaymentHistoryTable({
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                className="border rounded px-2 py-1"
-              >
-                {[5, 10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+              {/* Shared Select, matching the filter dropdowns above the table
+                  instead of a browser-styled native one. */}
+              <div className="w-[88px]">
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => onPageSizeChange(Number(v))}
+                >
+                  {[5, 10, 20, 50].map((size) => (
+                    <SelectOption key={size} value={String(size)}>
+                      {String(size)}
+                    </SelectOption>
+                  ))}
+                </Select>
+              </div>
               <span>{t("rowsPerPage")}</span>
             </div>
 
@@ -190,7 +215,7 @@ function PaymentHistoryTable({
                 onClick={() => onPageChange(page - 1)}
                 disabled={page <= 1}
                 aria-label={t("previous")}
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                className="p-1 rounded cursor-pointer hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -199,7 +224,7 @@ function PaymentHistoryTable({
                 onClick={() => onPageChange(page + 1)}
                 disabled={page >= totalPages}
                 aria-label={t("next")}
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                className="p-1 rounded cursor-pointer hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronRight size={18} />
               </button>

@@ -49,6 +49,20 @@ export const SENTRY_ENABLED =
 export const TRACES_SAMPLE_RATE = isProduction ? 0.1 : 1.0;
 
 /**
+ * Where the browser SDK adds `sentry-trace` / `baggage` headers so a page
+ * load links to the Laravel transactions it caused (CC-145). The default is
+ * same-origin only, and the API lives on its own host. Only our own app and
+ * API — never third parties (their CORS would reject the extra headers).
+ */
+export const TRACE_PROPAGATION_TARGETS: (string | RegExp)[] = [/^\/(?!\/)/];
+try {
+  const apiBase = process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND;
+  if (apiBase) TRACE_PROPAGATION_TARGETS.push(new URL(apiBase).origin);
+} catch {
+  // malformed env value: keep same-origin only
+}
+
+/**
  * Noise that is never actionable.
  *
  * Deliberately absent: "Failed to fetch", "Network Error", "fetch failed",
@@ -217,6 +231,58 @@ export function scrubSensitiveData<T extends Record<string, any>>(event: T): T {
     }
   }
 
+  return event;
+}
+
+/**
+ * Redacts span attributes in place: query attributes (`http.query`,
+ * `url.query`) and any URL-looking value (`url`, `http.url`, `url.full`, …).
+ */
+function scrubAttributes(data: unknown): void {
+  if (!data || typeof data !== "object") return;
+  const attrs = data as Record<string, unknown>;
+  for (const [key, value] of Object.entries(attrs)) {
+    if (typeof value !== "string" || (!value.includes("?") && !/query/i.test(key))) continue;
+    if (/query/i.test(key)) attrs[key] = redactSearch(value);
+    else if (/^(\/|[a-z][a-z0-9+.-]*:)/i.test(value)) attrs[key] = redactUrl(value);
+  }
+}
+
+type ScrubbableSpan = { description?: string; data?: unknown };
+
+/**
+ * Redacts a span's description (e.g. `GET /dashboard?token=…`) and attributes.
+ * Use as `beforeSendSpan` (CC-143). Same logic as
+ * packages/error-reporting/src/redact.ts (tested there).
+ */
+export function scrubSpan<T extends ScrubbableSpan>(span: T): T {
+  const s: ScrubbableSpan = span;
+  if (typeof s.description === "string" && s.description.includes("?")) {
+    // Descriptions are "<METHOD> <url>" for http spans, or just the URL.
+    const match = /^(\S+ )?([\s\S]*)$/.exec(s.description);
+    if (match) s.description = (match[1] ?? "") + redactUrl(match[2]);
+  }
+  scrubAttributes(s.data);
+  return span;
+}
+
+type ScrubbableTransaction = {
+  transaction?: string;
+  contexts?: { trace?: { data?: unknown } };
+  spans?: ScrubbableSpan[];
+};
+
+/**
+ * `beforeSend` only sees errors. Page-load/navigation transactions carry the
+ * landing URL — the `?token=` handoff included — in the request, the root span
+ * and the `browser.request`/`browser.DNS`/… child spans (CC-143).
+ */
+export function scrubTransaction<T extends ScrubbableTransaction>(event: T): T {
+  scrubSensitiveData(event as Record<string, unknown>);
+  const e: ScrubbableTransaction = event;
+  if (typeof e.transaction === "string") e.transaction = redactUrl(e.transaction);
+  scrubAttributes(e.contexts?.trace?.data);
+  for (const span of e.spans ?? []) scrubSpan(span);
   return event;
 }
 
