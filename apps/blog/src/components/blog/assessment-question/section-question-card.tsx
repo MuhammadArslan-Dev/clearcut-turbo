@@ -224,7 +224,11 @@ export default function SectionQuestionCard({
                   <span className="w-9 h-9 shrink-0 rounded-full border-2 border-gray-300 bg-gray-200 flex items-center justify-center font-semibold">
                     {OPTION_LABELS[optionNumber]}
                   </span>
-                  {opt.text && <span className="body-large !font-normal surface-text-gray-normal">{opt.text}</span>}
+                  {opt.text && (
+                    <Math content={opt.text} className="body-large !font-normal surface-text-gray-normal">
+                      {opt.text}
+                    </Math>
+                  )}
                   {opt.img && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

@@ -2,6 +2,8 @@
 // `TextMarkDown` (components/ui/text-markdown.tsx) and the server
 // `RichText` (components/question-bank/rich-text.tsx).
 
+import { normalizeMathDelimiters } from "@/lib/math/delimiters";
+
 export function normalizeImgTags(text: string): string {
   // The database stores images as <img src= URL> (space after =, no quotes).
   // CommonMark's inline HTML parser rejects this and treats the whole tag as plain text.
@@ -31,5 +33,15 @@ export function escapeMathForMarkdown(text: string): string {
   // would double the backslash, which CommonMark reads as a literal "\"
   // followed by a now-*unescaped* "_", reintroducing the exact emphasis
   // bug this function exists to prevent.
-  return text.replace(MATH_SPAN_RE, (span) => span.replace(/(?<!\\)[_*`]/g, "\\$&"));
+  // \( ... \) / \[ ... \] -> $...$ / $$...$$ first: Markdown would otherwise
+  // strip those backslashes and the math would reach the page as "( ... )".
+  //
+  // Line breaks INSIDE a math span become spaces (insignificant in LaTeX):
+  // authors put "$$" on its own line with the formula between, and
+  // remark-breaks would turn each newline into a <br> that splits the span
+  // across several nodes, so the renderer never saw a whole "$$...$$" and the
+  // raw LaTeX stayed on the page.
+  return normalizeMathDelimiters(text).replace(MATH_SPAN_RE, (span) =>
+    span.replace(/\s*\n\s*/g, " ").replace(/(?<!\\)[_*`]/g, "\\$&"),
+  );
 }

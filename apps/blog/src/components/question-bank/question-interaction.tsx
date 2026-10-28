@@ -16,6 +16,8 @@ export interface InteractionOption {
   n: number;
   text: string | null;
   image: string | null;
+  /** Typeset HTML when the text holds math (built on the server), else absent. */
+  html?: string | null;
 }
 
 /**
@@ -85,7 +87,7 @@ export default function QuestionInteraction({
   return (
     <>
       <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3" role="group" aria-label={t("optionsFor", { index: position })}>
-        {options.map(({ n, text, image }) => {
+        {options.map(({ n, text, image, html }) => {
           const isCorrect = n === correct;
           const isSelected = n === selectedOption;
           // Feedback waits for the reveal button, not merely a pick.
@@ -127,10 +129,18 @@ export default function QuestionInteraction({
                   <span className="w-9 h-9 shrink-0 rounded-full border-2 border-gray-300 bg-gray-200 flex items-center justify-center font-semibold">
                     {OPTION_LABELS[n]}
                   </span>
-                  {text && (
-                    <span data-qs="" className="body-large !font-normal surface-text-gray-normal">
-                      {text}
-                    </span>
+                  {html ? (
+                    <span
+                      data-qs=""
+                      className="body-large !font-normal surface-text-gray-normal"
+                      dangerouslySetInnerHTML={{ __html: html }}
+                    />
+                  ) : (
+                    text && (
+                      <span data-qs="" className="body-large !font-normal surface-text-gray-normal">
+                        {text}
+                      </span>
+                    )
                   )}
                   {image && (
                     // Plain <img>: an unverified DB URL would crash next/image.

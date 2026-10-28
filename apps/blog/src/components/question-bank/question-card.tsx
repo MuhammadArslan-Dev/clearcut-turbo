@@ -6,6 +6,7 @@ import type { CardQuestion } from "@/lib/question-bank/card-model";
 import { pagePath } from "@/lib/question-bank/pagination";
 import { stripHtml } from "@/utils/section-search";
 import RichText from "./rich-text";
+import { renderMathText } from "@/lib/math/katex-render";
 import { EXPLANATION_ATTR } from "@/lib/question-bank/dom-attrs";
 import QuestionInteraction from "./question-interaction";
 
@@ -96,7 +97,7 @@ export default async function QuestionCard({
             questionId={card.id}
             position={card.position}
             correct={block.correct}
-            options={block.options}
+            options={block.options.map((o) => ({ ...o, html: o.text ? renderMathText(o.text) : null }))}
             lazyImages={!eagerImages}
             questionText={limitChars(stripHtml(block.question).trim(), SHARE_TEXT_CHARS)}
             exam={exam}

@@ -1,4 +1,5 @@
 import katex from "katex";
+import { normalizeMathDelimiters } from "./delimiters";
 
 // Shared by the client `Math` component (components/ui/math.tsx), which
 // typesets DOM text nodes after render, and the server-side rehype plugin
@@ -35,7 +36,9 @@ export function renderMathHtml(expr: string, displayMode: boolean): string {
 export type MathPart = { text: string } | { html: string };
 
 /** Splits text into plain runs and rendered math; null when it has no math. */
-export function splitMath(text: string): MathPart[] | null {
+export function splitMath(input: string): MathPart[] | null {
+  // Plain text (option text, or a DOM text node) can still hold \( ... \).
+  const text = normalizeMathDelimiters(input);
   if (!text.includes("$")) return null;
   const parts: MathPart[] = [];
   let rest = text;
@@ -53,4 +56,23 @@ export function splitMath(text: string): MathPart[] | null {
   if (!foundAny) return null;
   if (rest.length) parts.push({ text: rest });
   return parts;
+}
+
+const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+/**
+ * Plain text (no Markdown) with its math typeset, as an HTML string — or null
+ * when it has no math, so callers keep rendering the text as they always did.
+ * The plain runs are HTML-escaped; only KaTeX's own output is inserted raw.
+ */
+export function renderMathText(text: string): string | null {
+  const parts = splitMath(text);
+  if (!parts) return null;
+  return parts
+    .map((part) =>
+      "text" in part
+        ? part.text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c])
+        : `<span data-katex="1">${part.html}</span>`,
+    )
+    .join("");
 }
