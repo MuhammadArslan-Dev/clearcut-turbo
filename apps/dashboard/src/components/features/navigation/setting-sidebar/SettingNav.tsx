@@ -1,6 +1,7 @@
 import React from "react";
 import SettingsSidebarWrapper from "./SettingsSidebarWrapper";
 import SettingsSidebarNav from "./SettingsSidebarNav";
+import { MobileLogoutRow } from "./SettingsSidebarFooter";
 import { Tab } from "@/app/[locale]/(protected)/(dashboard)/dashboard/profile/page";
 
 
@@ -21,6 +22,8 @@ export default function SettingNav({ activeTab, onTabChange }: Props) {
           onTabChange(tab as Tab);
         }}
       />
+      {/* Logout lives in the desktop sidebar, which is hidden on mobile. */}
+      <MobileLogoutRow />
     </SettingsSidebarWrapper>
   );
 }

@@ -252,3 +252,5 @@ en + hi · existing actions (Edit, Delete Account, Cancel, tab routing) still wo
 the tokens holding the same value (`#192839` text-gray-normal, `#40566d` text-gray-subtle, `#768ea7`
 surface-gray-muted, `#f1f5fa` background-gray-subtle, `#cbd5e2` border-gray-subtle); verified the
 rendered colours are unchanged. Dashboard went **525 → 427**.
+
+- 2026-10-28: Mobile Logout row restored on the Profile page: dropping `SettingsSidebarFooter` (D3) had also removed the only mobile Logout (the sidebar is `hidden md:flex`). Extracted `MobileLogoutRow` in `SettingsSidebarFooter.tsx` and render it from `SettingNav.tsx` (`md:hidden`). Terms/Privacy card stays removed.

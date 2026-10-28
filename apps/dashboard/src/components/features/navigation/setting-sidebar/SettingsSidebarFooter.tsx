@@ -15,26 +15,34 @@ import { useAuth } from "@/providers/AuthProvider";
 
 /* ----------------------------- Sidebar Footer ----------------------------- */
 
-export default function SettingsSidebarFooter() {
+/** Mobile-only Logout row (the sidebar that holds Logout on desktop is hidden below md). */
+export function MobileLogoutRow() {
   const t = useTranslations();
-  const footer = useTranslations("footer");
   const { logout } = useAuth();
 
   return (
-    <div className="fixed bottom-0 w-full relative">
-      <div className="flex pb-4 md:hidden items-center w-full justify-between px-3 py-2">
-        <div
-          onClick={() => logout()}
-          className="flex cursor-pointer justify-center items-center gap-2 body-large !font-normal text-surface-gray-normal"
-        >
-          <LogoutDoorIcon />
-          <p className="">{t("actions.logout")}</p>
-        </div>
-        <p className="body-xsmall !font-normal text-surface-gray-subtle ">
-          Build V 1.0 (1)
-          {/* © {new Date().getFullYear()} Clear Cutoff */}
-        </p>
+    <div className="flex pb-4 md:hidden items-center w-full justify-between px-3 py-2">
+      <div
+        onClick={() => logout()}
+        className="flex cursor-pointer justify-center items-center gap-2 body-large !font-normal text-surface-gray-normal"
+      >
+        <LogoutDoorIcon />
+        <p className="">{t("actions.logout")}</p>
       </div>
+      <p className="body-xsmall !font-normal text-surface-gray-subtle ">
+        Build V 1.0 (1)
+        {/* © {new Date().getFullYear()} Clear Cutoff */}
+      </p>
+    </div>
+  );
+}
+
+export default function SettingsSidebarFooter() {
+  const footer = useTranslations("footer");
+
+  return (
+    <div className="fixed bottom-0 w-full relative">
+      <MobileLogoutRow />
       <div className="hidden md:block">
         <SettingFooter />
       </div>
