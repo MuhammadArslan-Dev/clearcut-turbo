@@ -86,6 +86,10 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 54 | [Blog home + exam page redesign](54-blog-home-exam-redesign.md) | — | CM-blog | Built + Playwright-tested, 1 bug found and fixed (not committed) | Commit approval |
 | 55 | [Payment page redesign](55-payment-page-redesign.md) | — | CM-dashboard | Built + Playwright-tested; 4 fixes applied, behaviour unchanged (not committed) | Commit approval |
 | 56 | [Profile screens redesign](56-profile-screens-redesign.md) | — | CM-dashboard | All 3 screens built + browser-tested on real data, behaviour unchanged (not committed) | hi/mr + 390 px pass |
+| 60 | [SEO: canonical host + leftover test page](60-cc138-cc139-seo-host-and-test-page.md) | CC-138, CC-139 | Cloudflare, SEO | CC-139 done + verified live; CC-138 **not done** (www still 200, needs a Cloudflare Redirect Rule) | Cloudflare rule |
+| 61 | [Payment plan cards](61-cc73-cc76-payment-plan-cards.md) | CC-73, CC-76 (CC-74 see 33/37) | CM-dashboard | Reported done; no commit found — verify in testing | Ganesh testing |
+| 62 | [Payment attribution: campaign, exam, transaction id](62-cc136-cc137-payment-attribution.md) | CC-136, CC-137 | BE, CM-dashboard | Reported done; no code found on this machine — verify against acceptance list | Ganesh testing |
+| 63 | [Question pages: raw LaTeX](63-cc166-academy-math-rendering.md) | CC-166 | CM-blog | Fixed + live (`f672a26`, 2026-10-28) | Ganesh testing |
 
 ## Cross-phase dependencies
 
@@ -98,6 +102,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 
 ## Change log
 
+- 2026-10-28: added phases 60–63 (CC-138/139, CC-73/76, CC-136/137, CC-166). CC-95 and CC-74 are covered by phases 34/38 and 33/37.
 - 2026-10-21: created folder, 14 phase files, investigation results copied in.
 
 - 2026-10-27: added phases 42–53 (wave 2: CC-143, 159, 146, 145, 163, 153, 144, 149, 150, 151, 152, 154, 141).
