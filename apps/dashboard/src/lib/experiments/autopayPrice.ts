@@ -110,6 +110,43 @@ export function offerFor(
   return scope.exams.includes(examShortName.toUpperCase()) ? AUTOPAY_OFFER : null;
 }
 
+// ---------------------------------------------------------------------------
+// Random A/B test (Amplitude EXPERIMENT `autopay-offer-ab`), for the public.
+//
+// Two arms on the same exams as the allow-list (exams where ₹99 is a discount):
+//   "control"  = the exam's own default price (nothing changes, but the user IS
+//                exposed, or Amplitude has no control group to compare with)
+//   "price-99" = the ₹99 plan
+// Amplitude splits users (bucketing key: user id) and decides which exams count
+// through the SAME payload on BOTH variants, e.g. {"scope":"all"}. If the two
+// variants disagree or a payload is unclear, the user is simply not in the test
+// (default price, no exposure): a visible, fail-safe imbalance, never a wrong price.
+// The allow-list flag above always wins, so testers/the team never enter the
+// experiment's numbers.
+// ---------------------------------------------------------------------------
+
+/** Amplitude experiment key. Must match the experiment created in Amplitude. */
+export const AUTOPAY_AB_FLAG_KEY = "autopay-offer-ab";
+
+export type AbArm = "control" | "price-99";
+
+/** The arm this user is in for this exam, or null (= not in the test). */
+export function abArmFor(
+  examShortName: string | undefined | null,
+  assignment: OfferAssignment | null | undefined,
+): AbArm | null {
+  if (!examShortName || !assignment) return null;
+  const variant = assignment.variant;
+  if (variant !== "control" && variant !== AUTOPAY_OFFER_VARIANT) return null;
+  if (!isDiscountExam(examShortName)) return null;
+
+  const scope = parseScope(assignment.payload);
+  if (!scope) return null;
+  if (scope.kind === "exams" && !scope.exams.includes(examShortName.toUpperCase())) return null;
+
+  return variant;
+}
+
 /** Internal testers can also be targeted by an Amplitude user property. */
 export function parseUuidList(raw: string | undefined | null): string[] {
   return (raw ?? "")

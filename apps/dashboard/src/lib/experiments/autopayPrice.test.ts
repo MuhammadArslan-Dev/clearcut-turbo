@@ -6,7 +6,9 @@ import {
 } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
 import {
+  AUTOPAY_AB_FLAG_KEY,
   AUTOPAY_OFFER,
+  abArmFor,
   isDiscountExam,
   isInternalTester,
   offerFor,
@@ -112,6 +114,39 @@ describe("offerFor: the whole decision", () => {
   it("an unknown exam is not offered", () => {
     expect(offerFor(undefined, ALL)).toBeNull();
     expect(offerFor("", ALL)).toBeNull();
+  });
+});
+
+describe("abArmFor: the random A/B test", () => {
+  const v = (variant: string | null, payload: unknown = { scope: "all" }) => ({ variant, payload });
+
+  it("uses its own flag key", () => {
+    expect(AUTOPAY_AB_FLAG_KEY).toBe("autopay-offer-ab");
+  });
+
+  it("control and price-99 are the only arms", () => {
+    expect(abArmFor("HTET", v("control"))).toBe("control");
+    expect(abArmFor("HTET", v("price-99"))).toBe("price-99");
+    for (const variant of ["off", "on", "price-149", "Control", "", null]) {
+      expect(abArmFor("HTET", v(variant))).toBeNull();
+    }
+  });
+
+  it("only on discount exams, and only inside the payload scope (same rule for both arms)", () => {
+    for (const arm of ["control", "price-99"]) {
+      expect(abArmFor("CTET", v(arm))).toBeNull();
+      expect(abArmFor("UGC", v(arm))).toBe(arm);
+      expect(abArmFor("HTET", v(arm, { scope: "exams", exams: ["HTET"] }))).toBe(arm);
+      expect(abArmFor("UGC", v(arm, { scope: "exams", exams: ["HTET"] }))).toBeNull();
+    }
+  });
+
+  it("an unclear payload or a missing answer is not in the test", () => {
+    for (const payload of [undefined, null, {}, { scope: "ALL" }, { scope: "exams", exams: [] }]) {
+      expect(abArmFor("HTET", { variant: "control", payload })).toBeNull();
+    }
+    expect(abArmFor("HTET", null)).toBeNull();
+    expect(abArmFor(undefined, v("control"))).toBeNull();
   });
 });
 

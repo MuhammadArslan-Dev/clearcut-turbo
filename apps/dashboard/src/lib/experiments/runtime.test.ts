@@ -14,10 +14,11 @@ vi.mock("./config", () => ({
 }));
 
 import { useExperimentStore } from "@/store/experiments/useExperimentStore";
-import { AUTOPAY_OFFER_FLAG_KEY } from "./autopayPrice";
+import { AUTOPAY_AB_FLAG_KEY, AUTOPAY_OFFER_FLAG_KEY } from "./autopayPrice";
 import { __resetExposureGuardForTests, ensureExperiments, exposeAutopayOffer } from "./runtime";
 
 const FLAG = AUTOPAY_OFFER_FLAG_KEY;
+const AB = AUTOPAY_AB_FLAG_KEY;
 type Assignment = { variant: string | null; payload: unknown };
 const ALL: Assignment = { variant: "price-99", payload: { scope: "all" } };
 
@@ -47,7 +48,7 @@ describe("ensureExperiments", () => {
     const s = useExperimentStore.getState();
     expect(s.status).toBe("ready");
     expect(s.assignments[FLAG]).toEqual(ALL);
-    expect(client.fetchVariantMap).toHaveBeenCalledWith("u-1", [FLAG], undefined);
+    expect(client.fetchVariantMap).toHaveBeenCalledWith("u-1", [FLAG, AB], undefined);
   });
 
   it("does not fetch again for the same user (one fetch per user per page load)", async () => {
@@ -103,11 +104,11 @@ describe("ensureExperiments", () => {
     config.internal = "U-1, someone-else";
 
     await ensureExperiments("u-1");
-    expect(client.fetchVariantMap).toHaveBeenLastCalledWith("u-1", [FLAG], { internal_tester: true });
+    expect(client.fetchVariantMap).toHaveBeenLastCalledWith("u-1", [FLAG, AB], { internal_tester: true });
 
     useExperimentStore.getState().reset();
     await ensureExperiments("u-2");
-    expect(client.fetchVariantMap).toHaveBeenLastCalledWith("u-2", [FLAG], undefined);
+    expect(client.fetchVariantMap).toHaveBeenLastCalledWith("u-2", [FLAG, AB], undefined);
   });
 
   it("a different user does not inherit the previous user's answer; logout clears the SDK", async () => {
@@ -144,31 +145,42 @@ describe("exposeAutopayOffer", () => {
     client.fetchVariantMap.mockResolvedValue({ [FLAG]: ALL });
     await ensureExperiments("u-1");
 
-    expect(await exposeAutopayOffer()).toBe(true);
-    expect(await exposeAutopayOffer()).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(true);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
     expect(client.exposeVariant).toHaveBeenCalledTimes(1);
     expect(client.exposeVariant).toHaveBeenCalledWith(FLAG, "price-99");
+  });
+
+  it("the allow-list flag and the A/B flag are exposed separately, each once", async () => {
+    client.fetchVariantMap.mockResolvedValue({ [AB]: { variant: "control", payload: { scope: "all" } } });
+    await ensureExperiments("u-1");
+
+    expect(await exposeAutopayOffer(AB, "control")).toBe(true);
+    expect(await exposeAutopayOffer(AB, "control")).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(true);
+    expect(client.exposeVariant).toHaveBeenNthCalledWith(1, AB, "control");
+    expect(client.exposeVariant).toHaveBeenNthCalledWith(2, FLAG, "price-99");
   });
 
   it("never exposes before Amplitude answered", async () => {
     client.fetchVariantMap.mockReturnValue(new Promise(() => {}));
     void ensureExperiments("u-1");
 
-    expect(await exposeAutopayOffer()).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
     expect(client.exposeVariant).not.toHaveBeenCalled();
   });
 
   it("never exposes after a failed fetch, with experiments off, or without a user", async () => {
-    expect(await exposeAutopayOffer()).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
 
     client.fetchVariantMap.mockResolvedValue(null);
     await ensureExperiments("u-1");
-    expect(await exposeAutopayOffer()).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
 
     config.enabled = false;
     useExperimentStore.getState().reset();
     await ensureExperiments("u-2");
-    expect(await exposeAutopayOffer()).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
     expect(client.exposeVariant).not.toHaveBeenCalled();
   });
 
@@ -177,7 +189,7 @@ describe("exposeAutopayOffer", () => {
     await ensureExperiments("u-1");
 
     client.exposeVariant.mockResolvedValueOnce(false);
-    expect(await exposeAutopayOffer()).toBe(false);
-    expect(await exposeAutopayOffer()).toBe(true);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(false);
+    expect(await exposeAutopayOffer(FLAG, "price-99")).toBe(true);
   });
 });

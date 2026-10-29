@@ -44,6 +44,16 @@ The payload only chooses WHERE the offer applies. The plan id and the ₹99 amou
 - Remote evaluation merges stored properties with those sent in the fetch; the ones sent win.
 - Unverified in the docs: whether Individual inclusions bypass the allocation % (implied, not stated). Confirm on the first live test with your own account.
 
+## 2b. Random A/B test (public) — prepared, NOT started
+Experiment [`autopay-offer-ab`](https://app.amplitude.com/experiment/clear-cutoff/673721/config/1578717) (id 1578717, remote, bucketing key `user_id`): variants **`control`** (the exam's own default price) and **`price-99`** (the ₹99 plan), weights 1:1, deployment `testing_price_99` attached, metrics reused from §7. Created **disabled, 0 % rollout, not started**: nobody is in it.
+- Same exams as the allow-list: exams whose default autopay is above ₹99 (HTET, HPTET, MAHATET ₹149; UGC ₹249). CTET etc. are never in it.
+- **Both variants must carry the same payload** (`{"scope":"all"}` or `{"scope":"exams","exams":["HTET"]}`). If a payload is missing/unclear on either arm the user is simply not in the test (default price, no exposure), which shows up as an imbalance instead of a wrong price.
+- Both arms are exposed (`$exposure` with `flag_key: autopay-offer-ab`, variant `control` or `price-99`), or Amplitude would have no control group. Funnel events carry `price_offer` = `price-99` / `control`.
+- The **allow-list flag always wins**: a tester is never inside the experiment's numbers (they are exposed on `autopay-offer-99` only).
+- To run it (after your explicit go-ahead, and see the backend gap in §5 first): ramp 10 % for 3–7 days (check Diagnostics: exposure/assignment ratio, SRM, guardrails), then 50/50, **start** the experiment at the final allocation, do not change weights mid-run, run ≥ 2 full weeks, exclude `internal_tester`.
+- Reality check: HTET + HPTET + MAHATET + UGC give only a few dozen to ~100 payment-page visitors a month, so even a big effect will not reach significance. Expect "inconclusive"; read the result as an anecdote.
+- The older experiment `autopay-price-test` (id 1578235, 100 vs 149 on default-₹99 exams) is obsolete.
+
 ## 3. Fail-safe behaviour (never ₹99 by accident)
 Default (existing) price, **no exposure event**, in all of these: experiments off (no key / analytics off / host not allowed), flag disabled, user not selected, exam out of scope, exam not a discount exam, another variant, unclear payload, SDK error, SDK timeout (2.5 s), no answer. **No cache**: an answer lives in memory for one page load; the SDK's own remembered variant is cleared before every fetch, so a removed user or a failed fetch can never show an old offer (tested).
 
@@ -59,7 +69,7 @@ Exposure (`$exposure {flag_key, variant: "price-99"}`): once per page load, from
 - Not verified against the real Amplitude evaluation (no deployment key exists, and Amplitude's own evaluation can't be exercised from here). Verified: the SDK request/response contract (`GET https://api.lab.amplitude.com/sdk/v2/vardata`, response `{ "autopay-offer-99": { key, value, payload } }`) with a mocked server.
 
 ## 6. Test matrix and results (2026-10-29, local)
-Unit: **58 Vitest tests pass** (`pnpm --filter dashboard test`): payload parsing, offer decision per exam, defaults, tripwire on `EXAM_PRICE_OVERRIDES`, runtime (no cache, one fetch, failure, user switch, exposure once), SDK wrapper (clears before fetch, timeout, error, ids only). tsc: no errors in touched files; eslint: no new problems (0 in new files, touched files equal to `HEAD`); `check:colors` clean.
+Unit: **75 Vitest tests pass** (`pnpm --filter dashboard test`): payload parsing, offer decision per exam, defaults, tripwire on `EXAM_PRICE_OVERRIDES`, runtime (no cache, one fetch, failure, user switch, exposure once), SDK wrapper (clears before fetch, timeout, error, ids only). tsc: no errors in touched files; eslint: no new problems (0 in new files, touched files equal to `HEAD`); `check:colors` clean.
 Playwright (real Chromium, headed, dev server on 3021, Amplitude evaluation/ingestion + Razorpay + `/v2/subscription/create` mocked, third parties blocked; fixture enrolments HTET/HPTET/MAHATET/UGC/CTET). Every price read from the page, every event from captured traffic:
 
 | Scenario (Amplitude answers…) | Autopay card / My Courses / widget | Checkout `plan_id` | Exposure | `price_offer` |
@@ -76,6 +86,11 @@ Playwright (real Chromium, headed, dev server on 3021, Amplitude evaluation/inge
 | **Cross-device**: two fresh browsers, two loads each | HTET ₹99 every time | n/a | one per load (2 → 2) | n/a |
 | **All surfaces** (selected HTET): My Courses cards HTET ₹99 / HPTET ₹149 / MAHATET ₹149 / UGC ₹249 / CTET ₹99; floating widget HTET ₹99; test-series page only ₹99 | consistent | | | |
 | **All surfaces** (not selected / global) | defaults (149/149/149/249/99) / all ₹99 | | | |
+| **A/B treatment** (experiment says `price-99`, scope all) | HTET, HPTET, MAHATET, UGC ₹99; CTET ₹99 default | 1 | 1 per exam on `autopay-offer-ab`=price-99, CTET none | `price-99` |
+| **A/B control** | HTET ₹149, UGC ₹249 (defaults), CTET ₹99 | 2 / 3 / 1 | 1 on `autopay-offer-ab`=control | `control` |
+| A/B: not in experiment, scope excludes the exam (either arm), unclear payload | default | default | none | none |
+| A/B + allow-list both answer | ₹99 (allow-list wins) | 1 | only `autopay-offer-99`=price-99 | `price-99` |
+| A/B with Amplitude failing / timing out | defaults | default | none | none |
 | Internal tester | `internal_tester: true` in Identify and in the SDK request (explicit property); no phone/email in the SDK request | | | |
 
 Also checked: one-time and annual prices unchanged on every exam; CTET locked test cards still say "Included in the ₹99 plan"; no horizontal scroll at 390 and 1440 (screenshots read: card and "Unlock Full Access for ₹…" button agree, ₹99 and ₹149 states).

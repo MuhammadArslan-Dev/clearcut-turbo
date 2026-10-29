@@ -44,7 +44,6 @@ import {
 } from "@/lib/payment/payment";
 import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
-import { AUTOPAY_OFFER_VARIANT } from "@/lib/experiments/autopayPrice";
 import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
@@ -170,9 +169,9 @@ export default function InitiatedPage() {
     (variant: PaymentType) => getPriceForVariant(variant, pricing, data?.short_name, autopayOffer),
     [pricing, data?.short_name, autopayOffer],
   );
-  // Added to the funnel events of users shown the ₹99 offer, so each can be
-  // split from the default price.
-  const armProps = () => (autopayOffer ? ({ price_offer: AUTOPAY_OFFER_VARIANT } as const) : {});
+  // Added to the funnel events of users in the ₹99 offer or its A/B test
+  // ("price-99" or the A/B "control"), so each can be split from everyone else.
+  const armProps = () => (autopay.arm ? ({ price_offer: autopay.arm } as const) : {});
 
   // Event-level Meta params for InitiateCheckout / AddPaymentInfo /
   // CustomizeProduct. Deliberately excludes ph/external_id — those are PII
