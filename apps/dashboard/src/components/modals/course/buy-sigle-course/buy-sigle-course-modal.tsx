@@ -31,6 +31,8 @@ import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
+import PracticeTestPromptSheet from "@/components/features/practice-test/PracticeTestPromptSheet";
+import { getCourseState, offerPracticeTest, skipPracticeTest } from "@/lib/api/userState";
 
 export default function BuySigleCourseModal() {
   const { isOpen, close, mode, data } = useCourseStore();
@@ -59,6 +61,9 @@ export default function BuySigleCourseModal() {
   // disabled (no paper/subject picked) and nothing happened. A tap on the
   // disabled button now says what to do.
   const [showPickHint, setShowPickHint] = useState(false);
+  // Set once the subjects are saved: the "take a practice test?" sheet is shown
+  // (the picker is hidden meanwhile) and the choice decides where we go next.
+  const [practicePrompt, setPracticePrompt] = useState<{ groupCode: string } | null>(null);
 
   /* ---------------------------------- container (STABLE) ---------------------------------- */
   const Container = useMemo(() => (isMobile ? DrawerSheet : Modal), [isMobile]);
@@ -196,7 +201,27 @@ export default function BuySigleCourseModal() {
           selected_navigation_names: selectionNames,
         });
         await invalidateMyCourses();
-        router.push(`/preparation/${req.data.group_code}?subject_selected=1`);
+        // First time this course gets subjects (this modal only opens for a
+        // course without them, or a newly added exam): ask whether to take the
+        // short practice test first (see PracticeTestPromptSheet). Either way
+        // the next URL carries the `subject_selected` marker, which
+        // FacebookPixel consumes on any route.
+        // Not offered again for a course whose practice test is already done
+        // (kept on the backend per user + course, so it holds across devices).
+        // If that can't be read, offer it: it is skippable and harmless.
+        const groupCode: string = req.data.group_code;
+        const alreadyTaken = await getCourseState(groupCode)
+          .then((state) => state.practice_test_status === "completed")
+          .catch(() => false);
+        if (alreadyTaken) {
+          close();
+          router.push(`/preparation/${groupCode}?subject_selected=1`);
+          return;
+        }
+        // Remember that it was shown: if the learner leaves before answering
+        // (refresh, closed tab), the Preparation page offers it again.
+        void offerPracticeTest(groupCode).catch(() => {});
+        setPracticePrompt({ groupCode });
         return;
       }
 
@@ -235,6 +260,19 @@ export default function BuySigleCourseModal() {
       setSubmitting(false);
     }
   }, [data?.id, selectedPath, submitting, modalT]);
+
+  const continueFromPrompt = useCallback(
+    (path: "practice-test" | "preparation") => {
+      if (!practicePrompt) return;
+      const groupCode = practicePrompt.groupCode;
+      setPracticePrompt(null);
+      // Remember the choice on the backend (best effort; never blocks the learner).
+      if (path === "preparation") void skipPracticeTest(groupCode).catch(() => {});
+      close();
+      router.push(`/${path}/${groupCode}?subject_selected=1`);
+    },
+    [practicePrompt, close, router],
+  );
 
   const { buttonPhase } = useButtonArrowAnimation({
     data: currentChildren.length === 0,
@@ -489,17 +527,24 @@ export default function BuySigleCourseModal() {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && mode === "single" && (
-        <Container
-          maxWidth="max-w-[720px] rounded-md"
-          isHeader={false}
-          isOpen={isOpen}
-          onClose={close}
-        >
-          {mainContent()}
-        </Container>
-      )}
-    </AnimatePresence>
+    <>
+      <AnimatePresence>
+        {isOpen && mode === "single" && !practicePrompt && (
+          <Container
+            maxWidth="max-w-[720px] rounded-md"
+            isHeader={false}
+            isOpen={isOpen}
+            onClose={close}
+          >
+            {mainContent()}
+          </Container>
+        )}
+      </AnimatePresence>
+      <PracticeTestPromptSheet
+        isOpen={isOpen && mode === "single" && practicePrompt !== null}
+        onTake={() => continueFromPrompt("practice-test")}
+        onSkip={() => continueFromPrompt("preparation")}
+      />
+    </>
   );
 }

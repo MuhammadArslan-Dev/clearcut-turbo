@@ -31,6 +31,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     modals: await load(locale, "modals"),
     payment: await load(locale, "payment"),
     DailyTests: await load(locale, "dailyTests"),
+    PracticeTest: await load(locale, "practiceTest"),
     DashboardHome: await load(locale, "dashboardHome"),
   };
 

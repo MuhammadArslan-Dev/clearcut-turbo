@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Transition } from "framer-motion";
 
@@ -13,10 +13,12 @@ import { usePreparationModalStore } from "@/components/features/preparation/stor
 import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useStreakTracker } from "@/hooks/useStreakTracker";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { changeCourse, MyCoursesResponse } from "@/lib/dashboard/learning";
 import { isApiError } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { claimGuide, getCourseState, skipPracticeTest } from "@/lib/api/userState";
+import PracticeTestPromptSheet from "@/components/features/practice-test/PracticeTestPromptSheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import dynamic from "next/dynamic";
@@ -110,18 +112,80 @@ export default function PreparationShell({
       });
   }, [params?.courseId]);
 
+  const router = useRouter();
   useStreakTracker();
 
-  const { course, guideShownThisSession, setGuideShownThisSession } = usePreparationStore();
+  const { course, setGuideShownThisSession } = usePreparationStore();
+
+  // The first-visit guide opens automatically ONCE per user and course, ever:
+  // the backend hands the claim to exactly one caller (see
+  // lib/api/userState.ts), so a second tab, browser or device - or a later
+  // visit - gets `claimed: false` and the guide stays closed. The guide can
+  // always be reopened by hand ("How to use this page"). If the claim request
+  // fails we do NOT open it (fail closed): a duplicate auto-popup is worse than
+  // a missed one, and the manual link still works.
+  const guideRequestedFor = useRef<string | null>(null);
+  const courseCode = course?.group_code ?? null;
+  const urlCourse = typeof params?.courseId === "string" ? params.courseId : null;
+  // Read at response time, so a slow claim for a course the learner has already
+  // left never opens the guide over the new one. (No effect cleanup flag: React
+  // strict mode runs the effect twice and would cancel the one real request.)
+  const urlCourseRef = useRef(urlCourse);
+  urlCourseRef.current = urlCourse;
+  // A practice-test prompt that was shown after enrolment but never answered
+  // (`offered`: refresh, closed tab, back) is asked again here, BEFORE the guide,
+  // and can only be answered with its Take / Skip buttons. A learner who was
+  // never shown it (`not_taken`), skipped it or finished it is not asked. If
+  // the state can't be read we carry on (fail open), so the guide still works.
+  const [practiceGate, setPracticeGate] = useState<{ course: string; status: "checking" | "open" | "done" } | null>(null);
+  useEffect(() => {
+    if (!courseCode || courseCode !== urlCourse) return;
+    if (practiceGate?.course === courseCode) return;
+    setPracticeGate({ course: courseCode, status: "checking" });
+    getCourseState(courseCode)
+      .then((state) => {
+        if (urlCourseRef.current !== courseCode) return;
+        setPracticeGate({ course: courseCode, status: state.practice_test_status === "offered" ? "open" : "done" });
+      })
+      .catch(() => {
+        if (urlCourseRef.current === courseCode) setPracticeGate({ course: courseCode, status: "done" });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseCode, urlCourse]);
+
+  const takePracticeTest = () => {
+    if (courseCode) router.push(`/practice-test/${courseCode}`);
+  };
+  const skipPracticeFromPreparation = () => {
+    if (!courseCode) return;
+    void skipPracticeTest(courseCode).catch(() => {});
+    setPracticeGate({ course: courseCode, status: "done" });
+  };
 
   useEffect(() => {
-    if (!course) return;
-    if (guideShownThisSession) return;
-    if (!course.study_guide_seen) {
-      setGuideShownThisSession();
-      open("preparation-guide", {}, false);
-    }
-  }, [course, guideShownThisSession]);
+    // Only for the course this URL is about: while switching courses the store
+    // can briefly still hold the previous one.
+    if (!courseCode || courseCode !== urlCourse) return;
+    // The guide waits for the practice-test check (and prompt) of this course.
+    if (practiceGate?.course !== courseCode || practiceGate.status !== "done") return;
+    if (guideRequestedFor.current === courseCode) return;
+    guideRequestedFor.current = courseCode;
+
+    claimGuide(courseCode)
+      .then((res) => {
+        if (!res.claimed || urlCourseRef.current !== courseCode) return;
+        setGuideShownThisSession();
+        open("preparation-guide", {}, false);
+      })
+      .catch((err) => {
+        if (isApiError(err) && err.isNetworkError) return;
+        logger.error(err, {
+          tags: { type: "background_sync", module: "preparation-shell" },
+          extra: { action: "claimGuide", courseId: courseCode },
+        });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseCode, urlCourse, practiceGate]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -204,6 +268,11 @@ export default function PreparationShell({
         <PreparationPaywall />
       )}
       <LockedContentModal />
+      <PracticeTestPromptSheet
+        isOpen={practiceGate?.course === courseCode && practiceGate.status === "open"}
+        onTake={takePracticeTest}
+        onSkip={skipPracticeFromPreparation}
+      />
     </div>
   );
 }

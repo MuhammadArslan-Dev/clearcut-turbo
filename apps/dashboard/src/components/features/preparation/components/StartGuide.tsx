@@ -10,34 +10,15 @@ import { usePreparationStore } from "../store/usePreparationDataStore";
 import { usePreparationModalStore } from "../store/usePreparationModalStore";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { trackEvent } from "@/lib/analytics/browser";
+import { claimTopicTour } from "@/lib/api/userState";
 import { PREP_TOUR } from "./startGuideIds";
 import { PREP_TOUR_STEPS, type PrepTourName, type PrepTourStep } from "./prepTourSteps";
 
 // driver.js only loads when a tour actually opens.
 const GlobalTour = dynamic(() => import("../../tour/GlobalTour"), { ssr: false });
 
-const START_MAX_SHOWS = 2;
-const TOPIC_MAX_SHOWS = 1;
-const startKey = (courseId: string) => `cc-start-guide:${courseId}`;
-const TOPIC_KEY = "cc-topic-guide";
 // PreparationShell switches to the sliding list / topic layout below 900px.
 const MOBILE_LAYOUT = "(max-width: 899px)";
-
-const readCount = (key: string, blocked: number) => {
-  try {
-    return Number(localStorage.getItem(key)) || 0;
-  } catch {
-    return blocked; // storage blocked: don't risk showing it every visit
-  }
-};
-
-const writeCount = (key: string, n: number) => {
-  try {
-    localStorage.setItem(key, String(n));
-  } catch {
-    // ignore
-  }
-};
 
 const onScreen = (step: PrepTourStep) => !!findTourTarget(PREP_TOUR[step.target]);
 
@@ -117,9 +98,15 @@ export default function StartGuide({ courseId }: { courseId: string }) {
     };
   }, []);
 
+  // "shown" | "unavailable" (elements not on screen yet - try again later) |
+  // "denied" (`mayShow` said no - never try again).
   const launch = useCallback(
-    async (name: RunName, defs: PrepTourStep[]) => {
-      if (busyRef.current) return false;
+    async (
+      name: RunName,
+      defs: PrepTourStep[],
+      mayShow?: () => Promise<boolean>,
+    ): Promise<"shown" | "unavailable" | "denied"> => {
+      if (busyRef.current) return "unavailable";
       busyRef.current = true;
       const found = await waitForSteps(
         defs.filter((s) => isFreeUser || !s.freeUsersOnly),
@@ -127,7 +114,18 @@ export default function StartGuide({ courseId }: { courseId: string }) {
       );
       if (!found || unmountedRef.current) {
         busyRef.current = false;
-        return false;
+        return "unavailable";
+      }
+      // The once-only decision is made by the backend, as late as possible
+      // (right before the tour really opens), so only a tour that is actually
+      // shown uses up the one allowed showing.
+      if (mayShow && !(await mayShow().catch(() => false))) {
+        busyRef.current = false;
+        return "denied";
+      }
+      if (unmountedRef.current) {
+        busyRef.current = false;
+        return "unavailable";
       }
       setRun({
         name,
@@ -139,33 +137,32 @@ export default function StartGuide({ courseId }: { courseId: string }) {
         })),
       });
       setStartGuideActive(true);
-      return true;
+      return "shown";
     },
     [setStartGuideActive, t, isFreeUser],
   );
 
-  // "start" tour
+  // "start" tour - only straight after the learner pressed "Start Learning" in
+  // the first-visit guide, in this session (never again on a later visit, and
+  // never after the guide was skipped).
   useEffect(() => {
     if (startDecidedRef.current || !course || !courseId) return;
+    if (!startGuideRequested) return;
     // Wait for this course's progress: "no progress" must be real.
     if (progressLoadedFor !== courseId) return;
-    // The first-visit modal is still to come / on screen.
-    if (!course.study_guide_seen && !startGuideRequested) return;
     if (modalOpen) return;
 
-    const count = readCount(startKey(courseId), START_MAX_SHOWS);
     startDecidedRef.current = true;
-    if (Object.keys(progressByTopicId).length > 0 || count >= START_MAX_SHOWS) return;
+    if (Object.keys(progressByTopicId).length > 0) return;
 
-    void launch("start", PREP_TOUR_STEPS.filter((s) => s.tour === "start")).then((shown) => {
+    void launch("start", PREP_TOUR_STEPS.filter((s) => s.tour === "start")).then((result) => {
       // Not on screen yet (mobile topic view, chapters loading): try again
       // on the next change.
-      if (!shown) {
+      if (result !== "shown") {
         startDecidedRef.current = false;
         return;
       }
-      writeCount(startKey(courseId), count + 1);
-      trackEvent("guide_shown", { exam_name: examName, attempt: count + 1, tour: "start" });
+      trackEvent("guide_shown", { exam_name: examName, attempt: 1, tour: "start" });
     });
   }, [
     course,
@@ -179,33 +176,36 @@ export default function StartGuide({ courseId }: { courseId: string }) {
     examName,
   ]);
 
-  // "topic" tour
+  // "topic" tour - once per user and course, decided by the backend claim.
   useEffect(() => {
     if (selectedTopicId !== null && firstTopicIdRef.current === null) {
       firstTopicIdRef.current = selectedTopicId;
     }
     if (topicDecidedRef.current || run || busyRef.current || !course) return;
     if (modalOpen || paywallOpen) return;
-    if (readCount(TOPIC_KEY, TOPIC_MAX_SHOWS) >= TOPIC_MAX_SHOWS) {
-      topicDecidedRef.current = true;
-      return;
-    }
     const opened = window.matchMedia(MOBILE_LAYOUT).matches
       ? topicParam !== null
       : startCompleted || (selectedTopicId !== null && selectedTopicId !== firstTopicIdRef.current);
     if (!opened) return;
 
     topicDecidedRef.current = true;
-    void launch("topic", PREP_TOUR_STEPS.filter((s) => s.tour === "topic")).then((shown) => {
-      if (!shown) {
+    void launch(
+      "topic",
+      PREP_TOUR_STEPS.filter((s) => s.tour === "topic"),
+      // A failed claim counts as "no": fail closed rather than risk a repeat.
+      () => claimTopicTour(courseId).then((res) => res.claimed),
+    ).then((result) => {
+      if (result === "unavailable") {
         topicDecidedRef.current = false;
         return;
       }
-      writeCount(TOPIC_KEY, TOPIC_MAX_SHOWS);
-      trackEvent("guide_shown", { exam_name: examName, attempt: 1, tour: "topic" });
+      if (result === "shown") {
+        trackEvent("guide_shown", { exam_name: examName, attempt: 1, tour: "topic" });
+      }
     });
   }, [
     course,
+    courseId,
     selectedTopicId,
     topicParam,
     startCompleted,
@@ -222,18 +222,18 @@ export default function StartGuide({ courseId }: { courseId: string }) {
     void launch(
       "replay",
       PREP_TOUR_STEPS.map((s) => ({ ...s, required: false })),
-    ).then((shown) => {
-      if (!shown) {
+    ).then((result) => {
+      if (result !== "shown") {
         usePreparationStore.setState({ tourReplayRequested: false });
         return;
       }
-      // Seen it all now: the automatic tours stay away.
+      // Seen it all now: the automatic tours stay away (also on the backend).
       startDecidedRef.current = true;
       topicDecidedRef.current = true;
-      writeCount(TOPIC_KEY, TOPIC_MAX_SHOWS);
+      void claimTopicTour(courseId).catch(() => {});
       trackEvent("guide_shown", { exam_name: examName, attempt: 1, tour: "replay" });
     });
-  }, [tourReplayRequested, run, launch, examName]);
+  }, [tourReplayRequested, run, launch, examName, courseId]);
 
   // Leaving the page mid-tour must not leave the Unlock widget hidden.
   useEffect(() => () => setStartGuideActive(false), [setStartGuideActive]);

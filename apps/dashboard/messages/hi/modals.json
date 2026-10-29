@@ -143,11 +143,12 @@
   "miniTestResult": {
     "title": "टॉपिक टेस्ट",
     "messages": {
-      "perfect": "एक्सीलेंट! आप एग्ज़ाम रेडी हैं",
-      "almostPerfect": "वेरी गुड! ऑलमोस्ट परफेक्ट",
-      "goodProgress": "गुड प्रोग्रेस! रिविज़न से और बेहतर करें",
-      "needsPractice": "डोंट वरी। प्रैक्टिस से सब परफेक्ट हो जाएगा"
+      "perfect": { "title": "एक्सीलेंट!", "subtitle": "आप एग्ज़ाम रेडी हैं। ऐसे ही आगे बढ़ते रहें!" },
+      "almostPerfect": { "title": "वेरी गुड!", "subtitle": "ऑलमोस्ट परफेक्ट। एक और कोशिश में पूरा हो जाएगा।" },
+      "goodProgress": { "title": "गुड प्रोग्रेस!", "subtitle": "प्रैक्टिस करते रहें और रिविज़न से और बेहतर करें।" },
+      "needsPractice": { "title": "डोंट वरी!", "subtitle": "प्रैक्टिस से सब परफेक्ट हो जाएगा।" }
     },
+    "closeLabel": "बंद करें",
     "scoreLabel": "स्कोर",
     "buttons": {
       "continueLearning": "लर्निंग कंटिन्यू करें",

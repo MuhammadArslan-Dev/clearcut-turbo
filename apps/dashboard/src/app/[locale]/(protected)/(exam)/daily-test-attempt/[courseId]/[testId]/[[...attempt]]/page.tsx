@@ -23,8 +23,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import MathRender from "@/components/features/mathjax/Math";
+import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
 import OptionCard from "@/components/features/exam-report/OptionCard";
 import QuestionText from "@/components/ui/cards/QuestionMaterial/Question/QuestionText";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
@@ -61,7 +60,6 @@ import {
   ChartSuccessBarIcon,
   WarningCircleIcon,
   CrossIcon,
-  NumberCountIcon,
 } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -1170,41 +1168,7 @@ function ReviewRow({
 
               <AnimatePresence mode="wait" initial={false}>
                 {isExplanation && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="flex flex-col gap-4 py-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
-                        {t("explanation.heading")}
-                      </Text>
-                      <div className="flex items-center gap-1">
-                        <Text as="p" variant="body-small" weight="normal" color="gray-subtle">
-                          {t("explanation.correctAnswer")}
-                        </Text>
-                        <NumberCountIcon
-                          value={String.fromCharCode(65 + q.correct_option - 1) as React.ComponentProps<typeof NumberCountIcon>["value"]}
-                          radius={6}
-                          size={24}
-                          background="var(--color-primary-bg-soft)"
-                          color="var(--color-brand)"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-start justify-center gap-4 rounded-lg bg-[var(--color-primary-bg-soft)] p-3">
-                      <Text as="p" variant="heading-small" weight="semibold">
-                        {t("explanation.title")}
-                      </Text>
-                      <MathRender content={q.explanation ?? ""}>
-                        <Text as="div" variant="body-large" weight="normal" color="gray-normal">
-                          <ReactMarkdown>{q.explanation ?? ""}</ReactMarkdown>
-                        </Text>
-                      </MathRender>
-                    </div>
-                  </motion.div>
+                  <QuestionExplanation correctOption={q.correct_option} explanation={q.explanation} />
                 )}
               </AnimatePresence>
 

@@ -274,11 +274,12 @@
   "miniTestResult": {
     "title": "टॉपिक टेस्ट",
     "messages": {
-      "perfect": "उत्कृष्ट! तुम्ही परीक्षेसाठी तयार आहात 🔥",
-      "almostPerfect": "खूप छान! जवळपास परफेक्ट",
-      "goodProgress": "चांगली प्रगती! उजळणीने अजून सुधारा",
-      "needsPractice": "काळजी करू नका. सरावाने सर्व परफेक्ट होईल"
+      "perfect": { "title": "उत्कृष्ट!", "subtitle": "तुम्ही परीक्षेसाठी तयार आहात. असेच पुढे चला!" },
+      "almostPerfect": { "title": "खूप छान!", "subtitle": "जवळपास परफेक्ट. आणखी एका प्रयत्नात जमेल." },
+      "goodProgress": { "title": "चांगली प्रगती!", "subtitle": "सराव करत राहा आणि उजळणीने अजून सुधारा." },
+      "needsPractice": { "title": "काळजी करू नका!", "subtitle": "सरावाने सर्व परफेक्ट होईल." }
     },
+    "closeLabel": "बंद करा",
     "scoreLabel": "स्कोअर",
     "buttons": {
       "continueLearning": "शिकणे सुरू ठेवा",

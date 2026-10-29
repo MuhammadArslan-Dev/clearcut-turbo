@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" width="480" height="400">
+  <!-- Source of public/images/practice-test-trophy.webp (export: docs/design-assets/export-trophy.js). -->
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset="0.45" stop-color="#f6b928"/>
+      <stop offset="1" stop-color="#d98a0c"/>
+    </linearGradient>
+    <linearGradient id="goldDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9a61c"/>
+      <stop offset="1" stop-color="#b86f08"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4b8"/>
+      <stop offset="1" stop-color="#ffd24d"/>
+    </linearGradient>
+    <linearGradient id="bookDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f6fe6"/>
+      <stop offset="1" stop-color="#1747b0"/>
+    </linearGradient>
+    <linearGradient id="bookMid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5aa2ff"/>
+      <stop offset="1" stop-color="#2a76e8"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e4f0ff"/>
+      <stop offset="1" stop-color="#b9d8ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#cfe4ff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#cfe4ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+
+  <!-- soft glow behind everything -->
+  <ellipse cx="240" cy="190" rx="200" ry="165" fill="url(#glow)"/>
+
+  <!-- leafy backdrop (two wings) -->
+  <path d="M240 330 C120 320 60 230 78 130 C130 150 175 200 240 330 Z" fill="url(#leaf)" opacity="0.9"/>
+  <path d="M240 330 C360 320 420 230 402 130 C350 150 305 200 240 330 Z" fill="url(#leaf)" opacity="0.9"/>
+  <path d="M240 330 C170 300 130 240 128 170 C170 200 205 250 240 330 Z" fill="#d2e6ff" opacity="0.85"/>
+  <path d="M240 330 C310 300 350 240 352 170 C310 200 275 250 240 330 Z" fill="#d2e6ff" opacity="0.85"/>
+
+  <!-- ground shadow -->
+  <ellipse cx="240" cy="352" rx="150" ry="14" fill="#0f2f73" opacity="0.18" filter="url(#soft)"/>
+
+  <!-- book stack: bottom (dark) -->
+  <g>
+    <rect x="95" y="300" width="290" height="50" rx="9" fill="url(#bookDark)"/>
+    <rect x="95" y="300" width="290" height="12" rx="6" fill="#ffffff" opacity="0.16"/>
+    <rect x="118" y="318" width="262" height="24" rx="4" fill="#fff8ea"/>
+    <path d="M118 324 H380 M118 330 H380 M118 336 H380" stroke="#e5d7bd" stroke-width="1.5"/>
+    <rect x="95" y="300" width="22" height="50" rx="9" fill="#123a96" opacity="0.55"/>
+  </g>
+  <!-- book stack: top (lighter) -->
+  <g>
+    <rect x="120" y="262" width="250" height="42" rx="8" fill="url(#bookMid)"/>
+    <rect x="120" y="262" width="250" height="10" rx="5" fill="#ffffff" opacity="0.22"/>
+    <rect x="140" y="278" width="226" height="20" rx="4" fill="#fffaf0"/>
+    <path d="M140 283 H366 M140 288 H366 M140 293 H366" stroke="#eadfca" stroke-width="1.4"/>
+    <rect x="120" y="262" width="20" height="42" rx="8" fill="#1f5fd0" opacity="0.55"/>
+  </g>
+
+  <!-- trophy -->
+  <g>
+    <!-- handles -->
+    <path d="M170 128 C122 124 112 180 160 196" fill="none" stroke="url(#goldDark)" stroke-width="13" stroke-linecap="round"/>
+    <path d="M310 128 C358 124 368 180 320 196" fill="none" stroke="url(#goldDark)" stroke-width="13" stroke-linecap="round"/>
+    <!-- base -->
+    <rect x="196" y="236" width="88" height="26" rx="6" fill="url(#goldDark)"/>
+    <rect x="206" y="226" width="68" height="16" rx="5" fill="url(#gold)"/>
+    <!-- stem -->
+    <path d="M222 198 H258 L266 230 H214 Z" fill="url(#gold)"/>
+    <ellipse cx="240" cy="200" rx="30" ry="8" fill="url(#goldDark)"/>
+    <!-- cup -->
+    <path d="M158 100 H322 C322 176 296 206 240 208 C184 206 158 176 158 100 Z" fill="url(#gold)"/>
+    <ellipse cx="240" cy="100" rx="82" ry="14" fill="url(#goldLight)"/>
+    <ellipse cx="240" cy="100" rx="70" ry="9" fill="#c98010" opacity="0.55"/>
+    <!-- shine -->
+    <path d="M178 112 C182 160 198 184 214 192" fill="none" stroke="#fff7cf" stroke-width="9" stroke-linecap="round" opacity="0.75"/>
+    <path d="M296 118 C294 140 288 160 280 172" fill="none" stroke="#fff7cf" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+    <!-- star emblem -->
+    <circle cx="240" cy="146" r="25" fill="#fff0a8" opacity="0.5"/>
+    <path d="M240 124 L246.5 138.5 L262 140 L250.5 150.5 L253.8 166 L240 158 L226.2 166 L229.5 150.5 L218 140 L233.5 138.5 Z" fill="#fffbe6" stroke="#e7a61c" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+
+  <!-- confetti -->
+  <g>
+    <rect x="86" y="64" width="16" height="16" rx="2" fill="#ef4444" transform="rotate(35 94 72)"/>
+    <rect x="410" y="58" width="15" height="15" rx="2" fill="#ef4444" transform="rotate(20 417 65)"/>
+    <rect x="132" y="38" width="13" height="13" rx="2" fill="#2563eb" transform="rotate(45 138 44)"/>
+    <rect x="352" y="30" width="14" height="14" rx="2" fill="#f59e0b" transform="rotate(30 359 37)"/>
+    <rect x="446" y="140" width="13" height="13" rx="2" fill="#f59e0b" transform="rotate(40 452 146)"/>
+    <rect x="52" y="150" width="12" height="12" rx="2" fill="#2563eb" transform="rotate(25 58 156)"/>
+    <rect x="388" y="104" width="11" height="11" rx="2" fill="#93c5fd" transform="rotate(45 393 109)"/>
+    <rect x="98" y="108" width="10" height="10" rx="2" fill="#93c5fd" transform="rotate(15 103 113)"/>
+    <rect x="300" y="52" width="10" height="10" rx="2" fill="#34d399" transform="rotate(30 305 57)"/>
+    <rect x="186" y="62" width="9" height="9" rx="2" fill="#ef4444" transform="rotate(50 190 66)"/>
+    <circle cx="70" cy="214" r="6" fill="#93c5fd"/>
+    <circle cx="430" cy="212" r="6" fill="#2563eb"/>
+    <circle cx="238" cy="40" r="5" fill="#f59e0b"/>
+    <circle cx="380" cy="168" r="4" fill="#34d399"/>
+    <circle cx="112" cy="176" r="4" fill="#f59e0b"/>
+    <path d="M436 92 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4 z" fill="#bfdbfe"/>
+    <path d="M52 100 l3.5 8 l8 3.5 l-8 3.5 l-3.5 8 l-3.5 -8 l-8 -3.5 l8 -3.5 z" fill="#bfdbfe"/>
+    <path d="M420 250 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3 z" fill="#dbeafe"/>
+  </g>
+</svg>

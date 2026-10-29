@@ -273,11 +273,12 @@
   "miniTestResult": {
     "title": "Topic Test",
     "messages": {
-      "perfect": "Excellent! You're exam ready 🔥",
-      "almostPerfect": "Very good! Almost perfect",
-      "goodProgress": "Good progress! Improve with revision",
-      "needsPractice": "Don't worry. Practice will make it perfect"
+      "perfect": { "title": "Excellent!", "subtitle": "You're exam ready. Keep it up!" },
+      "almostPerfect": { "title": "Very good!", "subtitle": "Almost perfect. One more try gets you there." },
+      "goodProgress": { "title": "Good progress!", "subtitle": "Keep practicing and improve with revision." },
+      "needsPractice": { "title": "Don't worry!", "subtitle": "Practice will make it perfect." }
     },
+    "closeLabel": "Close",
     "scoreLabel": "Score",
     "buttons": {
       "continueLearning": "Continue Learning",

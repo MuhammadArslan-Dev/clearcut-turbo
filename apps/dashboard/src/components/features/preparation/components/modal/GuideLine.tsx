@@ -23,7 +23,7 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { useBackHandler } from "@/hooks/Global/useBackHandler";
 import Text from "@clearcut/ui/text";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
-import { apiFetch } from "@/lib/api/client";
+import { finishGuide, withRetry } from "@/lib/api/userState";
 
 export default function GuideLine() {
   const isMobile = useIsMobile();
@@ -32,32 +32,39 @@ export default function GuideLine() {
   /* ---------- store ---------- */
   const { closeModal } = usePreparationModalStore();
   const { course, markGuideAsSeen, requestStartGuide } = usePreparationStore();
+
+  /* ---------- how the guide ends ---------- */
+  // The backend already knows the guide was shown (it was claimed when the
+  // modal opened), so it can never auto-open again. These two only record HOW
+  // it ended - "Start Learning" = completed, any dismissal (✕, backdrop, back)
+  // = skipped - and the first answer wins there. Best effort with one retry:
+  // if it still fails the state simply stays "shown", which is just as final.
+  const settle = useCallback(
+    (status: "completed" | "skipped") => {
+      markGuideAsSeen();
+      closeModal("preparation-guide");
+      const code = course?.group_code;
+      if (!code) return;
+      void withRetry(() => finishGuide(code, status)).catch(() => {});
+    },
+    [markGuideAsSeen, closeModal, course?.group_code],
+  );
+
+  const handleStart = useCallback(() => {
+    settle("completed");
+    // Then point at where to start (CC-79 "start here" tour).
+    requestStartGuide();
+  }, [settle, requestStartGuide]);
+
+  const handleSkip = useCallback(() => settle("skipped"), [settle]);
+
   useBackHandler({
     isOpen: true,
-    onClose: () => closeModal("preparation-guide"),
+    onClose: handleSkip,
   });
 
   /* ---------- stable container ---------- */
   const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
-
-  /* ---------- stable callbacks ---------- */
-  const handleClose = useCallback(async () => {
-    markGuideAsSeen();
-    closeModal("preparation-guide");
-    // Then point at where to start (CC-79 "start here" tour).
-    requestStartGuide();
-
-    if (!course?.id) return;
-
-    try {
-      await apiFetch(`/v2/action/start-course`, {
-        method: "POST",
-        body: JSON.stringify({ courseId: course?.group_code }),
-      });
-    } catch {
-      // best-effort — the local flag is already set
-    }
-  }, [closeModal, markGuideAsSeen, requestStartGuide, course?.id, course?.group_code]);
 
   return (
     <Container
@@ -65,7 +72,7 @@ export default function GuideLine() {
       titleClass="heading-medium !font-semibold"
       isOpen
       maxWidth="md:max-w-[420px]"
-      onClose={handleClose}
+      onClose={handleSkip}
     >
           <div className="bg-white h-full flex flex-col justify-between md:gap-2">
             {/* Header */}
@@ -88,7 +95,7 @@ export default function GuideLine() {
                   {t("subtitle", { exam: course?.exam?.short_name ?? "" })}
                 </Text>
               </div>
-              <button type="button" onClick={handleClose} aria-label="Go back" className="cursor-pointer">
+              <button type="button" onClick={handleSkip} aria-label="Go back" className="cursor-pointer">
                 <CrossIcon />
               </button>
             </div>
@@ -151,7 +158,7 @@ export default function GuideLine() {
                   </motion.span>
                 }
                 iconPosition="right"
-                onClick={handleClose}
+                onClick={handleStart}
               />
 
               <div className="flex justify-center w-full items-center gap-2">

@@ -21,16 +21,18 @@ type QuestionsDockProps = {
   /** Index within `questions` (not the overall exam). */
   onSelect: (index: number) => void;
   defaultExpanded?: boolean;
+  /** Translated "Questions" label (default English). */
+  title?: string;
 };
 
-const STATUS_STYLE: Record<QuestionDockStatus, { bg: string; border: string; text: string }> = {
+export const STATUS_STYLE: Record<QuestionDockStatus, { bg: string; border: string; text: string }> = {
   notVisited: { bg: "!bg-white", border: "!border-gray-200", text: "" },
   answered: { bg: "!bg-[var(--icon-positive-subtle)]", border: "!border-[var(--icon-positive-subtle)]", text: "!text-white" },
   notAnswered: { bg: "!bg-[var(--icon-negative-normal)]", border: "!border-[var(--icon-negative-normal)]", text: "!text-white" },
   review: { bg: "!bg-[var(--icon-notice-subtle)]", border: "!border-[var(--icon-notice-subtle)]", text: "!text-white" },
 };
 
-const ACTIVE_STYLE = { bg: "!bg-brand", border: "!border-brand", text: "!text-white" };
+export const ACTIVE_STYLE = { bg: "!bg-brand", border: "!border-brand", text: "!text-white" };
 
 /**
  * Persistent, collapsible "Questions" dock for the exam attempt pages'
@@ -40,7 +42,7 @@ const ACTIVE_STYLE = { bg: "!bg-brand", border: "!border-brand", text: "!text-wh
  * questions (full-length: `section.questions`; Daily Test: its flat
  * `questions` array, since it has only one section).
  */
-function QuestionsDock({ questions, onSelect, defaultExpanded = false }: QuestionsDockProps) {
+function QuestionsDock({ questions, onSelect, defaultExpanded = false, title = "Questions" }: QuestionsDockProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
@@ -50,14 +52,14 @@ function QuestionsDock({ questions, onSelect, defaultExpanded = false }: Questio
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full flex-col items-center gap-1.5 pt-1.5"
         aria-expanded={expanded}
-        aria-label="Questions"
+        aria-label={title}
       >
         <span className="h-1 w-10 rounded-full bg-gray-300" aria-hidden />
         <span className="flex w-full items-center justify-between px-4 pb-1">
           <span className="flex items-center gap-2">
             <LayoutGrid size={18} className="text-brand" />
             <Text as="span" variant="body-medium" weight="semibold" color="gray-normal">
-              Questions
+              {title}
             </Text>
           </span>
           <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>

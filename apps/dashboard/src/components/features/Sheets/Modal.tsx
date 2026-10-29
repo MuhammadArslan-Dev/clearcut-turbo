@@ -18,6 +18,8 @@ type ModalProps = {
   subtitleClass?: string;
   maxWidth?: string;
   maxHeight?: string;
+  /** false: backdrop click and Esc do nothing - only an explicit control inside may close it. */
+  dismissible?: boolean;
 };
 
 export function Modal({
@@ -31,15 +33,16 @@ export function Modal({
   subtitleClass = "",
   maxWidth = "max-w-sm",
   maxHeight = "max-h-[90vh]",
+  dismissible = true,
 }: ModalProps) {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !dismissible) return;
 
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, dismissible]);
 
   return (
     isOpen && (
@@ -53,7 +56,7 @@ export function Modal({
           exit="exit"
           transition={{ duration: 0.25, ease: "easeInOut" }}
         >
-          <Overlay variants="modal" onClick={onClose} />
+          <Overlay variants="modal" onClick={dismissible ? onClose : () => {}} />
 
           <motion.div
             className={`${maxWidth} bg-white rounded-lg shadow-xl w-full ${maxHeight} overflow-hidden relative`}

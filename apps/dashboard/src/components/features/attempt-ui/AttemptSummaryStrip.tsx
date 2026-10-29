@@ -5,8 +5,8 @@ import clsx from "clsx";
 import { Card } from "@clearcut/ui/card";
 
 type AttemptSummaryStripProps = {
-  /** <LiveTimeLeft/> */
-  time: React.ReactNode;
+  /** <LiveTimeLeft/>; omitted by tests that have no time limit. */
+  time?: React.ReactNode;
   /** <AttemptProgress/> */
   progress: React.ReactNode;
   /** <TipCard/> (hidden below `lg`) */
@@ -30,7 +30,7 @@ function AttemptSummaryStrip({ time, progress, tip, className, compact = false }
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
         {time}
-        <div className="hidden h-12 w-px bg-gray-200 lg:block" />
+        {time && <div className="hidden h-12 w-px bg-gray-200 lg:block" />}
         {progress}
         {tip && <div className="hidden h-12 w-px bg-gray-200 lg:block" />}
         {tip}
