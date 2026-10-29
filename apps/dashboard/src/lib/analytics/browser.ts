@@ -22,8 +22,11 @@ import type {
 // init with even on an env that never configured a dashboard-specific one.
 const AMPLITUDE_API_KEY =
     process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '87599b5b5616563df5517932f9d6ca84';
+// On by default (phase 66); the env var is only an opt-out ("false"). The real
+// gate that keeps localhost / previews out of the live project is
+// analyticsAllowedHere() (production hosts only), checked before init.
 const AMPLITUDE_ENABLED =
-    process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED === 'true';
+    process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED !== 'false';
 
 // NEW: how to format event names when sending
 type EventNameCase = 'as-is' | 'lower' | 'upper';

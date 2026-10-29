@@ -12,8 +12,24 @@ import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 /** Hard ceiling for any wait on Amplitude before we fall back to control. */
 export const EXPERIMENT_TIMEOUT_MS = 2500;
 
+/**
+ * Amplitude Experiment CLIENT deployment key `testing_price_99` (project 673721).
+ * A client key is public by design (it is shipped to every browser), so it is
+ * safe in the repo. Hardcoded on request so the offer needs no env var; whether
+ * anyone gets the offer is still decided ONLY by the Amplitude flag
+ * `autopay-offer-99` (disable it there = everybody on default prices).
+ */
+export const DEFAULT_EXPERIMENT_DEPLOYMENT_KEY = "client-pRpnI5vqt36xQQ76zn6lb0mAi6ndv6qV";
+
+/**
+ * The key used, in order: `NEXT_PUBLIC_AMPLITUDE_EXPERIMENT_KEY` when set (e.g. to
+ * point a build at another deployment), the literal "off" to switch the SDK off
+ * for that build, otherwise the hardcoded key above.
+ */
 export function experimentDeploymentKey(): string {
-  return process.env.NEXT_PUBLIC_AMPLITUDE_EXPERIMENT_KEY ?? "";
+  const fromEnv = (process.env.NEXT_PUBLIC_AMPLITUDE_EXPERIMENT_KEY ?? "").trim();
+  if (fromEnv.toLowerCase() === "off") return "";
+  return fromEnv || DEFAULT_EXPERIMENT_DEPLOYMENT_KEY;
 }
 
 /** "us" (default) or "eu" — must match the Amplitude project's data region. */
@@ -29,6 +45,7 @@ export function internalTesterUuids(): string | undefined {
 
 export function experimentsEnabled(): boolean {
   if (!experimentDeploymentKey()) return false;
-  if (process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED !== "true") return false;
+  // Same switch as the analytics module: on unless explicitly "false".
+  if (process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED === "false") return false;
   return analyticsAllowedHere();
 }
