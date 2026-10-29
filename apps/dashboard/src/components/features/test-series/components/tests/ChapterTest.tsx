@@ -21,6 +21,7 @@ import { LockIcon } from "@/components/ui/icons";
 import { ChangePaperButton } from "./FullTest";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
@@ -42,6 +43,8 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   const cardT = useTranslations("testListContent");
 
   const { course: courseData } = useGetCurrentCourseStore();
+  // Allow-listed ₹99 offer (phase 66): the note names the plan price this user pays.
+  const autopay = useAutopayOffer(courseData?.exam?.short_name);
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
@@ -390,16 +393,16 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
           // CC-104 (user 2026-10-23): a locked test says which plan has it,
           // with this exam's monthly price.
           note={
-            isLocked
+            isLocked && autopay.ready
               ? cardT("testCard.includedInPlan", {
-                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
+                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name, autopay.offer),
                 })
               : undefined
           }
         />
       );
     },
-    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall],
+    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall, autopay.ready, autopay.offer],
   );
 
   // Still loading after 10 s: "Taking longer than usual" + Try again (CC-152).

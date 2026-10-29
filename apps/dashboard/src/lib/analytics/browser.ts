@@ -4,6 +4,8 @@ import {
     init as amplitudeInit,
     track as amplitudeTrack,
     Identify,
+    getDeviceId as amplitudeGetDeviceId,
+    getUserId as amplitudeGetUserId,
     identify as amplitudeIdentify,
     setUserId as amplitudeSetUserId,
 } from '@amplitude/analytics-browser';
@@ -90,6 +92,28 @@ export function trackEvent<TName extends AnalyticsEventName>(
 
     const eventName = formatEventName(name);
     amplitudeTrack(eventName, (payload ?? {}) as Record<string, any>);
+}
+
+/**
+ * Sends an event that is NOT part of the typed catalog — the Amplitude
+ * Experiment SDK's `$exposure` (phase 66). Same gates as trackEvent: nothing
+ * leaves a browser where Amplitude is off or the host is not allowed.
+ */
+export function trackSdkEvent(name: string, payload: Record<string, unknown>) {
+    if (!AMPLITUDE_ENABLED) return;
+    internalInit();
+    if (!isInitialized) return;
+    amplitudeTrack(name, payload);
+}
+
+/** The ids Amplitude is using right now; empty before init / when it is off. */
+export function getAnalyticsIdentity(): { userId?: string; deviceId?: string } {
+    if (!isInitialized) return {};
+    try {
+        return { userId: amplitudeGetUserId(), deviceId: amplitudeGetDeviceId() };
+    } catch {
+        return {};
+    }
 }
 
 export function setAnalyticsUser(

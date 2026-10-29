@@ -1,3 +1,4 @@
+import type { AutopayOffer } from "@/lib/experiments/autopayPrice";
 import { PaymentPricing, PaymentType } from "./payment";
 
 // Per-exam overrides for the two one-time price tiers ("1month-onetime" and
@@ -50,7 +51,15 @@ export const EXAM_PRICE_OVERRIDES: Record<
 
 export const DEFAULT_SUBSCRIPTION_PLAN_ID = 1;
 
-export function getSubscriptionPlanId(examShortName?: string): number {
+// `autopay` (phase 66, allow-listed ₹99 offer) is the offer for the user's
+// experiment arm. It is only ever passed for an exam that is eligible for the
+// test; when it is absent/null every function below behaves exactly as before.
+export function getSubscriptionPlanId(
+  examShortName?: string,
+  autopay?: AutopayOffer | null,
+): number {
+  if (autopay) return autopay.planId;
+
   const override = examShortName
     ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
     : undefined;
@@ -66,12 +75,13 @@ export function getPriceForVariant(
   variant: PaymentType,
   pricing: PaymentPricing | null | undefined,
   examShortName?: string,
+  autopay?: AutopayOffer | null,
 ) {
   const override = examShortName
     ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
     : undefined;
 
-  if (variant === "1month") return override?.recurringMonthly ?? 99;
+  if (variant === "1month") return autopay?.price ?? override?.recurringMonthly ?? 99;
   if (variant === "1month-onetime") {
     return override?.onetime1Month ?? pricing?.onetime_1month_price ?? 139;
   }

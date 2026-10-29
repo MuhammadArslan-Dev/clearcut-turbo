@@ -22,6 +22,11 @@ export type PayContext = {
   source?: string;
   language?: string;
   in_app_browser?: "fb" | "ig" | "none";
+  /**
+   * Allow-listed ₹99 autopay offer (phase 66): present only for users who were
+   * shown the offer, so every funnel event can be split from the default price.
+   */
+  price_offer?: "price-99";
 };
 
 export function trackPaymentEvent<TName extends AnalyticsEventName>(

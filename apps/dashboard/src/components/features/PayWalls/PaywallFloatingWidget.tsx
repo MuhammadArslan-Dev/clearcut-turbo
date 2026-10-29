@@ -11,6 +11,7 @@ import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityS
 import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { ChevronIcon } from "@/components/ui/icons";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 import { useTranslations } from "next-intl";
 
 export default function PaywallFloatingWidget() {
@@ -88,9 +89,11 @@ export default function PaywallFloatingWidget() {
 
   // Per-exam override (e.g. HPTET → ₹149) from the same source of truth as
   // payment/initiated — see @/lib/payment/examPriceOverrides.
+  // Allow-listed ₹99 offer (phase 66): the offer when this user has it, else the usual price.
+  const autopay = useAutopayOffer(course?.exam?.short_name);
   const monthlyPrice = useMemo(
-    () => getPriceForVariant("1month", null, course?.exam?.short_name),
-    [course?.exam?.short_name],
+    () => getPriceForVariant("1month", null, course?.exam?.short_name, autopay.offer),
+    [course?.exam?.short_name, autopay.offer],
   );
 
   return (
@@ -124,7 +127,7 @@ export default function PaywallFloatingWidget() {
                     weight="semibold"
                     className="text-surface-gray-normal"
                   >
-                    {`₹${monthlyPrice}`}
+                    {autopay.ready ? `₹${monthlyPrice}` : "₹–"}
                   </Text>
                   /month • All subjects
                 </Text>

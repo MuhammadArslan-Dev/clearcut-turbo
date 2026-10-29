@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "check:tour": "node scripts/check-tour-targets.mjs"
+    "check:tour": "node scripts/check-tour-targets.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.32.0",
     "@amplitude/analytics-node": "^1.5.27",
+    "@amplitude/experiment-js-client": "^1.24.0",
     "@clearcut/design-tokens": "workspace:*",
     "@clearcut/i18n": "workspace:*",
     "@clearcut/react-query": "workspace:*",
@@ -65,7 +67,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4.1.14",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "browserslist": [
     ">0.3%",

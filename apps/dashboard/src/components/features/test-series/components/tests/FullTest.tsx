@@ -23,6 +23,7 @@ import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import CounterCard from "@/components/ui/cards/CounterCard";
 import { LockIcon } from "lucide-react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import {
   PaywallSource,
@@ -46,6 +47,8 @@ export default function FullTest({ courseId }: FullTestProps) {
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
 
   const { course: courseData } = useGetCurrentCourseStore();
+  // Allow-listed ₹99 offer (phase 66): the note names the plan price this user pays.
+  const autopay = useAutopayOffer(courseData?.exam?.short_name);
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
@@ -298,9 +301,9 @@ export default function FullTest({ courseId }: FullTestProps) {
           // CC-104 (user 2026-10-23): a locked test says which plan has it,
           // with this exam's monthly price.
           note={
-            isLocked
+            isLocked && autopay.ready
               ? cardT("testCard.includedInPlan", {
-                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
+                  price: getPriceForVariant("1month", null, courseData?.exam?.short_name, autopay.offer),
                 })
               : undefined
           }
@@ -310,6 +313,8 @@ export default function FullTest({ courseId }: FullTestProps) {
     [
       cardT,
       courseData,
+      autopay.ready,
+      autopay.offer,
       getTestAttemptScore,
       isTestAttempted,
       open,
