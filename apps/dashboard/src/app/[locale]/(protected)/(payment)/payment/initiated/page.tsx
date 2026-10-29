@@ -42,7 +42,13 @@ import {
   PaymentPricing,
   PaymentType,
 } from "@/lib/payment/payment";
-import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
+import {
+  getPriceForVariant,
+  getSubscriptionPlanId,
+  ORIGINAL_1MONTH_PRICE,
+  ORIGINAL_AUTOPAY_PRICE,
+  ORIGINAL_1YEAR_PRICE,
+} from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
@@ -78,7 +84,7 @@ const BENEFITS = [
 // The pixel FacebookPixel.tsx initialized on page load (getFbPixelId) is
 // re-used below to re-call init with advanced-matching data.
 
-// EXAM_PRICE_OVERRIDES / getPriceForVariant / getSubscriptionPlanId live in
+// getPriceForVariant / getSubscriptionPlanId (one price list for all exams) live in
 // @/lib/payment/examPriceOverrides — shared with every other place in the
 // app that charges or displays a course price (MainPaywall, PreparationPaywall,
 // PaywallFloatingWidget, MyCourseCard, ...).
@@ -1095,7 +1101,7 @@ export default function InitiatedPage() {
               <PlanCard
                 durationLabel={modalT("months", { count: 1 })}
                 price={`₹${getPriceForVariant("1month-onetime", pricing, data?.short_name)}`}
-                strikePrice="₹1,499"
+                strikePrice={`₹${ORIGINAL_1MONTH_PRICE}`}
                 subtitle={modalT("one_time_no_renewal")}
                 selected={selectVariant === "1month-onetime"}
                 onSelect={() => handleSelectVariant("1month-onetime")}
@@ -1105,7 +1111,7 @@ export default function InitiatedPage() {
               <PlanCard
                 durationLabel={modalT("months", { count: 1 })}
                 price={`₹${getPriceForVariant("1month", pricing, data?.short_name)}`}
-                strikePrice="₹1,499"
+                strikePrice={`₹${ORIGINAL_AUTOPAY_PRICE}`}
                 subtitle={modalT("full_access_all_levels")}
                 badge={{
                   label: modalT("best_for_new_students"),
@@ -1120,6 +1126,7 @@ export default function InitiatedPage() {
               <PlanCard
                 durationLabel={modalT("months", { count: 12 })}
                 price={`₹${getPriceForVariant("1year", pricing, data?.short_name)}`}
+                strikePrice={`₹${ORIGINAL_1YEAR_PRICE}`}
                 subtitle={modalT("best_value_covers_next_exam")}
                 badge={{
                   label: modalT("most_popular"),
@@ -1165,7 +1172,7 @@ export default function InitiatedPage() {
                   icon={
                     <LockIcon variant="without-key" size={16} color="white" />
                   }
-                  // Price-only CTA: hi/mr read shorter ("₹149 में अनलॉक करें",
+                  // Price-only CTA: hi/mr read shorter ("₹99 में अनलॉक करें",
                   // CC-66). The shared `cta` also takes an exam name elsewhere.
                   text={modalT("ctaPrice", {
                     price: `₹${selectedPrice}`,

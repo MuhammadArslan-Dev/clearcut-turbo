@@ -27,7 +27,7 @@ export interface PlanCardProps {
   durationLabel: string;
   /** Price half of the title, e.g. "₹149" — already formatted. */
   price: string;
-  /** Struck-through reference price shown beside it, e.g. "₹1,499". */
+  /** Struck-through reference price shown beside it, e.g. "₹499". */
   strikePrice?: string;
   /** Grey line under the price, e.g. "One-time payment • No auto-renewal". */
   subtitle?: string;

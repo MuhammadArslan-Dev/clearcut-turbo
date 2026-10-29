@@ -1,79 +1,55 @@
 import { PaymentPricing, PaymentType } from "./payment";
 
-// Per-exam overrides for the two one-time price tiers ("1month-onetime" and
-// "1year"). Both tiers are priced purely on the frontend — the amount is
-// sent as-is to the backend when creating the Razorpay order — so this is
-// the single place that decides them. Keyed by exam `short_name` (uppercased
-// for a case-insensitive match); exams with no entry here fall through to
-// the global `pricing` values from GET /v2/payment/pricing, unaffected.
+// One price list for every exam (phase 67). The three tiers are the same for
+// everybody, so there is no per-exam table any more:
 //
-// `planId` + `recurringMonthly` (optional, come as a pair) cover the
-// "1month" recurring subscription tier — a Razorpay recurring Plan
-// (subscription_plans table row). `recurringMonthly` must match that row's
-// `amount` (in rupees) — it's display/tracking only, the actual charge is
-// whatever the Razorpay Plan behind `planId` bills. Exams with neither here
-// fall through to the default plan (id 1, ₹99/month).
+//   "1month"         recurring autopay   -> subscription_plans id 1 (₹99/month)
+//   "1month-onetime" one-time, 1 month   -> ₹139
+//   "1year"          one-time, 12 months -> ₹699
 //
-// Single source of truth: every place in the app that charges or displays
-// a course price (payment/initiated, MainPaywall, PreparationPaywall,
-// PaywallFloatingWidget, MyCourseCard, ...) must import from here instead
-// of re-hardcoding ₹99/₹139/₹599 independently — that drift is exactly the
-// bug this module exists to prevent.
-export const EXAM_PRICE_OVERRIDES: Record<
-  string,
-  {
-    onetime1Month: number;
-    oneYear: number;
-    planId?: number;
-    recurringMonthly?: number;
-  }
-> = {
-  HPTET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
-  // Deliberately identical to HPTET, including `planId: 2` — course access on
-  // subscribe is granted by `course_id` (sent alongside `plan_id` in the
-  // createSubscription call, see payment/initiated), not by which Razorpay
-  // Plan billed it, so two exams safely sharing one recurring Plan is not a
-  // fulfillment bug. The one visible side effect: that Plan's own name in
-  // Razorpay/backend records reads "HPTET Monthly" regardless of which of
-  // these two exams the subscriber actually bought.
-  MAHATET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
-  // Same sharing pattern as MAHATET/HPTET above — HTET reuses the existing
-  // planId 2 ("HPTET Monthly", ₹149/mo) rather than a new subscription_plans
-  // row, since the amount matches exactly.
-  HTET: { onetime1Month: 229, oneYear: 799, planId: 2, recurringMonthly: 149 },
-  // Key is "UGC", matching this exam's actual DB short_name (confirmed via
-  // the exams table — it's "UGC", not "UGCNET"/"UGC NET"). planId 3 is a
-  // new subscription_plans row (₹249/mo, "UGC NET Monthly") since no
-  // existing plan matched this amount.
-  UGC: { onetime1Month: 449, oneYear: 1999, planId: 3, recurringMonthly: 249 },
-};
-
+// How each one becomes a real charge:
+//  - "1month": the amount billed is the Razorpay Plan behind `plan_id` (the
+//    subscription_plans row), NOT the number below. `AUTOPAY_MONTHLY_PRICE`
+//    must equal plan 1's `amount` (9900 paise) — it is display/tracking only.
+//  - the two one-time tiers: the amount sent to POST /v2/payment/create is
+//    exactly what these constants return, so this file is also the charge.
+//
+// Single source of truth: every place that displays or charges a course price
+// (payment/initiated, MainPaywall, PreparationPaywall, PaywallFloatingWidget,
+// MyCourseCard, the locked-test cards, plan analytics) imports from here.
+// Never re-hardcode a price elsewhere.
+//
+// History: HTET/HPTET/MAHATET used plan 2 (₹149), UGC plan 3 (₹249), with
+// one-time ₹229/₹449 and a year of ₹799/₹1999. Learners already subscribed
+// to those plans keep them (their Razorpay mandate is unchanged); only new
+// purchases use the list below.
 export const DEFAULT_SUBSCRIPTION_PLAN_ID = 1;
+export const AUTOPAY_MONTHLY_PRICE = 99;
+export const ONETIME_1MONTH_PRICE = 139;
+export const ONETIME_1YEAR_PRICE = 699;
 
-export function getSubscriptionPlanId(examShortName?: string): number {
-  const override = examShortName
-    ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
-    : undefined;
+// Struck-through "original" prices on the plan cards (promotional only — never
+// charged, never sent to the backend): ₹299 beside the autopay card, ₹499
+// beside the one-time 1-month card, ₹999 beside the 1-year card.
+export const ORIGINAL_AUTOPAY_PRICE = 299;
+export const ORIGINAL_1MONTH_PRICE = 499;
+export const ORIGINAL_1YEAR_PRICE = 999;
 
-  return override?.planId ?? DEFAULT_SUBSCRIPTION_PLAN_ID;
+// `_examShortName` is accepted (and ignored) so every call site keeps working
+// if an exam-specific price ever comes back; nothing varies by exam today.
+export function getSubscriptionPlanId(_examShortName?: string): number {
+  return DEFAULT_SUBSCRIPTION_PLAN_ID;
 }
 
-// Shared by every price display/charge across the app — one place to change
-// the numbers. `pricing` (the GET /v2/payment/pricing response) is optional:
-// callers that don't fetch it (paywalls, cards) still get a correct override
-// or the same hardcoded fallback the app has always used for those tiers.
+// `_pricing` (GET /v2/payment/pricing) is deliberately not used: the backend
+// `payment.onetime_*` settings are kept equal to these constants by hand, but
+// a stale setting must never change what the UI shows or charges.
 export function getPriceForVariant(
   variant: PaymentType,
-  pricing: PaymentPricing | null | undefined,
-  examShortName?: string,
-) {
-  const override = examShortName
-    ? EXAM_PRICE_OVERRIDES[examShortName.toUpperCase()]
-    : undefined;
-
-  if (variant === "1month") return override?.recurringMonthly ?? 99;
-  if (variant === "1month-onetime") {
-    return override?.onetime1Month ?? pricing?.onetime_1month_price ?? 139;
-  }
-  return override?.oneYear ?? pricing?.onetime_1year_price ?? 599;
+  _pricing?: PaymentPricing | null,
+  _examShortName?: string,
+): number {
+  if (variant === "1month") return AUTOPAY_MONTHLY_PRICE;
+  if (variant === "1month-onetime") return ONETIME_1MONTH_PRICE;
+  return ONETIME_1YEAR_PRICE;
 }

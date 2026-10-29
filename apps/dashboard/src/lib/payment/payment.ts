@@ -14,7 +14,7 @@ const token = () =>
 /* Types */
 /* ---------------------------------- */
 
-// "6months" and "15months" replaced by "1year" plan at ₹599
+// "6months" and "15months" replaced by "1year" plan
 export type PaymentType = "1month" | "6months" | "15months" | "1year" | "1month-onetime";
 
 export type RazorpayOrder = {

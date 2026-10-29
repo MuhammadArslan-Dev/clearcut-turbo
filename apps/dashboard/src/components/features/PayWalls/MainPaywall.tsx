@@ -96,7 +96,7 @@ export default function MainPaywall() {
     [data?.logo_url],
   );
 
-  // Per-exam override (e.g. HPTET → ₹799) from the same source of truth as
+  // Same price for every exam, from the same source of truth as
   // payment/initiated — see @/lib/payment/examPriceOverrides.
   const oneYearPrice = useMemo(
     () => getPriceForVariant("1year", null, data?.short_name),

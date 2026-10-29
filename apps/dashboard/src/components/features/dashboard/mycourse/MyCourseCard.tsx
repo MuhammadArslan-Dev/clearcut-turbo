@@ -85,7 +85,7 @@ export default function MyCourseCard({
 
   const examPrice = useMemo(() => JSON.parse(price ?? "{}") ?? 0, [price]);
 
-  // Per-exam override (e.g. HPTET → ₹149) from the same source of truth as
+  // Same price for every exam, from the same source of truth as
   // payment/initiated — see @/lib/payment/examPriceOverrides.
   const monthlyPrice = useMemo(
     () => getPriceForVariant("1month", null, examShortName ?? undefined),
