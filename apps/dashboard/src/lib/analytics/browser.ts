@@ -4,8 +4,6 @@ import {
     init as amplitudeInit,
     track as amplitudeTrack,
     Identify,
-    getDeviceId as amplitudeGetDeviceId,
-    getUserId as amplitudeGetUserId,
     identify as amplitudeIdentify,
     setUserId as amplitudeSetUserId,
 } from '@amplitude/analytics-browser';
@@ -22,11 +20,8 @@ import type {
 // init with even on an env that never configured a dashboard-specific one.
 const AMPLITUDE_API_KEY =
     process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '87599b5b5616563df5517932f9d6ca84';
-// On by default (phase 66); the env var is only an opt-out ("false"). The real
-// gate that keeps localhost / previews out of the live project is
-// analyticsAllowedHere() (production hosts only), checked before init.
 const AMPLITUDE_ENABLED =
-    process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED !== 'false';
+    process.env.NEXT_PUBLIC_AMPLITUDE_ENABLED === 'true';
 
 // NEW: how to format event names when sending
 type EventNameCase = 'as-is' | 'lower' | 'upper';
@@ -95,28 +90,6 @@ export function trackEvent<TName extends AnalyticsEventName>(
 
     const eventName = formatEventName(name);
     amplitudeTrack(eventName, (payload ?? {}) as Record<string, any>);
-}
-
-/**
- * Sends an event that is NOT part of the typed catalog — the Amplitude
- * Experiment SDK's `$exposure` (phase 66). Same gates as trackEvent: nothing
- * leaves a browser where Amplitude is off or the host is not allowed.
- */
-export function trackSdkEvent(name: string, payload: Record<string, unknown>) {
-    if (!AMPLITUDE_ENABLED) return;
-    internalInit();
-    if (!isInitialized) return;
-    amplitudeTrack(name, payload);
-}
-
-/** The ids Amplitude is using right now; empty before init / when it is off. */
-export function getAnalyticsIdentity(): { userId?: string; deviceId?: string } {
-    if (!isInitialized) return {};
-    try {
-        return { userId: amplitudeGetUserId(), deviceId: amplitudeGetDeviceId() };
-    } catch {
-        return {};
-    }
 }
 
 export function setAnalyticsUser(

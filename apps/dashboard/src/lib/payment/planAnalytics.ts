@@ -1,4 +1,3 @@
-import type { AutopayOffer } from "@/lib/experiments/autopayPrice";
 import { getPriceForVariant } from "./examPriceOverrides";
 import type { PaymentPricing, PaymentType } from "./payment";
 
@@ -44,12 +43,11 @@ export function getPlanAnalytics(
   pricing: PaymentPricing | null,
   examShortName: string | undefined,
   courseName: string,
-  autopay?: AutopayOffer | null,
 ): PlanAnalytics | null {
   const meta = PLAN_META[variant];
   if (!meta) return null;
 
-  const price = getPriceForVariant(variant, pricing, examShortName, autopay);
+  const price = getPriceForVariant(variant, pricing, examShortName);
 
   return {
     plan_id: `${slugify(courseName)}_${meta.durationMonths}m_${price}`,

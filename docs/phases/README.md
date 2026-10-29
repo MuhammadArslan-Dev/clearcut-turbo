@@ -90,7 +90,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 61 | [Payment plan cards](61-cc73-cc76-payment-plan-cards.md) | CC-73, CC-76 (CC-74 see 33/37) | CM-dashboard | Reported done; no commit found — verify in testing | Ganesh testing |
 | 62 | [Payment attribution: campaign, exam, transaction id](62-cc136-cc137-payment-attribution.md) | CC-136, CC-137 | BE, CM-dashboard | Reported done; no code found on this machine — verify against acceptance list | Ganesh testing |
 | 63 | [Question pages: raw LaTeX](63-cc166-academy-math-rendering.md) | CC-166 | CM-blog | Fixed + live (`f672a26`, 2026-10-28) | Ganesh testing |
-| 66 | [Allow-listed ₹99 autopay offer, controlled from Amplitude](66-autopay-price-ab-test.md) | — (CC-62 lineage) | CM-dashboard | Built + verified locally (Playwright, 58 unit tests); Amplitude flag created **disabled**; backend deliberately not touched | User go-ahead + Amplitude client deployment key; first live check with own account |
+| 66 | [Autopay ₹99 offer / A/B test — built, then removed](66-autopay-price-ab-test.md) | — (CC-62 lineage) | CM-dashboard | **Removed** from the dashboard (code identical to before); implementation kept in git history for the Practice Test A/B | Delete the unused Amplitude objects (list in the doc) |
 
 ## Cross-phase dependencies
 
@@ -103,10 +103,9 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 
 ## Change log
 
+- 2026-10-29: added phase 66 (autopay ₹99 offer / A/B test: built and then removed from the dashboard; learnings kept).
 - 2026-10-28: added phases 60–63 (CC-138/139, CC-73/76, CC-136/137, CC-166). CC-95 and CC-74 are covered by phases 34/38 and 33/37.
 - 2026-10-21: created folder, 14 phase files, investigation results copied in.
-
-- 2026-10-29: added phase 66 (allow-listed ₹99 autopay offer controlled from Amplitude; built off by default; numbered 66 because 57–65 live on the practice-test branch).
 
 - 2026-10-27: added phases 42–53 (wave 2: CC-143, 159, 146, 145, 163, 153, 144, 149, 150, 151, 152, 154, 141).
 - 2026-10-27: added phase 54 (blog home + exam page redesign from design screenshots).

@@ -92,7 +92,7 @@ self-contained with its own `components/`, `hooks/`, `store/`, `pages/`, and `ty
 - `src/lib/analytics/` is a typed event system. `ANALYTICS_EVENT_CATALOG.ts` +
   `events/*.ts` define the allowed event names/payloads; `browser.ts` (Amplitude client)
   and `server.ts` (`@amplitude/analytics-node`) are the emitters, wired via
-  `AnalyticsProvider`. Amplitude is on by default (`NEXT_PUBLIC_AMPLITUDE_ENABLED=false` opts out) and only runs on production hosts (`analyticsAllowedHere()`).
+  `AnalyticsProvider`. Amplitude is gated on `NEXT_PUBLIC_AMPLITUDE_ENABLED === 'true'`.
 - GTM (`LazyGTM`) and Facebook Pixel are also loaded in the locale layout.
 
 ### UI stack

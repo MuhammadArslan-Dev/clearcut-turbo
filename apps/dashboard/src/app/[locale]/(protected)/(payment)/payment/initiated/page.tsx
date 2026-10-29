@@ -44,7 +44,6 @@ import {
 } from "@/lib/payment/payment";
 import { getPriceForVariant, getSubscriptionPlanId } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
-import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
@@ -160,19 +159,6 @@ export default function InitiatedPage() {
   const datacourse = allCourses?.find((c) => c?.group_code === courseId);
   const data = datacourse?.exam;
 
-  // Allow-listed ₹99 offer (phase 66). `offer` is null unless Amplitude selected
-  // this user for this exam; every autopay price, plan id and analytics value on
-  // this page goes through it, so what is shown is what is sent to checkout.
-  const autopay = useAutopayOffer(data?.short_name);
-  const autopayOffer = autopay.offer;
-  const priceFor = useCallback(
-    (variant: PaymentType) => getPriceForVariant(variant, pricing, data?.short_name, autopayOffer),
-    [pricing, data?.short_name, autopayOffer],
-  );
-  // Added to the funnel events of users in the ₹99 offer or its A/B test
-  // ("price-99" or the A/B "control"), so each can be split from everyone else.
-  const armProps = () => (autopay.arm ? ({ price_offer: autopay.arm } as const) : {});
-
   // Event-level Meta params for InitiateCheckout / AddPaymentInfo /
   // CustomizeProduct. Deliberately excludes ph/external_id — those are PII
   // and go through `fbq('set', 'userData', …)` once instead (see
@@ -217,11 +203,11 @@ export default function InitiatedPage() {
         switchCountRef.current += 1;
 
         const planCourseName = courseName || data?.short_name || "";
-        const from = getPlanAnalytics(previousVariant, pricing, data?.short_name, planCourseName, autopayOffer);
-        const to = getPlanAnalytics(variant, pricing, data?.short_name, planCourseName, autopayOffer);
-        const defaultPlan = getPlanAnalytics(DEFAULT_VARIANT, pricing, data?.short_name, planCourseName, autopayOffer);
+        const from = getPlanAnalytics(previousVariant, pricing, data?.short_name, planCourseName);
+        const to = getPlanAnalytics(variant, pricing, data?.short_name, planCourseName);
+        const defaultPlan = getPlanAnalytics(DEFAULT_VARIANT, pricing, data?.short_name, planCourseName);
 
-        const toPrice = priceFor(variant);
+        const toPrice = getPriceForVariant(variant, pricing, data?.short_name);
 
         if (from && to && defaultPlan && data?.exam_id) {
           trackPaymentEvent("Plan Switched", {
@@ -244,14 +230,13 @@ export default function InitiatedPage() {
             source,
             language: locale,
             in_app_browser: inAppBrowserKind(),
-            ...armProps(),
           });
         }
       }
 
       setSelectVariant((current) => {
         if (current !== variant) {
-          const variantPrice = priceFor(variant);
+          const variantPrice = getPriceForVariant(variant, pricing, data?.short_name);
           // Fires on the plan-toggle click, which can happen before this
           // page's own InitiateCheckout effect (below) has finished its
           // async setMetaUserData() — unlike that call, this one can't
@@ -271,7 +256,7 @@ export default function InitiatedPage() {
         return variant;
       });
     },
-    [pricing, data, courseName, source, locale, autopayOffer, priceFor],
+    [pricing, data, courseName, source, locale],
   );
 
   const { levels: levelsRaw = [], loading: levelsLoading } = useLevels(
@@ -289,14 +274,13 @@ export default function InitiatedPage() {
   const pageOpenTrackedForRef = React.useRef<string | null>(null);
 
   useEffect(() => {
-    // Wait for the autopay price: the `?plan=1month` deep link opens on it.
-    if (!datacourse || !autopay.ready) return;
+    if (!datacourse) return;
 
     const visitKey = String(datacourse.group_code ?? "");
     if (pageOpenTrackedForRef.current === visitKey) return;
     pageOpenTrackedForRef.current = visitKey;
 
-    const openingPrice = priceFor(currentVariantRef.current);
+    const openingPrice = getPriceForVariant(currentVariantRef.current, pricing, data?.short_name);
     trackPaymentEvent("Purchase Intent Initiated", {
       entry_point: source,
       product_id: data?.short_name!,
@@ -306,7 +290,6 @@ export default function InitiatedPage() {
       source,
       language: locale,
       in_app_browser: inAppBrowserKind(),
-      ...armProps(),
     });
 
     // Awaited before InitiateCheckout fires below — setMetaUserData's geo
@@ -316,7 +299,7 @@ export default function InitiatedPage() {
     const trackInitiateCheckout = async () => {
       await setMetaUserData();
       // Page just opened — selectVariant is still DEFAULT_VARIANT.
-      const initiateCheckoutPrice = priceFor(DEFAULT_VARIANT);
+      const initiateCheckoutPrice = getPriceForVariant(DEFAULT_VARIANT, pricing, data?.short_name);
       trackFacebookEventWithUserData("InitiateCheckout", buildMetaParams(initiateCheckoutPrice));
 
       if (data?.id) {
@@ -339,7 +322,7 @@ export default function InitiatedPage() {
     };
 
     sendWebhook();
-  }, [datacourse, autopay.ready]);
+  }, [datacourse]);
 
   /* ---------------------------------- container (stable) ---------------------------------- */
 
@@ -384,8 +367,8 @@ export default function InitiatedPage() {
   );
 
   const selectedPrice = useMemo(
-    () => priceFor(selectVariant),
-    [selectVariant, priceFor],
+    () => getPriceForVariant(selectVariant, pricing, data?.short_name),
+    [selectVariant, pricing, data?.short_name],
   );
 
   // The selected plan lives in React state only (CC-61). This page used to
@@ -529,7 +512,6 @@ export default function InitiatedPage() {
     source,
     language: locale,
     in_app_browser: inAppBrowserKind(),
-    ...armProps(),
   });
 
   const handleSubscriptionPayment = useCallback(async () => {
@@ -551,7 +533,7 @@ export default function InitiatedPage() {
       try {
         res = await createSubscription({
           course_id: courseId,
-          plan_id: getSubscriptionPlanId(data?.short_name, autopayOffer),
+          plan_id: getSubscriptionPlanId(data?.short_name),
         });
       } catch (err) {
         // The backend rejects a duplicate subscribe attempt with 400 + the
@@ -896,7 +878,7 @@ export default function InitiatedPage() {
       // (dismiss / success redirect / failure redirect) end it.
       if (!checkoutOpened) setSubscriptionLoading(false);
     }
-  }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice, autopayOffer]);
+  }, [courseId, data?.short_name, data?.id, source, authUser, router, selectedPrice]);
 
   const handlePayClick = useCallback(() => {
     // One checkout at a time: a second quick tap used to create a second
@@ -915,16 +897,7 @@ export default function InitiatedPage() {
 
   /* ---------------------------------- states ---------------------------------- */
 
-  // `autopay.ready`: a user who may be in the price test waits (bounded) for
-  // Amplitude instead of seeing one price that then changes.
-  const isPageLoading = !data || !authUser || pricingLoading || !autopay.ready;
-
-  // The autopay price is on screen: log the exposure (once; the runtime
-  // guards duplicates and never exposes a fallback).
-  const exposeAutopay = autopay.expose;
-  useEffect(() => {
-    if (!isPageLoading) exposeAutopay();
-  }, [isPageLoading, exposeAutopay]);
+  const isPageLoading = !data || !authUser || pricingLoading;
 
   /* ---------------------------------- redirect loader ---------------------------------- */
 
@@ -1131,7 +1104,7 @@ export default function InitiatedPage() {
               {/* 1-month plan (subscription) */}
               <PlanCard
                 durationLabel={modalT("months", { count: 1 })}
-                price={`₹${priceFor("1month")}`}
+                price={`₹${getPriceForVariant("1month", pricing, data?.short_name)}`}
                 strikePrice="₹1,499"
                 subtitle={modalT("full_access_all_levels")}
                 badge={{

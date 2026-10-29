@@ -13,7 +13,6 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import React, { useMemo } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
-import { useAutopayOffer } from "@/lib/experiments/useAutopayOffer";
 
 export interface MyCOurseCardProps {
   price?: string | React.ReactNode | null;
@@ -88,11 +87,9 @@ export default function MyCourseCard({
 
   // Per-exam override (e.g. HPTET → ₹149) from the same source of truth as
   // payment/initiated — see @/lib/payment/examPriceOverrides.
-  // Allow-listed ₹99 offer (phase 66): the offer when this user has it, else the usual price.
-  const autopay = useAutopayOffer(examShortName);
   const monthlyPrice = useMemo(
-    () => getPriceForVariant("1month", null, examShortName ?? undefined, autopay.offer),
-    [examShortName, autopay.offer],
+    () => getPriceForVariant("1month", null, examShortName ?? undefined),
+    [examShortName],
   );
   return (
     <Card
@@ -280,11 +277,9 @@ export default function MyCourseCard({
                   <LockIcon size={20} />{" "}
                   <span>
                     {" "}
-                    {autopay.ready
-                      ? t("myCourses.priceNote", {
-                          price: monthlyPrice,
-                        })
-                      : " "}
+                    {t("myCourses.priceNote", {
+                      price: monthlyPrice,
+                    })}
                   </span>
                 </p>
                 <p className="body-medium !font-normal text-surface-gray-muted">
