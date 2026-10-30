@@ -39,7 +39,7 @@ import type { SaveStatus } from "./SaveForFutureButton";
 
 // The login UI (OTP screens, axios, zustand...) is only fetched the first time
 // a visitor asks to save — the anonymous tracker never loads it.
-const ToolsAuthGate = dynamic(() => import("./ToolsAuthGate"), { ssr: false });
+const ToolsAuthGate = dynamic(() => import("../ToolsAuthGate"), { ssr: false });
 
 type Step = "loading" | "list" | "exam" | "level" | "dashboard";
 // A minimal exam shape good enough for the wizard steps below (id + display
@@ -765,7 +765,16 @@ export default function SyllabusTrackerApp({ locale = "en" }: { locale?: Locale 
         onCancel={() => setLoadReplace(null)}
       />
 
-      {authGateMounted && <ToolsAuthGate requestId={loginRequestId} reason={loginReason} locale={locale} onAuthenticated={handleAuthenticated} />}
+      {authGateMounted && <ToolsAuthGate
+          requestId={loginRequestId}
+          copy={{
+            id: "syllabus-tracker",
+            title: loginReason === "load" ? t.loginToLoadTitle : t.loginToSaveTitle,
+            subtitle: t.loginToSaveSubtitle,
+            submitLabel: t.loginToSaveSubmit,
+          }}
+          onAuthenticated={handleAuthenticated}
+        />}
     </div>
   );
 }

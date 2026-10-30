@@ -8,6 +8,8 @@ import { Card } from "@clearcut/ui/card";
 import { getDict, Locale } from "@/lib/dictionary";
 import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
 import { encodeJpegWithinBudget } from "@/lib/jpegBudget";
+import { getLoginGateConfig } from "@/lib/loginGate";
+import { useLoginGate } from "@/lib/useLoginGate";
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
 
@@ -918,6 +920,7 @@ export default function ResizeImageTool({
   examName,
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
+  const { requireLogin, gate: loginGate } = useLoginGate();
   const PRESETS = buildPresets(locale, photoSpec, signatureSpec, { thumbSpec, rightThumbSpec, declarationSpec });
   // Tiles follow the order of allowedPresets (an exam's document order), not the
   // PRESETS object's own key order.
@@ -1216,7 +1219,7 @@ export default function ResizeImageTool({
       preset
     ] + ".jpg";
 
-  const handleDownload = () => {
+  const saveFile = () => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result.url;
@@ -1226,6 +1229,13 @@ export default function ResizeImageTool({
     a.remove();
     setDownloaded(true);
     trackResizer("Resizer Image Downloaded", { in_app_browser: isInAppBrowser() });
+  };
+
+  // Downloading needs a verified mobile number (shared OTP login, no redirect):
+  // the processed image stays in state and saves itself once verified.
+  const handleDownload = () => {
+    if (!result) return;
+    requireLogin(getLoginGateConfig("download", locale), saveFile);
   };
 
   const handleShare = async () => {
@@ -1869,6 +1879,7 @@ export default function ResizeImageTool({
           </Text>
         </div>
       </Card>
+      {loginGate}
     </div>
   );
 }

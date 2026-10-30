@@ -29,6 +29,14 @@ export function setAuthenticatedHandler(handler: ((result: AuthSuccessResult) =>
   authenticatedHandler = handler;
 }
 
+let authContext: string | null = null;
+
+/** ToolsAuthGate registers WHY the login is open (a LoginGateConfig id) so the
+ * shared auth events carry it as a `context` property — no new events. */
+export function setAuthContext(context: string | null) {
+  authContext = context;
+}
+
 const api = createApiClient({
   baseURL: MAIN_BACKEND_URL,
   getAuthToken: getToken,
@@ -45,7 +53,8 @@ export const { AuthModal, useAuthStore } = createAuthFeature({
   // redirect this URL would have been the base of.
   redirectBaseUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in",
   // Records the auth funnel (Verification Sent / Resent, …) from Tools too.
-  onEvent: logAmplitudeEvent,
+  onEvent: (name, properties) =>
+    logAmplitudeEvent(name, authContext ? { ...properties, context: authContext } : properties),
   onIdentify: setAmplitudeUserId,
   onAuthenticated: (result) => {
     notifySessionChange();
