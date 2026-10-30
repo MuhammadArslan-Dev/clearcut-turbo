@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { captureFirstLanding } from "@clearcut/auth/attribution";
 import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
 
 /**
@@ -24,6 +25,12 @@ import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
  */
 export default function PageViewTracker() {
   const pathname = usePathname();
+
+  // Acquisition attribution (phase 70): tiny pure module (no login UI), and the
+  // only place that runs on every tools page — AuthProvider is never mounted here.
+  useEffect(() => {
+    captureFirstLanding();
+  }, []);
 
   useEffect(() => {
     logAmplitudeEvent("Page Viewed", { path: pathname, platform: "web" });

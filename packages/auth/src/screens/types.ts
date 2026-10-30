@@ -23,6 +23,14 @@ export interface LoginCopy {
   showTrialBanner?: boolean;
   /** Defaults to true — the "Trusted by 10,000+ students" line (mobile). */
   showTrustText?: boolean;
+  /** Picture above the title. Defaults to "study" (the signup design); pass
+   * "image-lock" for download gates, or `null` for none. */
+  illustration?: "study" | "image-lock" | null;
+  /** Replaces the trial line with up to two icon chips (e.g. "100% Free
+   * Download" / "Secure & Private"). */
+  featureChips?: { icon: "gift" | "lock"; label: string }[];
+  /** Primary button of the OTP step. Defaults to "Verify OTP". */
+  otpSubmitLabel?: string;
 }
 
 export interface AuthScreenDeps {
@@ -45,4 +53,7 @@ export interface AuthScreenDeps {
    * handoff) to keep the original `window.location.replace(...)` redirect.
    */
   onAuthenticated?: (result: AuthSuccessResult) => void;
+  /** Prefix for the modal's illustration files (`<base>/images/auth/*.webp`).
+   * Empty for apps served from the site root; tools passes its basePath. */
+  assetBase?: string;
 }

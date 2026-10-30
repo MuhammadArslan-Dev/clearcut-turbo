@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 
 import { createAuthApi } from "./api";
+import { setAttributionApp, type AttributionApp } from "./attribution";
 import { createAuthContext } from "./context";
 import { createAuthStore } from "./store/auth-store";
 import { createAuthModalStore } from "./store/auth-modal-store";
@@ -39,6 +40,11 @@ export interface CreateAuthFeatureConfig {
    * unused but still required by the type.
    */
   onAuthenticated?: AuthScreenDeps["onAuthenticated"];
+  /** Which app reports this login (phase 70). The backend classifies it:
+   * landing → paid, tools → organic, anything else → other. */
+  attributionApp?: AttributionApp;
+  /** See AuthScreenDeps.assetBase. */
+  assetBase?: string;
 }
 
 /**
@@ -61,6 +67,7 @@ export interface CreateAuthFeatureConfig {
  * ("Attempted to call createAuthContext() from the server...").
  */
 export function createAuthFeature(config: CreateAuthFeatureConfig) {
+  setAttributionApp(config.attributionApp);
   const authApi = createAuthApi(config.apiClient);
 
   const { AuthProvider, useAuth } = createAuthContext({
@@ -84,6 +91,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     onIdentify: config.onIdentify,
     redirectBaseUrl: config.redirectBaseUrl,
     onAuthenticated: config.onAuthenticated,
+    assetBase: config.assetBase,
   };
 
   const AuthModal = createAuthModal(screenDeps);

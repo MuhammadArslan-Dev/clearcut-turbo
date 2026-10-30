@@ -1,5 +1,7 @@
 import type { AxiosInstance } from "axios";
 
+import { withAttribution } from "./attribution";
+
 /**
  * The zod schemas are loaded ON DEMAND, not at module scope.
  *
@@ -67,10 +69,19 @@ export interface TruecallerStatusResponseData {
  */
 export function createAuthApi(apiClient: AxiosInstance) {
   return {
+    // `attribution` (phase 70) is added after the schema parse — zod would
+    // strip an unknown key — and is the same for every caller (modal, /start,
+    // tool modals): where this OTP login started. The backend validates it.
     loginUser: async (data: LoginPayload) =>
-      apiClient.post("/v1/auth/login", (await loadLoginSchema()).parse(data)),
+      apiClient.post("/v1/auth/login", {
+        ...(await loadLoginSchema()).parse(data),
+        ...withAttribution(),
+      }),
     loginUser2: async (data: LoginPayload) =>
-      apiClient.post("/v1/auth/login", (await loadLoginSchema()).parse(data)),
+      apiClient.post("/v1/auth/login", {
+        ...(await loadLoginSchema()).parse(data),
+        ...withAttribution(),
+      }),
     verifyMe: () => apiClient.get("/v1/me"),
     verifyUser: async (data: OtpVerifyPayload) =>
       apiClient.post(
@@ -79,15 +90,15 @@ export function createAuthApi(apiClient: AxiosInstance) {
       ),
     logoutUser: () => apiClient.post("/v1/logout"),
     verifyOtp: async (data: OtpVerifyPayload) =>
-      apiClient.post(
-        "/v1/auth/varify-otp",
-        (await loadOtpVerifySchema()).parse(data),
-      ),
+      apiClient.post("/v1/auth/varify-otp", {
+        ...(await loadOtpVerifySchema()).parse(data),
+        ...withAttribution(),
+      }),
     verifyOtp2: async (data: OtpVerifyPayload) =>
-      apiClient.post(
-        "/v2/auth/varify-otp",
-        (await loadOtpVerifySchema()).parse(data),
-      ),
+      apiClient.post("/v2/auth/varify-otp", {
+        ...(await loadOtpVerifySchema()).parse(data),
+        ...withAttribution(),
+      }),
     createCourse: (data: CreateCoursePayload) =>
       apiClient.post("/v2/enrollment/create-by-name", data),
     // Truecaller "verify profile" login — see packages/auth/src/truecaller.ts
@@ -95,6 +106,7 @@ export function createAuthApi(apiClient: AxiosInstance) {
     truecallerInitiate: () =>
       apiClient.post<{ data: TruecallerInitiateResponseData }>(
         "/v1/auth/truecaller/initiate",
+        withAttribution(),
       ),
     truecallerStatus: (requestNonce: string) =>
       apiClient.get<{ data: TruecallerStatusResponseData }>(

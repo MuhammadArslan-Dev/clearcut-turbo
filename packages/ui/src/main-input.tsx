@@ -29,6 +29,12 @@ interface MainInputProps extends InputHTMLAttributes<HTMLInputElement> {
    * tap anywhere on it focuses the input instead of doing nothing.
    */
   focusOnTap?: boolean;
+  /**
+   * "underline" (default, unchanged): the filled field with a bottom border.
+   * "outlined": a white, fully bordered rounded field (the login modal design,
+   * phase 69). Same border colours for focus / error / success.
+   */
+  appearance?: "underline" | "outlined";
 }
 
 // Every entry resolves through @clearcut/design-tokens — no literals here.
@@ -66,6 +72,7 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
   inputPrefix,
   normalizeValue,
   focusOnTap = false,
+  appearance = "underline",
   ...rest
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -118,15 +125,24 @@ const MainInput = React.forwardRef<HTMLInputElement, MainInputProps>(({
         <label className="block mb-2 text-base text-gray-900">{label}</label>
       )}
       <FieldBox
-        className={`flex items-center border-b-2 px-3  py-1.5 transition-colors ${
-          focusOnTap ? "cursor-text " : ""
-        }${
-          className ?? ""
-        }`}
-        style={{
-          borderBottomColor: getBorderColor(),
-          backgroundColor: getBackgroundColor(),
-        }}
+        className={`flex items-center transition-colors ${
+          appearance === "outlined"
+            ? "rounded-xl border-2 bg-white px-3 py-1.5 "
+            : "border-b-2 px-3  py-1.5 "
+        }${focusOnTap ? "cursor-text " : ""}${className ?? ""}`}
+        style={
+          appearance === "outlined"
+            ? {
+                borderColor: getBorderColor(),
+                ...(error || success || variant !== "default"
+                  ? { backgroundColor: getBackgroundColor() }
+                  : {}),
+              }
+            : {
+                borderBottomColor: getBorderColor(),
+                backgroundColor: getBackgroundColor(),
+              }
+        }
       >
         {showIcon && (icon || imageIcon) && (
           <div className="mr-3 flex items-center">

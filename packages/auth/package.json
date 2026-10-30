@@ -7,6 +7,7 @@
   },
   "exports": {
     "./token": "./src/token.ts",
+    "./attribution": "./src/attribution.ts",
     "./api": "./src/api.ts",
     "./redirect": "./src/redirect.ts",
     "./context": "./src/context.tsx",

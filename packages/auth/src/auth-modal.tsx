@@ -32,7 +32,7 @@ export function createAuthModal(deps: CreateOtpScreenOptions) {
     return (
       <>
         {screen === "login" && <LoginScreen loginCopy={loginCopy} />}
-        {screen === "otp" && <OTPScreen />}
+        {screen === "otp" && <OTPScreen loginCopy={loginCopy} />}
       </>
     );
   }

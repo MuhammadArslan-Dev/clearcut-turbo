@@ -35,6 +35,8 @@ export const {
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
   onIdentify: setUserId,
+  // Acquisition attribution (phase 70): blog is neither landing nor tools → "other".
+  attributionApp: "blog",
   // The internal (admin)/admin panel lives inside this otherwise-public
   // marketing app — without this, AuthProvider's mount-time "already logged
   // in? bounce to the dashboard app" effect (meant for a customer browsing

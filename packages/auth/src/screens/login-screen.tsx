@@ -5,7 +5,6 @@ import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
 import MainInput from "@clearcut/ui/main-input";
 import { AnimatePresence } from "framer-motion";
-import Image from "next/image";
 
 import { DrawerSheet } from "../ui/drawer-sheet";
 import {
@@ -16,6 +15,15 @@ import {
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
 import MainAppLogo from "../icons/main-app-logo";
+import ShieldCheckIcon from "../icons/shield-check-icon";
+import {
+  AuthCloseButton,
+  AuthIllustration,
+  ArrowRightIcon,
+  FeatureChip,
+  GiftIcon,
+  IndiaPhonePrefix,
+} from "../ui/auth-sheet-parts";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { highlightTextUtil } from "@clearcut/utils/highlight-text";
@@ -52,6 +60,7 @@ export function createLoginScreen({
   onIdentify,
   redirectBaseUrl,
   onAuthenticated,
+  assetBase,
 }: CreateOtpScreenOptions) {
   function LoginScreen({ loginCopy }: { loginCopy?: LoginCopy }) {
     const title = loginCopy?.title ?? "Start your exam preparation";
@@ -60,6 +69,8 @@ export function createLoginScreen({
     const submitLabel = loginCopy?.submitLabel ?? "Start FREE Preparation";
     const showTrialBanner = loginCopy?.showTrialBanner ?? true;
     const showTrustText = loginCopy?.showTrustText ?? true;
+    const illustration = loginCopy?.illustration === undefined ? "study" : loginCopy.illustration;
+    const featureChips = loginCopy?.featureChips;
 
     const {
       phone,
@@ -348,162 +359,148 @@ export function createLoginScreen({
             }}
             maxWidth="md:max-w-[400px]"
           >
-            <div className="h-full bg-white flex flex-col justify-between md:justify-center md:gap-6 pb-10 pt-7 md:pt-3 md:pb-6">
-              <div className="flex flex-col gap-4 w-full px-7 md:px-10">
-                <div className="flex justify-center w-full">
-                  <MainAppLogo width={140} />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-modal-title"
+              className="relative h-full bg-white flex flex-col justify-between md:justify-center gap-5 px-6 pt-7 pb-8 md:px-8 md:pt-6 md:pb-6"
+            >
+              <AuthCloseButton onClick={closeModal} />
+
+              <div className="flex flex-col gap-4 w-full items-center">
+                <MainAppLogo width={140} />
+
+                {illustration && <AuthIllustration name={illustration} assetBase={assetBase} />}
+
+                <div className="flex flex-col gap-1 w-full items-center text-center">
+                  <h2
+                    id="auth-modal-title"
+                    className="heading-large !font-bold text-[var(--color-text-gray-normal)]"
+                  >
+                    {title}
+                  </h2>
+                  {subtitle && (
+                    <p className="body-large !font-normal text-[var(--color-text-gray-subtle)]">
+                      {subtitle}
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex flex-col gap-8 w-full items-center">
-                  <div className="flex flex-col gap-1 w-full items-center">
-                    <h6 className="heading-medium !font-semibold text-[var(--color-text-gray-normal)]">
-                      {title}
-                    </h6>
-                    {subtitle && (
-                      <p className="body-medium !font-normal text-[var(--color-text-gray-subtle)]">
-                        {subtitle}
-                      </p>
-                    )}
-                  </div>
+                {/* Timer */}
+                {marketing === "course-marketing" && <SeatTimer />}
 
-                  {/* Timer */}
-                  {marketing === "course-marketing" && <SeatTimer />}
+                <div className="flex flex-col gap-4 w-full items-center">
+                  {/* Only rendered once useTruecallerAvailability confirms
+                      the app is on this device (cached across every
+                      clearcutoff.in property — see that hook's docblock).
+                      TruecallerButton is shared with StartAuthForm.tsx
+                      (packages/auth/src/ui/truecaller-button.tsx) — edit
+                      it there to change this button anywhere it's used. */}
+                  {truecallerAvailability === "available" && (
+                    <div className="flex md:hidden flex-col gap-2 w-full">
+                      <TruecallerButton
+                        state={truecallerState}
+                        error={truecallerError}
+                        onClick={startTruecallerLogin}
+                      />
 
-                  <div className="flex flex-col gap-8 w-full items-center overflow-hidden">
-                    <div className="flex flex-col gap-5 w-full items-center">
-                      {/* Only rendered once useTruecallerAvailability confirms
-                          the app is on this device (cached across every
-                          clearcutoff.in property — see that hook's docblock).
-                          TruecallerButton is shared with StartAuthForm.tsx
-                          (packages/auth/src/ui/truecaller-button.tsx) — edit
-                          it there to change this button anywhere it's used. */}
-                      {truecallerAvailability === "available" && (
-                      <div className="flex md:hidden flex-col gap-2 w-full">
-                          <TruecallerButton
-                            state={truecallerState}
-                            error={truecallerError}
-                            onClick={startTruecallerLogin}
-                          />
-
-                          <div className="flex items-center gap-3 py-1 w-full">
-                            <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                            <Text as="span" variant="body-small" color="gray-muted">
-                              OR
-                            </Text>
-                            <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                          </div>
-                      </div>
-                      )}
-
-                      {/* INPUT */}
-                      <div className="space-y-4 w-full">
-                        <div className="flex gap-3 items-center">
-                          <Image
-                            src="/images/indian-flage.webp"
-                            alt="Indian flag"
-                            width={24}
-                            height={24}
-                            priority
-                            unoptimized
-                          />
-                          <label
-                            htmlFor="auth-modal-phone"
-                            className="body-small !font-semibold text-[var(--color-text-gray-subtle)]"
-                          >
-                            Mobile or WhatsApp Number
-                          </label>
-                        </div>
-
-                        <div className="flex gap-0 flex-col w-full items-center">
-                          <div className="w-full flex items-center gap-2">
-                            <div className="w-full h-[48px] relative">
-                              <MainInput
-                                ref={inputRef}
-                                id="auth-modal-phone"
-                                autoComplete="tel-national"
-                                normalizeValue={normalizeIndianMobileInput}
-                                focusOnTap
-                                value={phone}
-                                placeholder="10-digit number"
-                                inputType="phone"
-                                error={error}
-                                maxLength={10}
-                                className="h-full"
-                                inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
-                                onChange={(e) => validatePhone(e.target.value)}
-                                inputPrefix="+91 -"
-                                showError={false}
-                              />
-                              {phone.length > 0 && (
-                                <span className="absolute left-1/4 -translate-x-1/2 top-0 -translate-y-1/2 text-xs text-[var(--color-gray-blue)] bg-white rounded-full border border-[var(--color-gray-blue)] px-2.5 py-0.5 pointer-events-none select-none whitespace-nowrap">
-                                  10-digit number
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* error or success — always rendered to prevent layout shift */}
-                          <p
-                            className={`text-sm w-full text-center min-h-[1.5rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
-                          >
-                            {error || success}
-                          </p>
-
-                          <div className="text-center mt-2 body-small !font-normal text-[var(--color-surface-gray-muted)]">
-                            <p>
-                              <em>
-                                Used only for login & exam updates. No spam.
-                              </em>
-                            </p>
-                            <p>
-                              <em>OTP will be sent via SMS and WhatsApp.</em>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* BUTTON */}
-                      <div className="w-full flex justify-center">
-                        <div className="max-w-[328px] w-full">
-                          <Button
-                            size="lg"
-                            sx={{ borderRadius: "50px" }}
-                            fullWidth
-                            onClick={() => handleLogin()}
-                            disabled={loading}
-                            loading={loading}
-                          >
-                            {submitLabel}
-                          </Button>
-                        </div>
+                      <div className="flex items-center gap-3 py-1 w-full">
+                        <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
+                        <Text as="span" variant="body-small" color="gray-muted">
+                          OR
+                        </Text>
+                        <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
                       </div>
                     </div>
+                  )}
 
-                    {/* TRIAL — same plain line as /start (StartAuthForm.tsx), so
-                        a change to either should be mirrored in the other. Not
-                        a card (CC-84): the boxed version looked tappable. */}
-                    {marketing === "course-marketing" || !showTrialBanner ? (
-                      <></>
-                    ) : (
-                      <Text as="p" variant="body-small" color="gray-muted" className="text-center w-full">
-                        <span className="!font-semibold text-[var(--color-brand)]">
-                          3-day FREE Trial
-                        </span>{" "}
-                        • No card or payment required
-                      </Text>
-                    )}
+                  {/* INPUT */}
+                  <div className="w-full flex flex-col gap-2">
+                    <label
+                      htmlFor="auth-modal-phone"
+                      className="body-medium !font-semibold text-[var(--color-text-gray-normal)]"
+                    >
+                      Mobile or WhatsApp Number
+                    </label>
+
+                    <MainInput
+                      ref={inputRef}
+                      id="auth-modal-phone"
+                      appearance="outlined"
+                      autoComplete="tel-national"
+                      normalizeValue={normalizeIndianMobileInput}
+                      focusOnTap
+                      value={phone}
+                      placeholder="10-digit mobile number"
+                      inputType="phone"
+                      error={error}
+                      maxLength={10}
+                      className="h-[52px]"
+                      inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                      onChange={(e) => validatePhone(e.target.value)}
+                      inputPrefix={<IndiaPhonePrefix />}
+                      showError={false}
+                    />
+
+                    {/* error or success — always rendered to prevent layout shift */}
+                    <p
+                      role={error ? "alert" : undefined}
+                      className={`text-sm w-full text-center min-h-[1.25rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
+                    >
+                      {error || success}
+                    </p>
+
+                    <div className="flex items-center justify-center gap-3 body-small !font-normal text-[var(--color-text-gray-subtle)]">
+                      <ShieldCheckIcon />
+                      <div>
+                        <p>Used only for login and exam updates. No spam.</p>
+                        <p>OTP sent via SMS and WhatsApp.</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* TRUST TEXT */}
-                  {showTrustText && (
-                    <div className="block md:hidden text-center body-medium !font-normal text-[var(--color-surface-gray-muted)]">
-                      {highlightTextUtil(
-                        `Trusted by 10,000+ students to clear TET exams across India`,
-                        ["10,000"],
-                      )}
+                  {/* BUTTON */}
+                  <Button
+                    size="lg"
+                    sx={{ borderRadius: "50px" }}
+                    fullWidth
+                    onClick={() => handleLogin()}
+                    disabled={loading}
+                    loading={loading}
+                    rightIcon={<ArrowRightIcon />}
+                  >
+                    {submitLabel}
+                  </Button>
+
+                  {/* CONTEXT STRIP — icon chips (tools) or the trial pill (signup) */}
+                  {featureChips && featureChips.length > 0 ? (
+                    <div className="flex w-full items-start justify-center gap-6 pt-1">
+                      {featureChips.map((chip, i) => (
+                        <FeatureChip key={i} icon={chip.icon} label={chip.label} />
+                      ))}
+                    </div>
+                  ) : marketing === "course-marketing" || !showTrialBanner ? null : (
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-input-primary-soft)] px-3 py-3 body-small text-[var(--color-text-gray-subtle)]">
+                      <span className="text-[var(--color-brand)]">
+                        <GiftIcon />
+                      </span>
+                      <span>
+                        <span className="!font-semibold text-[var(--color-brand)]">3-day FREE Trial</span>
+                        {" • "}No card or payment required
+                      </span>
                     </div>
                   )}
                 </div>
+
+                {/* TRUST TEXT */}
+                {showTrustText && (
+                  <div className="block md:hidden text-center body-medium !font-normal text-[var(--color-surface-gray-muted)]">
+                    {highlightTextUtil(
+                      `Trusted by 10,000+ students to clear TET exams across India`,
+                      ["10,000"],
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* FOOTER — absolute clearcutoff.in URLs (not relative paths):
@@ -511,8 +508,8 @@ export function createLoginScreen({
                   /terms-and-conditions or /privacy-policy routes of its own
                   — only apps/landing does. Opens in a new tab so it doesn't
                   abandon this modal's in-progress phone entry. */}
-              <div className="text-center px-4 body-medium !font-normal text-[var(--color-surface-gray-muted)]">
-                By Signing Up, I agree to{" "}
+              <div className="text-center body-small !font-normal text-[var(--color-surface-gray-muted)]">
+                By continuing, you agree to our{" "}
                 <a
                   href="https://clearcutoff.in/terms-and-conditions"
                   target="_blank"

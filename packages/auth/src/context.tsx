@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { captureFirstLanding } from "./attribution";
 import { clearToken, getToken, setToken as storeToken } from "./token";
 
 export interface AuthContextConfig {
@@ -89,6 +90,12 @@ export function createAuthContext(config: AuthContextConfig) {
       if (!res.ok) throw new Error("unauthorized");
       return res.json();
     };
+
+    // Acquisition attribution (phase 70): remember this browser's first
+    // landing page / UTM once, whatever page it is. Never throws.
+    useEffect(() => {
+      captureFirstLanding();
+    }, []);
 
     useEffect(() => {
       const tok = getToken();

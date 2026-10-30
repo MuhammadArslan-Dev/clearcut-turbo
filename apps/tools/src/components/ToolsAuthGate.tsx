@@ -39,6 +39,9 @@ export default function ToolsAuthGate({
         title: copy.title,
         subtitle: copy.subtitle,
         submitLabel: copy.submitLabel,
+        illustration: copy.illustration,
+        featureChips: copy.featureChips,
+        otpSubmitLabel: copy.otpSubmitLabel,
         showTrialBanner: false,
         showTrustText: false,
       }}

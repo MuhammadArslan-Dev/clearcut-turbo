@@ -56,6 +56,10 @@ export const { AuthModal, useAuthStore } = createAuthFeature({
   onEvent: (name, properties) =>
     logAmplitudeEvent(name, authContext ? { ...properties, context: authContext } : properties),
   onIdentify: setAmplitudeUserId,
+  // Acquisition attribution (phase 70): the backend classifies tools → organic.
+  attributionApp: "tools",
+  // Illustrations live in this app's public/images/auth, served under its basePath.
+  assetBase: "/tools",
   onAuthenticated: (result) => {
     notifySessionChange();
     authenticatedHandler?.(result);

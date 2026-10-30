@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import Button from "@clearcut/ui/button";
-import Text from "@clearcut/ui/text";
 import MainInput from "@clearcut/ui/main-input";
 import { AnimatePresence } from "framer-motion";
 
@@ -14,7 +13,13 @@ import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import MainAppLogo from "../icons/main-app-logo";
-import RetryIcon from "../icons/retry-icon";
+import {
+  AuthCloseButton,
+  AuthIllustration,
+  ArrowLeftIcon,
+  KeyIcon,
+  PencilIcon,
+} from "../ui/auth-sheet-parts";
 import {
   getAuthFailureReason,
   trackAuthFailure,
@@ -22,19 +27,10 @@ import {
   trackVerificationFailed,
   trackVerificationResent,
 } from "../verification-events";
-import type { AuthScreenDeps } from "./types";
+import type { AuthScreenDeps, LoginCopy } from "./types";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
-
-const StarIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M12.0026 18.26L4.9491 22.2082L6.52443 14.2799L0.589844 8.7918L8.61688 7.84006L12.0026 0.5L15.3882 7.84006L23.4152 8.7918L17.4807 14.2799L19.056 22.2082L12.0026 18.26Z"
-      fill="#FECF49"
-    />
-  </svg>
-);
 
 export interface CreateOtpScreenOptions extends AuthScreenDeps {
   redirectBaseUrl: string;
@@ -55,8 +51,10 @@ export function createOtpScreen({
   onIdentify,
   redirectBaseUrl,
   onAuthenticated,
+  assetBase,
 }: CreateOtpScreenOptions) {
-  function OTPScreen() {
+  function OTPScreen({ loginCopy }: { loginCopy?: LoginCopy } = {}) {
+    const otpSubmitLabel = loginCopy?.otpSubmitLabel ?? "Verify OTP";
     const isMobile = useIsMobile();
     const { closeModal } = useAuthModal();
 
@@ -310,123 +308,124 @@ export function createOtpScreen({
       <AnimatePresence>
         {screen === "otp" && (
           <Container isOpen={true} onClose={handleClose}>
-            <div className="h-full bg-white flex flex-col gap-10 pb-10 pt-7 md:pt-3 md:pb-6 px-4">
-              {/* Header */}
-              <div className="flex flex-col gap-4 items-center justify-center w-full px-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-otp-title"
+              className="relative h-full bg-white flex flex-col justify-center gap-5 px-6 pt-7 pb-8 md:px-8 md:pt-6 md:pb-6"
+            >
+              <AuthCloseButton onClick={handleClose} />
+
+              <div className="flex flex-col gap-4 w-full items-center">
                 <MainAppLogo width={140} />
 
-                <div className="flex flex-col gap-1 items-center">
-                  <div className="flex gap-0.5 w-full justify-center">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <StarIcon key={i} />
-                    ))}
-                  </div>
+                <AuthIllustration name="otp-phone" assetBase={assetBase} />
 
-                  <p className="text-center body-medium !font-normal text-[var(--color-surface-gray-subtle)]">
-                    Rated 4.9 stars by 10,000+ students
+                <div className="flex flex-col gap-1 w-full items-center text-center">
+                  <h2
+                    id="auth-otp-title"
+                    className="heading-large !font-bold text-[var(--color-text-gray-normal)]"
+                  >
+                    Enter OTP
+                  </h2>
+                  <p className="body-large !font-normal text-[var(--color-text-gray-subtle)]">
+                    We&apos;ve sent a {OTP_LENGTH}-digit OTP to
+                  </p>
+                  <p className="flex items-center gap-2 body-large !font-semibold text-[var(--color-text-gray-normal)]">
+                    +91 {phone.slice(0, 5)} {phone.slice(5)}
+                    <button
+                      type="button"
+                      onClick={goToLogin}
+                      aria-label="Edit mobile number"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-brand)] hover:bg-[var(--color-input-primary-soft)]"
+                    >
+                      <PencilIcon />
+                    </button>
                   </p>
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="flex flex-col gap-6 w-full items-center">
-                {/* Phone */}
-                <p className="body-large !font-normal text-[var(--color-text-gray-subtle)]">
-                  OTP sent to{" "}
-                  <span className="!font-semibold text-[var(--color-text-gray-normal)]">
-                    {phone}
-                  </span>{" "}
-                  <span
-                    onClick={goToLogin}
-                    className="!font-semibold text-[var(--color-brand)] cursor-pointer"
-                  >
-                    Edit
-                  </span>
-                </p>
-
+              <div className="flex flex-col gap-4 w-full items-center">
                 {/* OTP Input */}
-                <div className="w-[240px]">
-                  <p className="body-small !font-semibold text-[var(--color-text-gray-subtle)] mb-1">
-                    4-digit OTP <span className="text-red-500 text-md">*</span>
-                  </p>
-
-                  <div>
-                    <MainInput
-                      key={otpFieldKey}
-                      // A new name too: Chrome's autofill identifies a field by
-                      // its name/id, not only the DOM element.
-                      name={`otp-${otpFieldKey}`}
-                      id={`otp-${otpFieldKey}`}
-                      ref={inputRef}
-                      error={error}
-                      value={otp}
-                      placeholder="4 digit OTP"
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        setOtp(val);
-                        if (val.length === OTP_LENGTH) handleVerify(val);
-                      }}
-                      inputType="phone"
-                      maxLength={OTP_LENGTH}
-                      autoComplete="one-time-code"
-                    />
-                  </div>
-                  {/* error or success */}
-                  {error && (
-                    <p
-                      className={`text-sm w-full text-left max-w-[335px] ${error ? "text-red-600" : "text-green-600"}`}
-                    >
-                      {error}
-                    </p>
-                  )}
-                  <Text
-                    as="p"
-                    variant="body-small"
-                    color="gray-muted"
-                    className="text-center mt-2"
+                <div className="w-full">
+                  <MainInput
+                    key={otpFieldKey}
+                    // A new name too: Chrome's autofill identifies a field by
+                    // its name/id, not only the DOM element.
+                    name={`otp-${otpFieldKey}`}
+                    id={`otp-${otpFieldKey}`}
+                    ref={inputRef}
+                    appearance="outlined"
+                    icon={
+                      <span className="text-[var(--color-text-gray-subtle)]">
+                        <KeyIcon />
+                      </span>
+                    }
+                    error={error}
+                    value={otp}
+                    placeholder={`Enter ${OTP_LENGTH}-digit OTP`}
+                    aria-label={`${OTP_LENGTH}-digit OTP`}
+                    className="h-[52px]"
+                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      setOtp(val);
+                      if (val.length === OTP_LENGTH) handleVerify(val);
+                    }}
+                    inputType="phone"
+                    maxLength={OTP_LENGTH}
+                    autoComplete="one-time-code"
+                    showError={false}
+                  />
+                  {/* error — always reserved so the sheet does not jump */}
+                  <p
+                    role={error ? "alert" : undefined}
+                    className={`mt-1 min-h-[1.25rem] text-sm w-full text-center ${error ? "text-red-600" : "invisible"}`}
                   >
-                    <em>Sent via SMS and WhatsApp</em>{" "}
-                  </Text>
+                    {error}
+                  </p>
                 </div>
 
                 {/* Resend */}
-                <div>
+                <p className="body-medium !font-normal text-[var(--color-text-gray-subtle)] text-center">
+                  Didn&apos;t receive OTP?{" "}
                   {resendingOtp ? (
-                    <p className="body-medium !font-normal text-[var(--color-brand)]">
-                      Resending OTP...
-                    </p>
+                    <span className="text-[var(--color-brand)]">Resending OTP...</span>
+                  ) : resendTimer > 0 ? (
+                    <span className="!font-medium text-[var(--color-brand)]">
+                      Resend in 00:{String(resendTimer).padStart(2, "0")}
+                    </span>
                   ) : (
-                    <div className="flex items-center gap-1">
-                      <RetryIcon color="var(--color-brand)" />
-                      <p
-                        className={`body-medium !font-normal text-[var(--color-brand)] ${
-                          resendTimer > 0
-                            ? "opacity-50 cursor-not-allowed"
-                            : "cursor-pointer"
-                        }`}
-                        onClick={handleResendOtp}
-                      >
-                        {resendTimer > 0
-                          ? `Resend OTP (${resendTimer}s)`
-                          : "Resend OTP"}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="!font-medium text-[var(--color-brand)] underline-offset-2 hover:underline"
+                    >
+                      Resend OTP
+                    </button>
                   )}
-                </div>
+                </p>
 
                 {/* Button */}
-                <div className="w-[280px]">
-                  <Button
-                    size="lg"
-                    sx={{ borderRadius: "50px" }}
-                    fullWidth
-                    disabled={otp.length !== OTP_LENGTH || loading}
-                    loading={loading}
-                    onClick={() => handleVerify()}
-                  >
-                    Verify OTP
-                  </Button>
-                </div>
+                <Button
+                  size="lg"
+                  sx={{ borderRadius: "50px" }}
+                  fullWidth
+                  disabled={otp.length !== OTP_LENGTH || loading}
+                  loading={loading}
+                  onClick={() => handleVerify()}
+                >
+                  {otpSubmitLabel}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={goToLogin}
+                  className="flex items-center gap-2 body-medium !font-medium text-[var(--color-brand)]"
+                >
+                  <ArrowLeftIcon />
+                  Change Number
+                </button>
               </div>
             </div>
           </Container>

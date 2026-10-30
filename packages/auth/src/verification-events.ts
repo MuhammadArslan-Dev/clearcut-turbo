@@ -24,6 +24,8 @@
  *     current login flow (1, 2, 3…) — the caller resets it to 0 on every "Sent".
  */
 
+import { attributionEventProps } from "./attribution";
+
 export type VerificationTracker = (
   name: string,
   properties?: Record<string, unknown>,
@@ -43,6 +45,7 @@ export function trackVerificationSent(
     verification_method: VERIFICATION_METHOD,
     verification_mode: VERIFICATION_MODE,
     verification_purpose: VERIFICATION_PURPOSE,
+    ...attributionEventProps(),
     ...extra,
   });
 }
@@ -58,6 +61,7 @@ export function trackVerificationResent(
     verification_mode: VERIFICATION_MODE,
     verification_purpose: VERIFICATION_PURPOSE,
     resend_count: resendCount,
+    ...attributionEventProps(),
   });
 }
 
@@ -142,6 +146,7 @@ export function trackAuthSuccess(
   track?.("Authentication Outcome", {
     outcome: "successful",
     auth_method: authMethod,
+    ...attributionEventProps(),
   });
 }
 
@@ -154,6 +159,7 @@ export function trackAuthFailure(
     outcome: "failed",
     auth_method: authMethod,
     failure_reason: failureReason,
+    ...attributionEventProps(),
   });
 }
 
@@ -176,5 +182,6 @@ export function trackVerificationFailed(
     verification_purpose: VERIFICATION_PURPOSE,
     failure_reason: failureReason,
     is_resend: isResend,
+    ...attributionEventProps(),
   });
 }

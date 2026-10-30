@@ -39,6 +39,8 @@ export const {
   redirectBaseUrl: REDIRECT_BASE_URL,
   onEvent: logAmplitudeEvent,
   onIdentify: setUserId,
+  // Acquisition attribution (phase 70): the backend classifies landing → paid.
+  attributionApp: "landing",
   // Facebook/Instagram's in-app browser is how most ad traffic arrives —
   // never auto-redirect it into the dashboard even with a valid session,
   // since the silent window.location.replace + sandboxed-webview
