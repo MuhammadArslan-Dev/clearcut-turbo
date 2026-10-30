@@ -107,5 +107,51 @@ Not tracked on purpose: closing the **login** modal without verifying has no eve
 - Suggested funnel (Funnel chart, group by `download_option`): `Resizer Image Processed` → `Resizer Download Options Viewed` → `Resizer Download Option Selected` → `Resizer Image Downloaded`. PDF path only: `Option Selected` (`authentication_required = true`) → `Authentication Outcome` (`outcome = successful`, `context = download-pdf`) → `Resizer Free PDF Requested`.
 - The PDF lead list = a cohort of users who did `Resizer Free PDF Requested` (the verified number is on the user row from the login); nothing is stored in the database for this feature.
 
+## 12. Configurable download modes — Amplitude flags `hard_gate` / `soft_gate` (built 2026-10-30, results in §13)
+Request: three behaviours chosen **per exam / page** from Amplitude, without removing any existing one.
+
+| Mode | Flags (`hard_gate` / `soft_gate`) | Download tap does |
+|---|---|---|
+| **Legacy** | OFF / OFF (also: flags missing, fetch failed, timed out, or the invalid state below) | saves the processed image at once — exactly the pre-phase-68 behaviour: no OTP, no modal |
+| **Hard gate** | ON / OFF | the shared OTP login opens (phase 68's `download` gate, copy "Verify your number to download"); the file saves only after a successful verification |
+| **Soft gate** | OFF / ON | the "Your image is ready!" sheet (this phase): Image only = immediate; Image + free PDF = OTP, then the file |
+
+**Invalid state (both ON) — explicit rule:** treated as **Legacy** (fail-open: a configuration mistake must never block a download or silently pick a gate). It is made visible, not silent: `Resizer Image Downloaded` carries `download_mode_conflict: true`, the `$exposure` events are still sent for both flags, and a `console.warn` is logged. Fix = switch one flag off in Amplitude.
+
+**Where the flags are read.** Plain `fetch` to Amplitude's Experiment client endpoint (no new npm dependency, same endpoint and headers phase 66 documented): `GET https://api.lab.amplitude.com/sdk/v2/vardata?flag_keys=hard_gate,soft_gate` with `Authorization: Api-Key <client deployment key>` and `X-Amp-Exp-User: base64(JSON { user_id: <scope id>, device_id })`. The client key is public by design and hardcoded like phase 66's (`lib/experiment.ts`; env `NEXT_PUBLIC_AMPLITUDE_EXPERIMENT_KEY` overrides it, `off` disables evaluation = Legacy everywhere). Deployment: the existing client deployment `testing_price_99` (id 234889, project 673721); both flags live there (ids 1582143 `hard_gate`, 1582144 `soft_gate`), created **disabled**. A flag is ON when its variant key/value is `on`.
+
+**Exam / page context (isolation) — and a finding.** Remote evaluation does **not** match custom user properties (phase 66 saw it with `phone`; re-tested here with `user_properties.exam`, a top-level `exam`, a `context` condition and `user_properties.user_properties.exam`: none ever matched, 2+ minutes after the flag change), but it **does** match the built-in `user_id`, `device_id` and `language` (all three matched at once). So a page is evaluated as a **scope id** sent as `user_id`: **`tools:exam:<exam slug>`** on an exam page (`tools:exam:tnpsc`, the slug is passed explicitly by `ResizerSpokePage`), **`tools:tool:<tool_name>`** on any other tool page (`tools:tool:image-compressor`, `…:signature-compressor`, `…:add-name-date`, `…:resizer` for the generic hub). The segment in Amplitude is **"User ID is one of [scope ids]"**. No real person ever has such an id, so nothing reaches real users or other exams; the answer is cached **per scope id** (memory + `sessionStorage`, 10 min). A persisted random device id is sent only because the API wants one (rollout is 100 % per segment, nothing is bucketed per person).
+
+**Timing / failure.** The answer is prefetched when the tool mounts (idle). At the Download tap, an unresolved fetch is awaited for at most 1.5 s, then Legacy. Network error, non-200, bad JSON, missing key, disabled flag → Legacy. Nothing here can block or throw into a download.
+
+**Analytics (no duplicates, existing events kept).** `Resizer Image Downloaded` gains `download_mode` (`legacy|hard_gate|soft_gate`) and, only when both flags are ON, `download_mode_conflict`. `$exposure` (`flag_key`, `variant`) is sent once per flag and `exam|tool` per session, only when the flag is ON for that page (through the one analytics gate, so never from localhost / previews without the opt-in). Soft-gate events are unchanged; hard-gate uses the old login context `download` (events `Verification Sent`/`Authentication Outcome` + `tool_name`/`tool_page`).
+
+**Deploy consequence (read before shipping).** With both flags OFF the live behaviour becomes **Legacy** — i.e. today's soft-gate sheet disappears until `soft_gate` is switched ON for the exams that should keep it. Create/target the flags first, deploy after.
+
+Built as: `lib/downloadMode.ts` (pure rule), `lib/experiment.ts` (key, scope id, fetch, cache, exposure), `lib/useDownloadOptions.tsx` (mode switch), `loginGate.ts` (the `download` preset restored byte-for-byte from this morning's live `7b4fcb4`), `ResizerSpokePage` + `ResizeImageTool` prop `examSlug`, unit tests for the rule and the client.
+
+## 13. Download modes — flag configuration, results, limitations (2026-10-30)
+### Flag configuration you must do in Amplitude (project 673721, Experiment → Feature Flags)
+Both flags exist (`hard_gate` 1582143, `soft_gate` 1582144), **disabled, no segments** = every page is **Legacy**. To switch pages on:
+1. Open the flag → **Enable** it → add a **targeting segment**: condition **User ID** *is one of* the scope ids of the pages (examples: `tools:exam:tnpsc`, `tools:exam:htet`, `tools:tool:image-compressor`), rollout **100 %**, variant `on`. Leave "All other users" at **0 %** (that is what keeps every other page Legacy).
+2. A page must be in at most one of the two flags. Same scope id in both = invalid → Legacy + `download_mode_conflict`.
+3. "Everything except some pages" is also possible: first segment "User ID is one of [exceptions]" at 0 %, then set "All other users" to 100 %.
+4. New exam pages need nothing in code — only their scope id in a segment. Changes apply within a few minutes and on the next page load (answers are cached 10 min per browser session).
+**Before deploying this code:** with the flags disabled the live behaviour becomes Legacy, i.e. **today's soft-gate sheet disappears everywhere**. To keep it, enable `soft_gate` with the scope ids of the exams that should keep the sheet (or "All other users" 100 % on `soft_gate`) before the deploy.
+
+### What was verified (real Amplitude + headed Chromium + local backend on a scratch DB; test flags were temporary and are reset)
+- Unit tests: `downloadMode` 5 + `experiment` 11 = 16 pass (rule table, ON parsing, header contents, per-scope cache and isolation, in-flight dedupe, failure not cached, `off` key, timeout); `tsc` clean.
+- Real endpoint, scope ids with `hard_gate` on [tnpsc, ctet] and `soft_gate` on [htet, ctet]: `tools:exam:tnpsc` → hard ON / soft off; `htet` → soft ON; `ctet` → both ON; `reet` → both off; `tools:tool:image-compressor` → both off; `tnpsc` with a different device id → hard ON (not per person).
+- Browser, per mode: **both OFF** (`reet`, `image-compressor`) → file downloads at once, no modal; **both ON** (`ctet`) → Legacy download, `download_mode_conflict: true`, `$exposure` for both flags; **Amplitude unreachable** (request aborted on `tnpsc`) → Legacy download (fail-open); **hard gate** (`tnpsc`) → OTP login with this morning's copy ("Verify your number to download", chips), 0 downloads before OTP, wrong OTP → error and still 0 downloads, right OTP → exactly 1 download (`otp_verification_status: verified`), with a session → direct download (`already_verified`); **soft gate** (`htet`) → sheet; image only → direct download, no login; PDF option → OTP (wrong → none, right → 1 download + `Free PDF Requested`); with a session → direct, no OTP.
+- **Exam isolation** in one browser session: `htet` → sheet, `tnpsc` → login modal (closing it left the image and downloaded nothing), `reet` → direct download, `htet` again → sheet from cache. The flag request carried `tools:exam:<slug>` of the page each time.
+- Analytics: every `Resizer Image Downloaded` carries `download_mode` (+ `download_mode_conflict` only on a conflict); the hard-gate login events carry `context = "download"`, `tool_name`, `download_mode`; soft-gate events unchanged (+ `download_mode`); `$exposure` only for a flag that is ON on that page, once per session; no duplicate events in any run.
+
+### Limitations / notes
+- Targeting is by **scope id**, not by an Amplitude "user property" (see §12) — a segment on `exam` will silently never match. The flag descriptions say so.
+- The flag answer is fetched when the tool mounts; a Download tap on a very slow connection waits at most 1.5 s, then proceeds as Legacy (so a slow network can bypass a gate). Network/Amplitude failure also means Legacy. Both are deliberate (never block a download) and recorded only as `download_mode: legacy`.
+- `$exposure` is not sent on `localhost` / preview hosts (analytics gate), so flag-exposure analysis only exists for production traffic.
+- The deployment is the existing `testing_price_99` (misleading name; it also holds the old unused `autopay-offer-99`, which `?flag_keys=` keeps out of this request).
+- Not run: real iOS/Android devices, the Instagram in-app browser, a production deploy (nothing is pushed or deployed).
+
 ## 11. Next steps
-On your go-ahead: push the backend revert (`1cd962c`, removes the unused endpoint — its migration was never run, so no DB change), push the frontend follow-up, rebuild and redeploy tools. Before the PDF option is promoted, decide how n8n gets the lead list (Amplitude cohort or a new store).
+The DB-less follow-up and the bigger logo are live. The download modes (§12–13) are committed locally only: configure the flags per exam in Amplitude (§13), then push + rebuild + redeploy tools. Before the PDF option is promoted, decide how n8n gets the lead list (Amplitude cohort or a new store).

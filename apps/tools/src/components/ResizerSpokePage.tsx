@@ -163,6 +163,7 @@ export default function ResizerSpokePage({
             allowedPresets={allowedPresets}
             locale={locale}
             examName={exam.shortName}
+            examSlug={exam.slug}
           />
         </div>
 

@@ -903,6 +903,8 @@ interface ResizeImageToolProps {
   allowedPresets?: PresetKey[];
   /** Exam short name for analytics (spoke pages); undefined on the generic tool pages. */
   examName?: string;
+  /** Exam slug (spoke pages): the context the Amplitude download-gate flags are evaluated for (phase 71 §12). */
+  examSlug?: string;
   /** Hides the "Document type" tile grid entirely — the Add Name & Date page is its own dedicated single-purpose form in the reference, not a mode picked from a tile grid. Defaults to shown. */
   showPresetPicker?: boolean;
   locale?: Locale;
@@ -919,6 +921,7 @@ export default function ResizeImageTool({
   showPresetPicker = true,
   locale = "en",
   examName,
+  examSlug,
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
   const pathname = usePathname();
@@ -945,10 +948,13 @@ export default function ResizeImageTool({
   // CC-93: the resizer's funnel in Amplitude (upload → processed → download).
   const trackResizer = (event: string, props: Record<string, unknown> = {}) =>
     logAmplitudeEvent(event, { exam_name: examName ?? null, document_type: preset, locale, ...props });
-  // The "Your image is ready!" sheet (phase 71): every Download tap opens it.
+  // What a Download tap does (legacy / hard gate / soft gate sheet) is decided per
+  // exam and page by two Amplitude flags — phase 71 §12.
   const { requestDownload, modals: downloadModals } = useDownloadOptions({
     locale,
     track: (event, props) => trackResizer(`Resizer ${event}`, props),
+    tool: toolIdFromPath(pathname ?? ""),
+    exam: examSlug,
   });
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
@@ -1242,7 +1248,7 @@ export default function ResizeImageTool({
   // in state either way, so the file saves itself once the visitor has chosen.
   const handleDownload = () => {
     if (!result) return;
-    requestDownload(saveFile, { tool: toolIdFromPath(pathname ?? "") });
+    requestDownload(saveFile);
   };
 
   const handleShare = async () => {

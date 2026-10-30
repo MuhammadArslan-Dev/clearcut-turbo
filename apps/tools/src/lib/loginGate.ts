@@ -26,12 +26,51 @@ export interface LoginGateConfig {
   eventProps?: Record<string, string | boolean>;
 }
 
-export type LoginGatePreset = "download-pdf";
+export type LoginGatePreset = "download" | "download-pdf";
 
-// "Download Image & Get Free PDF" (phase 71): the visitor verifies a number, the
-// image downloads, and a practice-questions PDF follows on WhatsApp. A plain
-// "Download Image" never opens this gate.
+// Two presets, one per gated mode (phase 71 §12):
+//  - "download"     = HARD gate (Amplitude flag `hard_gate`): the verification is
+//                     mandatory before the file saves — phase 68's original copy.
+//  - "download-pdf" = SOFT gate's "Download Image & Get Free PDF" option: the
+//                     visitor verifies a number, the image downloads, and a
+//                     practice-questions PDF follows on WhatsApp.
+// Legacy mode (both flags OFF) never opens a gate.
 const PRESETS: Record<LoginGatePreset, Record<Locale, Omit<LoginGateConfig, "id">>> = {
+  download: {
+    en: {
+      title: "Verify your number to download",
+      subtitle: "Verify your mobile number with OTP to download your resized image for free.",
+      submitLabel: "Continue",
+      illustration: "image-lock",
+      featureChips: [
+        { icon: "gift", label: "100% Free Download" },
+        { icon: "lock", label: "Secure & Private" },
+      ],
+      otpSubmitLabel: "Verify & Download",
+    },
+    hi: {
+      title: "डाउनलोड के लिए अपना नंबर वेरिफ़ाई करें",
+      subtitle: "अपनी रिसाइज़ की हुई इमेज मुफ़्त डाउनलोड करने के लिए OTP से अपना मोबाइल नंबर वेरिफ़ाई करें।",
+      submitLabel: "आगे बढ़ें",
+      illustration: "image-lock",
+      featureChips: [
+        { icon: "gift", label: "100% मुफ़्त डाउनलोड" },
+        { icon: "lock", label: "सुरक्षित और निजी" },
+      ],
+      otpSubmitLabel: "वेरिफ़ाई करें और डाउनलोड करें",
+    },
+    mr: {
+      title: "डाउनलोडसाठी तुमचा नंबर व्हेरिफाय करा",
+      subtitle: "तुमची रिसाइझ केलेली इमेज मोफत डाउनलोड करण्यासाठी OTP ने तुमचा मोबाइल नंबर व्हेरिफाय करा.",
+      submitLabel: "पुढे जा",
+      illustration: "image-lock",
+      featureChips: [
+        { icon: "gift", label: "100% मोफत डाउनलोड" },
+        { icon: "lock", label: "सुरक्षित आणि खाजगी" },
+      ],
+      otpSubmitLabel: "व्हेरिफाय करा आणि डाउनलोड करा",
+    },
+  },
   "download-pdf": {
     en: {
       title: "Verify your number to get your free PDF",

@@ -1,90 +1,111 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { getToken } from "@clearcut/auth/token";
 import { normalizePage } from "@clearcut/auth/attribution";
 import { getDict, type Locale } from "./dictionary";
+import { resolveDownloadMode, type DownloadMode } from "./downloadMode";
+import { downloadFlagsWithin, fetchDownloadFlags, trackFlagExposures, type FlagContext } from "./experiment";
 import { getLoginGateConfig } from "./loginGate";
 import { useLoginGate } from "./useLoginGate";
 
 const DownloadOptionsModal = dynamic(() => import("@/components/DownloadOptionsModal"), { ssr: false });
 
-/** Which choice the visitor made. */
+/** Which choice the visitor made in the soft-gate sheet. */
 export type DownloadOption = "image_only" | "image_with_free_pdf";
 
 /**
  * Amplitude properties describing one download, handed to the tool's own
  * "downloaded" event so it carries exactly what happened (not what was
- * assumed): `authentication_required` is true only when this very download had
- * to verify a number; `otp_verification_status` is `not_required` (plain
- * download), `already_verified` (PDF option with a session that already
- * existed) or `verified` (PDF option, number verified with OTP just now).
+ * assumed): `download_mode` is the mode that really ran; `authentication_required`
+ * is true only when this very download had to verify a number;
+ * `otp_verification_status` is `not_required` (no OTP involved), `already_verified`
+ * (a session already existed) or `verified` (number verified with OTP just now).
+ * `download_option` exists only in the soft gate; `download_mode_conflict` only
+ * when both flags were ON (invalid → Legacy).
  */
 export interface DownloadMeta {
   tool_name: string;
   tool_page: string;
-  download_option: DownloadOption;
+  download_mode: DownloadMode;
+  download_mode_conflict?: true;
+  download_option?: DownloadOption;
   authentication_required: boolean;
   otp_verification_status: "not_required" | "already_verified" | "verified";
   pdf_requested: boolean;
 }
 
 type Track = (event: string, props?: Record<string, unknown>) => void;
-/** What the tool tells the hook about itself (the route name, e.g. "resizer"). */
-type RequestContext = { tool: string };
-type Pending = {
-  save: (meta: DownloadMeta) => void;
-  ctx: RequestContext;
-  base: { tool_name: string; tool_page: string };
-};
+type Base = Pick<DownloadMeta, "tool_name" | "tool_page" | "download_mode" | "download_mode_conflict">;
+type Pending = { save: (meta: DownloadMeta) => void; base: Base };
 
 /**
- * The "Your image is ready!" sheet for ANY Tools image tool (phase 71).
+ * The Download behaviour of ANY Tools image tool, chosen per exam / page by two
+ * Amplitude flags (phase 71 §12; rule table in lib/downloadMode.ts):
  *
- *   const { requestDownload, modals } = useDownloadOptions({ locale, track });
- *   requestDownload((meta) => saveTheFile(meta), { tool: "resizer", exam, preset });
+ *   const { requestDownload, modals } = useDownloadOptions({ locale, track, tool, exam });
+ *   requestDownload((meta) => saveTheFile(meta));
  *   ...
  *   return <>{...}{modals}</>;
  *
- *  - "Download Image"                -> save(meta) at once, no login (meta.download_option = "image_only").
- *  - "Download Image & Get Free PDF" -> the shared OTP login opens over the page
- *    (the tool's state — the processed image — is untouched), then
- *    save(meta) runs once (download_option = "image_with_free_pdf"). The lead is
- *    the verified number (already stored by the login) plus the Amplitude
- *    events below — nothing else is stored. A visitor who is already logged in
- *    skips the OTP.
- *  - Closing the sheet, or the login, downloads nothing.
+ *  - legacy (both flags OFF / unknown): save(meta) at once — no OTP, no modal.
+ *  - hard_gate: the shared OTP login opens over the page (the tool's state — the
+ *    processed image — is untouched) and save(meta) runs once after a successful
+ *    verification; a visitor who already has a session downloads at once.
+ *  - soft_gate: the "Your image is ready!" sheet. "Download Image" → save(meta)
+ *    at once; "Download Image & Get Free PDF" → the OTP login, then save(meta)
+ *    once. The lead is the verified number (stored by the login) plus the events
+ *    below — nothing else is stored.
+ *  Closing the sheet or the login downloads nothing.
  *
  * Analytics (docs/phases/71): `track` gets generic names ("Download Options
  * Viewed", "Download Option Selected", "Download Options Dismissed", "Free PDF
- * Requested"); the tool adds its own prefix and common properties. The login's
- * own events (Verification Sent / Resent / Failed, Authentication Outcome) carry
- * `tool_name`, `tool_page`, `download_option` through the gate's `eventProps`.
+ * Requested") — soft gate only; the tool adds its prefix and common properties.
+ * The login's own events carry `tool_name`, `tool_page`, `download_mode` (and
+ * `download_option`) through the gate's `eventProps`.
  */
-export function useDownloadOptions({ locale, track }: { locale: Locale; track?: Track }) {
+export function useDownloadOptions({
+  locale,
+  track,
+  tool,
+  exam,
+}: {
+  locale: Locale;
+  track?: Track;
+  /** resizer | image-compressor | signature-compressor | add-name-date */
+  tool: string;
+  /** Exam slug on an exam page (the flag context), undefined elsewhere. */
+  exam?: string | null;
+}) {
   const copy = getDict(locale).tool.downloadOptions;
   const { requireLogin, gate } = useLoginGate();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pending = useRef<Pending | null>(null);
+  const resolving = useRef(false);
 
-  const requestDownload = useCallback(
-    (save: Pending["save"], ctx: RequestContext) => {
-      const base = { tool_name: ctx.tool, tool_page: normalizePage(window.location.pathname).page };
-      pending.current = { save, ctx, base };
-      setMounted(true);
-      setOpen(true);
-      track?.("Download Options Viewed", { ...base, logged_in: Boolean(getToken()) });
-    },
-    [track],
-  );
+  const flagContext = useCallback((): FlagContext => ({ exam, tool, page: normalizePage(window.location.pathname).page }), [exam, tool]);
+
+  // Start the evaluation as soon as the tool is on screen, so the Download tap
+  // finds the answer already cached (cache is per exam|tool — never shared).
+  useEffect(() => {
+    const start = () => void fetchDownloadFlags(flagContext());
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(start, { timeout: 2000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(start, 300);
+    return () => clearTimeout(t);
+  }, [flagContext]);
+
+  const finish = useCallback((p: Pending, patch: Omit<DownloadMeta, keyof Base>) => p.save({ ...p.base, ...patch }), []);
 
   const dismiss = useCallback(() => {
     const p = pending.current;
     pending.current = null;
     setOpen(false);
-    if (p) track?.("Download Options Dismissed", p.base);
+    if (p) track?.("Download Options Dismissed", { tool_name: p.base.tool_name, tool_page: p.base.tool_page, download_mode: p.base.download_mode });
   }, [track]);
 
   const chooseImage = useCallback(() => {
@@ -92,16 +113,10 @@ export function useDownloadOptions({ locale, track }: { locale: Locale; track?: 
     pending.current = null;
     setOpen(false);
     if (!p) return;
-    const meta: DownloadMeta = {
-      ...p.base,
-      download_option: "image_only",
-      authentication_required: false,
-      otp_verification_status: "not_required",
-      pdf_requested: false,
-    };
-    track?.("Download Option Selected", { ...p.base, download_option: meta.download_option, authentication_required: false });
-    p.save(meta);
-  }, [track]);
+    const download_option: DownloadOption = "image_only";
+    track?.("Download Option Selected", { ...p.base, download_option, authentication_required: false });
+    finish(p, { download_option, authentication_required: false, otp_verification_status: "not_required", pdf_requested: false });
+  }, [track, finish]);
 
   const choosePdf = useCallback(() => {
     const p = pending.current;
@@ -113,19 +128,56 @@ export function useDownloadOptions({ locale, track }: { locale: Locale; track?: 
     requireLogin(
       { ...getLoginGateConfig("download-pdf", locale), eventProps: { ...p.base, download_option } },
       ({ verifiedNow }) => {
-        const meta: DownloadMeta = {
-          ...p.base,
-          download_option,
-          authentication_required: verifiedNow,
-          otp_verification_status: verifiedNow ? "verified" : "already_verified",
-          pdf_requested: true,
-        };
-        p.save(meta);
-        // The lead signal: this number asked for the free PDF (see docs/phases/71 §10).
-        track?.("Free PDF Requested", { ...p.base, download_option, otp_verification_status: meta.otp_verification_status });
+        const otp_verification_status = verifiedNow ? "verified" : "already_verified";
+        finish(p, { download_option, authentication_required: verifiedNow, otp_verification_status, pdf_requested: true });
+        // The lead signal: this verified number asked for the free PDF (see docs/phases/71 §10).
+        track?.("Free PDF Requested", { ...p.base, download_option, otp_verification_status });
       },
     );
-  }, [locale, requireLogin, track]);
+  }, [locale, requireLogin, track, finish]);
+
+  const requestDownload = useCallback(
+    async (save: (meta: DownloadMeta) => void) => {
+      if (resolving.current) return; // a second tap while the answer is still loading
+      resolving.current = true;
+      try {
+        const ctx = flagContext();
+        const flags = await downloadFlagsWithin(ctx);
+        const { mode, conflict } = resolveDownloadMode(flags);
+        if (flags) trackFlagExposures(flags, ctx);
+        if (conflict) {
+          console.warn("[tools] hard_gate and soft_gate are both ON for this page: falling back to Legacy (download_mode_conflict). Switch one off in Amplitude.");
+        }
+        const base: Base = {
+          tool_name: tool,
+          tool_page: ctx.page,
+          download_mode: mode,
+          ...(conflict ? { download_mode_conflict: true as const } : {}),
+        };
+        const download: Pending = { save, base };
+
+        if (mode === "legacy") {
+          finish(download, { authentication_required: false, otp_verification_status: "not_required", pdf_requested: false });
+        } else if (mode === "hard_gate") {
+          requireLogin({ ...getLoginGateConfig("download", locale), eventProps: base }, ({ verifiedNow }) =>
+            finish(download, {
+              authentication_required: verifiedNow,
+              otp_verification_status: verifiedNow ? "verified" : "already_verified",
+              pdf_requested: false,
+            }),
+          );
+        } else {
+          pending.current = download;
+          setMounted(true);
+          setOpen(true);
+          track?.("Download Options Viewed", { tool_name: base.tool_name, tool_page: base.tool_page, download_mode: mode, logged_in: Boolean(getToken()) });
+        }
+      } finally {
+        resolving.current = false;
+      }
+    },
+    [flagContext, tool, locale, requireLogin, track, finish],
+  );
 
   const modals: ReactNode = (
     <>
