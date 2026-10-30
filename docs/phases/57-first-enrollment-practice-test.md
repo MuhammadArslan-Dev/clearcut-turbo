@@ -3,7 +3,7 @@
 **Tickets:** (new, from user)
 **Repos:** CM dashboard + backend (`clearcutoff-main-backend`)
 **Branch:** `feature/first-enrollment-practice-test` (both repos) — not committed, not pushed
-**Status:** Built and tested live with Playwright (2026-10-28, real local user, MAHATET + CTET courses): desktop 1440 + mobile 390, en + hi + mr, error paths. `tsc`, `eslint`, `check:colors` pass. Not committed, not pushed. Remaining: backend feature test, `pw-` token cleanup, entry via the real subject-selection modal (needs a course with no subjects).
+**Status:** (see Revision 7 for the load-time fix) Built and tested live with Playwright (2026-10-28, real local user, MAHATET + CTET courses): desktop 1440 + mobile 390, en + hi + mr, error paths. `tsc`, `eslint`, `check:colors` pass. Not committed, not pushed. Remaining: backend feature test, `pw-` token cleanup, entry via the real subject-selection modal (needs a course with no subjects).
 **Created:** 2026-10-28
 
 ---
@@ -293,3 +293,55 @@ None.
 - [x] Navigation: View Explanation still expands a row; Continue to Preparation goes to `/preparation/<course>`; a completed course opened by URL is redirected to Preparation (gate), as before.
 - [x] Skeleton vs result: header, greeting, stat row, table identical on phone; desktop within 1-3 px (table 9 px). Top cards on phone follow the score text length (±24 px); footer 1 px.
 - [ ] Not tested: `hi`/`mr` result screens, a real phone.
+
+---
+
+## Revision 7 — Practice Test took 3-4 s to open: root cause + fix (2026-10-30)
+
+**Status:** Completed, measured and verified locally (backend branch `perf/practice-test-load`, frontend on `feature/practice-test-flag`; not committed in the backend, nothing deployed)
+
+### 1. Problem
+After *Take Practice Test* (or opening `/practice-test/{course}`) the skeletons stayed for 3-4 s.
+
+### 2. Where the time went (measured, local MySQL `clearcut`: 37k questions, 60k translations)
+| Step | Before |
+|---|---|
+| Enrolment lookup, sections (5 subjects), chapters | ~10 ms |
+| **`pick()`: one `WHERE EXISTS(question_trans ...) ORDER BY RAND() LIMIT n` per subject** | **3.3-4.6 s** (5 x ~800-950 ms, run one after the other) |
+| Load the 5 chosen questions + translations | ~3 ms |
+| Payload | 4-13 KB (not a factor) |
+
+Two causes inside that query (`EXPLAIN`):
+1. `exists(question_trans.correct_option between 1 and 4)` is planned as a semi-join that **scans all of `question_trans`** (38k rows, `correct_option` has no index) into a temporary table and filesorts it, per subject.
+2. `question_new.chapter_id` is a **`varchar(50)`** but the chapter ids were bound as integers, so MySQL compared numerically and scanned the whole `chapter_id` index (37,184 rows) instead of a range (491 rows). Same pitfall costs ~300 ms even after (1) is fixed.
+Smaller: Eloquent `pluck()` of ~3k ids hydrated models (80 ms vs 7 ms with the query builder). Frontend added a serial round trip (`user-state` check, then questions).
+
+### 3. Changes (no migration, no new index, no new dependency)
+- `FirstPracticeTestService::randomAnswerableIds()` replaces the `ORDER BY RAND()` query: candidate ids come from the `chapter_id` index (plain query-builder rows), are shuffled in PHP, and a small batch (max(4 x n, 20)) is checked against `question_trans` through its `question_new_id` index; the next batch is only read if too many were unanswerable. Same distribution as before (uniform among answerable questions), never a short sample while answerable questions exist.
+- `chapterIds()` returns **strings** (used by `pick()` and by the scope check of `submit` / `explanation`).
+- Selection, section mixing (one per subject per pass), scope rules, response shape and the answer-hiding rules are unchanged.
+- Frontend: `PracticeTestPage` starts the questions request while the "already completed?" check runs (the test still opens only after that check passes; a completed course still goes to Preparation). `PracticeTestPromptSheet` takes `courseCode` and prefetches the test while the prompt is open (`practiceTestQuery.ts`, same query key, 2 min cache, silent on failure, skipped when a test is already in progress).
+- Files: backend `app/Services/FirstPracticeTestService.php`, `tests/Feature/FirstPracticeTestTest.php`; frontend `practice-test/PracticeTestPage.tsx`, `PracticeTestPromptSheet.tsx`, new `practiceTestQuery.ts`, `PreparationShell.tsx`, `buy-sigle-course-modal.tsx` (one prop each).
+
+### 4. Measurements (same machine, same fixture enrolments, before vs after)
+Controller-level (in-process request through the kernel, 5 warm runs, median): UPTET **4282 ms -> 81 ms**, REET **3438 ms -> 61 ms**. `pick()` SQL time 4.5 s -> ~40 ms.
+Browser (headed Chromium, Next **dev** server, vardata mocked, 5 runs, median; "visible" = first question + Next button rendered):
+| Scenario | Old backend + old frontend | New backend | New backend + new frontend |
+|---|---|---|---|
+| A: open `/practice-test/{course}` directly (from navigation start) | 7670 ms (6744-12432) | 1921 ms (1828-2197) | **1741 ms** (1543-1935) |
+| B1: tap *Take* as soon as the prompt shows (click -> visible) | 5905 ms (5699-6062; one 30 s outlier) | ~1460 ms (3 clean runs: 1300 / 1463 / 1492) | **1408 ms** (1141-1593) |
+| B2: tap *Take* 3 s after the prompt shows | not measured | not measured | **1160 ms** (922-1304) |
+Questions request itself (start -> end, one sample each): ~4.6 s -> ~165 ms. In the new frontend the `user-state` check and the questions request start in the same millisecond (1652 / 1655 ms); with prompt prefetch exactly **one** questions GET per run.
+Dev-server numbers (no production build, HMR, hydration in dev); the absolute remainder (~1.2-1.7 s) is app boot + route chunk + the `user-state` check + entrance animation, not the test generation.
+
+### 5. Verified
+- Backend: `FirstPracticeTestTest` 8 passed (new: answerable-only, distinct, in scope, random across runs, < 1.5 s); old vs new "answerable" id set identical in 10/10 real sections; int vs string chapter binding returns identical rows (no non-canonical `chapter_id` values); `pint` clean.
+- Browser (new code): direct URL shows 5 distinct questions with 4 options each and no `correct_option` in the stored payload; full run answer x5 -> Finish -> result with score and time -> Continue -> `/preparation/...`; flag OFF direct URL -> Preparation with **0** test requests; completed course -> Preparation (now 1 questions GET happens in parallel, no error flash); prompt -> Skip -> Preparation (1 prefetch GET, harmless); `vitest` 9/9, `tsc`/`eslint` clean for the touched files.
+
+### 6. Remaining / not done
+- Production numbers are not measured (prod DB size/plan may differ; the new queries use indexes in any plan). Not tested on a real phone or over a slow network.
+- Prefetch gain is modest (~250 ms, B1 vs B2) now that the API is fast; costs one extra cheap GET when a learner skips. Remove `courseCode` props if that is not wanted.
+- The `user-state` check still runs before the test shows (needed for the completed-course redirect).
+- Same pitfall likely elsewhere: ~58 `where/whereIn('chapter_id'|'section_id'|'topic_id', ...)` calls across the backend (Daily Test, Mini Test, ...) pass integers to `varchar` columns. Not touched (unrelated); worth a separate look, or a migration changing the columns to bigint.
+- Deploy: backend change must go to `main` of the backend repo (auto-deploys); dashboard change to `main` here.
+

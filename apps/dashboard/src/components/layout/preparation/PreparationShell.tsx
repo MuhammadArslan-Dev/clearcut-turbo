@@ -279,6 +279,7 @@ export default function PreparationShell({
       <LockedContentModal />
       <PracticeTestPromptSheet
         isOpen={practiceGate?.course === courseCode && practiceGate.status === "open"}
+        courseCode={courseCode}
         onTake={takePracticeTest}
         onSkip={skipPracticeFromPreparation}
       />

@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { Target } from "lucide-react";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
@@ -10,6 +12,7 @@ import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { ChevronIcon } from "@/components/ui/icons";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { prefetchPracticeTest } from "./practiceTestQuery";
 
 /**
  * Asked right after a learner's first subjects are saved (and again on the
@@ -27,14 +30,21 @@ import { useIsMobile } from "@/hooks/useIsMobile";
  */
 export default function PracticeTestPromptSheet({
   isOpen,
+  courseCode,
   onTake,
   onSkip,
 }: {
   isOpen: boolean;
+  /** The course's group_code: the test is prefetched while the prompt is open. */
+  courseCode?: string | null;
   onTake: () => void;
   onSkip: () => void;
 }) {
   const t = useTranslations("PracticeTest");
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (isOpen && courseCode) prefetchPracticeTest(queryClient, courseCode);
+  }, [isOpen, courseCode, queryClient]);
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
   const rise = (delay: number) =>

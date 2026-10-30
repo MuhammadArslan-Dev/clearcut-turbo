@@ -33,6 +33,7 @@ import PracticeTestResult from "./PracticeTestResult";
 import PracticeFooter from "./PracticeFooter";
 import { ExplanationSkeleton, PracticeTestResultSkeleton, PracticeTestSkeleton } from "./PracticeTestSkeletons";
 import { usePracticeElapsed } from "./usePracticeElapsed";
+import { practiceQuestionsKey as QUESTIONS_KEY } from "./practiceTestQuery";
 import {
   clearPracticeSession,
   loadPracticeSession,
@@ -43,7 +44,6 @@ import {
   type PracticeSession,
 } from "./practiceTestSession";
 
-const QUESTIONS_KEY = (courseId: string) => ["first-practice-test", courseId];
 
 // Next question enters from the right and the previous one from the left (the
 // outgoing one leaves the opposite way). `custom` is the direction: 1 forward, -1 back.
@@ -142,7 +142,10 @@ export default function PracticeTestPage() {
   } = useQuery({
     queryKey: QUESTIONS_KEY(courseId),
     queryFn: () => getPracticeTestQuestions(courseId),
-    enabled: restored && gateOpen && !session,
+    // Loads while the already-completed check runs (one round trip less); the test only
+    // opens once that check has passed (see the effect below), so a completed course
+    // still goes straight to Preparation.
+    enabled: restored && !session,
     staleTime: Infinity,
     gcTime: 0,
     retry: 1,
@@ -150,7 +153,7 @@ export default function PracticeTestPage() {
   });
 
   useEffect(() => {
-    if (!fetched || session) return;
+    if (!fetched || session || !gateOpen) return;
     // Nothing in the question bank for these subjects: don't strand the
     // learner on an empty test, send them on to Preparation.
     if (fetched.length === 0) {
@@ -158,7 +161,7 @@ export default function PracticeTestPage() {
       return;
     }
     setSession(newPracticeSession(fetched));
-  }, [fetched, session, goToPreparation]);
+  }, [fetched, session, gateOpen, goToPreparation]);
 
   // ---- elapsed time: silent, no limit, shown on the result ----
   const sessionRef = useRef(session);
@@ -327,7 +330,7 @@ export default function PracticeTestPage() {
 
   // ---------- states ----------
 
-  if (!restored || (!session && !isError)) {
+  if (!restored || (!session && (!isError || !gateOpen))) {
     return <PracticeTestSkeleton />;
   }
 

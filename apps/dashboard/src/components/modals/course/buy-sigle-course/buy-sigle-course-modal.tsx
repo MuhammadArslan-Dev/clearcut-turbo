@@ -554,6 +554,7 @@ export default function BuySigleCourseModal() {
       </AnimatePresence>
       <PracticeTestPromptSheet
         isOpen={isOpen && mode === "single" && practicePrompt !== null}
+        courseCode={practicePrompt?.groupCode}
         onTake={() => continueFromPrompt("practice-test")}
         onSkip={() => continueFromPrompt("preparation")}
       />
