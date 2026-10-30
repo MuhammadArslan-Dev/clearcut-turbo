@@ -11,11 +11,35 @@ import CrossIcon from "../icons/cross-icon";
  * Each app serves them from its own public/images/auth/ (see `assetBase`). */
 export type AuthIllustrationName = "study" | "image-lock" | "otp-phone";
 
-const ART: Record<AuthIllustrationName, { file: string; width: number; height: number }> = {
-  // width/height are the CSS size; the files are exactly 2x for sharp retina.
-  study: { file: "auth-study.webp", width: 260, height: 115 },
-  "image-lock": { file: "auth-image-lock.webp", width: 200, height: 105 },
-  "otp-phone": { file: "auth-otp-phone.webp", width: 180, height: 111 },
+// width/height are the intrinsic CSS size (the files are exactly 2x for sharp
+// retina) and reserve the box; `heightClass` is the rendered height, written
+// out in full so Tailwind can see it. Phone: grows with the free height of the
+// screen (100dvh - 620px, i.e. what is left once the rest of the sheet is
+// placed), between a small floor and a cap, so a tall phone is not left with a
+// tiny picture and a blank screen while a 640px one still fits without
+// scrolling. md+: the previous 12vh rule.
+const ART: Record<
+  AuthIllustrationName,
+  { file: string; width: number; height: number; heightClass: string }
+> = {
+  study: {
+    file: "auth-study.webp",
+    width: 260,
+    height: 115,
+    heightClass: "h-[clamp(57px,calc(100dvh-620px),150px)] md:h-[clamp(57px,12vh,115px)]",
+  },
+  "image-lock": {
+    file: "auth-image-lock.webp",
+    width: 200,
+    height: 105,
+    heightClass: "h-[clamp(52px,calc(100dvh-620px),140px)] md:h-[clamp(52px,12vh,105px)]",
+  },
+  "otp-phone": {
+    file: "auth-otp-phone.webp",
+    width: 180,
+    height: 111,
+    heightClass: "h-[clamp(55px,calc(100dvh-620px),150px)] md:h-[clamp(55px,12vh,111px)]",
+  },
 };
 
 /** Fixed width/height + lazy loading: the reserved box means the picture
@@ -39,15 +63,9 @@ export function AuthIllustration({
       height={art.height}
       loading="lazy"
       decoding="async"
-      // Height follows the screen (12vh, between half size and full size) so a
-      // short laptop viewport never pushes the sheet past its max height; the
-      // width/height attributes keep the aspect ratio, so there is no shift.
-      className="mx-auto select-none [@media(max-height:600px)]:hidden"
-      style={{
-        width: "auto",
-        height: `clamp(${Math.round(art.height * 0.5)}px, 12vh, ${art.height}px)`,
-        maxWidth: "100%",
-      }}
+      // Height follows the screen (see ART); object-contain keeps the picture
+      // undistorted if a narrow phone has to shrink its width.
+      className={`mx-auto w-auto max-w-full select-none object-contain [@media(max-height:600px)]:hidden ${art.heightClass}`}
     />
   );
 }

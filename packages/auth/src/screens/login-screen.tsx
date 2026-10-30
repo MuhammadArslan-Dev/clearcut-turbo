@@ -363,11 +363,11 @@ export function createLoginScreen({
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-modal-title"
-              className="relative h-full bg-white flex flex-col justify-between md:justify-center gap-3 px-6 pt-5 pb-5 md:px-8 md:pt-5 md:pb-5"
+              className="relative min-h-full bg-white flex flex-col md:justify-center gap-3 px-6 pt-5 pb-14 md:px-8 md:pt-5 md:pb-5"
             >
               <AuthCloseButton onClick={closeModal} />
 
-              <div className="flex flex-col gap-3 w-full items-center">
+              <div className="flex flex-col gap-3 w-full items-center max-md:my-auto">
                 <MainAppLogo width={130} />
 
                 {illustration && <AuthIllustration name={illustration} assetBase={assetBase} />}

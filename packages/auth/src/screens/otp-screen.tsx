@@ -312,7 +312,7 @@ export function createOtpScreen({
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-otp-title"
-              className="relative h-full bg-white flex flex-col justify-center gap-3 px-6 pt-5 pb-5 md:px-8 md:pt-5 md:pb-5"
+              className="relative min-h-full bg-white flex flex-col justify-center gap-3 px-6 pt-5 pb-14 md:px-8 md:pt-5 md:pb-5"
             >
               <AuthCloseButton onClick={handleClose} />
 

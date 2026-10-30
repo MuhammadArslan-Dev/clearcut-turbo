@@ -57,6 +57,10 @@ export function DrawerSheet({
             direction === "right" ? "right-0" : "left-0",
           )}
           variants={drawerVariants[direction]}
+          // 100dvh follows the phone's collapsing browser bars (a plain 100%
+          // can reach under the bottom bar and hide the footer); h-full above
+          // stays as the fallback where dvh is unsupported.
+          style={{ height: "100dvh" }}
           initial="hidden"
           animate="visible"
           exit="exit"
