@@ -115,6 +115,12 @@ describe("downloadFlagsWithin", () => {
   });
 });
 
+describe("flagScopeId", () => {
+  it("is lower-case, so a differently cased slug can never miss its segment", () => {
+    expect(flagScopeId({ exam: "TNPSC ", tool: "resizer", page: "/" })).toBe("tools:exam:tnpsc");
+  });
+});
+
 describe("encodeUser", () => {
   it("is plain base64 JSON: the scope id (user_id) and the device id", () => {
     expect(JSON.parse(atob(encodeUser(tnpsc, "dev-1")))).toEqual({ user_id: "tools:exam:tnpsc", device_id: "dev-1" });

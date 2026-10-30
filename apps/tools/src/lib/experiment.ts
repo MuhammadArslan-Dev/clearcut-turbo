@@ -50,7 +50,7 @@ function vardataUrl(): string {
 
 /** The id a page is evaluated as — and the value to put in the flag's "User ID is one of" segment. */
 export function flagScopeId(ctx: FlagContext): string {
-  return ctx.exam ? `tools:exam:${ctx.exam}` : `tools:tool:${ctx.tool}`;
+  return ctx.exam ? `tools:exam:${ctx.exam.trim().toLowerCase()}` : `tools:tool:${ctx.tool}`;
 }
 
 export function flagCacheKey(ctx: FlagContext): string {

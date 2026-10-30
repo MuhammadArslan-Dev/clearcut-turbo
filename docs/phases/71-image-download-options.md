@@ -146,6 +146,9 @@ Both flags exist (`hard_gate` 1582143, `soft_gate` 1582144), **disabled, no segm
 - **Exam isolation** in one browser session: `htet` → sheet, `tnpsc` → login modal (closing it left the image and downloaded nothing), `reet` → direct download, `htet` again → sheet from cache. The flag request carried `tools:exam:<slug>` of the page each time.
 - Analytics: every `Resizer Image Downloaded` carries `download_mode` (+ `download_mode_conflict` only on a conflict); the hard-gate login events carry `context = "download"`, `tool_name`, `download_mode`; soft-gate events unchanged (+ `download_mode`); `$exposure` only for a flag that is ON on that page, once per session; no duplicate events in any run.
 
+### Step-by-step guide with screenshots
+`docs/feature_guide/README.md` — how to switch an exam to the soft / hard gate in Amplitude (screenshots of the real flag page, numbered).
+
 ### Limitations / notes
 - Targeting is by **scope id**, not by an Amplitude "user property" (see §12) — a segment on `exam` will silently never match. The flag descriptions say so.
 - The flag answer is fetched when the tool mounts; a Download tap on a very slow connection waits at most 1.5 s, then proceeds as Legacy (so a slow network can bypass a gate). Network/Amplitude failure also means Legacy. Both are deliberate (never block a download) and recorded only as `download_mode: legacy`.
