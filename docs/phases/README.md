@@ -114,4 +114,4 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-10-24: added phases 35–40 (tour, CC-94, CC-74, CC-95 rest, CC-113, CC-122). Jira: CC-51 → Testing; CC-1, CC-44, CC-86 → Done.
 
 - 2026-10-30: added phases 68–70 (tools login gate, auth modal redesign, acquisition attribution).
-- 2026-10-30: added phase 71 (image download options sheet + free-PDF request, tools + backend).
+- 2026-10-30: added phase 71 (image download options sheet + free-PDF lead via Amplitude, tools; a DB request table was built and removed again).

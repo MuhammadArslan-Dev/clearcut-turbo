@@ -1242,7 +1242,7 @@ export default function ResizeImageTool({
   // in state either way, so the file saves itself once the visitor has chosen.
   const handleDownload = () => {
     if (!result) return;
-    requestDownload(saveFile, { tool: toolIdFromPath(pathname ?? ""), exam: examName, preset });
+    requestDownload(saveFile, { tool: toolIdFromPath(pathname ?? "") });
   };
 
   const handleShare = async () => {

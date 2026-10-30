@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { getToken } from "@clearcut/auth/token";
 import { normalizePage } from "@clearcut/auth/attribution";
 import { getDict, type Locale } from "./dictionary";
 import { getLoginGateConfig } from "./loginGate";
 import { useLoginGate } from "./useLoginGate";
-import { flushPendingPdfRequest, recordPdfRequest, toSlug, type PdfRequestContext } from "./api/pdfRequestApi";
 
 const DownloadOptionsModal = dynamic(() => import("@/components/DownloadOptionsModal"), { ssr: false });
 
@@ -32,7 +31,8 @@ export interface DownloadMeta {
 }
 
 type Track = (event: string, props?: Record<string, unknown>) => void;
-type RequestContext = Omit<PdfRequestContext, "locale">;
+/** What the tool tells the hook about itself (the route name, e.g. "resizer"). */
+type RequestContext = { tool: string };
 type Pending = {
   save: (meta: DownloadMeta) => void;
   ctx: RequestContext;
@@ -50,9 +50,10 @@ type Pending = {
  *  - "Download Image"                -> save(meta) at once, no login (meta.download_option = "image_only").
  *  - "Download Image & Get Free PDF" -> the shared OTP login opens over the page
  *    (the tool's state — the processed image — is untouched), then
- *    save(meta) runs once (download_option = "image_with_free_pdf") and the verified visitor's request for
- *    the free PDF is recorded for the WhatsApp delivery workflow. A visitor who
- *    is already logged in skips the OTP and is still recorded.
+ *    save(meta) runs once (download_option = "image_with_free_pdf"). The lead is
+ *    the verified number (already stored by the login) plus the Amplitude
+ *    events below — nothing else is stored. A visitor who is already logged in
+ *    skips the OTP.
  *  - Closing the sheet, or the login, downloads nothing.
  *
  * Analytics (docs/phases/71): `track` gets generic names ("Download Options
@@ -67,11 +68,6 @@ export function useDownloadOptions({ locale, track }: { locale: Locale; track?: 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pending = useRef<Pending | null>(null);
-
-  // A request that could not be delivered earlier (offline) goes out now.
-  useEffect(() => {
-    flushPendingPdfRequest();
-  }, []);
 
   const requestDownload = useCallback(
     (save: Pending["save"], ctx: RequestContext) => {
@@ -125,14 +121,8 @@ export function useDownloadOptions({ locale, track }: { locale: Locale; track?: 
           pdf_requested: true,
         };
         p.save(meta);
-        void recordPdfRequest({ ...p.ctx, exam: toSlug(p.ctx.exam), locale }).then((saved) =>
-          track?.("Free PDF Requested", {
-            ...p.base,
-            download_option,
-            otp_verification_status: meta.otp_verification_status,
-            request_saved: saved,
-          }),
-        );
+        // The lead signal: this number asked for the free PDF (see docs/phases/71 §10).
+        track?.("Free PDF Requested", { ...p.base, download_option, otp_verification_status: meta.otp_verification_status });
       },
     );
   }, [locale, requireLogin, track]);
