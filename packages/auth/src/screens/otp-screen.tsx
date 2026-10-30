@@ -312,19 +312,19 @@ export function createOtpScreen({
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-otp-title"
-              className="relative h-full bg-white flex flex-col justify-center gap-5 px-6 pt-7 pb-8 md:px-8 md:pt-6 md:pb-6"
+              className="relative h-full bg-white flex flex-col justify-center gap-3 px-6 pt-5 pb-5 md:px-8 md:pt-5 md:pb-5"
             >
               <AuthCloseButton onClick={handleClose} />
 
-              <div className="flex flex-col gap-4 w-full items-center">
-                <MainAppLogo width={140} />
+              <div className="flex flex-col gap-3 w-full items-center">
+                <MainAppLogo width={130} />
 
                 <AuthIllustration name="otp-phone" assetBase={assetBase} />
 
                 <div className="flex flex-col gap-1 w-full items-center text-center">
                   <h2
                     id="auth-otp-title"
-                    className="heading-large !font-bold text-[var(--color-text-gray-normal)]"
+                    className="heading-medium !font-bold text-[var(--color-text-gray-normal)]"
                   >
                     Enter OTP
                   </h2>
@@ -345,7 +345,7 @@ export function createOtpScreen({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 w-full items-center">
+              <div className="flex flex-col gap-3 w-full items-center">
                 {/* OTP Input */}
                 <div className="w-full">
                   <MainInput

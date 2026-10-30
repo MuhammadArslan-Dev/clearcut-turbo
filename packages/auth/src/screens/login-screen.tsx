@@ -363,24 +363,24 @@ export function createLoginScreen({
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-modal-title"
-              className="relative h-full bg-white flex flex-col justify-between md:justify-center gap-5 px-6 pt-7 pb-8 md:px-8 md:pt-6 md:pb-6"
+              className="relative h-full bg-white flex flex-col justify-between md:justify-center gap-3 px-6 pt-5 pb-5 md:px-8 md:pt-5 md:pb-5"
             >
               <AuthCloseButton onClick={closeModal} />
 
-              <div className="flex flex-col gap-4 w-full items-center">
-                <MainAppLogo width={140} />
+              <div className="flex flex-col gap-3 w-full items-center">
+                <MainAppLogo width={130} />
 
                 {illustration && <AuthIllustration name={illustration} assetBase={assetBase} />}
 
                 <div className="flex flex-col gap-1 w-full items-center text-center">
                   <h2
                     id="auth-modal-title"
-                    className="heading-large !font-bold text-[var(--color-text-gray-normal)]"
+                    className="heading-medium !font-bold text-[var(--color-text-gray-normal)]"
                   >
                     {title}
                   </h2>
                   {subtitle && (
-                    <p className="body-large !font-normal text-[var(--color-text-gray-subtle)]">
+                    <p className="body-medium !font-normal text-[var(--color-text-gray-subtle)]">
                       {subtitle}
                     </p>
                   )}
@@ -389,7 +389,7 @@ export function createLoginScreen({
                 {/* Timer */}
                 {marketing === "course-marketing" && <SeatTimer />}
 
-                <div className="flex flex-col gap-4 w-full items-center">
+                <div className="flex flex-col gap-3 w-full items-center">
                   {/* Only rendered once useTruecallerAvailability confirms
                       the app is on this device (cached across every
                       clearcutoff.in property — see that hook's docblock).
@@ -474,13 +474,13 @@ export function createLoginScreen({
 
                   {/* CONTEXT STRIP — icon chips (tools) or the trial pill (signup) */}
                   {featureChips && featureChips.length > 0 ? (
-                    <div className="flex w-full items-start justify-center gap-6 pt-1">
+                    <div className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-2">
                       {featureChips.map((chip, i) => (
                         <FeatureChip key={i} icon={chip.icon} label={chip.label} />
                       ))}
                     </div>
                   ) : marketing === "course-marketing" || !showTrialBanner ? null : (
-                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-input-primary-soft)] px-3 py-3 body-small text-[var(--color-text-gray-subtle)]">
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-input-primary-soft)] px-3 py-2.5 body-small text-[var(--color-text-gray-subtle)]">
                       <span className="text-[var(--color-brand)]">
                         <GiftIcon />
                       </span>

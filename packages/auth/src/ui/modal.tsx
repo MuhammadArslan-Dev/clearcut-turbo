@@ -56,7 +56,7 @@ export function Modal({
           <Overlay variants="modal" onClick={onClose} />
 
           <motion.div
-            className={`${maxWidth} bg-white rounded-lg shadow-xl w-full ${maxHeight} overflow-hidden relative`}
+            className={`${maxWidth} bg-white rounded-lg shadow-xl w-full ${maxHeight} overflow-hidden relative flex flex-col`}
             onClick={(e) => e.stopPropagation()}
           >
             {isHeader && (
@@ -73,7 +73,7 @@ export function Modal({
               </header>
             )}
 
-            <div className="overflow-y-auto no-scrollbar">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">{children}</div>
           </motion.div>
         </motion.div>
       </>

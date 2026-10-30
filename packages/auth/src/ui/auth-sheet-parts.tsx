@@ -39,8 +39,15 @@ export function AuthIllustration({
       height={art.height}
       loading="lazy"
       decoding="async"
-      className="mx-auto select-none"
-      style={{ width: art.width, height: art.height, maxWidth: "100%" }}
+      // Height follows the screen (12vh, between half size and full size) so a
+      // short laptop viewport never pushes the sheet past its max height; the
+      // width/height attributes keep the aspect ratio, so there is no shift.
+      className="mx-auto select-none [@media(max-height:600px)]:hidden"
+      style={{
+        width: "auto",
+        height: `clamp(${Math.round(art.height * 0.5)}px, 12vh, ${art.height}px)`,
+        maxWidth: "100%",
+      }}
     />
   );
 }
@@ -108,11 +115,11 @@ export function FeatureChip({
   label: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-brand)]">
+    <div className="flex items-center gap-2">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-brand)]">
         {icon === "gift" ? <GiftIcon /> : <LockIcon />}
       </span>
-      <span className="body-small !font-medium text-[var(--color-text-gray-normal)] max-w-[110px]">{label}</span>
+      <span className="body-small !font-medium text-[var(--color-text-gray-normal)]">{label}</span>
     </div>
   );
 }
