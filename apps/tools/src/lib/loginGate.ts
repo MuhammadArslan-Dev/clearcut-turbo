@@ -20,15 +20,22 @@ export interface LoginGateConfig {
   featureChips?: { icon: "gift" | "lock"; label: string }[];
   /** Primary button of the OTP step. */
   otpSubmitLabel?: string;
+  /** Extra properties added to the shared auth events (Verification Sent /
+   * Resent / Failed, Authentication Outcome) while this gate is open, next to
+   * `context` — e.g. which tool / download option opened the login. */
+  eventProps?: Record<string, string | boolean>;
 }
 
-export type LoginGatePreset = "download";
+export type LoginGatePreset = "download-pdf";
 
+// "Download Image & Get Free PDF" (phase 71): the visitor verifies a number, the
+// image downloads, and a practice-questions PDF follows on WhatsApp. A plain
+// "Download Image" never opens this gate.
 const PRESETS: Record<LoginGatePreset, Record<Locale, Omit<LoginGateConfig, "id">>> = {
-  download: {
+  "download-pdf": {
     en: {
-      title: "Verify your number to download",
-      subtitle: "Verify your mobile number with OTP to download your resized image for free.",
+      title: "Verify your number to get your free PDF",
+      subtitle: "Verify your mobile number with OTP. We'll download your image and send a free practice questions PDF on WhatsApp.",
       submitLabel: "Continue",
       illustration: "image-lock",
       featureChips: [
@@ -38,8 +45,8 @@ const PRESETS: Record<LoginGatePreset, Record<Locale, Omit<LoginGateConfig, "id"
       otpSubmitLabel: "Verify & Download",
     },
     hi: {
-      title: "डाउनलोड के लिए अपना नंबर वेरिफ़ाई करें",
-      subtitle: "अपनी रिसाइज़ की हुई इमेज मुफ़्त डाउनलोड करने के लिए OTP से अपना मोबाइल नंबर वेरिफ़ाई करें।",
+      title: "फ्री PDF पाने के लिए अपना नंबर वेरिफ़ाई करें",
+      subtitle: "OTP से अपना मोबाइल नंबर वेरिफ़ाई करें। हम आपकी इमेज डाउनलोड करेंगे और WhatsApp पर प्रैक्टिस प्रश्नों की मुफ़्त PDF भेजेंगे।",
       submitLabel: "आगे बढ़ें",
       illustration: "image-lock",
       featureChips: [
@@ -49,8 +56,8 @@ const PRESETS: Record<LoginGatePreset, Record<Locale, Omit<LoginGateConfig, "id"
       otpSubmitLabel: "वेरिफ़ाई करें और डाउनलोड करें",
     },
     mr: {
-      title: "डाउनलोडसाठी तुमचा नंबर व्हेरिफाय करा",
-      subtitle: "तुमची रिसाइझ केलेली इमेज मोफत डाउनलोड करण्यासाठी OTP ने तुमचा मोबाइल नंबर व्हेरिफाय करा.",
+      title: "मोफत PDF मिळवण्यासाठी तुमचा नंबर व्हेरिफाय करा",
+      subtitle: "OTP ने तुमचा मोबाइल नंबर व्हेरिफाय करा. आम्ही तुमची इमेज डाउनलोड करू आणि WhatsApp वर सराव प्रश्नांची मोफत PDF पाठवू.",
       submitLabel: "पुढे जा",
       illustration: "image-lock",
       featureChips: [

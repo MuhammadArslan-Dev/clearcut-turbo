@@ -35,10 +35,13 @@ const ART: Record<
     heightClass: "h-[clamp(52px,calc(100dvh-620px),140px)] md:h-[clamp(52px,12vh,105px)]",
   },
   "otp-phone": {
+    // File is 540x333 (1.8x a 300 px upscale of the mockup art, soft shapes only):
+    // the OTP step has the least content, so on a phone its picture is the
+    // biggest of the three and takes whatever height the rest leaves.
     file: "auth-otp-phone.webp",
-    width: 180,
-    height: 111,
-    heightClass: "h-[clamp(55px,calc(100dvh-620px),150px)] md:h-[clamp(55px,12vh,111px)]",
+    width: 270,
+    height: 167,
+    heightClass: "h-[clamp(64px,calc(30dvh-22px),215px)] md:h-[clamp(55px,12vh,111px)]",
   },
 };
 

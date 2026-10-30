@@ -69,3 +69,5 @@ Live, headed Chrome via Playwright MCP on `next dev` :3055, OTP **mocked** (`/v1
 - PASS hi and mr modal title/subtitle; 360 px width: no horizontal scroll, modal fits
 - NOT RUN: tapping the finished-image button (same handler, not clicked separately), Syllabus Tracker save/load regression, landing `/start` regression, analytics `context` (Amplitude is off on localhost), Safari/in-app-browser download after the async OTP step
 Findings: the shared login modal has no `role="dialog"` and no visible close button (Esc works) — pre-existing in `@clearcut/auth`, not changed here.
+
+> **Update 2026-10-30 (phase 71):** the resizer download no longer requires login. `Download Image` saves at once; only `Download Image & Get Free PDF` uses this gate (preset `download-pdf`, replaces the old `download` preset). Syllabus Tracker is unchanged.

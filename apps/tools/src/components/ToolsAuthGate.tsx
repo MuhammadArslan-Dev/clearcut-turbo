@@ -25,9 +25,9 @@ export default function ToolsAuthGate({
   }, [onAuthenticated]);
 
   useEffect(() => {
-    setAuthContext(copy.id);
+    setAuthContext(copy.id, copy.eventProps);
     return () => setAuthContext(null);
-  }, [copy.id]);
+  }, [copy.id, copy.eventProps]);
 
   useEffect(() => {
     if (requestId > 0) useAuthStore.getState().goToLogin();

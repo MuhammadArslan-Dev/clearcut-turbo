@@ -30,11 +30,14 @@ export function setAuthenticatedHandler(handler: ((result: AuthSuccessResult) =>
 }
 
 let authContext: string | null = null;
+let authEventProps: Record<string, string | boolean> | null = null;
 
-/** ToolsAuthGate registers WHY the login is open (a LoginGateConfig id) so the
- * shared auth events carry it as a `context` property — no new events. */
-export function setAuthContext(context: string | null) {
+/** ToolsAuthGate registers WHY the login is open (a LoginGateConfig id, plus
+ * its optional `eventProps`) so the shared auth events carry them as properties
+ * — no new events. */
+export function setAuthContext(context: string | null, eventProps?: Record<string, string | boolean>) {
   authContext = context;
+  authEventProps = context ? (eventProps ?? null) : null;
 }
 
 const api = createApiClient({
@@ -54,7 +57,7 @@ export const { AuthModal, useAuthStore } = createAuthFeature({
   redirectBaseUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in",
   // Records the auth funnel (Verification Sent / Resent, …) from Tools too.
   onEvent: (name, properties) =>
-    logAmplitudeEvent(name, authContext ? { ...properties, context: authContext } : properties),
+    logAmplitudeEvent(name, authContext ? { ...properties, ...authEventProps, context: authContext } : properties),
   onIdentify: setAmplitudeUserId,
   // Acquisition attribution (phase 70): the backend classifies tools → organic.
   attributionApp: "tools",

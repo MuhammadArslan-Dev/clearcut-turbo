@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Button from "@clearcut/ui/button";
 import Text from "@clearcut/ui/text";
@@ -8,8 +9,8 @@ import { Card } from "@clearcut/ui/card";
 import { getDict, Locale } from "@/lib/dictionary";
 import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
 import { encodeJpegWithinBudget } from "@/lib/jpegBudget";
-import { getLoginGateConfig } from "@/lib/loginGate";
-import { useLoginGate } from "@/lib/useLoginGate";
+import { useDownloadOptions, type DownloadMeta } from "@/lib/useDownloadOptions";
+import { toolIdFromPath } from "@/lib/toolId";
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
 
@@ -920,7 +921,7 @@ export default function ResizeImageTool({
   examName,
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
-  const { requireLogin, gate: loginGate } = useLoginGate();
+  const pathname = usePathname();
   const PRESETS = buildPresets(locale, photoSpec, signatureSpec, { thumbSpec, rightThumbSpec, declarationSpec });
   // Tiles follow the order of allowedPresets (an exam's document order), not the
   // PRESETS object's own key order.
@@ -944,6 +945,11 @@ export default function ResizeImageTool({
   // CC-93: the resizer's funnel in Amplitude (upload → processed → download).
   const trackResizer = (event: string, props: Record<string, unknown> = {}) =>
     logAmplitudeEvent(event, { exam_name: examName ?? null, document_type: preset, locale, ...props });
+  // The "Your image is ready!" sheet (phase 71): every Download tap opens it.
+  const { requestDownload, modals: downloadModals } = useDownloadOptions({
+    locale,
+    track: (event, props) => trackResizer(`Resizer ${event}`, props),
+  });
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
   const [includeDate, setIncludeDate] = useState(false);
@@ -1219,7 +1225,7 @@ export default function ResizeImageTool({
       preset
     ] + ".jpg";
 
-  const saveFile = () => {
+  const saveFile = (meta: DownloadMeta) => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result.url;
@@ -1228,14 +1234,15 @@ export default function ResizeImageTool({
     a.click();
     a.remove();
     setDownloaded(true);
-    trackResizer("Resizer Image Downloaded", { in_app_browser: isInAppBrowser() });
+    trackResizer("Resizer Image Downloaded", { in_app_browser: isInAppBrowser(), ...meta });
   };
 
-  // Downloading needs a verified mobile number (shared OTP login, no redirect):
-  // the processed image stays in state and saves itself once verified.
+  // Download opens the two-option sheet: save at once, or verify a number (shared
+  // OTP login, no redirect) to also get the free PDF. The processed image stays
+  // in state either way, so the file saves itself once the visitor has chosen.
   const handleDownload = () => {
     if (!result) return;
-    requireLogin(getLoginGateConfig("download", locale), saveFile);
+    requestDownload(saveFile, { tool: toolIdFromPath(pathname ?? ""), exam: examName, preset });
   };
 
   const handleShare = async () => {
@@ -1879,7 +1886,7 @@ export default function ResizeImageTool({
           </Text>
         </div>
       </Card>
-      {loginGate}
+      {downloadModals}
     </div>
   );
 }

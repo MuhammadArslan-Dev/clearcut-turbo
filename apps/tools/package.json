@@ -19,6 +19,7 @@
     "@clearcut/auth": "workspace:*",
     "@clearcut/design-tokens": "workspace:*",
     "@clearcut/error-reporting": "workspace:*",
+    "@clearcut/hooks": "workspace:*",
     "@clearcut/ui": "workspace:*",
     "@sentry/browser": "^10.62.0",
     "clsx": "^2.1.1",

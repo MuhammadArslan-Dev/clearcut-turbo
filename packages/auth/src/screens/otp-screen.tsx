@@ -312,26 +312,28 @@ export function createOtpScreen({
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-otp-title"
-              className="relative min-h-full bg-white flex flex-col justify-center gap-3 px-6 pt-5 pb-14 md:px-8 md:pt-5 md:pb-5"
+              className="relative min-h-full bg-white flex flex-col justify-center gap-[clamp(14px,2.6dvh,30px)] md:gap-3 px-6 pt-5 pb-14 md:px-8 md:pt-5 md:pb-5"
             >
               <AuthCloseButton onClick={handleClose} />
 
-              <div className="flex flex-col gap-3 w-full items-center">
+              <div className="flex flex-col gap-[clamp(10px,1.8dvh,20px)] md:gap-3 w-full items-center">
                 <MainAppLogo width={130} />
 
                 <AuthIllustration name="otp-phone" assetBase={assetBase} />
 
+                {/* Phone: a larger title and text (the token classes carry
+                    !important, so the size is chosen in JS, not with md:). */}
                 <div className="flex flex-col gap-1 w-full items-center text-center">
                   <h2
                     id="auth-otp-title"
-                    className="heading-medium !font-bold text-[var(--color-text-gray-normal)]"
+                    className={`${isMobile ? "heading-xlarge" : "heading-medium"} !font-bold text-[var(--color-text-gray-normal)]`}
                   >
                     Enter OTP
                   </h2>
-                  <p className="body-large !font-normal text-[var(--color-text-gray-subtle)]">
+                  <p className={`${isMobile ? "heading-small" : "body-large"} !font-normal text-[var(--color-text-gray-subtle)]`}>
                     We&apos;ve sent a {OTP_LENGTH}-digit OTP to
                   </p>
-                  <p className="flex items-center gap-2 body-large !font-semibold text-[var(--color-text-gray-normal)]">
+                  <p className={`flex items-center gap-2 ${isMobile ? "heading-small" : "body-large"} !font-semibold text-[var(--color-text-gray-normal)]`}>
                     +91 {phone.slice(0, 5)} {phone.slice(5)}
                     <button
                       type="button"
@@ -345,7 +347,7 @@ export function createOtpScreen({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 w-full items-center">
+              <div className="flex flex-col gap-[clamp(10px,1.6dvh,18px)] md:gap-3 w-full items-center">
                 {/* OTP Input */}
                 <div className="w-full">
                   <MainInput
@@ -365,8 +367,8 @@ export function createOtpScreen({
                     value={otp}
                     placeholder={`Enter ${OTP_LENGTH}-digit OTP`}
                     aria-label={`${OTP_LENGTH}-digit OTP`}
-                    className="h-[52px]"
-                    inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                    className="h-[52px] max-md:h-14"
+                    inputClassName="body-large !font-semibold placeholder:!font-normal text-[var(--color-text-gray-normal)]"
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, "");
                       setOtp(val);

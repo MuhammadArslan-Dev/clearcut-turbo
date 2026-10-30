@@ -436,7 +436,7 @@ export function createLoginScreen({
                       error={error}
                       maxLength={10}
                       className="h-[52px]"
-                      inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
+                      inputClassName="body-large !font-semibold placeholder:!font-normal text-[var(--color-text-gray-normal)]"
                       onChange={(e) => validatePhone(e.target.value)}
                       inputPrefix={<IndiaPhonePrefix />}
                       showError={false}
