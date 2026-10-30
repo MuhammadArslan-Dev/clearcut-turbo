@@ -102,3 +102,16 @@ After saving, press **Activate flag** (step 1's picture, button 4). The status c
 
 ---
 Screenshots were taken from the real flag page on 2026-10-30 (soft gate, `673721`). The red numbers were added to the screenshots; the draft shown in them was **discarded, not saved** — the flags are still Inactive with no segments.
+
+---
+
+## Practice Test flag (dashboard, `practice_test`)
+
+Flag `practice_test` (Amplitude -> Experiment -> Feature Flags, project 673721) decides whether a learner gets the first-enrollment Practice Test. It is **enabled at 100 %**, so everyone sees it today.
+
+- **Turn the test off for everybody:** open the flag and set *All other users* to **0 %** (or disable the flag).
+- **Only some learners:** add a targeting segment **User ID is one of** [backend user uuids] at 100 %, and set *All other users* to 0 %; or just lower the percentage for a gradual rollout.
+- Custom user properties (exam, phone...) are **not** matched by remote evaluation, so targeting by exam is not possible with this flag.
+- Flag OFF, unreachable (ad-blocker, network) or slower than 1.5 s means: no sheet, no practice-test page, the learner goes straight to the Preparation page.
+- Changes apply within a few minutes; each browser session caches the answer for 10 minutes.
+- Details: `docs/phases/72-practice-test-feature-flag.md`.

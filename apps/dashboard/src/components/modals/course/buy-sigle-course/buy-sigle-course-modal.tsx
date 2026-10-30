@@ -33,6 +33,8 @@ import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
 import PracticeTestPromptSheet from "@/components/features/practice-test/PracticeTestPromptSheet";
 import { getCourseState, offerPracticeTest, skipPracticeTest } from "@/lib/api/userState";
+import { isPracticeTestEnabled } from "@/lib/experiments/practiceTestFlag";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function BuySigleCourseModal() {
   const { isOpen, close, mode, data } = useCourseStore();
@@ -46,6 +48,7 @@ export default function BuySigleCourseModal() {
   const { levels: levelsRaw = [], loading, error } = useLevels(data?.id);
 
   const router = useRouter();
+  const { user } = useAuth();
 
   /* ---------------------------------- state ---------------------------------- */
   const [step, setStep] = useState(0);
@@ -210,6 +213,15 @@ export default function BuySigleCourseModal() {
         // (kept on the backend per user + course, so it holds across devices).
         // If that can't be read, offer it: it is skippable and harmless.
         const groupCode: string = req.data.group_code;
+        // Amplitude flag `practice_test` (phase 72): OFF, not confirmed within
+        // 1.5 s or any failure -> no sheet, and no `offered` state is written,
+        // straight to Preparation.
+        const practiceTestOn = await isPracticeTestEnabled(user?.uuid);
+        if (!practiceTestOn) {
+          close();
+          router.push(`/preparation/${groupCode}?subject_selected=1`);
+          return;
+        }
         const alreadyTaken = await getCourseState(groupCode)
           .then((state) => state.practice_test_status === "completed")
           .catch(() => false);
@@ -259,7 +271,7 @@ export default function BuySigleCourseModal() {
     } finally {
       setSubmitting(false);
     }
-  }, [data?.id, selectedPath, submitting, modalT]);
+  }, [data?.id, selectedPath, submitting, modalT, user?.uuid]);
 
   const continueFromPrompt = useCallback(
     (path: "practice-test" | "preparation") => {

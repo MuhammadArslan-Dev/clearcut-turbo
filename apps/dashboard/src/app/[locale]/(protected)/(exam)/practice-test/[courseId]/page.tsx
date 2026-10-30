@@ -1,5 +1,5 @@
-import PracticeTestPage from "@/components/features/practice-test/PracticeTestPage";
+import PracticeTestFlagGate from "@/components/features/practice-test/PracticeTestFlagGate";
 
 export default function Page() {
-  return <PracticeTestPage />;
+  return <PracticeTestFlagGate />;
 }

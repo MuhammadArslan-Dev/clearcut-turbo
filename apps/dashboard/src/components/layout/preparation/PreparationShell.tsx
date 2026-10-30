@@ -18,6 +18,8 @@ import { changeCourse, MyCoursesResponse } from "@/lib/dashboard/learning";
 import { isApiError } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { claimGuide, getCourseState, skipPracticeTest } from "@/lib/api/userState";
+import { isPracticeTestEnabled } from "@/lib/experiments/practiceTestFlag";
+import { useAuth } from "@/providers/AuthProvider";
 import PracticeTestPromptSheet from "@/components/features/practice-test/PracticeTestPromptSheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
@@ -113,6 +115,7 @@ export default function PreparationShell({
   }, [params?.courseId]);
 
   const router = useRouter();
+  const { user: authUser, loading: authLoading } = useAuth();
   useStreakTracker();
 
   const { course, setGuideShownThisSession } = usePreparationStore();
@@ -141,17 +144,23 @@ export default function PreparationShell({
   useEffect(() => {
     if (!courseCode || courseCode !== urlCourse) return;
     if (practiceGate?.course === courseCode) return;
+    // Wait for the user so the flag can be read (a missing user is OFF, not "unknown").
+    if (authLoading) return;
     setPracticeGate({ course: courseCode, status: "checking" });
-    getCourseState(courseCode)
+    // Amplitude flag `practice_test` (phase 72): OFF / unconfirmed -> never
+    // re-ask. The `offered` state is left untouched, so if the flag comes back a
+    // learner who never answered is asked again.
+    isPracticeTestEnabled(authUser?.uuid)
+      .then((on) => (on ? getCourseState(courseCode) : null))
       .then((state) => {
         if (urlCourseRef.current !== courseCode) return;
-        setPracticeGate({ course: courseCode, status: state.practice_test_status === "offered" ? "open" : "done" });
+        setPracticeGate({ course: courseCode, status: state?.practice_test_status === "offered" ? "open" : "done" });
       })
       .catch(() => {
         if (urlCourseRef.current === courseCode) setPracticeGate({ course: courseCode, status: "done" });
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseCode, urlCourse]);
+  }, [courseCode, urlCourse, authLoading, authUser?.uuid]);
 
   const takePracticeTest = () => {
     if (courseCode) router.push(`/practice-test/${courseCode}`);
