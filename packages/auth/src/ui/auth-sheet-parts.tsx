@@ -2,6 +2,7 @@
 
 import React from "react";
 import CrossIcon from "../icons/cross-icon";
+import MainAppLogo from "../icons/main-app-logo";
 
 // Building blocks of the approved login / OTP sheet design (phase 69), shared
 // by LoginScreen and OTPScreen so the two steps (and every app that mounts
@@ -71,6 +72,14 @@ export function AuthIllustration({
       className={`mx-auto w-auto max-w-full select-none object-contain [@media(max-height:600px)]:hidden ${art.heightClass}`}
     />
   );
+}
+
+/** The brand logo at the top of both sheets. The SVG is 239:61, so the height is
+ * derived from the width (a fixed 61 px box around a 130 px logo made it look
+ * tiny): phone 190 px wide, desktop 160 px. */
+export function AuthLogo({ isMobile }: { isMobile: boolean }) {
+  const width = isMobile ? 190 : 160;
+  return <MainAppLogo width={width} height={Math.round((width * 61) / 239)} />;
 }
 
 export function AuthCloseButton({ onClick }: { onClick: () => void }) {

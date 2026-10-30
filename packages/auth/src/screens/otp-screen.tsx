@@ -12,10 +12,10 @@ import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { setToken } from "../token";
 import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
-import MainAppLogo from "../icons/main-app-logo";
 import {
   AuthCloseButton,
   AuthIllustration,
+  AuthLogo,
   ArrowLeftIcon,
   KeyIcon,
   PencilIcon,
@@ -317,7 +317,7 @@ export function createOtpScreen({
               <AuthCloseButton onClick={handleClose} />
 
               <div className="flex flex-col gap-[clamp(10px,1.8dvh,20px)] md:gap-3 w-full items-center">
-                <MainAppLogo width={130} />
+                <AuthLogo isMobile={isMobile} />
 
                 <AuthIllustration name="otp-phone" assetBase={assetBase} />
 

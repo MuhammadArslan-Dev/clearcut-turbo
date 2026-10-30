@@ -14,11 +14,11 @@ import {
 } from "../verification-events";
 import { Modal } from "../ui/modal";
 import { TruecallerButton } from "../ui/truecaller-button";
-import MainAppLogo from "../icons/main-app-logo";
 import ShieldCheckIcon from "../icons/shield-check-icon";
 import {
   AuthCloseButton,
   AuthIllustration,
+  AuthLogo,
   ArrowRightIcon,
   FeatureChip,
   GiftIcon,
@@ -368,7 +368,7 @@ export function createLoginScreen({
               <AuthCloseButton onClick={closeModal} />
 
               <div className="flex flex-col gap-3 w-full items-center max-md:my-auto">
-                <MainAppLogo width={130} />
+                <AuthLogo isMobile={isMobile} />
 
                 {illustration && <AuthIllustration name={illustration} assetBase={assetBase} />}
 
