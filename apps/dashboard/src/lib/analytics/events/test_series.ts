@@ -54,6 +54,11 @@ export interface TestSeriesEventPayloads {
     section_id?: string;
     section_name?: string;
     test_session_id: string;
+    // Sent by the Practice Test and Daily Test ("practice_test" | "daily_test").
+    test_type?: string;
+    course_id?: string;
+    exam?: string;
+    total_questions?: number;
   };
 
   'Question Viewed': {

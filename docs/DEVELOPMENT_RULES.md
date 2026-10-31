@@ -76,6 +76,7 @@ Backend: Laravel 12 at `C:\laragon\www\clearcutoff-main-backend`, API at `http:/
 
 ### 2.5 Analytics
 - Dashboard uses Amplitude via `lib/analytics/*`; event names/payloads are typed in `types.ts` + `events/*`. `ANALYTICS_EVENT_CATALOG.ts` is documentation only — never import it.
+- Practice Test and Daily Test reuse the test-series events (`Test Started` / `Test Submitted` / `Test Abandoned`) through the `trackLite*` helpers in `lib/analytics/testFunnel.ts`, with `test_type` = `practice_test` / `daily_test`. Never add event names for a new kind of test; add a `test_type` value.
 
 ---
 

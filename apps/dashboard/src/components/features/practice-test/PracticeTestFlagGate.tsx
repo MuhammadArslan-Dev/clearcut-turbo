@@ -6,7 +6,6 @@ import { useRouter } from "@/i18n/navigation";
 import { usePracticeTestEnabled } from "@/lib/experiments/usePracticeTestEnabled";
 import PracticeTestPage from "./PracticeTestPage";
 import { PracticeTestSkeleton } from "./PracticeTestSkeletons";
-import { clearPracticeSession } from "./practiceTestSession";
 
 /**
  * Amplitude flag `practice_test` (phase 72) in front of the test route. ON: the
@@ -21,7 +20,8 @@ export default function PracticeTestFlagGate() {
 
   useEffect(() => {
     if (enabled !== false) return;
-    clearPracticeSession(courseId);
+    // The saved attempt is deliberately kept: "false" also means a flag read that failed or timed out
+    // (the answer is cached for 10 min only), and a reload must not throw an attempt away for that.
     router.replace(`/preparation/${courseId}`);
   }, [enabled, courseId, router]);
 

@@ -52,6 +52,7 @@ import BottomNavWrap from "@/components/features/navigation/bottom-bar/dashboard
 import DashboardShell from "@/components/layout/dasbboard/DashboardShell";
 import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import { useModalStore } from "@/store/modal/useModalStore";
+import { trackLiteTestAbandoned, trackLiteTestStarted, trackLiteTestSubmitted, watchTestAbandoned } from "@/lib/analytics/testFunnel";
 import {
   ChevronIcon,
   LogoutDoorIcon,
@@ -268,12 +269,48 @@ export default function DailyTestAttemptPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion?.question_id]);
 
+  // Test Started / Submitted / Abandoned: the test-series events with test_type "daily_test".
+  const enrollment = useEnrollmentForCourse(courseId);
+  const examShortName = history?.exam.short_name;
+  const analyticsBase = useCallback(
+    (attemptId: string, totalQuestions: number, sectionName: string | null) => ({
+      kind: "daily_test" as const,
+      testId: String(testId),
+      sessionId: attemptId,
+      courseId: enrollment?.group_code ?? undefined,
+      exam: examShortName,
+      sectionName: sectionName ?? undefined,
+      totalQuestions,
+    }),
+    [testId, enrollment?.group_code, examShortName],
+  );
+  // Wall-clock start of this page visit (a resumed attempt counts from the resume).
+  const attemptStartedAtRef = React.useRef<number | null>(null);
+  const answersRef = React.useRef(answers);
+  answersRef.current = answers;
+  useEffect(() => {
+    if (state.phase !== "attempting") return;
+    attemptStartedAtRef.current ??= Date.now();
+    const base = analyticsBase(state.attemptId, state.questions.length, state.sectionName);
+    trackLiteTestStarted(base);
+    return watchTestAbandoned((reason) => trackLiteTestAbandoned(base, reason, Object.keys(answersRef.current).length));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAttemptId]);
+
   const handleSubmit = useCallback(
-    async (finalAnswers?: Record<number, number>) => {
+    async (finalAnswers?: Record<number, number>, reason: "manual" | "time_up" = "manual") => {
       if (state.phase !== "attempting") return;
       setSubmitting(true);
       try {
         const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers);
+        const picked = Object.keys(finalAnswers ?? answers).length;
+        trackLiteTestSubmitted(analyticsBase(state.attemptId, state.questions.length, state.sectionName), {
+          correct: res.data.score,
+          unattempted: state.questions.length - picked,
+          timeTakenSeconds: attemptStartedAtRef.current != null ? (Date.now() - attemptStartedAtRef.current) / 1000 : undefined,
+          reason,
+          language: activeLocale,
+        });
         setCachedResult(state.attemptId, res.data);
         // Backend submission is the source of truth from here on — the
         // local draft for this attempt would otherwise sit in storage
@@ -296,7 +333,7 @@ export default function DailyTestAttemptPage() {
         setSubmitting(false);
       }
     },
-    [state, answers, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, flow, courseId, testId],
+    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, flow, courseId, testId],
   );
 
   const goToIndex = useCallback(
@@ -549,7 +586,7 @@ export default function DailyTestAttemptPage() {
             time={
               <LiveTimeLeft
                 duration={totalDuration}
-                onComplete={() => handleSubmit()}
+                onComplete={() => handleSubmit(undefined, "time_up")}
                 labels={{
                   timeLeft: t("attempt.timeLeft"),
                   hours: t("attempt.hours"),

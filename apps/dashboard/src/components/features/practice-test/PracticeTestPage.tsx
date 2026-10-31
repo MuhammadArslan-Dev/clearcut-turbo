@@ -16,6 +16,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { getPracticeExplanation, getPracticeTestQuestions, submitPracticeTest, type PracticeQuestion } from "@/lib/api/firstPracticeTest";
 import { getCourseState } from "@/lib/api/userState";
+import { trackLiteTestAbandoned, trackLiteTestStarted, trackLiteTestSubmitted, watchTestAbandoned } from "@/lib/analytics/testFunnel";
 import AttemptTopbar from "@/components/features/attempt-ui/AttemptTopbar";
 import AttemptSummaryStrip from "@/components/features/attempt-ui/AttemptSummaryStrip";
 import AttemptProgress from "@/components/features/attempt-ui/AttemptProgress";
@@ -241,6 +242,34 @@ export default function PracticeTestPage() {
     [update],
   );
 
+  // Test Started / Submitted / Abandoned: the test-series events with test_type "practice_test".
+  const analyticsBase = useCallback(
+    (s: PracticeSession) => ({
+      kind: "practice_test" as const,
+      testId: `practice_test:${courseId}`,
+      sessionId: `practice_test:${courseId}:${s.startedAt}`,
+      courseId,
+      exam: examName || undefined,
+      totalQuestions: s.questions.length,
+    }),
+    [courseId, examName],
+  );
+
+  const startedAt = session?.startedAt;
+  const inProgress = !!session && !session.finishedAt;
+  useEffect(() => {
+    const s = sessionRef.current;
+    if (s && inProgress) trackLiteTestStarted(analyticsBase(s));
+  }, [startedAt, inProgress, analyticsBase]);
+
+  useEffect(() => {
+    if (!inProgress) return;
+    return watchTestAbandoned((reason) => {
+      const s = sessionRef.current;
+      if (s && !s.finishedAt) trackLiteTestAbandoned(analyticsBase(s), reason, Object.keys(s.answers).length);
+    });
+  }, [startedAt, inProgress, analyticsBase]);
+
   const finish = useCallback(async () => {
     if (!session || finishing || session.finishedAt) return;
     // Time stops at the tap, not when the server answers.
@@ -256,6 +285,15 @@ export default function PracticeTestPage() {
         })),
       );
       const checks = Object.fromEntries(results.map((r) => [r.question_id, r]));
+      // Same "Test Submitted" as a test-series exam (test_type practice_test); after the save succeeded.
+      const unattempted = session.questions.filter((item) => session.answers[item.question_id] == null).length;
+      trackLiteTestSubmitted(analyticsBase(session), {
+        correct: results.filter((r) => r.is_correct).length,
+        unattempted,
+        timeTakenSeconds: elapsedMs / 1000,
+        reason: "manual",
+        language: activeLocale,
+      });
       update((s) => ({ ...s, checks, finishedAt: Date.now(), elapsedMs }));
     } catch {
       // Stay on the test so nothing is lost; Finish can be tapped again.
@@ -263,7 +301,7 @@ export default function PracticeTestPage() {
     } finally {
       setFinishing(false);
     }
-  }, [session, finishing, courseId, update, readElapsed]);
+  }, [session, finishing, courseId, update, readElapsed, analyticsBase, activeLocale]);
 
   const toggleMark = useCallback(() => {
     if (!q) return;

@@ -3,6 +3,7 @@
 import {
     init as amplitudeInit,
     track as amplitudeTrack,
+    flush as amplitudeFlush,
     Identify,
     identify as amplitudeIdentify,
     setUserId as amplitudeSetUserId,
@@ -90,6 +91,28 @@ export function trackEvent<TName extends AnalyticsEventName>(
 
     const eventName = formatEventName(name);
     amplitudeTrack(eventName, (payload ?? {}) as Record<string, any>);
+}
+
+/** True when an event tracked now would be handed to the SDK (enabled, allowed host, initialised). */
+export function canTrackEvents(): boolean {
+    if (!AMPLITUDE_ENABLED) return false;
+    internalInit();
+    return isInitialized;
+}
+
+/**
+ * trackEvent + flush for events fired while the page is being unloaded (pagehide).
+ * The SDK sends asynchronously (Timeline setTimeout(0), then a 1 s flush timer),
+ * so a plain track() inside pagehide is dropped with the page. flush() drains
+ * the SDK pipeline through microtasks only and sends with a keepalive fetch,
+ * which the browser completes after the page is gone.
+ */
+export function trackEventOnExit<TName extends AnalyticsEventName>(
+    name: TName,
+    payload?: AnalyticsEventPayload<TName>,
+) {
+    trackEvent(name, payload);
+    if (isInitialized) void amplitudeFlush();
 }
 
 export function setAnalyticsUser(
