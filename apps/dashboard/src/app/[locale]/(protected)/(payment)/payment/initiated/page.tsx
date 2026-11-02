@@ -18,6 +18,7 @@ import StarIcon from "@/components/ui/icons/star-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useLevels } from "@/hooks/onboarding/useLevels";
+import { useAutopayFallback } from "@/hooks/payment/useAutopayFallback";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import {
@@ -55,6 +56,7 @@ import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
+import { clearAutopayAttempt, saveAutopayAttempt } from "@/lib/payment/autopayFallback";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
 import PlanCard from "@/components/features/payment/PlanCard";
@@ -391,10 +393,10 @@ export default function InitiatedPage() {
     type: selectVariant === "1month" ? "6months" : selectVariant,
     // onClose: close, // window.close() — kills tab on mobile before pollVerifyPayment finishes
     onClose: () => { },
-    onSuccess: () => {
+    onSuccess: (paid) => {
       setRedirecting(true);
       router.push(
-        `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}`,
+        `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${paid?.source ?? source}&price=${paid?.price ?? selectedPrice}`,
       );
     },
     onFailure: () => {
@@ -421,6 +423,18 @@ export default function InitiatedPage() {
       plan: selectVariant,
     },
   });
+
+  // One-time fallback after an autopay attempt (CC-168). The payment hook above
+  // already does the return check for this page.
+  const { offer: offerFallback, sheet: autopayFallbackSheet } = useAutopayFallback({
+    courseId,
+    exam: data,
+    price: getPriceForVariant("1month-onetime", pricing, data?.short_name),
+    returnCheck: false,
+  });
+  // handleSubscriptionPayment's checkout callbacks outlive the render they were made in.
+  const offerFallbackRef = React.useRef(offerFallback);
+  offerFallbackRef.current = offerFallback;
 
   /* ---------------------------------- handlers ---------------------------------- */
   // "Continue free" / back arrow (CC-63). Opened straight from a link
@@ -672,6 +686,7 @@ export default function InitiatedPage() {
           razorpay_signature: string;
         }) => {
           outcomeReported = true;
+          clearAutopayAttempt();
           trackPaymentEvent("Payment Outcome", {
             outcome: "payment_successful",
             billing_type: "auto_renew",
@@ -775,6 +790,7 @@ export default function InitiatedPage() {
               payment_session_id: res.subscription.razorpay_subscription_id,
               ...payFunnelProps(),
             });
+            void offerFallbackRef.current("dismissed");
           },
         },
       };
@@ -795,6 +811,7 @@ export default function InitiatedPage() {
           const { error } = errorResponse;
 
           outcomeReported = true;
+          clearAutopayAttempt();
           trackPaymentEvent("Payment Outcome", {
             outcome: "payment_failed",
             billing_type: "auto_renew",
@@ -865,6 +882,7 @@ export default function InitiatedPage() {
       );
       razorpay.open();
       checkoutOpened = true;
+      saveAutopayAttempt({ subscriptionId: res.subscription.id, courseId });
       trackPaymentEvent("Checkout Opened", { billing_type: "auto_renew", ...payFunnelProps() });
     } catch (error) {
       logger.error(error, {
@@ -1230,6 +1248,7 @@ export default function InitiatedPage() {
                 {modalT("continueFree")}
               </button>
             </div>
+            {autopayFallbackSheet}
             <ContinueFreeSheet
               isOpen={continueFreeOpen}
               onAnswer={handleContinueFreeAnswer}

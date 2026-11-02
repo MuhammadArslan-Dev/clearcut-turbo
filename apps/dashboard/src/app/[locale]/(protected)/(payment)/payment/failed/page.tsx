@@ -13,7 +13,9 @@ import { TrophyIcon } from "lucide-react";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
-import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
+import { useAutopayFallback } from "@/hooks/payment/useAutopayFallback";
+import { getPaymentPricing, type PaymentPricing } from "@/lib/payment/payment";
+import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
@@ -66,6 +68,24 @@ export default function FailedPage() {
     return Number.isFinite(n) && n > 0 ? n : null;
   }, [get]);
 
+  // One-time fallback after a failed autopay attempt (CC-168). In the treatment
+  // arm it opens by itself; the page underneath stays as it was.
+  const [pricing, setPricing] = React.useState<PaymentPricing | null>(null);
+  useEffect(() => {
+    if (!failedAutopay) return;
+    getPaymentPricing().then(setPricing).catch(() => setPricing(null));
+  }, [failedAutopay]);
+  const { offer: offerFallback, arm: fallbackArm, sheet: autopayFallbackSheet } = useAutopayFallback({
+    courseId,
+    exam: data,
+    price: getPriceForVariant("1month-onetime", pricing, data?.short_name),
+    returnCheck: failedAutopay,
+    stayOnFailure: true,
+  });
+  useEffect(() => {
+    if (failedAutopay && fallbackArm && data?.id) void offerFallback("failed_page");
+  }, [failedAutopay, fallbackArm, data?.id, offerFallback]);
+
   /* ---------------------------------- handlers ---------------------------------- */
   const handleBack = useCallback(() => {
     openCourseModal("payment-failed-warning", data!);
@@ -108,6 +128,7 @@ export default function FailedPage() {
 
   return (
     <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center sm:px-4">
+      {autopayFallbackSheet}
       <div className="w-full sm:h-auto h-dvh sm:max-w-[600px]  flex flex-col justify-between items-center gap-4">
         {" "}
         {/* Header */}

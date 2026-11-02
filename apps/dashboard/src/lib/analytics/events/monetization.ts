@@ -16,7 +16,11 @@ export type MonetizationEventName =
   | 'Save Offer Accepted'
   // New moments with no existing event (CC-69 / CC-63), same naming style.
   | 'Checkout Opened'
-  | 'Continue Free Clicked';
+  | 'Continue Free Clicked'
+  // One-time fallback after an autopay attempt didn't go through (CC-168).
+  | 'Autopay Fallback Shown'
+  | 'Autopay Fallback Tapped'
+  | 'Autopay Fallback Dismissed';
 
 
 export interface MonetizationEventPayloads {
@@ -104,6 +108,22 @@ export interface MonetizationEventPayloads {
     reason: 'expensive' | 'prefer_one_time' | 'exploring' | 'later' | 'payment_issue' | 'skipped' | 'closed';
     // link = the "Continue free learning" link; back = browser back / swipe back.
     trigger?: 'link' | 'back';
+  } & PayContext;
+
+  // CC-168. Shown also fires for the holdout arm (displayed: false), at the
+  // moment it would have seen the sheet, so both arms have a starting point.
+  'Autopay Fallback Shown': {
+    trigger?: 'dismissed' | 'pending_timeout' | 'failed_page';
+    arm: 'on' | 'holdout';
+    displayed: boolean;
+  } & PayContext;
+  'Autopay Fallback Tapped': {
+    trigger?: 'dismissed' | 'pending_timeout' | 'failed_page';
+    arm: 'on';
+  } & PayContext;
+  'Autopay Fallback Dismissed': {
+    trigger?: 'dismissed' | 'pending_timeout' | 'failed_page';
+    arm: 'on';
   } & PayContext;
 
   // A subscription's status changed. source app = the student did it in the

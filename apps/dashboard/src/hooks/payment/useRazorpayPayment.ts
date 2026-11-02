@@ -22,8 +22,10 @@ import {
 import {
   checkoutReturnUrl,
   clearAttempt,
+  closeAttempt,
   getAttemptStatus,
   isAlreadyPaidError,
+  isAutopayActiveError,
   isInAppBrowser,
   readAttempt,
   saveAttempt,
@@ -44,7 +46,8 @@ type UseRazorpayPaymentProps = {
     email?: string;
     phone?: string;
   };
-  onSuccess: () => void;
+  /** `paid` is set when the return check found the payment: the attempt's own amount and source. */
+  onSuccess: (paid?: { price?: number; source?: string }) => void;
   onFailure: () => void;
   onClose?: () => void;
   /**
@@ -65,6 +68,15 @@ type UseRazorpayPaymentProps = {
    * CC-59). Without them those browsers keep the in-page checkout.
    */
   returnParams?: Record<string, string | number | undefined>;
+  /** Saved on the order by the backend, e.g. "autopay_fallback" (CC-168). */
+  orderSource?: string;
+  /** The fallback order was refused because the mandate was approved after all (CC-168). */
+  onAutopayActive?: () => void;
+  /**
+   * Ask about a saved attempt when the page comes back (CC-59). Off when
+   * another instance of this hook on the same page already does.
+   */
+  returnCheck?: boolean;
 };
 
 /**
@@ -75,6 +87,10 @@ type UseRazorpayPaymentProps = {
  * otherwise looked like nothing happened after paying.
  */
 export type RazorpayPaymentPhase = "idle" | "opening" | "verifying" | "activating";
+
+// A page can hold two instances (plan checkout + autopay fallback) sharing one
+// saved attempt: a checkout open in EITHER reports through its own handler.
+const checkoutsInFlight = new Set<object>();
 
 // First window, then the "activating" window (CC-60): 10 x 2 s + 30 x 2 s.
 const VERIFY_RETRIES = 10;
@@ -92,6 +108,9 @@ export function useRazorpayPayment({
   onPending,
   onError,
   returnParams,
+  orderSource,
+  onAutopayActive,
+  returnCheck = true,
 }: UseRazorpayPaymentProps) {
   const locale = useLocale();
   const invalidateQuery = useInvalidateQuery(MY_COURSES_KEY);
@@ -112,6 +131,7 @@ export function useRazorpayPayment({
   // and a second payment (CC-60 follow-up).
   const release = () => {
     inFlightRef.current = false;
+    checkoutsInFlight.delete(inFlightRef);
     setLoading(false);
     setPhase("idle");
   };
@@ -121,10 +141,11 @@ export function useRazorpayPayment({
   const latest = React.useRef({ onSuccess, onFailure, examId });
   latest.current = { onSuccess, onFailure, examId };
   React.useEffect(() => {
+    if (!returnCheck) return;
     let checking = false;
     const check = async () => {
       // A checkout open in this page reports through its own handler.
-      if (checking || inFlightRef.current || document.visibilityState === "hidden") return;
+      if (checking || checkoutsInFlight.size > 0 || document.visibilityState === "hidden") return;
       const attempt = latest.current.examId ? readAttempt(latest.current.examId) : null;
       if (!attempt) return;
       checking = true;
@@ -151,10 +172,11 @@ export function useRazorpayPayment({
             final_price: Number(meta?.amount_paid ?? 0),
             payment_session_id: String(status.transaction_id ?? attempt.transactionId),
             confirmed_via: "return_check",
+            ...(attempt.source ? { source: attempt.source } : {}),
           });
           await invalidateQuery().catch(() => {});
           await queryClient.invalidateQueries({ queryKey: CURRENT_COURSE_QUERY_KEY });
-          latest.current.onSuccess();
+          latest.current.onSuccess({ price: attempt.price, source: attempt.source });
         } else if (status.state === "failed") {
           clearAttempt();
         }
@@ -175,7 +197,7 @@ export function useRazorpayPayment({
       document.removeEventListener("visibilitychange", onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [examId]);
+  }, [examId, returnCheck]);
 
   const reportError = (reason: "sdk_failed" | "unknown") => {
     if (onError) onError(reason);
@@ -185,6 +207,7 @@ export function useRazorpayPayment({
   const handlePayment = async () => {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
+    checkoutsInFlight.add(inFlightRef);
     setLoading(true);
     setPhase("opening");
     let checkoutOpened = false;
@@ -226,6 +249,7 @@ export function useRazorpayPayment({
               course_id: examId,
               amount: price ?? "",
               type: type,
+              ...(orderSource ? { source: orderSource } : {}),
             }),
           {
             endpoint: "/create-order",
@@ -233,6 +257,10 @@ export function useRazorpayPayment({
           },
         );
       } catch (error) {
+        if (onAutopayActive && isAutopayActiveError(error)) {
+          onAutopayActive();
+          return;
+        }
         // Paid a moment ago (a second tap, or the page came back after the
         // webhook activated it): never open a second checkout (CC-71).
         if (isAlreadyPaidError(error)) {
@@ -244,7 +272,12 @@ export function useRazorpayPayment({
         }
         throw error;
       }
-      saveAttempt({ transactionId: order.transaction_id, examId });
+      saveAttempt({
+        transactionId: order.transaction_id,
+        examId,
+        price: Number(price),
+        ...(orderSource ? { source: orderSource } : {}),
+      });
       // Inside the Facebook/Instagram app the page often dies while the UPI
       // app is open; Razorpay then sends the student back through the
       // backend instead of calling `handler` (CC-59).
@@ -426,6 +459,9 @@ export function useRazorpayPayment({
             if (!outcomeReported) release();
             if (outcomeReported) return;
             outcomeReported = true;
+            // The saved attempt stays: a UPI payment started before closing
+            // can still complete, and the return check then finds it.
+            void closeAttempt(order.transaction_id).catch(() => {});
 
             trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",

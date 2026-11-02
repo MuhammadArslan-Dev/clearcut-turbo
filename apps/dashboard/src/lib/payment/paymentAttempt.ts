@@ -12,6 +12,9 @@ export type PaymentAttempt = {
   transactionId: number;
   examId: number;
   at: number;
+  /** What was actually charged and where the order came from, for the return check. */
+  price?: number;
+  source?: string;
 };
 
 const ATTEMPT_KEY = "cc-payment-attempt-v1";
@@ -56,6 +59,27 @@ export function getAttemptStatus(transactionId: number) {
   return apiFetch<AttemptStatusResponse>(
     `/v2/payment/attempt-status?transaction_id=${transactionId}`,
   );
+}
+
+/**
+ * The student closed the checkout (CC-169). Razorpay reports nothing for that,
+ * so the attempt would stay "initiated". Best effort; the backend also closes
+ * anything left open after 30 minutes.
+ */
+export function closeAttempt(transactionId: number) {
+  return apiFetch<{ success: boolean }>(`/v2/payment/attempt/${transactionId}/close`, {
+    method: "POST",
+  });
+}
+
+/** `/v2/payment/create` answered 409: autopay is already approved for this course (CC-168). */
+export function isAutopayActiveError(error: unknown): boolean {
+  if (!isApiError(error) || error.status !== 409 || !error.responseBody) return false;
+  try {
+    return JSON.parse(error.responseBody)?.autopay_active === true;
+  } catch {
+    return false;
+  }
 }
 
 /** `/v2/payment/create` answered 409: this course was paid a moment ago (CC-71). */

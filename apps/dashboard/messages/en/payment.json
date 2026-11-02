@@ -58,6 +58,13 @@
     "resume": "Resume from where you left"
   },
 
+  "autopayFallback": {
+    "title": "Autopay didn't go through?",
+    "subtitle": "Pay once via UPI. Same access, no auto-renewal.",
+    "cta": "Pay {price} once",
+    "notNow": "Not now"
+  },
+
   "checkout": {
     "opening": "Opening payment…",
     "confirming": "Confirming your payment…",

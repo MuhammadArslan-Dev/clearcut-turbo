@@ -67,6 +67,8 @@ export type CreateOrderPayload = {
   course_id: number;
   amount: string; // paise
   type: PaymentType; // type
+  /** Where this order came from; the backend accepts known values only (CC-168). */
+  source?: string;
 };
 
 export type CreateSubscriptionPayload = {
