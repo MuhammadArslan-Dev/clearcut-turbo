@@ -1,0 +1,33 @@
+# Used by Coolify's "Docker Compose" build pack (or `docker compose up -d` locally).
+# Secrets come from the environment (Coolify secrets / local .env), never from this file.
+services:
+  analytics-mcp:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      GA_MCP_OAUTH_CLIENT_ID: ${GA_MCP_OAUTH_CLIENT_ID:?}
+      GA_MCP_OAUTH_CLIENT_SECRET: ${GA_MCP_OAUTH_CLIENT_SECRET:?}
+      GA_MCP_BASE_URL: ${GA_MCP_BASE_URL:?}
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS:?}
+      GA_MCP_JWT_SIGNING_KEY: ${GA_MCP_JWT_SIGNING_KEY:?}
+      GA_MCP_STORAGE_TYPE: filetree
+      GA_MCP_STORAGE_PATH: /var/lib/analytics-mcp
+      GA_MCP_STORAGE_ENCRYPTION_KEY: ${GA_MCP_STORAGE_ENCRYPTION_KEY:?}
+    volumes:
+      - oauth-state:/var/lib/analytics-mcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  oauth-state:
