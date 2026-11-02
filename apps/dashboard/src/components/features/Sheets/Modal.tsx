@@ -32,7 +32,7 @@ export function Modal({
   titleClass = "text-lg font-semibold",
   subtitleClass = "",
   maxWidth = "max-w-sm",
-  maxHeight = "max-h-[90vh]",
+  maxHeight = "max-h-[90dvh]",
   dismissible = true,
 }: ModalProps) {
   useEffect(() => {

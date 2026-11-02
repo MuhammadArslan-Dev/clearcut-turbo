@@ -76,10 +76,10 @@ export default function ChangePaperModal() {
           isOpen={isOpen}
           onClose={() => closeModal("change-paper-modal")}
         >
-          <div className="bg-white h-full flex flex-col max-h-[90vh] overflow-y-auto justify-between">
+          <div className="bg-white h-full flex flex-col max-h-[90dvh] overflow-y-auto justify-between">
             <Header onClose={() => closeModal("change-paper-modal")} />
 
-            <div className="grid grid-cols-1 gap-2 max-h-[60vh] overflow-y-auto px-3 py-2">
+            <div className="grid grid-cols-1 gap-2 max-h-[60dvh] overflow-y-auto px-3 py-2">
               {items?.map((paper, index) => (
                 <OptionSelectionCard
                   key={paper.id}

@@ -548,7 +548,7 @@ export default function DailyTestAttemptPage() {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
       <AttemptTopbar
         title={t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
         meta={t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
@@ -786,7 +786,7 @@ export default function DailyTestAttemptPage() {
           that (very tall) scrollable box after scrolling nearly all the way
           through it, reading as "the footer scrolls with the page" instead
           of staying pinned. Moving it out of the scroll area entirely (this
-          page's shell is `h-screen overflow-hidden`, same trick already
+          page's shell is `h-dvh overflow-hidden`, same trick already
           used below for the QuestionsDock/"Need help?" bars) pins it
           unconditionally, on both mobile and desktop, with no sticky/fixed
           math needed. The two empty `w-[260px]` columns replicate the
@@ -887,7 +887,7 @@ export default function DailyTestAttemptPage() {
 // page doesn't visibly jump/reflow once real data arrives — a generic 3-box
 // skeleton was left over from an earlier, simpler version of this page.
 const AttemptPageSkeleton = () => (
-  <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
+  <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
     <header className="border-b border-slate-200 bg-white">
       <div className="flex items-center justify-between gap-4 px-6 py-2 lg:px-10">
         <div className="flex items-center gap-4">

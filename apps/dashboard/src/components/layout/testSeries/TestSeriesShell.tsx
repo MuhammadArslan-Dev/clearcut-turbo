@@ -88,7 +88,7 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
     [stackExam],
   );
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden">
       {/* Sidebar */}
       <Topbar />
 

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedPage fallback={<OnboardingSkeleton />}>
-      <div className="flex flex-col min-h-screen ">
+      <div className="flex flex-col min-h-dvh ">
         <main className="flex-1">{children}</main>
       </div>
     </ProtectedPage>

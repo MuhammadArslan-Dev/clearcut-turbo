@@ -112,7 +112,7 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
 
   return (
     <div className="w-full flex justify-center bg-black/40 sm:py-6">
-      <div className="max-w-[800px] h-[calc(100vh-6px)] sm:h-[calc(100vh-56px)] w-full flex flex-col overflow-hidden bg-[#f1f5fa] sm:rounded-lg">
+      <div className="max-w-[800px] h-[calc(100dvh-6px)] sm:h-[calc(100dvh-56px)] w-full flex flex-col overflow-hidden bg-[#f1f5fa] sm:rounded-lg">
         {/* Sidebar */}
         <div className="sticky top-0 bg-white z-20">
           <Topbar />

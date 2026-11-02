@@ -59,7 +59,7 @@ export default function PracticeTestPromptSheet({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         // Desktop: width follows the viewport height (illustration is 780x602) so the whole modal fits short screens (e.g. 1536x738) without clipping the buttons.
-        style={isMobile ? undefined : { width: "min(380px, calc(28vh * 1.296))" }}
+        style={isMobile ? undefined : { width: "min(380px, calc(28dvh * 1.296))" }}
         className={isMobile ? "w-full" : "mx-auto max-w-full [mask-image:linear-gradient(to_right,transparent,black_14%,black_86%,transparent),linear-gradient(to_bottom,transparent,black_10%,black_88%,transparent)] [mask-composite:intersect]"}
       >
         <Image src="/images/practice-test-prompt.webp" alt="" width={780} height={602} priority className="h-auto w-full" />

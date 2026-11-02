@@ -51,7 +51,7 @@ const IMAGES: GalleryImage[] = [
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4 py-10">
+    <div className="min-h-dvh bg-slate-950 text-slate-50 flex items-center justify-center px-4 py-10">
       <AnimatedGallery />
     </div>
   );
@@ -166,7 +166,7 @@ function Lightbox({
             src={image.src}
             alt={image.title}
             layoutId={`image-${image.id}`}
-            className="max-h-[60vh] w-full object-cover"
+            className="max-h-[60dvh] w-full object-cover"
             transition={{
               type: "spring",
               stiffness: 180,

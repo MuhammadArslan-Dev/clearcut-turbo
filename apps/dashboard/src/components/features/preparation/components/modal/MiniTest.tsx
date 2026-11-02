@@ -199,7 +199,7 @@ export default function MiniTest() {
       >
         <motion.div
           layout
-          className="bg-white min-h-[50vh] max-h-[90vh] flex flex-col justify-between"
+          className="bg-white min-h-[50dvh] max-h-[90dvh] flex flex-col justify-between"
           transition={{ duration: 0.3 }}
         >
           <Header onClose={() => closeModal("mini-test")} />
@@ -310,7 +310,7 @@ const Content = ({
   }, [result, hasChecked]);
 
   return (
-    <div className="w-full flex justify-center min-h-[30vh] max-h-[90vh] overflow-y-auto py-2">
+    <div className="w-full flex justify-center min-h-[30dvh] max-h-[90dvh] overflow-y-auto py-2">
       <div className="w-full flex flex-col gap-5 bg-white md:p-5">
         {/* Progress */}
         <div className="flex justify-between bg-brand/9 items-center gap-4 px-3 py-2 border-l-4 border-brand">

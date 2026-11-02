@@ -55,7 +55,7 @@ function WeeklyTestContent({ data, locale }: { data: ApiPracticeTest, locale: st
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 md:p-6 pb-24 lg:pb-6">
+        <div className="min-h-dvh bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 md:p-6 pb-24 lg:pb-6">
             <div className="mx-auto max-w-7xl">
 
                 {/* Header */}
@@ -168,7 +168,7 @@ function WeeklyTestContent({ data, locale }: { data: ApiPracticeTest, locale: st
 
 function WeeklyTestSkeleton() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 md:p-6 pb-24 lg:pb-6 animate-pulse">
+        <div className="min-h-dvh bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 md:p-6 pb-24 lg:pb-6 animate-pulse">
             <div className="mx-auto max-w-7xl">
                 <div className="mb-5 px-4 pt-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-slate-200" />
@@ -190,7 +190,7 @@ function WeeklyTestSkeleton() {
 
 function WeeklyTestError() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
+        <div className="min-h-dvh bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
             <div className="text-center space-y-3">
                 <AlertCircle size={40} className="text-red-400 mx-auto" />
                 <p className="text-slate-700 font-semibold">Failed to load the test.</p>

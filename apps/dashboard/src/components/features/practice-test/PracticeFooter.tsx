@@ -2,7 +2,7 @@ import clsx from "clsx";
 
 /**
  * The pinned bottom bar of the Practice Test attempt and result screens: a real
- * flex child AFTER the scroll area of an `h-screen overflow-hidden` shell (so it
+ * flex child AFTER the scroll area of an `h-dvh overflow-hidden` shell (so it
  * is fixed to the bottom of the viewport and never scrolls with the content).
  * One compact white strip on every size - top border (+ soft shadow on phones) -
  * with the buttons aligned under the question column from `lg`; on the attempt

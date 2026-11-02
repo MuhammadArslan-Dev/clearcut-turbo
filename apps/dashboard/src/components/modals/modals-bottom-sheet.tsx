@@ -83,7 +83,7 @@ export function CustomModal({
   subtitle = "",
   subtitleClass = "",
   maxWidth = "max-w-sm",
-  maxHeight = "max-h-[90vh]",
+  maxHeight = "max-h-[90dvh]",
 }: ModelProps) {
   // useEffect(() => {
   //   const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -179,7 +179,7 @@ export function CustomBottomSheet({
           exit="exit"
           transition={{ duration: 0.35, ease: "easeInOut" }}
         >
-          <div className="bg-white rounded-t-[12px] shadow-xl w-full max-h-[90vh] overflow-auto">
+          <div className="bg-white rounded-t-[12px] shadow-xl w-full max-h-[90dvh] overflow-auto">
             {isHeader && (
               <header className="sticky rounded-t-[12px] top-0 z-10 bg-white border-b border-gray-200 px-6 pt-3 pb-2 flex justify-between items-start">
                 <div>
@@ -296,7 +296,7 @@ export function DrawerSheet({
         >
           <div
             className={clsx(
-              "bg-gray-100 shadow-xl w-full h-[100vh] overflow-auto",
+              "bg-gray-100 shadow-xl w-full h-[100dvh] overflow-auto",
               rounded
             )}
           >

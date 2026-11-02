@@ -10,7 +10,7 @@ interface ErrorPageLayoutProps {
 
 export default function ErrorPageLayout({ children }: ErrorPageLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#f1f5fa]">
+    <div className="min-h-dvh flex flex-col bg-[#f1f5fa]">
       {/* Header */}
       <header className="bg-white shadow-sm py-3 px-6">
         <Link href="/" className="inline-block">

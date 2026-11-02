@@ -141,9 +141,9 @@ export default function Success() {
 
   /* ---------------------------------- render ---------------------------------- */
   return (
-    <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
-      <div className="w-full sm:h-auto h-screen sm:max-w-[600px]  flex flex-col justify-between items-center gap-4">
-        <div className="h-full flex flex-col min-h-[60vh] justify-between md:gap-2">
+    <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center sm:px-4">
+      <div className="w-full sm:h-auto h-dvh sm:max-w-[600px]  flex flex-col justify-between items-center gap-4">
+        <div className="h-full flex flex-col min-h-[60dvh] justify-between md:gap-2">
           {/* Header */}
           <div className="sticky w-full top-0 z-10 flex gap-4 px-3 py-4 bg-white">
             <button

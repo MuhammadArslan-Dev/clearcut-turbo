@@ -911,7 +911,7 @@ export default function InitiatedPage() {
   // to ~80 s; without this screen the pay page just sat there (CC-60).
   if (redirecting || paymentPhase === "verifying" || paymentPhase === "activating") {
     return (
-      <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center">
+      <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center">
         <div className="flex flex-col items-center gap-3 px-4 text-center">
           <MainLoader />
           <p className="text-sm text-gray-500">
@@ -930,12 +930,12 @@ export default function InitiatedPage() {
 
   if (isPageLoading) {
     return (
-      <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
+      <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
         {/* Same frame, same four blocks and the same heights as the loaded page
             below, so the content replaces the skeleton in place instead of the
             whole page jumping (CLS 0.19 on mobile, CC-61; 0.456 after the
             redesign until this was brought back in step). */}
-        <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+        <div className="w-full sm:h-auto h-dvh sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
           <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
             <div className="flex h-[74px] w-full flex-col items-center justify-center gap-2 px-3 lg:h-[58px]">
               <Skeleton className="h-5 w-44" />
@@ -973,14 +973,14 @@ export default function InitiatedPage() {
   }
 
   return (
-    <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
+    <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center sm:px-4 lg:items-start lg:py-8">
       {/* Below lg this stays the original single flex column. From lg it
           becomes the design's two-column layout: the hero spans both, the
           info card sits left, and the plan card + its CTA stack on the right. */}
       {/* lg:items-stretch (not the flex row's items-center) so the two columns
           end at the same height: the left card spans both right-hand rows and
           stretches to the plan card + CTA total. */}
-      <div className="w-full sm:h-auto h-screen sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
+      <div className="w-full sm:h-auto h-dvh sm:max-w-[800px] lg:max-w-[1120px] lg:h-auto flex flex-col justify-between items-center gap-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-x-6 lg:gap-y-5">
         <div className="bg-white w-full lg:col-span-2 lg:bg-transparent">
           <div className="flex  w-full gap-4 px-3 py-4 lg:justify-center lg:py-2">
             <button

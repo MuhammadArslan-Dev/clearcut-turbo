@@ -162,7 +162,7 @@ export default function PracticeTestResult({
         : "text-surface-gray-muted";
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-white">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-white">
       {/* Soft blue wash + faint hills behind the content (decorative, token colours only). Solid blue on phones so the white cards stand out; fades to white from md. */}
       <div
         className="pointer-events-none absolute inset-0 bg-[var(--color-primary-bg-soft)]/40 md:bg-gradient-to-b md:from-[var(--color-primary-bg-soft)] md:via-white md:to-white"

@@ -93,7 +93,7 @@ export default function LockedContentModal() {
           <Container
             maxWidth="max-w-[420px] !rounded-t-lg"
             isHeader={false}
-            maxHeight="max-h-[95vh]"
+            maxHeight="max-h-[95dvh]"
             isOpen
             onClose={close}
           >

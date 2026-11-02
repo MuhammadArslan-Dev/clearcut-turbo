@@ -153,7 +153,7 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
         <StartGuide courseId={examId} />
 
         {/* ================= SCROLLABLE CONTENT ================= */}
-        <div className="flex flex-col items-center  w-full h-[calc(100vh-126px)] md:max-h-[calc(100vh-6px)] md:min-h-fit overflow-auto  md:py-6">
+        <div className="flex flex-col items-center  w-full h-[calc(100dvh-126px)] md:max-h-[calc(100dvh-6px)] md:min-h-fit overflow-auto  md:py-6">
             <DesktopHeader />
           <ScrollableContent>
 

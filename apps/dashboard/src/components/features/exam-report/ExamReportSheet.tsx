@@ -204,7 +204,7 @@ export default function ExamReportSheet() {
           isHeader={false}
           isOpen={isOpen}
           maxWidth="md:max-w-[720px]"
-          maxHeight="md:max-h-[97vh]"
+          maxHeight="md:max-h-[97dvh]"
           onClose={() => handleClose()}
         >
 
@@ -250,7 +250,7 @@ export default function ExamReportSheet() {
               </div>
 
               {/* main content  */}
-              <div className="py-3 min-h-[20vh] max-h-[90vh] md:max-h-[68vh] overflow-scroll flex flex-col gap-2">
+              <div className="py-3 min-h-[20dvh] max-h-[90dvh] md:max-h-[68dvh] overflow-scroll flex flex-col gap-2">
                 <div className="flex flex-col">
                   <div className="px-3 ">
                     <TabSwitchInExamReport

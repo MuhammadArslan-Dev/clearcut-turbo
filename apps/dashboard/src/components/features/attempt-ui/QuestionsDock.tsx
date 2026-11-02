@@ -77,7 +77,7 @@ function QuestionsDock({ questions, onSelect, defaultExpanded = false, title = "
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="max-h-[40vh] overflow-y-auto px-4 pb-2">
+            <div className="max-h-[40dvh] overflow-y-auto px-4 pb-2">
               <div className="grid grid-cols-5 gap-2 pb-3">
                 {questions.map((q, index) => {
                   const style = q.isActive ? ACTIVE_STYLE : STATUS_STYLE[q.status];

@@ -73,7 +73,7 @@ export default function LanguageStep({
   });
 
   return (
-    <div className="w-full h-screen bg-white">
+    <div className="w-full h-dvh bg-white">
       <MainContainer maxWidth={"max-w-[850px]"} padding="md:pt-14">
         <div className="px-3 py-4 space-y-3">
           <div className="flex flex-col gap-8 items-center">

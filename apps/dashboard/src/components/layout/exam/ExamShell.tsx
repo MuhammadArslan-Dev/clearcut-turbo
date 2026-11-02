@@ -39,7 +39,7 @@ export default function ExamShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
       <Topbar />
 
       {/* Capped at the same 1280px the Daily Test attempt page uses for its

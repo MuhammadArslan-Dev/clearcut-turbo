@@ -68,7 +68,7 @@ export default function PreTestConfirmationModal() {
           maxWidth="md:max-w-[420px]"
           onClose={() => closeModal("pre-test-confirmation")}
         >
-          <div className="bg-white min-h-[50vh] max-h-[90vh] flex flex-col justify-between">
+          <div className="bg-white min-h-[50dvh] max-h-[90dvh] flex flex-col justify-between">
             <ModalHeader
               title={modalTitle}
               subtitle={modalSubtitle}

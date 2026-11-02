@@ -107,8 +107,8 @@ export default function FailedPage() {
   }, [close, modalT, examTitle, user?.phone]);
 
   return (
-    <div className="bg-[#f1f5fa] min-h-screen w-full flex justify-center items-center sm:px-4">
-      <div className="w-full sm:h-auto h-screen sm:max-w-[600px]  flex flex-col justify-between items-center gap-4">
+    <div className="bg-[#f1f5fa] min-h-dvh w-full flex justify-center items-center sm:px-4">
+      <div className="w-full sm:h-auto h-dvh sm:max-w-[600px]  flex flex-col justify-between items-center gap-4">
         {" "}
         {/* Header */}
         <div className="w-full flex gap-4 px-3 py-4 bg-white">

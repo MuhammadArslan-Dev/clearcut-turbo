@@ -87,11 +87,11 @@ export default function PaymentSuccessModal() {
         <Container
           maxWidth="max-w-[600px] !rounded-t-lg"
           isHeader={false}
-          maxHeight="max-h-[95vh]"
+          maxHeight="max-h-[95dvh]"
           isOpen
           onClose={close}
         >
-          <div className="bg-gray-100 h-full flex flex-col min-h-[70vh] justify-between md:gap-2">
+          <div className="bg-gray-100 h-full flex flex-col min-h-[70dvh] justify-between md:gap-2">
             {/* Header */}
             <div className="sticky top-0 z-10 flex gap-4 px-3 py-4 bg-white">
               <button

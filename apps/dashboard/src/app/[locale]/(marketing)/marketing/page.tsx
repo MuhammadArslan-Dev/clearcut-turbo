@@ -46,7 +46,7 @@ export default function Page() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex">
+    <div className="min-h-dvh bg-slate-950 text-slate-50 flex">
       {/* Sidebar */}
       <motion.aside
         className="flex flex-col border-r border-slate-800 bg-slate-900/80"

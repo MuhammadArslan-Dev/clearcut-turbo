@@ -62,7 +62,7 @@ export default function PaymentFailedWarningModal() {
         <Container
           maxWidth="max-w-[450px] !rounded-t-lg"
           isHeader={true}
-          maxHeight="max-h-[95vh]"
+          maxHeight="max-h-[95dvh]"
           title={modalT("paymentWarning.title")}
           isOpen
           onClose={close}

@@ -78,7 +78,7 @@ export default function ExamEndConfirmationSheet() {
         maxWidth="md:max-w-[420px]"
         onClose={() => handleClose()}
       >
-        <div className="bg-white min-h-[20vh] max-h-[90vh] flex flex-col justify-between">
+        <div className="bg-white min-h-[20dvh] max-h-[90dvh] flex flex-col justify-between">
           {/* Header */}
           <ModalHeader
             title={t("title")}

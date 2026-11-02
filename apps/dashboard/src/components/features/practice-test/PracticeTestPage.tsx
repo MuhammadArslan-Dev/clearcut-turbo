@@ -481,7 +481,7 @@ export default function PracticeTestPage() {
 
   return (
     <motion.div
-      className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]"
+      className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]"
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}

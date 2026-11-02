@@ -40,7 +40,7 @@ const cardClass = "rounded-xl bg-white shadow-sm max-lg:!rounded-none";
 
 export function PracticeTestSkeleton() {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--background-gray-subtle)]" role="status" aria-busy="true">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]" role="status" aria-busy="true">
       <TopbarSkeleton />
 
       <div className="flex-1 overflow-y-auto">
@@ -151,7 +151,7 @@ export function ExplanationSkeleton() {
 
 export function PracticeTestResultSkeleton() {
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-white" role="status" aria-busy="true">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-white" role="status" aria-busy="true">
       <div
         className="pointer-events-none absolute inset-0 bg-[var(--color-primary-bg-soft)]/40 md:bg-gradient-to-b md:from-[var(--color-primary-bg-soft)] md:via-white md:to-white"
         aria-hidden="true"

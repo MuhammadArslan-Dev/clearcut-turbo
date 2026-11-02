@@ -36,7 +36,7 @@ export default function AccountDeleteConfirmSheet() {
           maxWidth="md:max-w-[430px]"
           onClose={() => {}}
         >
-          <div className="bg-white h-full flex flex-col max-h-[90vh] overflow-y-auto justify-between">
+          <div className="bg-white h-full flex flex-col max-h-[90dvh] overflow-y-auto justify-between">
             <Header
               onClose={() => {
                 goBack();

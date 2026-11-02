@@ -88,7 +88,7 @@ export default function AttemptHistoryModal() {
         maxWidth="md:max-w-[400px]"
         onClose={() => handleClose()}
       >
-        <div className="bg-white min-h-[20vh] max-h-[90vh] flex flex-col justify-between gap-2">
+        <div className="bg-white min-h-[20dvh] max-h-[90dvh] flex flex-col justify-between gap-2">
           {/* Header */}
           <ModalHeader
             title={

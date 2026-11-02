@@ -150,10 +150,10 @@ export default function ExamInstanceModal({ instance, paperId, onClose, }: ExamI
         isHeader={false}
         isOpen
         maxWidth="md:max-w-[720px]"
-        maxHeight="md:max-h-[97vh]"
+        maxHeight="md:max-h-[97dvh]"
         onClose={onClose}
       >
-        <div className="bg-white flex flex-col h-full md:h-auto md:max-h-[85vh]">
+        <div className="bg-white flex flex-col h-full md:h-auto md:max-h-[85dvh]">
           {/* Header */}
           <div className="shrink-0 flex items-start justify-between gap-3 px-4 py-3 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-4">
@@ -213,7 +213,7 @@ export default function ExamInstanceModal({ instance, paperId, onClose, }: ExamI
 
           {/* Questions — scrollable region (explicit viewport height so it scrolls
             regardless of how the parent Modal/DrawerSheet sizes itself). */}
-          <div className="flex-1 min-h-0 overflow-y-auto py-3 max-h-[70dvh] md:max-h-[68vh]">
+          <div className="flex-1 min-h-0 overflow-y-auto py-3 max-h-[70dvh] md:max-h-[68dvh]">
             {questionsLoading ? (
               <div className="flex items-center justify-center py-16">
                 <span className="body-medium text-surface-gray-light">Loading questions...</span>
