@@ -24,6 +24,20 @@ const config: NextConfig = {
   basePath: "/tools",
   trailingSlash: false,
 
+  // Production only: serve the hashed JS/CSS (/_next/static/*) straight from
+  // the Pages deployment instead of through the clearcutoff.in/tools/* Worker.
+  // Every request that passes the Worker route counts against the Workers
+  // free plan's 100,000/day limit, and one page view loads 10-20 chunks, so
+  // this was most of the Worker's traffic (118.9k in one day, 2026-11-02).
+  // Pages static requests are free and unlimited. assetPrefix replaces
+  // basePath for these assets only: pages, public/ files (favicon, og images)
+  // and links still go through "/tools" and the Worker as before. out/ keeps
+  // _next/static at its root, so https://<pages>/_next/static/... resolves.
+  // Override with TOOLS_ASSET_PREFIX (set it empty to turn this off).
+  ...(process.env.NODE_ENV === "production" && {
+    assetPrefix: process.env.TOOLS_ASSET_PREFIX ?? "https://clearcut-tools.pages.dev",
+  }),
+
   // Dev-only: `next build` errors if `output: "export"` and `rewrites` are
   // both present, so this never reaches the production static export — it
   // only runs under `next dev`, which always has a real server regardless
