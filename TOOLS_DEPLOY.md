@@ -119,3 +119,24 @@ Environment secrets.
 | `apps/tools/next.config.ts`, `public/_headers`, `public/_redirects` | Pages site |
 | `apps/tools/worker/src/index.ts`, `wrangler.toml` routes | Worker (`npm run deploy` in `apps/tools/worker`) |
 | Nothing in `apps/tools/**` | Nothing — this deploy path is scoped to this app only |
+
+## Fallback origin on Coolify (if the Workers free limit is hit)
+
+The Worker counts every request against the Workers free plan (100,000/day, one
+account-wide pool shared with `clearcut-go-router`). `assetPrefix` moved the JS/CSS
+off it, but as a safety net there is a second origin that serves the same site:
+
+- **Where:** Coolify at `http://140.245.112.235:8000`, project `clear-cutoff-apps` →
+  `production` → resource `clearcut-tools-fallback`. Public-repo source
+  (`MuhammadArslan-Dev/clearcut-turbo`), build pack **Dockerfile**, base directory `/`,
+  Dockerfile `/apps/tools/fallback/Dockerfile`, port 80. No auto-deploy; pinned to a commit.
+- **What it is:** `apps/tools/fallback/` — builds the same static export (same two build
+  URLs, `TOOLS_ASSET_PREFIX` empty so assets stay on `/tools/_next/static`) and serves it with
+  nginx under the **same public paths** as production: `/tools/*`, `/hi/tools/*`, `/mr/tools/*`,
+  `/sitemap-tools.xml`, with the Worker's redirects (trailing slash 301, `/hi/tools` 302) and
+  the Syllabus Tracker deep-link fallback. The build fails if a wrong backend host is baked in.
+- **Domain:** none attached on purpose (only the generated `*.sslip.io` one). To fail over:
+  disable the Worker routes in Cloudflare and send `/tools*`, `/hi/tools*`, `/mr/tools*`
+  and `/sitemap-tools.xml` to this origin (Origin Rule / DNS), then **redeploy once after the
+  domain is added** so the certificate is issued (see the blog note in memory).
+- **Updating it:** it does not follow pushes. Change the pinned commit in Coolify and Redeploy.
