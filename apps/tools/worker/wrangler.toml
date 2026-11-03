@@ -15,6 +15,11 @@ routes = [
 	# broad — a new tool, a new root asset, a new metadata route (e.g.
 	# sitemap.xml) all work with zero wrangler.toml changes going forward.
 	{ pattern = "clearcutoff.in/tools/*", zone_name = "clearcutoff.in" },
+	# The "/*" patterns below do not match the bare roots ("/hi/tools" has no
+	# trailing slash), which then fell through to the main site as a 404 — the
+	# Worker redirects them to /tools (LOCALE_TOOL_ROOTS in src/index.ts).
+	{ pattern = "clearcutoff.in/hi/tools", zone_name = "clearcutoff.in" },
+	{ pattern = "clearcutoff.in/mr/tools", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/hi/tools/*", zone_name = "clearcutoff.in" },
 	{ pattern = "clearcutoff.in/mr/tools/*", zone_name = "clearcutoff.in" },
 	# Master sitemap index, served from the origin root (see matchPath()).
