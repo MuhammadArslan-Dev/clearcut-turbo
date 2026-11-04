@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import Text from "@clearcut/ui/text";
 import FAQAccordion, { AccordionItem } from "@/components/shared/FAQAccordion";
+import RichFaqText from "@/components/shared/RichFaqText";
 import type { FaqCategory } from "@/types/cms";
 
 const STRINGS = {
@@ -118,18 +119,20 @@ export default function FaqPageContent({ categories, locale }: { categories: Faq
                 <span className="body-xsmall !font-semibold uppercase tracking-wide text-brand w-fit">
                   {category.label}
                 </span>
-                <span>{faq.question}</span>
+                <span>
+                  <RichFaqText html={faq.questionHtml} text={faq.question} inline />
+                </span>
               </span>
             ),
-            content: faq.answer,
+            content: <RichFaqText html={faq.answerHtml} text={faq.answer} />,
           })),
       )
     : [];
 
   const categoryItems: AccordionItem[] = (activeCategory?.questions ?? []).map((faq) => ({
     id: `${activeCategory?.key}-${slugify(faq.question)}`,
-    title: faq.question,
-    content: faq.answer,
+    title: <RichFaqText html={faq.questionHtml} text={faq.question} inline />,
+    content: <RichFaqText html={faq.answerHtml} text={faq.answer} />,
   }));
 
   const categoryItemIds = new Set(categoryItems.map((item) => item.id));

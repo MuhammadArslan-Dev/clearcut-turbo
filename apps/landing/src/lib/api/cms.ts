@@ -1,6 +1,6 @@
 import { createFetchClient } from "@clearcut/api/fetch-client";
 
-import type { AlternativeDoc, AlternativeSummary, ComparisonDoc, FaqDoc, MarketingProof } from "@/types/cms";
+import type { AlternativeDoc, AlternativeSummary, ComparisonDoc, FaqDoc, FaqDocRaw, MarketingProof } from "@/types/cms";
 
 const CMS_URL = process.env.CMS_URL || "http://localhost:3011";
 
@@ -144,5 +144,29 @@ export async function getAlternativeBySlug(slug: string, locale: string = "en"):
 /** Categories + questions for the /faq page, editable from the CMS admin. */
 export async function getFaq(locale: string = "en"): Promise<FaqDoc | null> {
   const query = new URLSearchParams({ locale, depth: "0" });
-  return payloadFetch<FaqDoc>(`/api/globals/faq?${query.toString()}`);
+  const raw = await payloadFetch<FaqDocRaw>(`/api/globals/faq?${query.toString()}`);
+  return raw ? normalizeFaq(raw) : null;
+}
+
+/**
+ * The CMS returns `questionText` / `answerText` (always plain, from the rich text
+ * when an editor used it) plus `questionHtml` / `answerHtml`. An older CMS deploy
+ * only has `question` / `answer`, so fall back to those: either side can deploy
+ * first. Rows with no usable question or answer are dropped.
+ */
+export function normalizeFaq(raw: FaqDocRaw): FaqDoc {
+  return {
+    categories: (raw.categories ?? []).map((category) => ({
+      key: category.key,
+      label: category.label,
+      questions: (category.questions ?? [])
+        .map((row) => ({
+          question: (row.questionText || row.question || "").trim(),
+          answer: (row.answerText || row.answer || "").trim(),
+          questionHtml: row.questionHtml || undefined,
+          answerHtml: row.answerHtml || undefined,
+        }))
+        .filter((row) => row.question && row.answer),
+    })),
+  };
 }

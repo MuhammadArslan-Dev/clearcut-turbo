@@ -262,3 +262,51 @@ body {
    @clearcut/design-tokens/tokens.css (imported at the top) — the single
    product-wide source. They were byte-identical to the definitions that used
    to live here, so removing them is a no-op for landing. */
+
+/* FAQ rich text (CMS bold / blue / links / lists). Phase 76. `.faq-blue` is the
+   class the CMS converter puts on blue text; both it and links use the accessible
+   brand blue (5.39:1 on white) rather than --color-brand, which is too light for text.
+   `white-space: normal` because the accordion body is `whitespace-pre-line` for plain text. */
+.faq-rich {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.faq-rich strong {
+  font-weight: 600;
+}
+.faq-rich .faq-blue,
+.faq-rich a {
+  color: var(--color-brand-accessible);
+}
+.faq-rich a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.faq-rich a:hover {
+  color: var(--color-brand-dark);
+}
+.faq-rich a:focus-visible {
+  outline: 2px solid var(--color-brand-accessible);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.faq-rich:not(.faq-rich-inline) p + p,
+.faq-rich:not(.faq-rich-inline) p + ul,
+.faq-rich:not(.faq-rich-inline) p + ol,
+.faq-rich:not(.faq-rich-inline) ul + p,
+.faq-rich:not(.faq-rich-inline) ol + p {
+  margin-top: 0.75rem;
+}
+.faq-rich ul,
+.faq-rich ol {
+  padding-left: 1.25rem;
+}
+.faq-rich ul {
+  list-style: disc;
+}
+.faq-rich ol {
+  list-style: decimal;
+}
+.faq-rich li + li {
+  margin-top: 0.25rem;
+}
