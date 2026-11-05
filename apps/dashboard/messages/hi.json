@@ -253,6 +253,7 @@
     "unlockFullAccess": "फुल एक्सेस अनलॉक करें",
     "unlockCourse": "{exam} कोर्स अनलॉक करें",
     "buyFullCourse": "पूरा कोर्स खरीदें",
+    "renewCourse": "प्लान रिन्यू करें",
     "priceNote": "₹{price}/माह • सब्सक्रिप्शन प्लान",
     "trialLimit": "फ्री ट्रायल सिर्फ {days, plural, one {# दिन} other {# दिन}} के लिए"
   },
@@ -345,6 +346,8 @@
     "nextPaymentLine": "अगला भुगतान: {amount}, {date}",
     "periodEnds": "एक्सेस तक",
     "cancelledOn": "रद्द करने की तारीख",
+    "renewPlan": "प्लान रिन्यू करें",
+    "cancelledStillActive": "ऑटोपे बंद है। आपने जिस अवधि का भुगतान किया है, उसके खत्म होने तक आपका एक्सेस बना रहेगा।",
     "started": "शुरू हुआ",
     "paymentsMade": "किए गए भुगतान",
     "empty": "अभी कोई सदस्यता नहीं",

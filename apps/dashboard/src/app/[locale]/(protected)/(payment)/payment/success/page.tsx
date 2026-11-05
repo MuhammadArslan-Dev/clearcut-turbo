@@ -1,10 +1,10 @@
 "use client";
-import React, { useMemo, useCallback, useEffect } from "react";
+import React, { useMemo, useCallback, useEffect, useState } from "react";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { ArrowIcon, CheckIcon, FireIcon } from "@/components/ui/icons";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { useLocale, useTranslations } from "next-intl";
-import { MY_COURSES_KEY, useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useLevels } from "@/hooks/onboarding/useLevels";
@@ -18,6 +18,8 @@ import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import Text from "@clearcut/ui/text";
 import { clearAttempt, getAttemptStatus } from "@/lib/payment/paymentAttempt";
 import { trackFacebookEventOnce } from "@/lib/analytics/facebook-pixel";
+import { supportWhatsAppUrl } from "@/lib/support";
+import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
 
 const FEATURES = ["featureVideos", "featureNotes", "featureTests"] as const;
 
@@ -36,7 +38,7 @@ export default function Success() {
   const source = get("source") as string;
   const price = get("price") as string;
   // Paid, but the webhook hadn't activated the course yet (CC-60).
-  const activationPending = get("pending") === "1";
+  const pendingParam = get("pending") === "1";
 
   useEffect(() => {
     if (!courseId) {
@@ -71,6 +73,8 @@ export default function Success() {
 
   const course = allCourses?.find((c) => c?.group_code === courseId);
   const data = course?.exam;
+  // Phase 77: the pending state ends the moment the course is really active, and never earlier.
+  const activationPending = pendingParam && course?.status !== "active";
   const {
     levels: levelsRaw = [],
     loading: levelsLoading,
@@ -108,27 +112,52 @@ export default function Success() {
   /* ---------------------------------- handlers ---------------------------------- */
   const queryClient = useQueryClient();
 
+  // Phase 77: while the payment is received but access is not active yet, keep asking the server
+  // (every 5 s, for up to 2 minutes). After that, stop and show the support route instead of a dead end.
+  const [stillWaiting, setStillWaiting] = useState(false);
+  useEffect(() => {
+    if (!activationPending) {
+      setStillWaiting(false);
+      return;
+    }
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (Date.now() - started > 120_000) {
+        clearInterval(timer);
+        setStillWaiting(true);
+        return;
+      }
+      void invalidateAfterPayment(queryClient);
+    }, 5_000);
+    return () => clearInterval(timer);
+  }, [activationPending, queryClient]);
+
   const handleResume = useCallback(async () => {
-    if (!activeCourse) return;
+    // Phase 77: Resume is about the course that was just paid for. It used to read the student's
+    // globally "active" course (a different course, or null, in which case the button did nothing).
+    const target = course ?? activeCourse;
+    if (!target) {
+      router.push("/dashboard");
+      return;
+    }
     // Paid but not yet activated: fetch the course status again so the next
     // screen sees the activation the moment it lands (CC-60).
     if (activationPending) {
-      await queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY }).catch(() => {});
+      await invalidateAfterPayment(queryClient);
     }
-    if (activeCourse?.stage_id) {
+    if (target.stage_id) {
       await trackEvent("Content Started", {
         source: "payment_success_modal",
-        exam_name: course?.exam?.short_name!,
+        exam_name: target.exam?.short_name ?? "",
       });
 
-      router.push(`/preparation/${course?.group_code}`);
+      router.push(`/preparation/${target.group_code}`);
+    } else if (target.exam) {
+      open("single", target.exam);
     } else {
-      open("single", activeCourse.exam!);
-    };
-
-
-    // router.push(`/preparation/${course?.group_code}`);
-  }, [activeCourse?.uuid, open, activationPending, queryClient]);
+      router.push("/dashboard");
+    }
+  }, [course, activeCourse, open, activationPending, queryClient, router]);
 
   const Price = useMemo(
     () => JSON.parse(data?.price ?? "{}") ?? 0,
@@ -223,9 +252,21 @@ export default function Success() {
                 </div>
 
                 {activationPending && (
-                  <p className="body-medium text-center text-surface-gray-muted px-4" role="status">
-                    {modalT("checkout.activatingNote")}
-                  </p>
+                  <div className="flex flex-col items-center gap-3 px-4" role="status" aria-live="polite">
+                    <p className="body-medium text-center text-surface-gray-muted">
+                      {stillWaiting ? modalT("checkout.stillActivating") : modalT("checkout.activatingNote")}
+                    </p>
+                    {stillWaiting && (
+                      <a
+                        href={supportWhatsAppUrl(modalT("checkout.supportMessage", { exam: data?.short_name ?? "" }))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="body-medium !font-semibold text-brand underline underline-offset-2"
+                      >
+                        {modalT("checkout.contactSupport")}
+                      </a>
+                    )}
+                  </div>
                 )}
 
                 <div className="flex justify-center">

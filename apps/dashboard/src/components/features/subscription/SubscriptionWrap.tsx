@@ -547,13 +547,42 @@ function PlanCharges({ charges }: { charges: PaymentHistoryItem[] }) {
   );
 }
 
+/**
+ * Phase 77: autopay cancelled, but the student is still inside the period they paid for. Without
+ * this line the row looks exactly like a normal active plan and nothing says it will not renew.
+ */
+function CancelledAccessNote({ row }: { row: PlanRow }) {
+  const t = useTranslations("subscriptionsTab");
+  if (row.sub.status !== "cancelled" || row.access !== "active") return null;
+  return <p className="mt-1 text-xs text-[var(--color-surface-gray-muted)]">{t("cancelledStillActive")}</p>;
+}
+
 function ViewCourseButton({ row, onView }: { row: PlanRow; onView: (r: PlanRow) => void }) {
   const t = useTranslations("subscriptionsTab");
+  const router = useRouter();
   if (!row.groupCode) return null;
+  // Phase 77: an expired plan with no live autopay had no way to renew from here; the only exits
+  // were "View course" (a locked course) or going back to My Courses.
+  const canRenew = row.access === "expired" && getActions(row.sub.status).length === 0;
   return (
-    <Button size="sm" variant="outlined" rounded="8px" onClick={() => onView(row)}>
-      {t("viewCourse")}
-    </Button>
+    <span className="inline-flex flex-wrap items-center gap-2">
+      {canRenew && (
+        <Button
+          size="sm"
+          rounded="8px"
+          onClick={() =>
+            router.push(
+              `/payment/initiated?exam_id=${row.groupCode}&course_name=${encodeURIComponent(row.courseName)}&source=subscriptions_tab_renew`,
+            )
+          }
+        >
+          {t("renewPlan")}
+        </Button>
+      )}
+      <Button size="sm" variant="outlined" rounded="8px" onClick={() => onView(row)}>
+        {t("viewCourse")}
+      </Button>
+    </span>
   );
 }
 
@@ -615,6 +644,7 @@ function DesktopTable({
                           {t("courseTitle", { course: row.courseName })}
                         </p>
                         <p className="text-xs text-[var(--color-surface-gray-muted)]">{t("courseBlurb")}</p>
+                        <CancelledAccessNote row={row} />
                       </div>
                     </div>
                   </td>
@@ -689,6 +719,7 @@ function MobileCard({
             {t("courseTitle", { course: row.courseName })}
           </p>
           <p className="text-[11px] text-[var(--color-surface-gray-muted)] mt-0.5">{t("courseBlurb")}</p>
+          <CancelledAccessNote row={row} />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <KindChip />
             <AccessChip access={row.access} />

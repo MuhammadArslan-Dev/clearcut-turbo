@@ -1,5 +1,6 @@
 "use client";
 
+import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
 import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "../course/useMyActiveCourses";
@@ -342,6 +343,8 @@ export function useRazorpayPayment({
           const success = verified.success;
 
           await invalidateQuery().catch(() => {});
+          // Phase 77: every cached course/lock state is stale once a payment went through.
+          await invalidateAfterPayment(queryClient);
           // The page's current-course query feeds the course store that
           // PaywallFloatingWidget reads. Refresh it here so the widget hides
           // as soon as the course is active, instead of after its 15-min staleTime.
