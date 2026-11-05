@@ -103,6 +103,10 @@ export default withSentryConfig(bundleAnalyzer(withNextIntl(config)), {
 
   project: "clearcutoff-nextjs-app",
 
+  // Source-map upload token, read from the build environment only (never hard-code it).
+  // Unset = the upload is skipped and the build still succeeds (stack traces stay minified).
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
 
