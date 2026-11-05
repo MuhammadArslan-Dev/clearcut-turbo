@@ -82,14 +82,14 @@ export default async function Page() {
               {t.hubSubtitle(exams.length - 5)}
             </Text>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-              <Link
+              <Link prefetch={false}
                 href="/age-eligibility-calculator/all"
                 className="inline-flex items-center gap-2 rounded-full bg-brand hover:bg-[var(--color-brand-hover)] text-white body-medium !font-semibold px-6 py-3 transition-colors"
               >
                 {t.exploreCalculators}
                 <ArrowRightIcon />
               </Link>
-              <Link
+              <Link prefetch={false}
                 href="/age-eligibility-calculator/upsc-ias"
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-gray-subtle)] bg-white hover:border-brand hover:text-brand text-text-gray-normal body-medium !font-semibold px-6 py-3 transition-colors"
               >
@@ -112,7 +112,7 @@ export default async function Page() {
                 {t.popularSubtitle}
               </Text>
             </div>
-            <Link href="/age-eligibility-calculator/all" className="body-medium !font-semibold text-brand hover:underline whitespace-nowrap">
+            <Link prefetch={false} href="/age-eligibility-calculator/all" className="body-medium !font-semibold text-brand hover:underline whitespace-nowrap">
               {t.viewAllExams(exams.length)}
             </Link>
           </div>
@@ -143,7 +143,7 @@ export default async function Page() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
             {categories.map((category) => (
-              <Link
+              <Link prefetch={false}
                 key={category.slug}
                 href={`/age-eligibility-calculator/all?group=${encodeURIComponent(category.slug)}`}
                 className="group flex flex-col items-center text-center gap-2 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-6 transition-all hover:border-brand hover:shadow-[0_4px_18px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
@@ -250,7 +250,7 @@ export default async function Page() {
             <Text as="p" variant="body-large" color="gray-muted" className="mt-2 mb-6 max-w-lg mx-auto">
               {t.ctaSubtitle}
             </Text>
-            <Link
+            <Link prefetch={false}
               href="/age-eligibility-calculator/all"
               className="inline-flex items-center gap-2 rounded-full bg-brand hover:bg-[var(--color-brand-hover)] text-white body-medium !font-semibold px-6 py-3 transition-colors"
             >

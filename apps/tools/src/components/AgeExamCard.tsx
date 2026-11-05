@@ -78,7 +78,7 @@ export default function AgeExamCard({
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link href={href} prefetch={false} className={className}>
       {content}
     </Link>
   );

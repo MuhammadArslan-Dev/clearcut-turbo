@@ -7,6 +7,9 @@ import { Locale } from "@/lib/dictionary";
  * next.config.ts, which only covers the shared "/tools" prefix now that
  * multiple tools live here).
  *
+ * Prefetch is OFF on purpose (phase 78): each exam card prefetched two RSC .txt files, and every one
+ * of those goes through the Cloudflare Worker (free plan: 100k requests/day).
+ *
  * On an English page this is a plain next/link — SPA transitions, prefetch,
  * all normal — but the tool's own route segment has to be spelled out
  * explicitly here since next.config.ts's basePath no longer includes it
@@ -47,7 +50,7 @@ export default function LocaleLink({
     );
   }
   return (
-    <Link href={`/${tool}${suffix}`} className={className}>
+    <Link href={`/${tool}${suffix}`} prefetch={false} className={className}>
       {children}
     </Link>
   );
