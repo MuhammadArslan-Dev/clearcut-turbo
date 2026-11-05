@@ -9,12 +9,15 @@ ALLOWED_EMAILS is a comma/space separated list of exact emails
 (``a@example.com``) and/or whole domains (``@example.com``).
 """
 
+import logging
 import os
 from typing import Any, Iterable
 
 from fastmcp.exceptions import AuthorizationError
 from fastmcp.server.dependencies import get_access_token
 from fastmcp.server.middleware import Middleware, MiddlewareContext
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_EMAILS_ENV = "ALLOWED_EMAILS"
 
@@ -32,6 +35,14 @@ def parse_allowlist(raw: str | None) -> tuple[frozenset[str], frozenset[str]]:
     return frozenset(emails), frozenset(domains)
 
 
+def _is_verified(value: Any) -> bool:
+    """Google's tokeninfo endpoint returns email_verified as the STRING "true",
+    while its v2 userinfo returns a real boolean; accept both, nothing else."""
+    if value is True:
+        return True
+    return isinstance(value, str) and value.strip().lower() == "true"
+
+
 def is_allowed(
     email: str | None,
     email_verified: Any,
@@ -39,7 +50,7 @@ def is_allowed(
     domains: Iterable[str],
 ) -> bool:
     """True when the verified email is allowlisted. Unknown/unverified fails."""
-    if not email or email_verified is not True:
+    if not email or not _is_verified(email_verified):
         return False
     email = email.lower()
     return email in set(emails) or email.rsplit("@", 1)[-1] in set(domains)
@@ -63,6 +74,11 @@ class TeamOnlyMiddleware(Middleware):
             self._emails,
             self._domains,
         ):
+            logger.warning(
+                "Rejected sign-in: email=%r email_verified=%r (not on ALLOWED_EMAILS)",
+                claims.get("email"),
+                claims.get("email_verified"),
+            )
             raise AuthorizationError(
                 "This Google account is not allowed to use this server."
             )

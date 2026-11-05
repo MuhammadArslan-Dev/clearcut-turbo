@@ -26,6 +26,14 @@ class TestAllowlist(unittest.TestCase):
         self.assertFalse(is_allowed("z@corp.in", None, e, d))
         self.assertFalse(is_allowed(None, True, e, d))
 
+    def test_google_tokeninfo_string_true_counts_as_verified(self):
+        e, d = {"a@x.com"}, set()
+        self.assertTrue(is_allowed("a@x.com", "true", e, d))
+        self.assertTrue(is_allowed("A@X.com", "TRUE", e, d))
+        self.assertFalse(is_allowed("a@x.com", "false", e, d))
+        self.assertFalse(is_allowed("a@x.com", "yes", e, d))
+        self.assertFalse(is_allowed("a@x.com", 1, e, d))
+
     def _run(self, claims):
         mw = TeamOnlyMiddleware({"a@x.com"}, set())
         nxt = AsyncMock(return_value="ok")
