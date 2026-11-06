@@ -23,6 +23,8 @@ export type TestIntroProps = {
   lang?: Lang;
   /** Badge text override (e.g. "Practice test"); the visual still follows `type`. */
   label?: string;
+  /** "large" scales the artwork up (full-page hosts: Daily/Practice Test); default keeps the compact modal size. */
+  size?: "default" | "large";
   /** Called when the countdown ends or the user taps Skip. Start your timer here. */
   onStart: () => void;
 };
@@ -39,6 +41,7 @@ export function TestIntro({
   rules,
   lang = "en",
   label,
+  size = "default",
   onStart,
 }: TestIntroProps) {
   const reduced = usePrefersReducedMotion();
@@ -77,18 +80,20 @@ export function TestIntro({
 
   return (
     <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={`${label ?? TYPE_LABEL[type][lang]}: ${title}`}>
-      <div className={`${s.stage} ${s[type]}`}>
+      <div className={`${s.stage} ${s[type]} ${size === "large" ? s.large : ""}`}>
         <span className={`${f.badge} ${f[type]}`}>{label ?? TYPE_LABEL[type][lang]}</span>
         <h2 className={s.title}>{title}</h2>
         <p className={s.meta}>{metaParts.join(" · ")}</p>
 
-        <div className={s.visual} aria-hidden="true">
-          <div className={`${s.layer} ${counting ? s.out : ""}`}>
-            {type === "topic" && <TopicVisual />}
-            {type === "daily" && <DailyVisual days={streakDays} lang={lang} />}
-            {type === "full" && <FullVisual />}
+        <div className={s.visualBox} aria-hidden="true">
+          <div className={s.visual}>
+            <div className={`${s.layer} ${counting ? s.out : ""}`}>
+              {type === "topic" && <TopicVisual />}
+              {type === "daily" && <DailyVisual days={streakDays} lang={lang} />}
+              {type === "full" && <FullVisual />}
+            </div>
+            {counting && <Countdown phase={phase} lang={lang} />}
           </div>
-          {counting && <Countdown phase={phase} lang={lang} />}
         </div>
 
         {rules && rules.length > 0 && (

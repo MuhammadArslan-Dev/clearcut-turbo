@@ -19,7 +19,7 @@ export function SubmitOverlay({ open, ...props }: { open: boolean } & TestSubmit
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <TestSubmit {...props} />
+          <TestSubmit size="large" {...props} />
         </motion.div>
       )}
     </AnimatePresence>

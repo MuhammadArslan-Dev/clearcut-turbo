@@ -19,6 +19,8 @@ export type TestSubmitProps = {
   lang?: Lang;
   /** Pill text override (e.g. "Practice test submitted"); defaults to the library copy for `type`. */
   note?: string;
+  /** "large" scales the artwork up (full-page hosts: Daily/Practice Test); default keeps the compact size. */
+  size?: "default" | "large";
   /** minimum time on screen before the stamp, so it never feels like a glitch (ms) */
   minDuration?: number;
 };
@@ -34,7 +36,7 @@ const ROWS: { pick: number; mark: "ok" | "bad" | "skip" }[] = [
 const LOOP = 1.2; // seconds — keep in sync with sBeam
 const BEAM_TRAVEL = 140; // px
 
-export function TestSubmit({ type, total, done, onFinish, lang = "en", note, minDuration = 1800 }: TestSubmitProps) {
+export function TestSubmit({ type, total, done, onFinish, lang = "en", note, size = "default", minDuration = 1800 }: TestSubmitProps) {
   const reduced = usePrefersReducedMotion();
   const [n, setN] = useState(0);
   const [stamped, setStamped] = useState(false);
@@ -68,7 +70,7 @@ export function TestSubmit({ type, total, done, onFinish, lang = "en", note, min
 
   return (
     <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={note ?? SUBMIT_NOTE[type][lang]}>
-      <div className={`${s.stage} ${stamped ? s.isStamped : ""}`}>
+      <div className={`${s.stage} ${stamped ? s.isStamped : ""} ${size === "large" ? s.large : ""}`}>
         <span className={s.pill}>
           <span className={s.pillTick}>
             <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -76,34 +78,36 @@ export function TestSubmit({ type, total, done, onFinish, lang = "en", note, min
           {note ?? SUBMIT_NOTE[type][lang]}
         </span>
 
-        <div className={s.visual} aria-hidden="true">
-          <div className={s.sheet}>
-            <span className={s.head} />
-            {ROWS.map((row, i) => {
-              const at = 0.05 + ((i * 24 + 8) / BEAM_TRAVEL) * 0.8;
-              return (
-                <span key={i} className={s.row}>
-                  <b className={s.qn}>{i + 1}</b>
-                  {[0, 1, 2, 3].map((c) => (
-                    <i key={c} className={c === row.pick ? s.on : undefined} />
-                  ))}
-                  <span
-                    className={`${s.mark} ${s[row.mark]}`}
-                    style={{ animationDelay: stamped ? "0s" : `${(at * LOOP).toFixed(2)}s` }}
-                  >
-                    {row.mark === "ok" && <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" /></svg>}
-                    {row.mark === "bad" && <svg viewBox="0 0 16 16"><path d="M5 5l6 6M11 5l-6 6" /></svg>}
-                    {row.mark === "skip" && <svg viewBox="0 0 16 16"><path d="M5 8h6" /></svg>}
+        <div className={s.visualBox} aria-hidden="true">
+          <div className={s.visual}>
+            <div className={s.sheet}>
+              <span className={s.head} />
+              {ROWS.map((row, i) => {
+                const at = 0.05 + ((i * 24 + 8) / BEAM_TRAVEL) * 0.8;
+                return (
+                  <span key={i} className={s.row}>
+                    <b className={s.qn}>{i + 1}</b>
+                    {[0, 1, 2, 3].map((c) => (
+                      <i key={c} className={c === row.pick ? s.on : undefined} />
+                    ))}
+                    <span
+                      className={`${s.mark} ${s[row.mark]}`}
+                      style={{ animationDelay: stamped ? "0s" : `${(at * LOOP).toFixed(2)}s` }}
+                    >
+                      {row.mark === "ok" && <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" /></svg>}
+                      {row.mark === "bad" && <svg viewBox="0 0 16 16"><path d="M5 5l6 6M11 5l-6 6" /></svg>}
+                      {row.mark === "skip" && <svg viewBox="0 0 16 16"><path d="M5 8h6" /></svg>}
+                    </span>
                   </span>
-                </span>
-              );
-            })}
-            {!stamped && <span className={s.beam} />}
-            {stamped && <span className={s.stamp}>{COPY.stamp[lang]}</span>}
-          </div>
-          <div className={s.buddy}>
-            <div className={stamped ? s.cheer : s.idle}>
-              <NibMascot className={f.mascot} look={stamped ? "none" : "scan"} mood={stamped ? "wow" : "happy"} />
+                );
+              })}
+              {!stamped && <span className={s.beam} />}
+              {stamped && <span className={s.stamp}>{COPY.stamp[lang]}</span>}
+            </div>
+            <div className={s.buddy}>
+              <div className={stamped ? s.cheer : s.idle}>
+                <NibMascot className={f.mascot} look={stamped ? "none" : "scan"} mood={stamped ? "wow" : "happy"} />
+              </div>
             </div>
           </div>
         </div>

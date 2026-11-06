@@ -22,11 +22,42 @@
 }
 .meta { margin: 0; font-size: 14px; color: var(--cc-slate); font-variant-numeric: tabular-nums; }
 
-.visual { position: relative; width: 240px; height: 160px; margin-top: 18px; }
+/* The artwork is drawn on a fixed 240x160 canvas; --k scales it (and the box that reserves its space). */
+.stage { --k: 1; }
+.visualBox { position: relative; width: calc(240px * var(--k)); height: calc(160px * var(--k)); margin-top: 18px; }
+.visual { position: absolute; left: 0; top: 0; z-index: 1; width: 240px; height: 160px; transform: scale(var(--k)); transform-origin: 0 0; }
 .layer { position: absolute; inset: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
 .out { opacity: 0; transform: scale(0.88); }
 
 .skip { margin-top: 14px; }
+
+/* ---------- large (Daily / Practice Test): bigger artwork on a soft halo, roomier type ---------- */
+.large { --k: 1.35; max-width: 560px; }
+.large .title { margin-top: 16px; font-size: 28px; }
+.large .meta { font-size: 15px; }
+.large .visualBox { margin-top: 26px; }
+.large .visualBox::before {
+  content: "";
+  position: absolute;
+  inset: -14% -10%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--cc-soft), rgb(232 242 251 / 0));
+  opacity: 0.85;
+}
+.large .skip { margin-top: 26px; }
+@media (max-width: 359px) { .large { --k: 1.15; } }
+@media (min-width: 400px) { .large { --k: 1.45; } }
+@media (min-width: 768px) {
+  .large { --k: 1.9; }
+  .large .title { font-size: 34px; }
+  .large .meta { font-size: 16px; }
+  .large .visualBox { margin-top: 36px; }
+  .large .skip { margin-top: 32px; }
+}
+@media (min-width: 1200px) and (min-height: 820px) { .large { --k: 2.2; } }
+/* short phones: keep the whole intro on screen */
+@media (max-height: 640px) and (max-width: 767px) { .large { --k: 1.15; } .large .visualBox { margin-top: 16px; } }
 
 /* rules checklist (full mocks) */
 .rules {

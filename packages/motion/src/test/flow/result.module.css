@@ -87,15 +87,25 @@
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; margin-top: 18px; }
 .stat {
   display: grid;
-  gap: 2px;
-  padding: 10px 4px;
-  border: 1px solid var(--cc-line);
-  border-radius: 12px;
+  justify-items: center;
+  gap: 3px;
+  padding: 12px 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   background: #fff;
+  text-align: center;
   animation: rUp 0.4s ease both;
 }
-.statVal { font-size: 22px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.statLabel { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; color: var(--cc-slate); }
+/* tinted cards on every screen size (the wide desktop layout only changes the sizing) */
+.stat.ok   { background: var(--cc-success-soft); }
+.stat.bad  { background: var(--cc-danger-soft); }
+.stat.skip { background: #e9eef4; }
+.stat.acc  { background: var(--cc-soft); }
+.stat.ok .statVal   { color: #067647; }
+.stat.bad .statVal  { color: #b42318; }
+.stat.acc .statVal  { color: var(--cc-brand-dark); }
+.statVal { font-size: 24px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.statLabel { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--cc-slate); }
 .statLabel i { width: 7px; height: 7px; border-radius: 50%; }
 .stat.ok .statLabel i { background: var(--cc-success); }
 .stat.bad .statLabel i { background: var(--cc-danger); }
@@ -268,17 +278,8 @@
     justify-items: center;
     gap: 6px;
     padding: 18px 8px 14px;
-    border-color: transparent;
     border-radius: 16px;
-    text-align: center;
   }
-  .wide .stat.ok   { background: var(--cc-success-soft); }
-  .wide .stat.bad  { background: var(--cc-danger-soft); }
-  .wide .stat.skip { background: #f1f4f8; }
-  .wide .stat.acc  { background: var(--cc-soft); }
-  .wide .stat.ok .statVal   { color: #067647; }
-  .wide .stat.bad .statVal  { color: #b42318; }
-  .wide .stat.acc .statVal  { color: var(--cc-brand-dark); }
   .wide .statVal { font-size: 32px; line-height: 1.1; }
   .wide .statLabel { font-size: 13px; font-weight: 600; }
   .wide .timeLine { margin-top: 14px; }
