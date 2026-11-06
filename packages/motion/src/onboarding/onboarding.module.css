@@ -1,0 +1,170 @@
+/* Onboarding complete: celebrate (≈2.3s) → building steps (waits for data) → curtain lifts to reveal the dashboard. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--cc-z, 9999);
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px 16px;
+  background: linear-gradient(180deg, #eef6ff 0%, #ffffff 46%);
+  animation: oIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* curtain: the whole layer slides up and away, the dashboard is already underneath */
+.lift { animation: oLift 0.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.lift .stage { animation: oStageUp 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+
+.stage { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 380px; text-align: center; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; width: 200px; height: 190px; } /* fixed height: nothing below it moves between phases */
+.ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(0 131 255 / 0.14) 0%, rgb(0 131 255 / 0) 68%);
+  animation: oRing 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+.ring2 { width: 200px; height: 200px; margin: -100px 0 0 -100px; border: 2px solid rgb(0 131 255 / 0.18); background: none; animation: oPulse 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+.isBuilding .ring { animation: oBreathe 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+.isBuilding .ring2 { opacity: 0; }
+
+.nib {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  width: 92px;
+  height: 104px;
+  margin-left: -46px;
+  transform-origin: 50% 100%;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  animation: oDrop 0.6s cubic-bezier(0.5, 0, 0.9, 0.5) both;
+}
+.isBuilding .nib { transform: scale(0.72) translateY(14px); }
+.jump, .bob, .wave { width: 100%; height: 100%; transform-origin: 50% 100%; }
+.jump { animation: oLand 0.5s ease-out 0.6s both, oHop 0.9s cubic-bezier(0.3, 0, 0.3, 1) 1.15s both; }
+.bob { animation: oBob 1s infinite; }
+.wave { animation: oWave 0.5s cubic-bezier(0.3, 0, 0.3, 1) both; }
+
+/* ---------- titles (two sets crossfade in one grid cell) ---------- */
+.titles { display: grid; width: 100%; margin-top: 4px; }
+.titleSet { grid-area: 1 / 1; }
+.title { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.25; text-wrap: balance; }
+.sub { margin: 6px 0 0; font-size: 14.5px; color: var(--cc-slate); }
+.in { animation: oUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.65s both; }
+.isBuilding .in { animation-delay: 0.15s; }
+.out { animation: oOut 0.25s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+.hidden { visibility: hidden; }
+
+/* ---------- chips ---------- */
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+.chips li {
+  padding: 7px 14px;
+  border: 1.5px solid #cfe3fa;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--cc-brand-dark);
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 3px 0 #e1ecf8;
+  animation: oChip 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ---------- steps ---------- */
+.steps {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  min-height: 118px; /* reserved, so nothing jumps when it appears */
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  visibility: hidden;
+}
+.stepsIn { visibility: visible; }
+.steps li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; font-weight: 500; color: #8597aa; transition: color 0.3s; }
+.stepsIn li { animation: oUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.steps li.active { color: var(--cc-ink); }
+.steps li.done { color: var(--cc-ink); }
+.mark {
+  position: relative;
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eef3f8;
+}
+.mark i { width: 8px; height: 8px; border-radius: 50%; background: #c3cfdb; }
+.active .mark { background: var(--cc-soft); }
+.active .mark i {
+  position: absolute;
+  inset: 3px;
+  width: auto;
+  height: auto;
+  border: 2.5px solid var(--cc-brand);
+  border-right-color: transparent;
+  border-radius: 50%;
+  background: none;
+  animation: oSpin 0.8s linear infinite;
+}
+.done .mark { background: var(--cc-success); animation: oPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.done .mark svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: oDraw 0.35s cubic-bezier(0.65, 0, 0.35, 1) 0.12s forwards; }
+
+/* ---------- keyframes ---------- */
+@keyframes oIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes oLift { to { transform: translateY(-100%); } }
+@keyframes oStageUp { to { opacity: 0; transform: translateY(-30px) scale(0.97); } }
+@keyframes oRing { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes oPulse { from { opacity: 0.9; transform: scale(0.5); } to { opacity: 0; transform: scale(1.25); } }
+@keyframes oBreathe { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+@keyframes oDrop { from { opacity: 0; transform: translateY(-140px); } 20% { opacity: 1; } to { opacity: 1; transform: translateY(0); } }
+@keyframes oLand {
+  0%   { transform: scale(1.22, 0.78); }
+  45%  { transform: scale(0.92, 1.1); }
+  75%  { transform: scale(1.04, 0.97); }
+  100% { transform: scale(1); }
+}
+@keyframes oHop {
+  0%   { transform: scale(1.12, 0.88); }
+  22%  { transform: translateY(-34px) scale(0.92, 1.1) rotate(-6deg); }
+  45%  { transform: translateY(0) scale(1.14, 0.86); }
+  65%  { transform: translateY(-16px) rotate(6deg); }
+  85%  { transform: translateY(0) scale(1.06, 0.94); }
+  100% { transform: none; }
+}
+@keyframes oBob {
+  0%   { transform: translateY(0) scale(1.06, 0.94); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  15%  { transform: translateY(-1px) scale(0.96, 1.04); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  50%  { transform: translateY(-7px) scale(1, 1); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  88%  { transform: translateY(-1px) scale(0.98, 1.02); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  100% { transform: translateY(0) scale(1.06, 0.94); }
+}
+@keyframes oWave {
+  0%   { transform: scale(1.1, 0.9); }
+  40%  { transform: translateY(-22px) scale(0.92, 1.1) rotate(-10deg); }
+  100% { transform: translateY(-60px) scale(0.9, 1.12) rotate(4deg); }
+}
+@keyframes oUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes oOut { to { opacity: 0; transform: translateY(-8px); } }
+@keyframes oChip { from { opacity: 0; transform: translateY(10px) scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes oSpin { to { transform: rotate(360deg); } }
+@keyframes oPop { from { transform: scale(0.4); } to { transform: scale(1); } }
+@keyframes oDraw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .ring, .ring2, .nib, .jump, .bob, .wave, .in, .out, .chips li, .stepsIn li, .done .mark, .lift .stage { animation: none !important; }
+  .done .mark svg { animation: none; stroke-dashoffset: 0; }
+  .active .mark i { animation-duration: 2s; }
+  .nib { transition: none; }
+  .out { opacity: 0; }
+  .lift { animation: oIn 0.2s reverse forwards; }
+}

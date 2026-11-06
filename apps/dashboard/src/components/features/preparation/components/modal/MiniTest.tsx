@@ -2,6 +2,14 @@
 
 import React, { useMemo, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { TestIntro } from "@clearcut/motion/test/flow";
+import {
+  AnswerFeedback,
+  OptionMotion,
+  QuestionSlide,
+  StreakCombo,
+  type OptionMotionState,
+} from "@clearcut/motion/test/mini-test";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useBackHandler } from "@/hooks/Global/useBackHandler";
@@ -24,6 +32,7 @@ import { useMiniTestStore } from "../../store/useMiniTestStore";
 import { QuestionOption } from "../../types/question";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { useTranslations } from "next-intl";
+import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import Text from "@clearcut/ui/text";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
@@ -75,6 +84,10 @@ export default function MiniTest() {
   const { course: courseData } = usePreparationStore();
 
   const queryClient = useQueryClient();
+
+  // "Start test" animation (@clearcut/motion TestIntro: topic title, 3-2-1-Go, Skip). It plays INSIDE the
+  // modal (under its header) while the questions load. This modal is mounted fresh on every open, so it replays each time.
+  const [introDone, setIntroDone] = useState(false);
 
   const {
     questions,
@@ -204,7 +217,19 @@ export default function MiniTest() {
         >
           <Header onClose={() => closeModal("mini-test")} />
 
-          {loading ? (
+          {!introDone ? (
+            // TestIntro's overlay is position: fixed; the transform makes this pane its containing block,
+            // so it fills only the modal body (header stays visible) instead of the whole screen.
+            <div className="relative min-h-[max(50dvh,380px)] flex-1 overflow-hidden" style={{ transform: "translateZ(0)" }}>
+              <TestIntro
+                type="topic"
+                title={selectedTopic ? getLocalizedName(selectedTopic, language) : ""}
+                questions={questions.length || undefined}
+                lang={language === "hi" ? "hi" : "en"}
+                onStart={() => setIntroDone(true)}
+              />
+            </div>
+          ) : loading ? (
             <SekeletonMiniTest />
           ) : !question ? (
             // Server unreachable or empty/partial payload — show a recoverable
@@ -224,10 +249,11 @@ export default function MiniTest() {
               result={result}
               locale={locale}
               selectedSection={selectSection}
+              lang={language === "hi" ? "hi" : "en"}
             />
           )}
 
-          {question && (
+          {introDone && question && (
             <Footer
               currentIndex={currentIndex}
               hasSelected={hasSelected}
@@ -271,16 +297,6 @@ const Header = ({ onClose }: { onClose: () => void }) => {
 /* -------------------------------------------------------------------------- */
 /*                                 CONTENT                                    */
 /* -------------------------------------------------------------------------- */
-const shakeAnimation = {
-  wrong: {
-    x: [0, -6, 6, -4, 4, 0],
-    transition: { duration: 0.35 },
-  },
-  correct: {
-    scale: [1, 1.04, 1],
-    transition: { duration: 0.25 },
-  },
-};
 const Content = ({
   question,
   questions,
@@ -294,6 +310,7 @@ const Content = ({
   result,
   locale,
   selectedSection,
+  lang,
 }: any) => {
   const extractImgSrc = (html: string) => {
     const match = html.match(/src\s*=\s*["']?([^"'>\s]+)/i);
@@ -309,7 +326,37 @@ const Content = ({
     }
   }, [result, hasChecked]);
 
+  // "3 in a row!" toast (@clearcut/motion StreakCombo): consecutive correct checked answers ending here.
+  const correctOf = (q: any) => {
+    const t =
+      selectedSection?.type === "subject"
+        ? q?.translations?.find((tr: any) => tr.locale === locale)
+        : q?.translations?.[0];
+    return t?.answer?.correct_option ? Number(t.answer.correct_option) : null;
+  };
+  let streak = 0;
+  if (hasChecked && selected === correctKey) {
+    for (let k = currentIndex; k >= 0; k--) {
+      if (checked[k] && answers[k] != null && answers[k] === correctOf(questions[k])) streak++;
+      else break;
+    }
+  }
+  const [combo, setCombo] = useState<number | null>(null);
+  // Toast once per question: going Previous/Next back onto an already-checked question must not replay it.
+  const toasted = React.useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (!hasChecked || (streak !== 3 && streak !== 5 && streak !== 10)) return;
+    if (toasted.current.has(currentIndex)) return;
+    toasted.current.add(currentIndex);
+    setCombo(streak);
+    const t = setTimeout(() => setCombo(null), 1800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasChecked, currentIndex]);
+
   return (
+    <div className="relative w-full">
+    {combo !== null && <StreakCombo count={combo} lang={lang} top={64} />}
     <div className="w-full flex justify-center min-h-[30dvh] max-h-[90dvh] overflow-y-auto py-2">
       <div className="w-full flex flex-col gap-5 bg-white md:p-5">
         {/* Progress */}
@@ -406,7 +453,9 @@ const Content = ({
           </div>
         </div>
 
-        {/* Question */}
+        {/* Question + options slide in per question (@clearcut/motion QuestionSlide) */}
+        <QuestionSlide key={currentIndex}>
+        <div className="flex flex-col gap-5">
         <div className="px-3">
           <QuestionText
             question={question?.content?.question}
@@ -424,13 +473,18 @@ const Content = ({
             const showWrong = hasChecked && isSelected && !isCorrect;
 
             return (
-              <motion.div
+              <OptionMotion
                 key={option.option}
-                whileTap={!hasChecked ? { scale: 0.97 } : undefined}
-                animate={
-                  showWrong ? "wrong" : showCorrect ? "correct" : undefined
+                index={index}
+                state={
+                  (showCorrect
+                    ? "right"
+                    : showWrong
+                      ? "wrong"
+                      : isSelected
+                        ? "picked"
+                        : "idle") as OptionMotionState
                 }
-                variants={shakeAnimation}
               >
                 <QOption
                   value={{
@@ -484,10 +538,13 @@ const Content = ({
                           : "",
                   }}
                 />
-              </motion.div>
+              </OptionMotion>
             );
           })}
         </div>
+
+        </div>
+        </QuestionSlide>
 
         {/* Explanation */}
         {hasChecked && (
@@ -496,6 +553,18 @@ const Content = ({
             animate={{ opacity: 1, y: 0 }}
             className="space-y-2 px-3"
           >
+            <AnswerFeedback
+              right={selected === correctKey}
+              lang={lang}
+              detail={
+                selected === correctKey
+                  ? undefined
+                  : (() => {
+                      const o = question?.options?.find((x: QuestionOption) => x.option === correctKey);
+                      return o ? `${String.fromCharCode(64 + o.option)}. ${o.text}` : undefined;
+                    })()
+              }
+            />
             <ExplanationTitle
               title=" Answer & Explanation"
               index={Number.isFinite(correctKey) ? correctKey - 1 : 0}
@@ -505,6 +574,7 @@ const Content = ({
           </motion.div>
         )}
       </div>
+    </div>
     </div>
   );
 };

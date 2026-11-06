@@ -116,3 +116,4 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 
 - 2026-10-30: added phases 68–70 (tools login gate, auth modal redesign, acquisition attribution).
 - 2026-10-30: added phase 71 (image download options sheet + free-PDF lead via Amplitude, tools; a DB request table was built and removed again).
+| 79 | [Motion library (animations package) + preview page](79-motion-library-animations.md) | — | CM `packages/motion`, `apps/dashboard` | Live in the Topic Test (intro, animations, result screen); rest not integrated | Integration instructions for other screens; approved-designs PDF |

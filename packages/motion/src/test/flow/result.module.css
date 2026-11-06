@@ -1,0 +1,244 @@
+/* Result: ring counts up to the score (0.3–1.7s), cutoff tick on the ring,
+   outcome moment at ~1.7s (confetti + cap for pass; headband + nod otherwise),
+   then stats, the per-type card and CTAs cascade in. */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+  text-align: center;
+}
+.pass  { --arc: var(--cc-success); }
+.near  { --arc: var(--cc-amber); }
+.below { --arc: var(--cc-brand); }
+
+.badge { animation: rUp 0.4s ease both; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; width: 260px; height: 222px; margin-top: 6px; animation: rUp 0.45s ease 0.05s both; }
+.ring { position: absolute; left: 30px; top: 10px; width: 200px; height: 200px; overflow: visible; }
+.track { fill: none; stroke: var(--cc-soft); stroke-width: 14; }
+.arc {
+  fill: none;
+  stroke: var(--arc);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  transform: rotate(-90deg);
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+}
+.cutTick { stroke: var(--cc-ink); stroke-width: 3.2; stroke-linecap: round; }
+
+.glow {
+  position: absolute;
+  left: 30px;
+  top: 10px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(18 183 106 / 0.28) 40%, rgb(18 183 106 / 0) 70%);
+  opacity: 0;
+}
+.pass .glow { animation: rGlow 1.1s ease-out 1.7s both; }
+.pass .ring { animation: rPulse 0.5s ease-out 1.7s; }
+
+.center {
+  position: absolute;
+  left: 30px;
+  top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+}
+.score { font-size: 50px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.max { margin-top: 2px; font-size: 15px; font-weight: 600; color: var(--cc-slate); font-variant-numeric: tabular-nums; }
+.cutChip {
+  margin-top: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--cc-soft);
+  color: var(--cc-slate);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.buddy { position: absolute; left: 194px; top: 134px; width: 56px; height: 63px; animation: rPeek 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.25s both; }
+.buddyMove { width: 100%; height: 100%; transform-origin: 50% 100%; }
+.pass .buddyMove { animation: rHop 0.9s cubic-bezier(0.3, 0, 0.3, 1) 1.7s both, rIdle 1.8s ease-in-out 2.7s infinite; }
+.near .buddyMove, .below .buddyMove { animation: rNod 1.6s ease-in-out 1.7s infinite; }
+
+/* confetti burst from the ring centre */
+.confetti { position: absolute; left: 50%; top: 45%; width: 0; height: 0; z-index: 2; pointer-events: none; }
+.confetti i { position: absolute; left: 0; top: 0; opacity: 0; animation: rConf 1.4s cubic-bezier(0.2, 0.6, 0.4, 1) both; }
+
+/* ---------- copy ---------- */
+.title { margin: 8px 0 4px; font-size: 23px; font-weight: 800; line-height: 1.25; text-wrap: balance; animation: rUp 0.45s ease 1.55s both; }
+.sub { max-width: 36ch; margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--cc-slate); animation: rUp 0.45s ease 1.65s both; }
+
+/* ---------- stats ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; margin-top: 18px; }
+.stat {
+  display: grid;
+  gap: 2px;
+  padding: 10px 4px;
+  border: 1px solid var(--cc-line);
+  border-radius: 12px;
+  background: #fff;
+  animation: rUp 0.4s ease both;
+}
+.statVal { font-size: 22px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.statLabel { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; color: var(--cc-slate); }
+.statLabel i { width: 7px; height: 7px; border-radius: 50%; }
+.stat.ok .statLabel i { background: var(--cc-success); }
+.stat.bad .statLabel i { background: var(--cc-danger); }
+.stat.skip .statLabel i { background: #c3cfdb; }
+.stat.acc .statLabel i { background: var(--cc-brand); }
+
+.timeLine { margin: 10px 0 0; font-size: 13.5px; color: var(--cc-slate); font-variant-numeric: tabular-nums; white-space: pre-wrap; animation: rUp 0.4s ease 1.95s both; }
+.timeLine b { color: var(--cc-ink); }
+
+/* ---------- per-type card ---------- */
+.card {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--cc-line);
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  animation: rUp 0.45s ease both;
+}
+.cardTitle { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+
+.secList { display: grid; gap: 11px; }
+.sec { display: grid; grid-template-columns: 1fr auto; gap: 5px 8px; align-items: baseline; }
+.secName { min-width: 0; font-size: 13.5px; }
+.secVal { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.secBar { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: 8px; background: var(--cc-soft); }
+.secBar span { display: block; height: 100%; border-radius: 8px; transform-origin: 0 50%; transform: scaleX(var(--p)); animation: rBar 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.sec.ok .secBar span { background: var(--cc-success); }
+.sec.mid .secBar span { background: var(--cc-amber); }
+.sec.bad .secBar span { background: var(--cc-danger); }
+
+.streakCard { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; }
+.miniFlame { width: 36px; height: 46px; transform-origin: 50% 100%; animation: rFlicker 0.55s ease-in-out infinite alternate; }
+.streakText { display: flex; align-items: baseline; gap: 8px; }
+.flip { display: flex; flex-direction: column; height: 32px; overflow: hidden; }
+.flip span {
+  display: block;
+  height: 32px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 32px;
+  color: var(--cc-flame-ink);
+  font-variant-numeric: tabular-nums;
+  animation: rFlip 0.55s cubic-bezier(0.3, 0, 0.3, 1.4) 2.35s both;
+}
+.streakLabel { font-size: 14px; font-weight: 600; color: var(--cc-slate); }
+.week { display: flex; grid-column: 1 / -1; justify-content: space-between; }
+.day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--cc-slate); }
+.day i { width: 24px; height: 24px; border: 2px solid var(--cc-line); border-radius: 50%; background: #fff; }
+.dayOn i { border-color: var(--cc-flame); background: var(--cc-flame); }
+.today i { animation: rDay 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.5) 2.6s both; }
+.today { font-weight: 700; color: var(--cc-flame-ink); }
+.streakNote { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--cc-slate); }
+
+.track2 { position: relative; height: 10px; margin: 8px 10px 10px; border-radius: 10px; background: var(--cc-soft); }
+.trackFill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--to); border-radius: 10px; background: var(--cc-brand); animation: rWidth 0.9s cubic-bezier(0.3, 0, 0.2, 1) 2.2s both; }
+.dot {
+  position: absolute;
+  top: 50%;
+  left: var(--to);
+  width: 22px;
+  height: 22px;
+  border: 5px solid var(--cc-brand);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgb(0 131 255 / 0.15);
+  transform: translate(-50%, -50%);
+  animation: rLeft 0.9s cubic-bezier(0.3, 0, 0.2, 1) 2.2s both;
+}
+.levels { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--cc-slate); }
+.lvlOn { font-weight: 700; color: var(--cc-brand-dark); }
+.levelUp {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--cc-success-soft);
+  color: #067a46;
+  font-size: 11px;
+  font-weight: 700;
+  animation: rPop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.6) 3s both;
+}
+
+/* sticky: when the result is taller than the screen (short phones) the buttons stay reachable at the bottom of the
+   scroll area; when it fits, they sit exactly where they always did. */
+.ctas { position: sticky; bottom: 0; z-index: 2; display: grid; gap: 10px; width: 100%; margin-top: 20px; padding: 12px 0 4px; background: linear-gradient(to top, #fff 78%, rgb(255 255 255 / 0)); animation: rUp 0.45s ease 2.25s both; }
+
+/* only very narrow phones (320) stack the chips 2x2; 360-wide phones keep one row of four (saves ~75px of height) */
+@media (max-width: 345px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* short phones: scale the hero and tighten spacing so the whole result fits without scrolling.
+   Same design, smaller. Anything still taller than the screen scrolls with the buttons pinned (see .ctas). */
+@media (max-width: 600px) and (max-height: 800px) {
+  .result { padding-bottom: 8px; }
+  .hero { zoom: 0.88; }
+  .stats { margin-top: 12px; }
+  .ctas { margin-top: 10px; }
+}
+@media (max-width: 600px) and (max-height: 700px) {
+  .hero { zoom: 0.72; margin-top: 0; }
+  .title { font-size: 21px; margin-top: 4px; }
+  .sub { font-size: 13.5px; line-height: 1.45; }
+  .stat { padding: 7px 4px; }
+  .stats { margin-top: 10px; }
+}
+
+/* ---------- keyframes ---------- */
+@keyframes rUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes rPeek { from { opacity: 0; transform: translateY(20px) scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes rGlow { from { opacity: 0.9; transform: scale(0.85); } to { opacity: 0; transform: scale(1.35); } }
+@keyframes rPulse { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.05); } }
+@keyframes rHop {
+  0%   { transform: scale(1.15, 0.85); }
+  25%  { transform: translateY(-30px) scale(0.9, 1.1) rotate(-6deg); }
+  50%  { transform: translateY(0) scale(1.12, 0.88); }
+  70%  { transform: translateY(-14px) rotate(6deg); }
+  100% { transform: none; }
+}
+@keyframes rIdle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes rNod {
+  0%, 100% { transform: rotate(0deg); }
+  20%      { transform: rotate(-7deg) translateY(-2px); }
+  40%      { transform: rotate(0deg); }
+}
+@keyframes rConf {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  2%   { opacity: 1; }
+  35%  { transform: translate(calc(var(--x) * 0.7), var(--up)) rotate(calc(var(--r) * 0.4)); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--down)) rotate(var(--r)); }
+}
+@keyframes rBar { from { transform: scaleX(0); } }
+@keyframes rFlicker { from { transform: scale(1, 1); } to { transform: scale(1.04, 0.94) skewX(-2deg); } }
+@keyframes rFlip { from { transform: translateY(0); } to { transform: translateY(-32px); } }
+@keyframes rDay {
+  from { border-color: var(--cc-line); background: #fff; transform: scale(0.6); }
+  to   { border-color: var(--cc-flame); background: var(--cc-flame); transform: scale(1); }
+}
+@keyframes rWidth { from { width: var(--from); } to { width: var(--to); } }
+@keyframes rLeft { from { left: var(--from); } to { left: var(--to); } }
+@keyframes rPop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .badge, .hero, .buddy, .buddyMove, .title, .sub, .stat, .timeLine, .card, .secBar span,
+  .miniFlame, .trackFill, .dot, .levelUp, .ctas, .pass .glow, .pass .ring, .today i { animation: none !important; }
+  .flip span { animation: none; transform: translateY(-32px); }
+}

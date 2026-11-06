@@ -1,0 +1,527 @@
+/* ClearCutoff loader — "Nibbu" hops across OMR bubbles and marks the right answer.
+   Motion rules used everywhere in this package:
+   · X and Y are separate layers: X glides, Y follows gravity (ease-out up, ease-in down).
+   · Every contact gets squash → stretch → settle. Every reveal gets a small overshoot.
+   · Transforms + opacity only (plus one stroke draw). One 3.2s loop drives each scene. */
+
+.overlay,
+.inline,
+.compact {
+  --cc-brand: var(--color-brand, #0083ff);
+  --cc-brand-dark: var(--color-brand-hover, #005cb8);
+  --cc-ink: #192839;
+  --cc-slate: #566c82;
+  --cc-line: #cfdbe7;
+  --cc-line-strong: #b7c7d8;
+  --cc-soft: #e8f2fb;
+  --cc-success: #12b76a;
+  --cc-gold: #ffc542;
+  --cc-cheek: #ff9bb0;
+  --cc-loop: 3.2s;
+  /* easing tokens */
+  --cc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --cc-ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --cc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cc-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  font-family: inherit;
+}
+
+/* ---------- containers: enter / exit choreography ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--cc-z, 9999);
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(60% 50% at 50% 46%, rgb(232 242 251 / 0.55), rgb(255 255 255 / 0) 70%),
+    rgb(255 255 255 / 0.95);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: ccIn 0.28s var(--cc-ease-out) var(--cc-delay, 0ms) both;
+}
+
+.inline {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  padding: 32px 16px;
+  animation: ccIn 0.28s var(--cc-ease-out) var(--cc-delay, 0ms) both;
+}
+
+.exiting {
+  animation: ccOut 0.32s var(--cc-ease-in) 0.04s forwards;
+  pointer-events: none;
+}
+.exiting .stage {
+  animation: ccShrink 0.26s var(--cc-ease-in) forwards;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 320px;
+  padding: 0 16px;
+  text-align: center;
+}
+
+/* staggered entrance: halo blooms → scene pops → label → tip */
+.stage > :first-child { animation: ccPop 0.56s var(--cc-ease-spring) calc(var(--cc-delay, 0ms) + 40ms) both; }
+.stage > .label { animation: ccUp 0.44s var(--cc-ease-out) calc(var(--cc-delay, 0ms) + 150ms) both; }
+.stage > .tips { animation: ccUp 0.44s var(--cc-ease-out) calc(var(--cc-delay, 0ms) + 230ms) both; }
+
+/* ---------- scene ---------- */
+
+.scene {
+  position: relative;
+  isolation: isolate;
+  width: 168px;
+  height: 120px;
+}
+
+.halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 230px;
+  height: 230px;
+  margin: -124px 0 0 -115px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cc-soft) 0%, rgb(232 242 251 / 0) 66%);
+  animation:
+    ccBloom 0.7s var(--cc-ease-out) var(--cc-delay, 0ms) both,
+    breathe var(--cc-loop) var(--cc-ease-io) calc(var(--cc-delay, 0ms) + 0.7s) infinite;
+}
+
+.bubbles {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 16px;
+}
+
+.bubble {
+  position: relative;
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--cc-line);
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* landing ripple */
+.bubble::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--cc-line-strong);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.letter {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--cc-slate);
+}
+
+.bubbleA { animation: pressA var(--cc-loop) infinite; }
+.bubbleA::after { animation: rippleA var(--cc-loop) var(--cc-ease-out) infinite; }
+.bubbleB { animation: pressB var(--cc-loop) infinite; }
+.bubbleB::after { animation: rippleB var(--cc-loop) var(--cc-ease-out) infinite; }
+.bubbleC { animation: pressC var(--cc-loop) infinite; }
+.bubbleC::after { border-color: var(--cc-brand); animation: rippleC var(--cc-loop) var(--cc-ease-out) infinite; }
+
+/* ink spreads from where the nib touches (top of the bubble) */
+.fill {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: var(--cc-brand);
+  transform: scale(0);
+  transform-origin: 50% 18%;
+  animation: fill var(--cc-loop) infinite;
+}
+
+.letterC { animation: letterC var(--cc-loop) infinite; }
+
+.check {
+  position: absolute;
+  top: -8px;
+  right: -9px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--cc-success);
+  transform: scale(0);
+  animation: pop var(--cc-loop) infinite;
+}
+
+.check svg {
+  width: 11px;
+  height: 11px;
+  overflow: visible;
+}
+.checkPath {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw var(--cc-loop) infinite;
+}
+
+.spark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: spark var(--cc-loop) infinite;
+}
+.spark1 { left: -13px; top: -6px; background: var(--cc-brand); --sx: -5px; --sy: -5px; }
+.spark2 { left: 9px; top: -22px; width: 10px; height: 10px; background: var(--cc-gold); --sx: 0px; --sy: -7px; animation-delay: 0.04s; }
+.spark3 { right: -15px; top: 16px; width: 6px; height: 6px; background: var(--cc-gold); --sx: 6px; --sy: 2px; animation-delay: 0.08s; }
+
+/* rider = X (glide) › hop = Y (gravity) › squash = scale + lean (from the nib tip) */
+.shadowX,
+.rider {
+  position: absolute;
+  animation: rideX var(--cc-loop) infinite;
+}
+.shadowX { left: 4px; bottom: 26px; width: 22px; height: 5px; }
+.shadow {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgb(25 40 57 / 0.14);
+  animation: shadowY var(--cc-loop) infinite;
+}
+
+.rider {
+  left: -7px; /* centres the 44px mascot over bubble A (centre x = 15px) */
+  bottom: 25px;
+  width: 44px;
+  height: 50px;
+  will-change: transform;
+}
+.hop {
+  width: 100%;
+  height: 100%;
+  animation: hopY var(--cc-loop) infinite;
+  will-change: transform;
+}
+.squash {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: squash var(--cc-loop) infinite;
+  will-change: transform;
+}
+
+.mascot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ---------- text ---------- */
+
+.label {
+  margin: 20px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--cc-ink);
+}
+
+.dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 3px;
+}
+.dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dot 1.2s var(--cc-ease-io) infinite;
+}
+.dots i:nth-child(2) { animation-delay: 0.14s; }
+.dots i:nth-child(3) { animation-delay: 0.28s; }
+
+/* tips stack in one grid cell so the outgoing and incoming tip can crossfade */
+.tips {
+  display: grid;
+  max-width: 290px;
+  min-height: 3.1em;
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.tip {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--cc-slate);
+}
+.tipIn  { animation: tipIn 0.46s var(--cc-ease-out) 0.12s both; }
+.tipOut { animation: tipOut 0.22s var(--cc-ease-in) forwards; }
+
+.tipTag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--cc-soft);
+  color: var(--cc-brand-dark);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
+/* ---------- compact ---------- */
+
+.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  animation: ccIn 0.2s var(--cc-ease-out) both;
+}
+
+.compactMascot {
+  display: inline-block;
+  width: 1.3em;
+  height: 1.45em;
+  transform-origin: 50% 100%;
+  animation: bob 1s infinite;
+}
+.compactMascot svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.onBrand {
+  --nib-body: #fff;
+  --nib-tip: #d6e8ff;
+  --nib-shine: transparent;
+  --nib-hole: var(--cc-brand);
+  --nib-slit: var(--cc-brand);
+}
+
+/* ---------- keyframes (3.2s loop) ----------
+   0–8%  ready on A · 8–22% hop to B · 30–44% hop to C · 44–60% stamp C (ink at 51%)
+   57–66% check draws + sparkles · 64–79% happy jump · 82–98% big hop home        */
+
+/* X: smooth glide between bubbles */
+@keyframes rideX {
+  0%, 8%    { transform: translateX(0); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  22%, 30%  { transform: translateX(46px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  44%, 82%  { transform: translateX(92px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  98%, 100% { transform: translateX(0); }
+}
+
+/* Y: gravity — decelerate into the apex, accelerate into the landing */
+@keyframes hopY {
+  0%, 8%   { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  15%      { transform: translateY(-28px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  22%, 30% { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  37%      { transform: translateY(-28px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  44%, 64% { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  70%      { transform: translateY(-16px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  76%, 82% { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  90%      { transform: translateY(-38px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  98%, 100% { transform: translateY(0); }
+}
+
+/* squash/stretch with lean into the direction of travel, plus settle after each landing */
+@keyframes squash {
+  0%   { transform: scale(1, 1) rotate(0deg); }
+  5%   { transform: scale(1.1, 0.88) rotate(-3deg); }
+  8%   { transform: scale(0.9, 1.12) rotate(6deg); }
+  15%  { transform: scale(1, 1) rotate(4deg); }
+  20%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  22%  { transform: scale(1.16, 0.84) rotate(-2deg); }
+  25%  { transform: scale(0.97, 1.03) rotate(0deg); }
+  27%  { transform: scale(1, 1) rotate(0deg); }
+  28%  { transform: scale(1.08, 0.9) rotate(-3deg); }
+  30%  { transform: scale(0.9, 1.12) rotate(6deg); }
+  37%  { transform: scale(1, 1) rotate(4deg); }
+  42%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  44%  { transform: scale(1.18, 0.82) rotate(-2deg); }
+  47%  { transform: scale(0.98, 1.03) rotate(0deg); }
+  49%  { transform: scale(1, 1) rotate(0deg); }
+  51%  { transform: scale(1.22, 0.76) rotate(0deg); }
+  54%  { transform: scale(0.95, 1.08) rotate(0deg); }
+  57%  { transform: scale(1.02, 0.98) rotate(0deg); }
+  60%  { transform: scale(1, 1) rotate(0deg); }
+  64%  { transform: scale(1.1, 0.88) rotate(0deg); }
+  66%  { transform: scale(0.92, 1.1) rotate(-8deg); }
+  70%  { transform: scale(1, 1) rotate(8deg); }
+  73%  { transform: scale(1, 1) rotate(-4deg); }
+  76%  { transform: scale(1.12, 0.88) rotate(0deg); }
+  79%  { transform: scale(1, 1) rotate(0deg); }
+  80%  { transform: scale(1.1, 0.88) rotate(3deg); }
+  82%  { transform: scale(0.9, 1.12) rotate(-6deg); }
+  90%  { transform: scale(1, 1) rotate(-4deg); }
+  96%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  98%  { transform: scale(1.14, 0.86) rotate(2deg); }
+  100% { transform: scale(1, 1) rotate(0deg); }
+}
+
+/* shadow shrinks and fades as Nibbu rises (same timing as hopY) */
+@keyframes shadowY {
+  0%, 8%   { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  15%      { transform: scale(0.55); opacity: 0.45; animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  22%, 30% { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  37%      { transform: scale(0.55); opacity: 0.45; animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  44%, 50% { transform: scale(1); opacity: 1; }
+  51%      { transform: scale(1.25, 1.1); opacity: 1; }
+  56%, 64% { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  70%      { transform: scale(0.72); opacity: 0.65; animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  76%, 82% { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  90%      { transform: scale(0.42); opacity: 0.35; animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  98%, 100% { transform: scale(1); opacity: 1; }
+}
+
+/* bubbles dip under the landing and spring back */
+@keyframes pressA {
+  0%, 4%   { transform: scale(0.92); }
+  9%       { transform: scale(1.04); }
+  12%, 97% { transform: scale(1); }
+  98.5%, 100% { transform: scale(0.92); }
+}
+@keyframes pressB {
+  0%, 21.5% { transform: scale(1); }
+  23%       { transform: scale(0.9); }
+  27%       { transform: scale(1.04); }
+  30%, 100% { transform: scale(1); }
+}
+@keyframes pressC {
+  0%, 43.5% { transform: scale(1); }
+  45%       { transform: scale(0.93); }
+  49%       { transform: scale(1); }
+  51%       { transform: scale(0.88); }
+  55%       { transform: scale(1.06); }
+  59%, 100% { transform: scale(1); }
+}
+
+@keyframes rippleA {
+  0%       { transform: scale(1.2); opacity: 0.3; }
+  7%, 97%  { transform: scale(1.5); opacity: 0; }
+  97.1%    { transform: scale(1); opacity: 0; }
+  98%      { transform: scale(1); opacity: 0.6; }
+  100%     { transform: scale(1.2); opacity: 0.3; }
+}
+@keyframes rippleB {
+  0%, 21.9% { transform: scale(1); opacity: 0; }
+  22%       { transform: scale(1); opacity: 0.6; }
+  30%, 100% { transform: scale(1.55); opacity: 0; }
+}
+@keyframes rippleC {
+  0%, 50.9% { transform: scale(1); opacity: 0; }
+  51%       { transform: scale(1); opacity: 0.75; }
+  61%, 100% { transform: scale(1.75); opacity: 0; }
+}
+
+@keyframes fill {
+  0%, 50.5% { transform: scale(0); opacity: 1; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  54%       { transform: scale(1.12); opacity: 1; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  58%, 80%  { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  86%       { transform: scale(0.94); opacity: 0; }
+  100%      { transform: scale(0); opacity: 0; }
+}
+
+@keyframes letterC {
+  0%, 51%  { color: var(--cc-slate); }
+  53%, 82% { color: #fff; }
+  87%, 100% { color: var(--cc-slate); }
+}
+
+@keyframes pop {
+  0%, 55%  { transform: scale(0) rotate(-30deg); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  60%      { transform: scale(1.15) rotate(6deg); }
+  63%      { transform: scale(0.96) rotate(-2deg); }
+  66%, 80% { transform: scale(1) rotate(0deg); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  83%      { transform: scale(1.1) rotate(0deg); }
+  87%, 100% { transform: scale(0) rotate(0deg); }
+}
+
+@keyframes draw {
+  0%, 58%  { stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  65%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes spark {
+  0%, 56%  { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  60%      { transform: translate(0, 0) scale(1.2) rotate(45deg); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  70%      { transform: translate(var(--sx), var(--sy)) scale(0.2) rotate(110deg); opacity: 0; }
+  100%     { transform: scale(0); opacity: 0; }
+}
+
+/* halo inhales towards the stamp, exhales on the way home */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  52%      { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1; transform: translateY(-3px); }
+}
+
+/* compact: a tiny on-the-spot hop with contact squash */
+@keyframes bob {
+  0%   { transform: translateY(0) scale(1.08, 0.92) rotate(0deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  14%  { transform: translateY(-1px) scale(0.95, 1.05) rotate(-2deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  48%  { transform: translateY(-3.5px) scale(1, 1) rotate(3deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  86%  { transform: translateY(-0.5px) scale(0.98, 1.02) rotate(0deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  100% { transform: translateY(0) scale(1.08, 0.92) rotate(0deg); }
+}
+
+@keyframes ccIn     { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ccOut    { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ccPop    { from { opacity: 0; transform: scale(0.86) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ccUp     { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ccShrink { to { opacity: 0; transform: scale(0.94) translateY(6px); } }
+@keyframes ccBloom  { from { opacity: 0; transform: scale(0.5); } to { opacity: 0.85; transform: scale(1); } }
+@keyframes tipIn    { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes tipOut   { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes tipFade  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rmFill   { from { opacity: 0.45; } to { opacity: 1; } }
+
+/* ---------- accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rider, .shadowX { animation: none; transform: translateX(92px); }
+  .hop, .squash, .shadow, .bubbleA, .bubbleB, .bubbleC, .spark, .dots i, .compactMascot, .halo, .stage > * { animation: none; }
+  .bubble::after { animation: none; opacity: 0; }
+  .halo { opacity: 0.85; }
+  .fill { transform: scale(1); animation: rmFill 1.6s ease-in-out infinite alternate; }
+  .letterC { animation: none; color: #fff; }
+  .check { animation: none; transform: scale(1); }
+  .checkPath { animation: none; stroke-dashoffset: 0; }
+  .tipIn { animation: tipFade 0.4s ease both; }
+  .tipOut { animation: none; opacity: 0; }
+  .exiting .stage { animation: none; }
+  .dots i { opacity: 0.6; }
+}
+
+@media (forced-colors: active) {
+  .bubble { border-color: CanvasText; }
+  .fill { background: Highlight; }
+  .label, .tip { color: CanvasText; }
+}

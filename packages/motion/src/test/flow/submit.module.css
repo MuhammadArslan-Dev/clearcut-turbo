@@ -1,0 +1,143 @@
+/* Submit: a scanner beam sweeps the answer sheet, marks appear as it passes,
+   then a rubber "CHECKED" stamp slams down and Nibbu cheers. */
+
+.stage { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 380px; text-align: center; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: var(--cc-success-soft);
+  color: #067a46;
+  font-size: 13px;
+  font-weight: 600;
+  animation: sDrop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.pillTick { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--cc-success); }
+.pillTick svg { width: 13px; height: 13px; stroke: #fff; }
+
+.visual { position: relative; width: 260px; height: 196px; margin-top: 20px; }
+
+.sheet {
+  position: absolute;
+  left: 22px;
+  top: 4px;
+  display: grid;
+  gap: 8px;
+  width: 172px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid var(--cc-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 28px -18px rgb(25 40 57 / 0.5);
+  animation: sIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1) 0.1s both;
+}
+.isStamped .sheet { animation: sThud 0.3s ease-out 0.12s; }
+.head { display: block; width: 55%; height: 8px; margin-bottom: 2px; border-radius: 3px; background: var(--cc-ink); opacity: 0.85; }
+
+.row { display: flex; align-items: center; gap: 8px; height: 16px; }
+.qn { width: 12px; font-size: 10px; font-weight: 700; color: var(--cc-slate); text-align: right; font-variant-numeric: tabular-nums; }
+.row i { width: 11px; height: 11px; border: 1.5px solid var(--cc-line); border-radius: 50%; }
+.row i.on { border-color: #40566d; background: #40566d; }
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: sMark 1.2s infinite;
+}
+.mark svg { width: 11px; height: 11px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.ok   { background: var(--cc-success); }
+.bad  { background: var(--cc-danger); }
+.skip { background: #c3cfdb; }
+.isStamped .mark { animation: sMarkIn 0.25s ease-out both; }
+
+.beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28px;
+  height: 3px;
+  background: var(--cc-brand);
+  box-shadow: 0 0 14px 3px rgb(0 131 255 / 0.35);
+  animation: sBeam 1.2s linear infinite;
+}
+
+.stamp {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  padding: 4px 12px;
+  border: 3px solid var(--cc-success);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.88);
+  color: var(--cc-success);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: sStamp 0.36s cubic-bezier(0.3, 0, 0.4, 1) both;
+}
+
+.buddy { position: absolute; left: 196px; top: 108px; width: 48px; height: 54px; }
+.idle, .cheer { width: 100%; height: 100%; transform-origin: 50% 100%; }
+.idle { animation: sIdle 1.2s ease-in-out infinite; }
+.cheer { animation: sCheer 0.7s cubic-bezier(0.3, 0, 0.3, 1) 0.3s both; }
+
+.headline { margin: 18px 0 0; font-size: 18px; font-weight: 700; }
+.dots { display: inline-flex; gap: 3px; margin-left: 4px; }
+.dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: sDot 1.2s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+
+.count { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: var(--cc-slate); font-variant-numeric: tabular-nums; }
+
+.bar { width: 200px; height: 6px; margin-top: 10px; overflow: hidden; border-radius: 6px; background: var(--cc-soft); }
+.bar span { display: block; height: 100%; background: var(--cc-brand); transform-origin: 0 50%; transition: transform 0.2s linear; }
+.isStamped .bar span { background: var(--cc-success); }
+
+@keyframes sDrop  { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes sIn    { from { opacity: 0; transform: translateY(24px) rotate(3deg); } to { opacity: 1; transform: none; } }
+@keyframes sThud  { 0%, 100% { transform: none; } 40% { transform: translateY(3px) scale(0.99); } }
+@keyframes sBeam  {
+  0%   { transform: translateY(0); opacity: 0; }
+  5%   { opacity: 1; }
+  85%  { transform: translateY(140px); opacity: 1; }
+  100% { transform: translateY(140px); opacity: 0; }
+}
+@keyframes sMark {
+  0%       { transform: scale(0); }
+  8%       { transform: scale(1.25); }
+  14%, 88% { transform: scale(1); }
+  100%     { transform: scale(0); }
+}
+@keyframes sMarkIn { from { transform: scale(0.4); } to { transform: scale(1); } }
+@keyframes sStamp {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(2.6); }
+  70%  { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(0.92); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(1); }
+}
+@keyframes sIdle  { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(-3deg); } }
+@keyframes sCheer {
+  0%   { transform: scale(1.12, 0.88); }
+  35%  { transform: translateY(-22px) scale(0.92, 1.1) rotate(-8deg); }
+  65%  { transform: translateY(0) scale(1.1, 0.9); }
+  82%  { transform: translateY(-6px); }
+  100% { transform: none; }
+}
+@keyframes sDot { 0%, 60%, 100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pill, .sheet, .isStamped .sheet, .stamp, .idle, .cheer, .dots i { animation: none; }
+  .beam { display: none; }
+  .mark, .isStamped .mark { animation: none; transform: scale(1); }
+  .bar span { transition: none; }
+}

@@ -1,0 +1,41 @@
+/* Nibbu's paint. Every colour falls back to ClearCutoff defaults, so the mascot renders
+   correctly anywhere. Re-tone it from a parent with the --nib-* variables, e.g.
+   .onBlueButton { --nib-body: #fff; --nib-tip: #d6e8ff; --nib-hole: #0083ff; --nib-slit: #0083ff; --nib-shine: transparent; } */
+
+.nibBody   { fill: var(--nib-body, var(--cc-brand, #0083ff)); }
+.nibTip    { fill: var(--nib-tip, var(--cc-brand-dark, #005cb8)); }
+.nibShine  { stroke: var(--nib-shine, rgb(255 255 255 / 0.45)); }
+.nibHole   { fill: var(--nib-hole, rgb(255 255 255 / 0.92)); }
+.nibSlit   { stroke: var(--nib-slit, rgb(255 255 255 / 0.85)); }
+.nibCheek  { fill: var(--cc-cheek, #ff9bb0); opacity: 0.6; }
+.nibSclera { fill: #fff; }
+.nibPupil  { fill: var(--cc-ink, #192839); }
+.nibGlint  { fill: #fff; }
+.nibSmile  { stroke: var(--cc-ink, #192839); }
+.nibMouth  { fill: var(--cc-ink, #192839); }
+.nibBand   { fill: #ff4d5e; }
+.nibCapBase { fill: #22344a; }
+.nibCapTop  { fill: var(--cc-ink, #192839); }
+.nibTassel  { stroke: var(--cc-gold, #ffc542); }
+.nibTasselEnd { fill: var(--cc-gold, #ffc542); }
+
+.nibEyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nibBlink 4.2s infinite;
+}
+.nibPupils { transform-box: fill-box; }
+.lookScan .nibPupils { animation: nibScan 1.2s ease-in-out infinite; }
+
+@keyframes nibBlink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  93%           { transform: scaleY(0.1); }
+}
+@keyframes nibScan {
+  0%, 100% { transform: translate(-0.6px, -2.4px); }
+  85%      { transform: translate(-0.6px, 2.4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nibEyes, .lookScan .nibPupils { animation: none; }
+}

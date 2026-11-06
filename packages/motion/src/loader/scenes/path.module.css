@@ -1,0 +1,190 @@
+/* V5 Lesson Path — Duolingo-style chapter path. Nodes at (25,96) (75,66) (125,96) (175,66).
+   Rider X › hop Y (includes the level change between nodes) › squash. 3.2s loop:
+   8–20% hop to node 2 · 28–40% node 3 · 48–60% trophy · 64–74% victory jump · 82–98% leap home */
+
+.scene { position: relative; isolation: isolate; width: 200px; height: 120px; }
+
+.trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dots { fill: none; stroke: var(--cc-line, #cfdbe7); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 0.1 9; }
+.done {
+  fill: none;
+  stroke: var(--cc-brand);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: pTrail var(--cc-loop) infinite;
+}
+
+.node {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--cc-line, #cfdbe7);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--cc-line-strong, #b7c7d8);
+}
+.n1 { left: 10px; top: 81px; animation: pPress1 var(--cc-loop) infinite; }
+.n2 { left: 60px; top: 51px; animation: pPress2 var(--cc-loop) infinite; }
+.n3 { left: 110px; top: 81px; animation: pPress3 var(--cc-loop) infinite; }
+
+.nodeFill {
+  position: absolute;
+  inset: -2px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cc-brand);
+  box-shadow: 0 4px 0 var(--cc-brand-dark);
+  transform: scale(0);
+}
+.nodeFill svg { width: 15px; height: 15px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.n1 .nodeFill { animation: pFill1 var(--cc-loop) infinite; }
+.n2 .nodeFill { animation: pFill2 var(--cc-loop) infinite; }
+.n3 .nodeFill { animation: pFill3 var(--cc-loop) infinite; }
+
+.trophy {
+  left: 160px;
+  top: 51px;
+  border-color: #f5b400;
+  background: var(--cc-gold, #ffc542);
+  box-shadow: 0 4px 0 #d99a00;
+  animation: pTrophy var(--cc-loop) infinite;
+}
+.trophy svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ray { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.ray::before {
+  content: "";
+  position: absolute;
+  left: -1.5px;
+  width: 3px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--cc-gold, #ffc542);
+  opacity: 0;
+  animation: pRay var(--cc-loop) infinite;
+}
+
+.rider { position: absolute; left: 5px; top: 39px; width: 40px; height: 45px; animation: pX var(--cc-loop) infinite; will-change: transform; }
+.hop { width: 100%; height: 100%; animation: pY var(--cc-loop) infinite; will-change: transform; }
+.squash { width: 100%; height: 100%; transform-origin: 50% 100%; animation: pSquash var(--cc-loop) infinite; will-change: transform; }
+.mascot { display: block; width: 100%; height: 100%; overflow: visible; }
+
+@keyframes pX {
+  0%, 8%    { transform: translateX(0); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  20%, 28%  { transform: translateX(50px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  40%, 48%  { transform: translateX(100px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  60%, 82%  { transform: translateX(150px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  98%, 100% { transform: translateX(0); }
+}
+
+@keyframes pY {
+  0%, 8%   { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  14%      { transform: translateY(-52px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  20%, 28% { transform: translateY(-30px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  34%      { transform: translateY(-54px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  40%, 48% { transform: translateY(0); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  54%      { transform: translateY(-52px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  60%, 64% { transform: translateY(-30px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  69%      { transform: translateY(-48px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  74%, 82% { transform: translateY(-30px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  90%      { transform: translateY(-86px); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  98%, 100% { transform: translateY(0); }
+}
+
+@keyframes pSquash {
+  0%   { transform: scale(1, 1) rotate(0deg); }
+  5%   { transform: scale(1.1, 0.88) rotate(-3deg); }
+  8%   { transform: scale(0.9, 1.12) rotate(6deg); }
+  14%  { transform: scale(1, 1) rotate(4deg); }
+  18%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  20%  { transform: scale(1.16, 0.84) rotate(-2deg); }
+  23%  { transform: scale(0.97, 1.03) rotate(0deg); }
+  25%  { transform: scale(1, 1) rotate(0deg); }
+  26%  { transform: scale(1.08, 0.9) rotate(-3deg); }
+  28%  { transform: scale(0.9, 1.12) rotate(6deg); }
+  34%  { transform: scale(1, 1) rotate(4deg); }
+  38%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  40%  { transform: scale(1.16, 0.84) rotate(-2deg); }
+  43%  { transform: scale(0.97, 1.03) rotate(0deg); }
+  45%  { transform: scale(1, 1) rotate(0deg); }
+  46%  { transform: scale(1.08, 0.9) rotate(-3deg); }
+  48%  { transform: scale(0.9, 1.12) rotate(6deg); }
+  54%  { transform: scale(1, 1) rotate(4deg); }
+  58%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  60%  { transform: scale(1.18, 0.82) rotate(0deg); }
+  63%  { transform: scale(0.97, 1.03) rotate(0deg); }
+  64%  { transform: scale(1.1, 0.88) rotate(0deg); }
+  66%  { transform: scale(0.92, 1.1) rotate(-8deg); }
+  69%  { transform: scale(1, 1) rotate(8deg); }
+  72%  { transform: scale(1, 1) rotate(-3deg); }
+  74%  { transform: scale(1.12, 0.88) rotate(0deg); }
+  77%  { transform: scale(1, 1) rotate(0deg); }
+  80%  { transform: scale(1.1, 0.88) rotate(3deg); }
+  82%  { transform: scale(0.9, 1.12) rotate(-6deg); }
+  90%  { transform: scale(1, 1) rotate(-5deg); }
+  96%  { transform: scale(0.96, 1.05) rotate(0deg); }
+  98%  { transform: scale(1.14, 0.86) rotate(2deg); }
+  100% { transform: scale(1, 1) rotate(0deg); }
+}
+
+@keyframes pTrail {
+  0%, 8%   { stroke-dashoffset: 1; opacity: 1; animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  20%, 28% { stroke-dashoffset: 0.667; animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  40%, 48% { stroke-dashoffset: 0.333; animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  60%, 85% { stroke-dashoffset: 0; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  90%      { stroke-dashoffset: 0; opacity: 0; }
+  97%      { stroke-dashoffset: 1; opacity: 0; }
+  100%     { stroke-dashoffset: 1; opacity: 1; }
+}
+
+/* node fills pop when Nibbu lands, all clear together before the leap home */
+@keyframes pFill1 {
+  0%, 85%  { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  90%      { transform: scale(0.85); opacity: 0; }
+  97.9%    { transform: scale(0.3); opacity: 0; }
+  98%      { transform: scale(0.3); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  100%     { transform: scale(1); opacity: 1; }
+}
+@keyframes pFill2 {
+  0%, 19.9% { transform: scale(0); opacity: 1; }
+  20%       { transform: scale(0.3); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  24%, 85%  { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  90%, 100% { transform: scale(0.85); opacity: 0; }
+}
+@keyframes pFill3 {
+  0%, 39.9% { transform: scale(0); opacity: 1; }
+  40%       { transform: scale(0.3); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  44%, 85%  { transform: scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  90%, 100% { transform: scale(0.85); opacity: 0; }
+}
+
+@keyframes pPress1 { 0%, 4% { transform: translateY(2px); } 9%, 97% { transform: none; } 98.5%, 100% { transform: translateY(2px); } }
+@keyframes pPress2 { 0%, 19.5% { transform: none; } 21% { transform: translateY(3px); } 26%, 100% { transform: none; } }
+@keyframes pPress3 { 0%, 39.5% { transform: none; } 41% { transform: translateY(3px); } 46%, 100% { transform: none; } }
+
+@keyframes pTrophy {
+  0%, 59.5% { transform: scale(1) rotate(0deg); }
+  61%       { transform: translateY(3px) scale(1.04, 0.94) rotate(0deg); }
+  65%       { transform: scale(1.18) rotate(-8deg); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  70%       { transform: scale(1.08) rotate(6deg); }
+  76%, 100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes pRay {
+  0%, 61%  { opacity: 0; transform: translateY(-16px) scaleY(0.3); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  62%      { opacity: 1; transform: translateY(-17px) scaleY(0.5); }
+  72%, 100% { opacity: 0; transform: translateY(-28px) scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rider, .hop, .squash, .node, .nodeFill, .done, .trophy, .ray::before { animation: none !important; }
+  .rider { transform: translateX(150px); }
+  .hop { transform: translateY(-30px); }
+  .nodeFill { transform: scale(1); }
+  .done { stroke-dashoffset: 0; }
+}

@@ -1,0 +1,150 @@
+/* V6 Book Flip — two page turns per 3.2s loop (10–30%, 50–70%). The turning page snaps back
+   while it is lying exactly over the left page, so the reset is invisible. New lines write in
+   on the revealed page (32–42%, 72–82%). Nibbu cheers as each page lands. */
+
+.scene { position: relative; isolation: isolate; width: 200px; height: 120px; }
+
+.cover {
+  position: absolute;
+  left: 30px;
+  top: 22px;
+  width: 140px;
+  height: 92px;
+  border-radius: 9px;
+  background: var(--cc-brand-dark);
+  box-shadow: 0 10px 20px -12px rgb(25 40 57 / 0.55);
+}
+
+.book { position: absolute; inset: 0; perspective: 520px; }
+
+.page,
+.flip {
+  position: absolute;
+  top: 18px;
+  width: 64px;
+  height: 88px;
+}
+.page {
+  padding: 15px 9px 0;
+  border: 1px solid #e3eaf2;
+  background: #fff;
+}
+.left  { left: 35px; border-radius: 6px 2px 2px 6px; }
+.right { left: 101px; border-radius: 2px 6px 6px 2px; }
+
+.line {
+  display: block;
+  height: 4px;
+  margin-bottom: 9px;
+  border-radius: 2px;
+  background: #d5e2ef;
+  transform-origin: 0 50%;
+}
+.line:nth-child(1) { width: 78%; }
+.line:nth-child(2) { width: 92%; }
+.line:nth-child(3) { width: 64%; }
+.line:nth-child(4) { width: 84%; }
+.write { background: #b9d3ee; animation: bWrite var(--cc-loop) infinite; }
+
+.flip {
+  left: 101px;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  animation: bFlip var(--cc-loop) infinite;
+  will-change: transform;
+}
+.face {
+  position: absolute;
+  inset: 0;
+  padding: 15px 9px 0;
+  border: 1px solid #e3eaf2;
+  background: #fff;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.front { border-radius: 2px 6px 6px 2px; }
+.back { border-radius: 6px 2px 2px 6px; transform: rotateY(180deg); }
+.face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #0b1a2b;
+  opacity: 0;
+}
+.front::after { animation: bShadeF var(--cc-loop) infinite; }
+.back::after  { animation: bShadeB var(--cc-loop) infinite; }
+
+.spk {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: bSpark var(--cc-loop) infinite;
+}
+.spk1 { left: 150px; top: 6px; background: var(--cc-gold, #ffc542); --sx: 5px; --sy: -5px; }
+.spk2 { left: 122px; top: 0; width: 10px; height: 10px; background: var(--cc-brand); --sx: 0px; --sy: -7px; animation-delay: 0.05s; }
+.spk3 { left: 172px; top: 24px; width: 6px; height: 6px; background: var(--cc-gold, #ffc542); --sx: 6px; --sy: 0px; animation-delay: 0.1s; }
+
+.buddy { position: absolute; left: 164px; top: 68px; width: 36px; height: 41px; }
+.cheer { width: 100%; height: 100%; transform-origin: 50% 100%; animation: bCheer var(--cc-loop) infinite; will-change: transform; }
+.mascot { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* translateY · rotateY in every step so the lift and the turn interpolate together */
+@keyframes bFlip {
+  0%, 10%  { transform: translateY(0) rotateY(0deg); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.4); }
+  20%      { transform: translateY(-5px) rotateY(-90deg); animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
+  30%      { transform: translateY(0) rotateY(-180deg); }
+  30.1%, 50% { transform: translateY(0) rotateY(0deg); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.4); }
+  60%      { transform: translateY(-5px) rotateY(-90deg); animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
+  70%      { transform: translateY(0) rotateY(-180deg); }
+  70.1%, 100% { transform: translateY(0) rotateY(0deg); }
+}
+
+@keyframes bShadeF {
+  0%, 10%  { opacity: 0; }
+  20%      { opacity: 0.14; }
+  20.1%, 50% { opacity: 0; }
+  60%      { opacity: 0.14; }
+  60.1%, 100% { opacity: 0; }
+}
+@keyframes bShadeB {
+  0%, 20% { opacity: 0.14; }
+  30%, 60% { opacity: 0; }
+  60.1%   { opacity: 0.14; }
+  70%, 100% { opacity: 0; }
+}
+
+/* lines hide while the turning page covers them, then write in left → right */
+@keyframes bWrite {
+  0%, 9%    { transform: scaleX(1); }
+  9.5%, 32% { transform: scaleX(0); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  40%, 49%  { transform: scaleX(1); }
+  49.5%, 72% { transform: scaleX(0); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  80%, 100% { transform: scaleX(1); }
+}
+
+@keyframes bCheer {
+  0%, 27%  { transform: translateY(0) scale(1, 1) rotate(-5deg); }
+  30%      { transform: translateY(0) scale(1.12, 0.88) rotate(-5deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  34%      { transform: translateY(-14px) scale(0.93, 1.08) rotate(4deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  38%      { transform: translateY(0) scale(1.1, 0.9) rotate(-5deg); }
+  41%, 67% { transform: translateY(0) scale(1, 1) rotate(-5deg); }
+  70%      { transform: translateY(0) scale(1.12, 0.88) rotate(-5deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  74%      { transform: translateY(-14px) scale(0.93, 1.08) rotate(4deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  78%      { transform: translateY(0) scale(1.1, 0.9) rotate(-5deg); }
+  81%, 100% { transform: translateY(0) scale(1, 1) rotate(-5deg); }
+}
+
+@keyframes bSpark {
+  0%, 81%  { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  85%      { transform: translate(0, 0) scale(1.2) rotate(45deg); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  95%      { transform: translate(var(--sx), var(--sy)) scale(0.2) rotate(110deg); opacity: 0; }
+  100%     { transform: scale(0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip, .write, .face::after, .cheer, .spk { animation: none !important; }
+  .flip { transform: none; }
+}
