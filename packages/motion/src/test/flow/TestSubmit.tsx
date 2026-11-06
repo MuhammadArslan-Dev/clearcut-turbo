@@ -17,6 +17,8 @@ export type TestSubmitProps = {
   /** called after the CHECKED stamp lands — navigate to results here */
   onFinish: () => void;
   lang?: Lang;
+  /** Pill text override (e.g. "Practice test submitted"); defaults to the library copy for `type`. */
+  note?: string;
   /** minimum time on screen before the stamp, so it never feels like a glitch (ms) */
   minDuration?: number;
 };
@@ -32,7 +34,7 @@ const ROWS: { pick: number; mark: "ok" | "bad" | "skip" }[] = [
 const LOOP = 1.2; // seconds — keep in sync with sBeam
 const BEAM_TRAVEL = 140; // px
 
-export function TestSubmit({ type, total, done, onFinish, lang = "en", minDuration = 1800 }: TestSubmitProps) {
+export function TestSubmit({ type, total, done, onFinish, lang = "en", note, minDuration = 1800 }: TestSubmitProps) {
   const reduced = usePrefersReducedMotion();
   const [n, setN] = useState(0);
   const [stamped, setStamped] = useState(false);
@@ -65,13 +67,13 @@ export function TestSubmit({ type, total, done, onFinish, lang = "en", minDurati
   }, [stamped, reduced]);
 
   return (
-    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={SUBMIT_NOTE[type][lang]}>
+    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={note ?? SUBMIT_NOTE[type][lang]}>
       <div className={`${s.stage} ${stamped ? s.isStamped : ""}`}>
         <span className={s.pill}>
           <span className={s.pillTick}>
             <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </span>
-          {SUBMIT_NOTE[type][lang]}
+          {note ?? SUBMIT_NOTE[type][lang]}
         </span>
 
         <div className={s.visual} aria-hidden="true">

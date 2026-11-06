@@ -24,6 +24,10 @@ import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStor
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import { motion, AnimatePresence } from "framer-motion";
 import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
+import { TestResult } from "@clearcut/motion/test/flow";
+import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
+import { NibNote } from "@clearcut/motion/test/mini-test";
+import TestStartIntro, { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 import OptionCard from "@/components/features/exam-report/OptionCard";
 import QuestionText from "@/components/ui/cards/QuestionMaterial/Question/QuestionText";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
@@ -147,6 +151,13 @@ export default function DailyTestAttemptPage() {
   const [submitting, setSubmitting] = useState(false);
   const [navSheetOpen, setNavSheetOpen] = useState(false);
   const [dismissedSavedBanners, setDismissedSavedBanners] = useState<Set<number>>(new Set());
+  // Motion: 3-2-1-Go before a fresh attempt (the time-left clock only mounts after it), then the "checking your
+  // answers" animation on submit, which hands over to the animated result view.
+  const motionLang = useMotionLang();
+  const [introDone, setIntroDone] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<"idle" | "running">("idle");
+  const [submitDone, setSubmitDone] = useState(false);
+  const submitResultRef = React.useRef<DailyTestResult | null>(null);
   // null = whatever locale the question came back in first; set once the
   // user taps the language button.
   const [language, setLanguage] = useState<string | null>(null);
@@ -201,6 +212,8 @@ export default function DailyTestAttemptPage() {
             setVisited(new Set(saved.visited.filter((id) => validIds.has(id))));
             setMarkedForReview(new Set(saved.markedForReview.filter((id) => validIds.has(id))));
             setCurrentIndex(Math.min(Math.max(saved.currentIndex, 0), data.questions.length - 1));
+            // An attempt that is already under way (refresh) resumes without the countdown.
+            if (Object.keys(saved.answers).length > 0 || saved.currentIndex > 0) setIntroDone(true);
           } else {
             const first = data.questions[0];
             if (first) setVisited(new Set([first.question_id]));
@@ -289,18 +302,20 @@ export default function DailyTestAttemptPage() {
   const answersRef = React.useRef(answers);
   answersRef.current = answers;
   useEffect(() => {
-    if (state.phase !== "attempting") return;
+    if (state.phase !== "attempting" || !introDone) return;
     attemptStartedAtRef.current ??= Date.now();
     const base = analyticsBase(state.attemptId, state.questions.length, state.sectionName);
     trackLiteTestStarted(base);
     return watchTestAbandoned((reason) => trackLiteTestAbandoned(base, reason, Object.keys(answersRef.current).length));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeAttemptId]);
+  }, [activeAttemptId, introDone]);
 
   const handleSubmit = useCallback(
     async (finalAnswers?: Record<number, number>, reason: "manual" | "time_up" = "manual") => {
       if (state.phase !== "attempting") return;
       setSubmitting(true);
+      setSubmitDone(false);
+      setSubmitPhase("running");
       try {
         const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers);
         const picked = Object.keys(finalAnswers ?? answers).length;
@@ -322,19 +337,29 @@ export default function DailyTestAttemptPage() {
         // own history (score/best-score/avg-time), are now stale.
         invalidateDailyTestExams();
         invalidateDailyTestHistory(courseId);
-        // Submit lands on this test's Attempt History (View Result there).
-        // goUp pops back to it when the attempt was opened from there
-        // ("Attempt again"), else swaps the attempt entry — never stacks a
-        // second History entry.
-        flow.goUp(`/daily-tests/${courseId}/${testId}`);
+        // The "checking your answers" animation plays out, then the result opens in place (see
+        // onSubmitAnimationEnd). Its "Back to history" does the flow.goUp that used to run right here: it pops
+        // back to this test's Attempt History when the attempt was opened from there, else swaps the attempt
+        // entry - never stacks a second History entry.
+        submitResultRef.current = res.data;
+        setSubmitDone(true);
       } catch {
+        setSubmitPhase("idle");
         setState({ phase: "error", message: "submitFailed" });
       } finally {
         setSubmitting(false);
       }
     },
-    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, flow, courseId, testId],
+    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId],
   );
+
+  const onSubmitAnimationEnd = useCallback(() => {
+    const result = submitResultRef.current;
+    if (!result) return;
+    submitResultRef.current = null;
+    setSubmitPhase("idle");
+    setState({ phase: "result", result });
+  }, []);
 
   const goToIndex = useCallback(
     (index: number) => {
@@ -451,6 +476,20 @@ export default function DailyTestAttemptPage() {
     }).format(new Date(state.testDate));
   }, [state, locale]);
 
+  // Submit in flight (also time-up and End Test): the "checking your answers" animation sits over the test screen and
+  // fades out as the result renders. Same keyed slot in every branch below so the fade survives the swap.
+  const submitOverlay = (
+    <SubmitOverlay
+      key="submit-overlay"
+      open={submitPhase === "running"}
+      type="daily"
+      total={questions.length}
+      done={submitDone}
+      lang={motionLang}
+      onFinish={onSubmitAnimationEnd}
+    />
+  );
+
   if (state.phase === "loading") {
     // Cached result (from a previous visit or a just-finished submit) renders
     // straight away — no skeleton at all.
@@ -483,11 +522,29 @@ export default function DailyTestAttemptPage() {
   }
 
   if (state.phase === "result") {
-    return <DailyTestResultView result={state.result} courseId={courseId} testId={testId} />;
+    return (
+      <>
+        <DailyTestResultView key="result" result={state.result} courseId={courseId} testId={testId} />
+        {submitOverlay}
+      </>
+    );
   }
 
   // phase === "attempting"
   if (!currentQuestion) return null;
+
+  // 3-2-1-Go before a fresh attempt. The attempt screen (and its time-left clock) mounts only after it.
+  if (!introDone) {
+    return (
+      <TestStartIntro
+        type="daily"
+        title={t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
+        questions={questions.length}
+        minutes={totalMinutes}
+        onStart={() => setIntroDone(true)}
+      />
+    );
+  }
 
   const currentQNo = currentIndex + 1;
   const percentComplete = Math.round((currentQNo / questions.length) * 100);
@@ -548,337 +605,352 @@ export default function DailyTestAttemptPage() {
   );
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
-      <AttemptTopbar
-        title={t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
-        meta={t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
-        quote={t("attempt.quote")}
-        actions={
-          <>
-            {hasMultipleTranslations && toggleLocale && (
-              <button
-                onClick={() => setLanguage(toggleLocale)}
-                aria-label={t("attempt.changeLanguage")}
-                className="cursor-pointer"
-              >
-                <LanguageIcon size={30} />
-              </button>
-            )}
-            <Button sx={{ borderRadius: "10px" }} variant="soft" color="gray" size="sm" onClick={handleEndTest}>
-              <div className="flex items-center gap-[6px]">
-                <span>{t("attempt.endTest")}</span>
-                <LogoutDoorIcon size={16} />
-              </div>
-            </Button>
-            <FullscreenButton onClick={handleToggleFullscreen} label={t("attempt.toggleFullscreen")} />
-          </>
-        }
-      />
+    <>
+      <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]">
+        <AttemptTopbar
+          title={t("attempt.headerTitle", { exam: history?.exam.short_name ?? t("list.defaultExam"), date: testDateLabel })}
+          meta={t("attempt.headerMeta", { count: questions.length, minutes: totalMinutes, exam: history?.exam.short_name ?? "…" })}
+          quote={t("attempt.quote")}
+          actions={
+            <>
+              {hasMultipleTranslations && toggleLocale && (
+                <button
+                  onClick={() => setLanguage(toggleLocale)}
+                  aria-label={t("attempt.changeLanguage")}
+                  className="cursor-pointer"
+                >
+                  <LanguageIcon size={30} />
+                </button>
+              )}
+              <Button sx={{ borderRadius: "10px" }} variant="soft" color="gray" size="sm" onClick={handleEndTest}>
+                <div className="flex items-center gap-[6px]">
+                  <span>{t("attempt.endTest")}</span>
+                  <LogoutDoorIcon size={16} />
+                </div>
+              </Button>
+              <FullscreenButton onClick={handleToggleFullscreen} label={t("attempt.toggleFullscreen")} />
+            </>
+          }
+        />
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Mobile: full width, flush against the screen edges (no side
-            padding, square-cornered cards) — matching the full exam page.
-            Desktop: unchanged, the inset centered column. */}
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-4 py-4 lg:px-4">
-          {/* Time left / progress / focus-tip strip — shared with the full exam page */}
-          <AttemptSummaryStrip
-            className="max-lg:!rounded-none"
-            time={
-              <LiveTimeLeft
-                duration={totalDuration}
-                onComplete={() => handleSubmit(undefined, "time_up")}
-                labels={{
-                  timeLeft: t("attempt.timeLeft"),
-                  hours: t("attempt.hours"),
-                  minutes: t("attempt.minutes"),
-                  seconds: t("attempt.seconds"),
+        <div className="flex-1 overflow-y-auto">
+          {/* Mobile: full width, flush against the screen edges (no side
+              padding, square-cornered cards) — matching the full exam page.
+              Desktop: unchanged, the inset centered column. */}
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-4 py-4 lg:px-4">
+            {/* Time left / progress / focus-tip strip — shared with the full exam page */}
+            <AttemptSummaryStrip
+              className="max-lg:!rounded-none"
+              time={
+                <LiveTimeLeft
+                  duration={totalDuration}
+                  onComplete={() => {
+                  if (submitPhase !== "running") void handleSubmit(undefined, "time_up");
                 }}
-              />
-            }
-            progress={<AttemptProgress position={currentQNo} total={questions.length} percent={percentComplete} />}
-            tip={
-              <TipCard
-                icon={
-                  answeredCount > 0 ? <Lightbulb size={24} className="text-[var(--color-warning-strong)]" /> : undefined
-                }
-                title={answeredCount > 0 ? t("attempt.doingGreat") : t("attempt.stayFocused")}
-                body={answeredCount > 0 ? t("attempt.keepGoing") : t("attempt.completeTest")}
-              />
-            }
-          />
+                  labels={{
+                    timeLeft: t("attempt.timeLeft"),
+                    hours: t("attempt.hours"),
+                    minutes: t("attempt.minutes"),
+                    seconds: t("attempt.seconds"),
+                  }}
+                />
+              }
+              progress={<AttemptProgress position={currentQNo} total={questions.length} percent={percentComplete} />}
+              tip={
+                <TipCard
+                  icon={
+                    answeredCount > 0 ? <Lightbulb size={24} className="text-[var(--color-warning-strong)]" /> : undefined
+                  }
+                  title={answeredCount > 0 ? t("attempt.doingGreat") : t("attempt.stayFocused")}
+                  body={answeredCount > 0 ? t("attempt.keepGoing") : t("attempt.completeTest")}
+                />
+              }
+            />
 
-          {/* Test Information + question + navigator, 3-column on desktop */}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-            {/* Left sidebar — desktop only */}
-            <aside className="hidden w-[260px] shrink-0 flex-col gap-4 lg:flex">
-              <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
-                <div className="mb-3 flex items-center gap-2">
-                  <FileText size={18} className="text-brand" />
-                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                    {t("attempt.testInformation")}
-                  </Text>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.exam")} value={history?.exam.short_name ?? "…"} />
-                  <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.section")} value={state.sectionName ?? "—"} />
-                  <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.totalQuestions")} value={String(questions.length)} />
-                  <InfoRow compact icon={<ChartSuccessBarIcon width={16} height={16} />} label={t("attempt.totalMarks")} value={String(questions.length)} />
-                  <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.timeDuration")} value={t("attempt.minutesValue", { count: totalMinutes })} />
-                </div>
-              </Card>
-            </aside>
-
-            {/* Center column */}
-            <div className="flex flex-1 flex-col gap-4">
-              <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12} className="max-lg:!rounded-none">
-                <div className="mb-3">
-                  <QuestionMetaBar
-                    chip={`${history?.exam.short_name ?? t("list.defaultExam")} \u2022 ${t("list.defaultExam")}`}
-                    isMarked={isMarked}
-                    onToggleMark={handleToggleMarkForReview}
-                    markLabel={t("attempt.markForReview")}
-                    onReport={handleReportQuestion}
-                    reportLabel={t("attempt.reportQuestion")}
-                  />
-                </div>
-
-                <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal" className="mb-2">
-                  Question {currentQNo} /{" "}
-                  <Text variant="body-medium" color="gray-subtle">
-                    {questions.length}
-                  </Text>
-                </Text>
-
-                <QuestionMath content={displayQuestion?.question ?? ""}>
-                  <Text as="div" variant="body-large">
-                    <TextMarkDown>{displayQuestion?.question ?? ""}</TextMarkDown>
-                  </Text>
-                </QuestionMath>
-                {displayQuestion?.question_image && (
-                  <div className="mt-3 flex justify-center">
-                    <div className="relative h-[160px] w-[160px] overflow-hidden rounded-md">
-                      <Image src={displayQuestion.question_image} alt="" fill />
-                    </div>
+            {/* Test Information + question + navigator, 3-column on desktop */}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+              {/* Left sidebar — desktop only */}
+              <aside className="hidden w-[260px] shrink-0 flex-col gap-4 lg:flex">
+                <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <FileText size={18} className="text-brand" />
+                    <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                      {t("attempt.testInformation")}
+                    </Text>
                   </div>
-                )}
+                  <div className="flex flex-col gap-3">
+                    <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.exam")} value={history?.exam.short_name ?? "…"} />
+                    <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.section")} value={state.sectionName ?? "—"} />
+                    <InfoRow compact icon={<FileText size={16} className="text-[var(--color-surface-gray-muted)]" />} label={t("attempt.totalQuestions")} value={String(questions.length)} />
+                    <InfoRow compact icon={<ChartSuccessBarIcon width={16} height={16} />} label={t("attempt.totalMarks")} value={String(questions.length)} />
+                    <InfoRow compact icon={<ClockIcon size={16} color="var(--color-surface-gray-muted)" />} label={t("attempt.timeDuration")} value={t("attempt.minutesValue", { count: totalMinutes })} />
+                  </div>
+                </Card>
+              </aside>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {(["1", "2", "3", "4"] as const).map((key) => {
-                    const text = displayQuestion?.options[key];
-                    if (!text) return null;
-                    const optionIndex = Number(key) - 1;
-                    const isSelected = draftOption === Number(key);
-                    return (
-                      <QOption
-                        key={key}
-                        value={{ text, index: optionIndex }}
-                        mainContainer={{
-                          borderwidth: 2,
-                          bgcolor: isSelected ? "!bg-brand/9" : "",
-                          bordercolor: isSelected ? "!border-brand" : "",
-                        }}
-                        counter={{
-                          backgroundColor: isSelected ? "!bg-brand/9" : "",
-                          borderColor: isSelected ? "!border-brand" : "",
-                        }}
-                        onClick={() =>
-                          setDraftOption((prev) => (prev === Number(key) ? null : Number(key)))
-                        }
+              {/* Center column */}
+              <div className="flex flex-1 flex-col gap-4">
+                <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12} className="max-lg:!rounded-none">
+                  <div className="mb-3">
+                    <QuestionMetaBar
+                      chip={`${history?.exam.short_name ?? t("list.defaultExam")} \u2022 ${t("list.defaultExam")}`}
+                      isMarked={isMarked}
+                      onToggleMark={handleToggleMarkForReview}
+                      markLabel={t("attempt.markForReview")}
+                      onReport={handleReportQuestion}
+                      reportLabel={t("attempt.reportQuestion")}
+                    />
+                  </div>
+
+                  <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal" className="mb-2">
+                    Question {currentQNo} /{" "}
+                    <Text variant="body-medium" color="gray-subtle">
+                      {questions.length}
+                    </Text>
+                  </Text>
+
+                  <QuestionMath content={displayQuestion?.question ?? ""}>
+                    <Text as="div" variant="body-large">
+                      <TextMarkDown>{displayQuestion?.question ?? ""}</TextMarkDown>
+                    </Text>
+                  </QuestionMath>
+                  {displayQuestion?.question_image && (
+                    <div className="mt-3 flex justify-center">
+                      <div className="relative h-[160px] w-[160px] overflow-hidden rounded-md">
+                        <Image src={displayQuestion.question_image} alt="" fill />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {(["1", "2", "3", "4"] as const).map((key) => {
+                      const text = displayQuestion?.options[key];
+                      if (!text) return null;
+                      const optionIndex = Number(key) - 1;
+                      const isSelected = draftOption === Number(key);
+                      return (
+                        <QOption
+                          key={key}
+                          value={{ text, index: optionIndex }}
+                          mainContainer={{
+                            borderwidth: 2,
+                            bgcolor: isSelected ? "!bg-brand/9" : "",
+                            bordercolor: isSelected ? "!border-brand" : "",
+                          }}
+                          counter={{
+                            backgroundColor: isSelected ? "!bg-brand/9" : "",
+                            borderColor: isSelected ? "!border-brand" : "",
+                          }}
+                          onClick={() =>
+                            setDraftOption((prev) => (prev === Number(key) ? null : Number(key)))
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {draftOption != null && (
+                    <div className="mt-4">
+                      <NibNote
+                        key={`${currentQuestion.question_id}-${draftOption}-${answers[currentQuestion.question_id] === draftOption}`}
+                        title={t(answers[currentQuestion.question_id] === draftOption ? "attempt.nibSavedTitle" : "attempt.nibNotedTitle")}
+                        detail={t(answers[currentQuestion.question_id] === draftOption ? "attempt.nibSavedBody" : "attempt.nibNotedBody")}
                       />
-                    );
-                  })}
-                </div>
+                    </div>
+                  )}
 
-                {showSavedBanner && (
-                  <div className="mt-4 flex items-center justify-between gap-2 rounded-lg bg-[var(--color-success-bg-soft)] p-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-[var(--icon-positive-normal)]" />
-                      <Text as="p" variant="body-small" weight="semibold" className="text-[var(--icon-positive-normal)]">
-                        {t("attempt.answerSaved")}
+                  {showSavedBanner && (
+                    <div className="mt-4 flex items-center justify-between gap-2 rounded-lg bg-[var(--color-success-bg-soft)] p-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 size={16} className="text-[var(--icon-positive-normal)]" />
+                        <Text as="p" variant="body-small" weight="semibold" className="text-[var(--icon-positive-normal)]">
+                          {t("attempt.answerSaved")}
+                        </Text>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setDismissedSavedBanners((prev) => new Set(prev).add(currentQuestion.question_id))
+                        }
+                        aria-label={t("attempt.dismiss")}
+                        className="text-surface-gray-muted"
+                      >
+                        <CrossIcon size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    <InfoStrip>{t("attempt.selectBest")}</InfoStrip>
+                  </div>
+                </Card>
+
+                {/* Collapsed questions summary — mobile only, opens the same
+                    navigator content in a bottom sheet instead of a sidebar.
+                    Placed before the sticky action bar below so it scrolls
+                    normally instead of ending up underneath the pinned bar. */}
+                <button
+                  onClick={() => setNavSheetOpen(true)}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 lg:hidden"
+                >
+                  <div className="flex items-center gap-2">
+                    <Bookmark size={16} className="text-brand" />
+                    <div className="text-left">
+                      <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
+                        {t("attempt.questions")}
+                      </Text>
+                      <Text as="p" variant="body-small" color="gray-muted">
+                        {t("attempt.answeredOf", { answered: answeredCount, total: questions.length })}
                       </Text>
                     </div>
-                    <button
-                      onClick={() =>
-                        setDismissedSavedBanners((prev) => new Set(prev).add(currentQuestion.question_id))
-                      }
-                      aria-label={t("attempt.dismiss")}
-                      className="text-surface-gray-muted"
+                  </div>
+                  <ChevronIcon size={16} variant="up" />
+                </button>
+
+              </div>
+
+              {/* Right sidebar — desktop only */}
+              <aside className="hidden w-[260px] shrink-0 flex-col gap-4 lg:flex">
+                <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
+                  <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="mb-3">
+                    {t("attempt.questions")}
+                  </Text>
+
+                  <div className="mb-3 flex flex-col gap-2">
+                    <CountRow label={t("attempt.notVisited")} count={counts.notVisited} color="bg-gray-300" textColor="text-surface-gray-muted" />
+                    <CountRow label={t("attempt.answered")} count={counts.answered} color="bg-[var(--icon-positive-subtle)]" textColor="text-[var(--icon-positive-normal)]" />
+                    <CountRow label={t("attempt.notAnswered")} count={counts.notAnswered} color="bg-[var(--icon-negative-normal)]" textColor="text-[var(--icon-negative-normal)]" />
+                    <CountRow label={t("attempt.markedForReview")} count={counts.review} color="bg-[var(--icon-notice-subtle)]" textColor="text-[var(--icon-notice-normal)]" />
+                  </div>
+
+                  {questionGrid("sidebar")}
+
+                  <div className="mt-4">
+                    <Button
+                      variant="soft"
+                      color="gray"
+                      fullWidth
+                      sx={{ borderRadius: "50px" }}
+                      disabled={counts.review === 0}
+                      onClick={handleReviewLater}
                     >
-                      <CrossIcon size={14} />
-                    </button>
+                      <div className="flex items-center gap-2">
+                        <Bookmark size={16} />
+                        <span>{t("attempt.reviewLater", { count: counts.review })}</span>
+                      </div>
+                    </Button>
                   </div>
-                )}
+                </Card>
+              </aside>
+            </div>
+          </div>
+        </div>
 
-                <div className="mt-4">
-                  <InfoStrip>{t("attempt.selectBest")}</InfoStrip>
-                </div>
-              </Card>
+        {/* Bottom action bar (shared with the full exam page, same
+            legacy/compactMobile button styling) — a real flex child AFTER the
+            scroll area (see the "Footer" comment below for why), not `sticky`
+            inside it. `sticky` was the original approach, but this page's
+            scroll container wraps the ENTIRE content column (summary strip +
+            both sidebars + question card), unlike the full exam page where
+            only the question's own text scrolls inside an otherwise-static
+            shell — so a `sticky` element in here only reaches the bottom of
+            that (very tall) scrollable box after scrolling nearly all the way
+            through it, reading as "the footer scrolls with the page" instead
+            of staying pinned. Moving it out of the scroll area entirely (this
+            page's shell is `h-dvh overflow-hidden`, same trick already
+            used below for the QuestionsDock/"Need help?" bars) pins it
+            unconditionally, on both mobile and desktop, with no sticky/fixed
+            math needed. The two empty `w-[260px]` columns replicate the
+            left/right sidebar gutters so the bar's card still lines up under
+            the center question column on desktop, matching how it looked
+            when it was still a flex child of that column. */}
+        <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none">
+          <div className="mx-auto flex max-w-[1280px] flex-col lg:flex-row lg:items-start lg:gap-4 lg:px-4">
+            <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
+            <div className="flex-1 lg:rounded-xl lg:border lg:border-gray-200 lg:bg-white lg:p-3">
+              <AttemptActionBar
+                legacy
+                compactMobile
+                onPrevious={() => goToIndex(currentIndex - 1)}
+                previousDisabled={currentIndex === 0}
+                onPrimary={handleSaveAndNext}
+                primaryDisabled={draftOption == null || submitting}
+                primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
+                onClear={handleClear}
+                clearDisabled={draftOption == null}
+                previousLabel={t("attempt.previous")}
+                clearLabel={t("attempt.clearResponse")}
+              />
+            </div>
+            <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
+          </div>
+        </div>
 
-              {/* Collapsed questions summary — mobile only, opens the same
-                  navigator content in a bottom sheet instead of a sidebar.
-                  Placed before the sticky action bar below so it scrolls
-                  normally instead of ending up underneath the pinned bar. */}
-              <button
-                onClick={() => setNavSheetOpen(true)}
-                className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 lg:hidden"
-              >
-                <div className="flex items-center gap-2">
-                  <Bookmark size={16} className="text-brand" />
-                  <div className="text-left">
-                    <Text as="p" variant="body-medium" weight="semibold" color="gray-normal">
-                      {t("attempt.questions")}
-                    </Text>
-                    <Text as="p" variant="body-small" color="gray-muted">
-                      {t("attempt.answeredOf", { answered: answeredCount, total: questions.length })}
-                    </Text>
-                  </div>
-                </div>
-                <ChevronIcon size={16} variant="up" />
-              </button>
+        {/* Collapsible questions dock — a real flex child (not sticky/inside
+            the scroll area), placed between the action bar above and the
+            "Need help?" bar below so it stops flush against both with no
+            gap, same as before. */}
+        <div className="shrink-0 border-t border-gray-200 bg-white lg:hidden">
+          <QuestionsDock
+            questions={questions.map((q, index) => ({ status: getStatus(q), isActive: index === currentIndex }))}
+            onSelect={(index) => goToIndex(index)}
+          />
+        </div>
 
+        {/* Footer — a normal flex child after the scrollable area (not inside
+            it), so it stays pinned to the bottom of the viewport like the
+            topbar is pinned to the top, instead of scrolling away with the
+            question content. */}
+        <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-2">
+          <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-2 sm:flex-row">
+            <button
+              onClick={() => openGlobalModal("helpsport")}
+              className="body-small flex items-center gap-1.5 text-surface-gray-muted"
+            >
+              <WarningCircleIcon variant="help" size={16} />
+              <span>
+                {t("attempt.needHelp")} <span className="!font-semibold text-brand">{t("attempt.contactSupport")}</span>
+              </span>
+            </button>
+            <div className="hidden items-center gap-1.5 body-small text-surface-gray-muted sm:flex">
+              <Maximize size={14} />
+              <span>{t("attempt.pressF")}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile question palette — same BottomSheet used elsewhere
+            (see QuestionNavigatorSheet.tsx), not a new modal. */}
+        <BottomSheet isOpen={navSheetOpen} onClose={() => setNavSheetOpen(false)} isHeader={false}>
+          <ModalHeader title={t("attempt.questions")} onClose={() => setNavSheetOpen(false)} />
+          <div className="flex flex-col gap-4 px-4 pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              <LegendItem label={t("attempt.notVisited")} color="bg-gray-300" />
+              <LegendItem label={t("attempt.answered")} color="bg-[var(--icon-positive-subtle)]" />
+              <LegendItem label={t("attempt.notAnswered")} color="bg-[var(--icon-negative-normal)]" />
+              <LegendItem label={t("attempt.markedForReview")} color="bg-[var(--icon-notice-subtle)]" />
             </div>
 
-            {/* Right sidebar — desktop only */}
-            <aside className="hidden w-[260px] shrink-0 flex-col gap-4 lg:flex">
-              <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12}>
-                <Text as="p" variant="body-medium" weight="semibold" color="gray-normal" className="mb-3">
-                  {t("attempt.questions")}
-                </Text>
+            {questionGrid("sheet")}
 
-                <div className="mb-3 flex flex-col gap-2">
-                  <CountRow label={t("attempt.notVisited")} count={counts.notVisited} color="bg-gray-300" textColor="text-surface-gray-muted" />
-                  <CountRow label={t("attempt.answered")} count={counts.answered} color="bg-[var(--icon-positive-subtle)]" textColor="text-[var(--icon-positive-normal)]" />
-                  <CountRow label={t("attempt.notAnswered")} count={counts.notAnswered} color="bg-[var(--icon-negative-normal)]" textColor="text-[var(--icon-negative-normal)]" />
-                  <CountRow label={t("attempt.markedForReview")} count={counts.review} color="bg-[var(--icon-notice-subtle)]" textColor="text-[var(--icon-notice-normal)]" />
-                </div>
-
-                {questionGrid("sidebar")}
-
-                <div className="mt-4">
-                  <Button
-                    variant="soft"
-                    color="gray"
-                    fullWidth
-                    sx={{ borderRadius: "50px" }}
-                    disabled={counts.review === 0}
-                    onClick={handleReviewLater}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Bookmark size={16} />
-                      <span>{t("attempt.reviewLater", { count: counts.review })}</span>
-                    </div>
-                  </Button>
-                </div>
-              </Card>
-            </aside>
+            <Button
+              variant="soft"
+              color="gray"
+              fullWidth
+              sx={{ borderRadius: "50px" }}
+              onClick={() => setNavSheetOpen(false)}
+            >
+              {t("attempt.close")}
+            </Button>
           </div>
-        </div>
+        </BottomSheet>
+
+        {/* Global "Need help?" modal — already used for payment-failed/profile
+            support; renders nothing until openGlobalModal("helpsport") above
+            is called. */}
+        <ContactUsModal />
       </div>
-
-      {/* Bottom action bar (shared with the full exam page, same
-          legacy/compactMobile button styling) — a real flex child AFTER the
-          scroll area (see the "Footer" comment below for why), not `sticky`
-          inside it. `sticky` was the original approach, but this page's
-          scroll container wraps the ENTIRE content column (summary strip +
-          both sidebars + question card), unlike the full exam page where
-          only the question's own text scrolls inside an otherwise-static
-          shell — so a `sticky` element in here only reaches the bottom of
-          that (very tall) scrollable box after scrolling nearly all the way
-          through it, reading as "the footer scrolls with the page" instead
-          of staying pinned. Moving it out of the scroll area entirely (this
-          page's shell is `h-dvh overflow-hidden`, same trick already
-          used below for the QuestionsDock/"Need help?" bars) pins it
-          unconditionally, on both mobile and desktop, with no sticky/fixed
-          math needed. The two empty `w-[260px]` columns replicate the
-          left/right sidebar gutters so the bar's card still lines up under
-          the center question column on desktop, matching how it looked
-          when it was still a flex child of that column. */}
-      <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.06)] lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none">
-        <div className="mx-auto flex max-w-[1280px] flex-col lg:flex-row lg:items-start lg:gap-4 lg:px-4">
-          <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
-          <div className="flex-1 lg:rounded-xl lg:border lg:border-gray-200 lg:bg-white lg:p-3">
-            <AttemptActionBar
-              legacy
-              compactMobile
-              onPrevious={() => goToIndex(currentIndex - 1)}
-              previousDisabled={currentIndex === 0}
-              onPrimary={handleSaveAndNext}
-              primaryDisabled={draftOption == null || submitting}
-              primaryLabel={currentIndex === questions.length - 1 ? t("attempt.saveAndSubmit") : t("attempt.saveAndNext")}
-              onClear={handleClear}
-              clearDisabled={draftOption == null}
-              previousLabel={t("attempt.previous")}
-              clearLabel={t("attempt.clearResponse")}
-            />
-          </div>
-          <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden="true" />
-        </div>
-      </div>
-
-      {/* Collapsible questions dock — a real flex child (not sticky/inside
-          the scroll area), placed between the action bar above and the
-          "Need help?" bar below so it stops flush against both with no
-          gap, same as before. */}
-      <div className="shrink-0 border-t border-gray-200 bg-white lg:hidden">
-        <QuestionsDock
-          questions={questions.map((q, index) => ({ status: getStatus(q), isActive: index === currentIndex }))}
-          onSelect={(index) => goToIndex(index)}
-        />
-      </div>
-
-      {/* Footer — a normal flex child after the scrollable area (not inside
-          it), so it stays pinned to the bottom of the viewport like the
-          topbar is pinned to the top, instead of scrolling away with the
-          question content. */}
-      <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-2">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-2 sm:flex-row">
-          <button
-            onClick={() => openGlobalModal("helpsport")}
-            className="body-small flex items-center gap-1.5 text-surface-gray-muted"
-          >
-            <WarningCircleIcon variant="help" size={16} />
-            <span>
-              {t("attempt.needHelp")} <span className="!font-semibold text-brand">{t("attempt.contactSupport")}</span>
-            </span>
-          </button>
-          <div className="hidden items-center gap-1.5 body-small text-surface-gray-muted sm:flex">
-            <Maximize size={14} />
-            <span>{t("attempt.pressF")}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile question palette — same BottomSheet used elsewhere
-          (see QuestionNavigatorSheet.tsx), not a new modal. */}
-      <BottomSheet isOpen={navSheetOpen} onClose={() => setNavSheetOpen(false)} isHeader={false}>
-        <ModalHeader title={t("attempt.questions")} onClose={() => setNavSheetOpen(false)} />
-        <div className="flex flex-col gap-4 px-4 pb-4">
-          <div className="grid grid-cols-2 gap-2">
-            <LegendItem label={t("attempt.notVisited")} color="bg-gray-300" />
-            <LegendItem label={t("attempt.answered")} color="bg-[var(--icon-positive-subtle)]" />
-            <LegendItem label={t("attempt.notAnswered")} color="bg-[var(--icon-negative-normal)]" />
-            <LegendItem label={t("attempt.markedForReview")} color="bg-[var(--icon-notice-subtle)]" />
-          </div>
-
-          {questionGrid("sheet")}
-
-          <Button
-            variant="soft"
-            color="gray"
-            fullWidth
-            sx={{ borderRadius: "50px" }}
-            onClick={() => setNavSheetOpen(false)}
-          >
-            {t("attempt.close")}
-          </Button>
-        </div>
-      </BottomSheet>
-
-      {/* Global "Need help?" modal — already used for payment-failed/profile
-          support; renders nothing until openGlobalModal("helpsport") above
-          is called. */}
-      <ContactUsModal />
-    </div>
+      {submitOverlay}
+    </>
   );
 }
 
@@ -1073,51 +1145,6 @@ const LegendItem = ({ label, color }: { label: string; color: string }) => (
 type ReviewFilter = "all" | "correct" | "incorrect" | "skipped";
 type ReviewStatus = "correct" | "incorrect" | "skipped";
 
-function ScoreRing({ percent, score, total }: { percent: number; score: number; total: number }) {
-  const t = useTranslations("DailyTests");
-  const r = 52;
-  const circumference = 2 * Math.PI * r;
-  return (
-    <div className="relative h-[150px] w-[150px] shrink-0">
-      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
-        <circle cx="60" cy="60" r={r} fill="none" strokeWidth="9" className="stroke-gray-200" />
-        <circle
-          cx="60"
-          cy="60"
-          r={r}
-          fill="none"
-          strokeWidth="9"
-          strokeLinecap="round"
-          stroke="var(--color-brand)"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - percent / 100)}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="heading-medium !font-bold">
-          {score} / {total}
-        </span>
-        <span className="body-medium !font-semibold">{percent}%</span>
-        <span className="body-small text-surface-gray-muted">{t("result.yourScore")}</span>
-      </div>
-    </div>
-  );
-}
-
-const StatBlock = ({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) => (
-  <div className="flex flex-1 items-center justify-center gap-3 px-2 py-2">
-    {icon}
-    <div>
-      <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal" className="leading-tight">
-        {value}
-      </Text>
-      <Text as="p" variant="body-small" color="gray-muted">
-        {label}
-      </Text>
-    </div>
-  </div>
-);
-
 // Same look and behaviour as the full-length test's Performance Report
 // (exam-report/ExamReportSheet.tsx → QuestionItem): tinted header with the
 // status chip and a round chevron, question + OptionCard grid, and an
@@ -1249,6 +1276,7 @@ function DailyTestResultView({
   testId: string;
 }) {
   const flow = useDailyTestFlowNavigation();
+  const motionLang = useMotionLang();
   const { history } = useDailyTestHistory(courseId);
   const [filter, setFilter] = useState<ReviewFilter>("all");
 
@@ -1309,8 +1337,8 @@ function DailyTestResultView({
   return (
     <DashboardShell>
     <main className="flex-1 overflow-y-auto bg-[var(--background-gray-subtle)] pb-20 md:pb-0">
-      <div className="mx-auto flex max-w-[1000px] flex-col gap-4 p-4">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-[1000px] flex-col gap-4 px-0 py-4 md:p-4">
+        <div className="flex items-center gap-3 px-4 md:px-0">
           {history?.exam.logo_url && (
             <Image
               src={history.exam.logo_url}
@@ -1333,7 +1361,7 @@ function DailyTestResultView({
           </div>
         </div>
 
-        <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+        <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12} className="max-md:!rounded-none max-md:!border-x-0">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="heading-small !font-semibold">{t("result.title")}</h2>
@@ -1371,21 +1399,21 @@ function DailyTestResultView({
             )}
           </div>
 
-          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-            <ScoreRing percent={percent} score={correct} total={total} />
-            <div className="grid w-full flex-1 grid-cols-3 divide-x divide-gray-200">
-              <StatBlock icon={<FileText size={24} className="text-surface-gray-muted" />} value={total} label={t("result.questions")} />
-              <StatBlock
-                icon={<CheckCircle2 size={26} className="text-[var(--icon-positive-normal)]" />}
-                value={correct}
-                label={t("result.correct")}
-              />
-              <StatBlock
-                icon={<XCircle size={26} className="text-[var(--icon-negative-normal)]" />}
-                value={incorrect}
-                label={t("result.incorrect")}
-              />
-            </div>
+          {/* Animated result (@clearcut/motion TestResult): ring count-up, Nibbu, stat chips, confetti when cleared. */}
+          <div className="mx-auto mt-4 w-full max-w-[520px] lg:max-w-none">
+            <TestResult
+              type="daily"
+              lang={motionLang}
+              data={{
+                score: correct,
+                maxScore: Math.max(1, total),
+                correct,
+                wrong: incorrect,
+                skipped: result.is_paid ? skipped : 0,
+              }}
+              actions={false}
+              wide
+            />
           </div>
         </Card>
 
@@ -1393,7 +1421,7 @@ function DailyTestResultView({
           <Card
             padding="24px"
             borderRadius={12}
-            className="flex flex-col items-center gap-4 text-center !border-amber-200 !bg-amber-50"
+            className="flex flex-col items-center gap-4 text-center !border-amber-200 !bg-amber-50 max-md:!rounded-none max-md:!border-x-0"
           >
             <Crown size={22} className="text-[var(--color-warning-strong)]" />
             <div>
@@ -1436,7 +1464,7 @@ function DailyTestResultView({
         )}
 
         {result.is_paid && result.questions && (
-          <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12}>
+          <Card bgcolor="white" border="border-gray-200" padding="20px" borderRadius={12} className="max-md:!rounded-none max-md:!border-x-0">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="heading-small !font-semibold">{t("result.reviewTitle")}</h2>

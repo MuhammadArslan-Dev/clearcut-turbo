@@ -21,6 +21,8 @@ export type TestIntroProps = {
   /** Short checklist shown before the countdown (full mocks). */
   rules?: string[];
   lang?: Lang;
+  /** Badge text override (e.g. "Practice test"); the visual still follows `type`. */
+  label?: string;
   /** Called when the countdown ends or the user taps Skip. Start your timer here. */
   onStart: () => void;
 };
@@ -36,6 +38,7 @@ export function TestIntro({
   streakDays = 0,
   rules,
   lang = "en",
+  label,
   onStart,
 }: TestIntroProps) {
   const reduced = usePrefersReducedMotion();
@@ -73,9 +76,9 @@ export function TestIntro({
   ].filter(Boolean);
 
   return (
-    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={`${TYPE_LABEL[type][lang]}: ${title}`}>
+    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={`${label ?? TYPE_LABEL[type][lang]}: ${title}`}>
       <div className={`${s.stage} ${s[type]}`}>
-        <span className={`${f.badge} ${f[type]}`}>{TYPE_LABEL[type][lang]}</span>
+        <span className={`${f.badge} ${f[type]}`}>{label ?? TYPE_LABEL[type][lang]}</span>
         <h2 className={s.title}>{title}</h2>
         <p className={s.meta}>{metaParts.join(" · ")}</p>
 

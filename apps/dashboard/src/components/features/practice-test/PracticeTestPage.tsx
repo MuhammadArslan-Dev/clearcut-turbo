@@ -30,9 +30,12 @@ import TextMarkDown from "@/components/ui/widgets/TextMarkDown";
 import QuestionMath from "@/components/features/mathjax/Math";
 import { ChevronIcon, LanguageIcon } from "@/components/ui/icons";
 import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
+import { AnswerFeedback, OptionMotion, StreakCombo, type OptionMotionState } from "@clearcut/motion/test/mini-test";
+import TestStartIntro, { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
+import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
 import PracticeTestResult from "./PracticeTestResult";
 import PracticeFooter from "./PracticeFooter";
-import { ExplanationSkeleton, PracticeTestResultSkeleton, PracticeTestSkeleton } from "./PracticeTestSkeletons";
+import { ExplanationSkeleton, PracticeTestSkeleton } from "./PracticeTestSkeletons";
 import { usePracticeElapsed } from "./usePracticeElapsed";
 import { practiceQuestionsKey as QUESTIONS_KEY } from "./practiceTestQuery";
 import {
@@ -96,6 +99,17 @@ export default function PracticeTestPage() {
   // The app has no toast container mounted, so a failed submit is shown inline.
   const [submitFailed, setSubmitFailed] = useState(false);
   const [language, setLanguage] = useState<string | null>(null);
+  // Motion: 3-2-1-Go before a fresh test (the stopwatch + "Test Started" only begin after it), the submit
+  // animation, and the instant-feedback bits (see revealAnswer).
+  const motionLang = useMotionLang();
+  const [introDone, setIntroDone] = useState(false);
+  const [submitDone, setSubmitDone] = useState(false);
+  const pendingFinishRef = useRef<{ checks: PracticeSession["checks"]; elapsedMs: number } | null>(null);
+  const [revealBusy, setRevealBusy] = useState<number | null>(null);
+  const [revealFailed, setRevealFailed] = useState<number | null>(null);
+  const revealingRef = useRef<Set<number>>(new Set());
+  const [combo, setCombo] = useState<number | null>(null);
+  const toastedRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     setSession(loadPracticeSession(courseId));
@@ -164,6 +178,14 @@ export default function PracticeTestPage() {
     setSession(newPracticeSession(fetched));
   }, [fetched, session, gateOpen, goToPreparation]);
 
+  // A test that is already under way (refresh, finished) resumes without the countdown.
+  useEffect(() => {
+    if (introDone || !session) return;
+    const progressed =
+      session.finishedAt != null || session.index > 0 || (session.elapsedMs ?? 0) > 0 || Object.keys(session.answers).length > 0;
+    if (progressed) setIntroDone(true);
+  }, [session, introDone]);
+
   // ---- elapsed time: silent, no limit, shown on the result ----
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -174,7 +196,7 @@ export default function PracticeTestPage() {
     if (!s) return;
     savePracticeSession(courseId, { ...s, elapsedMs: s.finishedAt ? s.elapsedMs : readElapsedRef.current() });
   }, [courseId]);
-  const readElapsed = usePracticeElapsed(!!session && !session.finishedAt, session?.startedAt ?? null, session?.elapsedMs ?? 0, persistElapsed);
+  const readElapsed = usePracticeElapsed(!!session && !session.finishedAt && introDone, session?.startedAt ?? null, session?.elapsedMs ?? 0, persistElapsed);
   readElapsedRef.current = readElapsed;
 
   useEffect(() => {
@@ -228,20 +250,6 @@ export default function PracticeTestPage() {
     [update],
   );
 
-  // Picking only saves the answer (tap the chosen option again to clear it);
-  // nothing about right/wrong is shown until the test is submitted.
-  const selectOption = useCallback(
-    (question: PracticeQuestion, option: number) => {
-      update((s) => {
-        const answers = { ...s.answers };
-        if (answers[question.question_id] === option) delete answers[question.question_id];
-        else answers[question.question_id] = option;
-        return { ...s, answers };
-      });
-    },
-    [update],
-  );
-
   // Test Started / Submitted / Abandoned: the test-series events with test_type "practice_test".
   const analyticsBase = useCallback(
     (s: PracticeSession) => ({
@@ -256,7 +264,7 @@ export default function PracticeTestPage() {
   );
 
   const startedAt = session?.startedAt;
-  const inProgress = !!session && !session.finishedAt;
+  const inProgress = !!session && !session.finishedAt && introDone;
   useEffect(() => {
     const s = sessionRef.current;
     if (s && inProgress) trackLiteTestStarted(analyticsBase(s));
@@ -275,6 +283,7 @@ export default function PracticeTestPage() {
     // Time stops at the tap, not when the server answers.
     const elapsedMs = readElapsed();
     setFinishing(true);
+    setSubmitDone(false);
     setSubmitFailed(false);
     try {
       const results = await submitPracticeTest(
@@ -294,22 +303,32 @@ export default function PracticeTestPage() {
         reason: "manual",
         language: activeLocale,
       });
-      update((s) => ({ ...s, checks, finishedAt: Date.now(), elapsedMs }));
+      // The result opens when the submit animation has played out (see <TestSubmit onFinish> below).
+      pendingFinishRef.current = { checks, elapsedMs };
+      setSubmitDone(true);
     } catch {
       // Stay on the test so nothing is lost; Finish can be tapped again.
       setSubmitFailed(true);
-    } finally {
       setFinishing(false);
     }
-  }, [session, finishing, courseId, update, readElapsed, analyticsBase, activeLocale]);
+  }, [session, finishing, courseId, readElapsed, analyticsBase, activeLocale]);
+
+  const onSubmitAnimationEnd = useCallback(() => {
+    const pending = pendingFinishRef.current;
+    if (!pending) return;
+    pendingFinishRef.current = null;
+    update((s) => ({ ...s, checks: pending.checks, finishedAt: Date.now(), elapsedMs: pending.elapsedMs }));
+    setFinishing(false);
+    setSubmitDone(false);
+  }, [update]);
 
   const toggleMark = useCallback(() => {
-    if (!q) return;
-    update((s) => ({
-      ...s,
-      marked: s.marked.includes(q.question_id) ? s.marked.filter((id) => id !== q.question_id) : [...s.marked, q.question_id],
-    }));
-  }, [q, update]);
+    update((s) => {
+      const id = s.questions[s.index]?.question_id;
+      if (id == null) return s;
+      return { ...s, marked: s.marked.includes(id) ? s.marked.filter((m) => m !== id) : [...s.marked, id] };
+    });
+  }, [update]);
 
   // "Show Explanation": fetched once per question (cached in the session), then only toggled.
   // Picking an answer reveals nothing by itself.
@@ -345,6 +364,51 @@ export default function PracticeTestPage() {
     [courseId, update],
   );
 
+  // Instant feedback: picking an answer asks the SAME read-only endpoint that "Show Explanation" uses for this
+  // question's correct option (cached in the session, so it is asked once; it never records a result). The pick is
+  // saved at once; the right/wrong state follows when the answer arrives. Scoring still happens on submit.
+  const revealAnswer = useCallback(
+    async (questionId: number) => {
+      const s = sessionRef.current;
+      if (!s || s.explained?.[questionId] || revealingRef.current.has(questionId)) return;
+      revealingRef.current.add(questionId);
+      setRevealBusy(questionId);
+      setRevealFailed(null);
+      try {
+        const explanation = await getPracticeExplanation(courseId, questionId);
+        update((cur) => ({ ...cur, explained: { ...(cur.explained ?? {}), [questionId]: explanation } }));
+      } catch {
+        setRevealFailed(questionId);
+      } finally {
+        revealingRef.current.delete(questionId);
+        setRevealBusy((cur) => (cur === questionId ? null : cur));
+      }
+    },
+    [courseId, update],
+  );
+
+  // A pick is saved and its result shown; once shown the pick is locked (the answer has been seen).
+  // Tapping the same option again only retries a reveal that failed.
+  const selectOption = useCallback(
+    (option: number) => {
+      const s = sessionRef.current;
+      // The CURRENT question comes from the session ref, not from the tapped element's closure: the question block
+      // sits in AnimatePresence(mode="wait"), whose freshly mounted child can still hold the previous render's props.
+      const question = s?.questions[s.index];
+      if (!s || !question) return;
+      const id = question.question_id;
+      const picked = s.answers[id];
+      if (picked != null && s.explained?.[id]) return;
+      if (picked === option) {
+        if (revealFailed === id) void revealAnswer(id);
+        return;
+      }
+      update((cur) => ({ ...cur, answers: { ...cur.answers, [id]: option } }));
+      void revealAnswer(id);
+    },
+    [update, revealAnswer, revealFailed],
+  );
+
   const getStatus = useCallback(
     (item: PracticeQuestion): QuestionDockStatus => {
       if (!session) return "notVisited";
@@ -366,16 +430,54 @@ export default function PracticeTestPage() {
 
   const total = questions.length;
 
+  // "3 in a row!" toast (library StreakCombo): consecutive revealed-correct answers ending at this question, once per question.
+  const isRevealedCorrect = useCallback(
+    (item: PracticeQuestion | undefined) => {
+      if (!item) return false;
+      const pick = session?.answers[item.question_id];
+      const exp = session?.explained?.[item.question_id];
+      return pick != null && exp != null && pick === exp.correct_option;
+    },
+    [session?.answers, session?.explained],
+  );
+  const streakNow = useMemo(() => {
+    if (!isRevealedCorrect(q)) return 0;
+    let n = 0;
+    for (let k = index; k >= 0 && isRevealedCorrect(questions[k]); k--) n++;
+    return n;
+  }, [q, index, questions, isRevealedCorrect]);
+  useEffect(() => {
+    if (!q || (streakNow !== 3 && streakNow !== 5 && streakNow !== 10)) return;
+    if (toastedRef.current.has(q.question_id)) return;
+    toastedRef.current.add(q.question_id);
+    setCombo(streakNow);
+    const timer = setTimeout(() => setCombo(null), 1800);
+    return () => {
+      clearTimeout(timer);
+      setCombo(null);
+    };
+  }, [streakNow, q]);
+
   // ---------- states ----------
 
   if (!restored || (!session && (!isError || !gateOpen))) {
     return <PracticeTestSkeleton />;
   }
 
-  // The final submit is in flight: show the result's own skeleton (a failed submit comes back to the test).
-  if (finishing) {
-    return <PracticeTestResultSkeleton />;
-  }
+  // The final submit is in flight: the "checking your answers" animation sits over the test, then fades out as the
+  // result renders (a failed submit just drops the overlay and leaves the test as it was).
+  const submitOverlay = (
+    <SubmitOverlay
+      key="submit-overlay"
+      open={finishing}
+      type="topic"
+      total={total}
+      done={submitDone}
+      lang={motionLang}
+      note={t("motion.submitted")}
+      onFinish={onSubmitAnimationEnd}
+    />
+  );
 
   if (!session) {
     return (
@@ -395,14 +497,18 @@ export default function PracticeTestPage() {
 
   if (session.finishedAt) {
     return (
-      <PracticeTestResult
-        session={session}
-        examName={examName}
-        userName={firstName}
-        language={language ?? appLocale}
-        onContinue={goToPreparation}
-        onToggleLanguage={hasMultipleTranslations && toggleLocale ? () => setLanguage(toggleLocale) : null}
-      />
+      <>
+        <PracticeTestResult
+          key="result"
+          session={session}
+          examName={examName}
+          userName={firstName}
+          language={language ?? appLocale}
+          onContinue={goToPreparation}
+          onToggleLanguage={hasMultipleTranslations && toggleLocale ? () => setLanguage(toggleLocale) : null}
+        />
+        {submitOverlay}
+      </>
     );
   }
 
@@ -416,6 +522,8 @@ export default function PracticeTestPage() {
   const isMarked = session.marked.includes(q.question_id);
   const explained = session.explained?.[q.question_id];
   const explanationOpen = selected != null && !!explained && !!session.shown?.includes(q.question_id);
+  const correctOption = explained?.correct_option ?? null;
+  const isRevealed = selected != null && correctOption != null;
   const percent = Math.round(((index + 1) / total) * 100);
   const options = (["1", "2", "3", "4"] as const)
     .map((key) => ({ key, text: display.options[key] }))
@@ -480,6 +588,17 @@ export default function PracticeTestPage() {
   );
 
   return (
+    <>
+    {/* 3-2-1-Go before a fresh test; the stopwatch and "Test Started" begin when it ends (see introDone). */}
+    {!introDone && (
+      <TestStartIntro
+        type="topic"
+        label={t("motion.badge")}
+        title={t("headerTitle", { exam: examName || td("list.defaultExam") })}
+        questions={total}
+        onStart={() => setIntroDone(true)}
+      />
+    )}
     <motion.div
       className="flex h-dvh flex-col overflow-hidden bg-[var(--background-gray-subtle)]"
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -565,7 +684,8 @@ export default function PracticeTestPage() {
               </Card>
             </motion.aside>
 
-            <motion.div className="flex min-w-0 flex-1 flex-col gap-4 lg:self-stretch" {...enter(0.12)}>
+            <motion.div className="relative flex min-w-0 flex-1 flex-col gap-4 lg:self-stretch" {...enter(0.12)}>
+              {combo !== null && <StreakCombo count={combo} lang={motionLang} top={8} />}
               <Card bgcolor="white" border="border-none" padding="16px" borderRadius={12} className="!h-auto overflow-x-clip max-lg:!rounded-none lg:flex-1">
                 <AnimatePresence mode="wait" initial={false} custom={directionRef.current}>
                 <motion.div
@@ -609,37 +729,85 @@ export default function PracticeTestPage() {
                 )}
 
                 <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
-                  {options.map(({ key, text }) => {
+                  {options.map(({ key, text }, optIndex) => {
                     const number = Number(key);
                     const isSelected = selected === number;
-                    // Tap = a small press; becoming selected = one soft pop (not replayed when a question is revisited).
+                    const showCorrect = isRevealed && number === correctOption;
+                    const showWrong = isRevealed && isSelected && number !== correctOption;
+                    const state: OptionMotionState = showCorrect ? "right" : showWrong ? "wrong" : isSelected ? "picked" : "idle";
                     return (
-                      <motion.div
-                        key={key}
-                        initial={false}
-                        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                        animate={isSelected && !reduceMotion ? { scale: [1, 1.025, 1] } : { scale: 1 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                      >
+                      <OptionMotion key={key} state={state} index={optIndex}>
                         <QOption
                           value={{ text, index: number - 1 }}
                           mainContainer={{
                             borderwidth: 2,
-                            bgcolor: isSelected ? "!bg-brand/9" : "",
-                            bordercolor: isSelected ? "!border-brand" : "",
+                            className: isRevealed ? "pointer-events-none" : undefined,
+                            bgcolor: showCorrect
+                              ? "!bg-[var(--icon-positive-subtle)]/12"
+                              : showWrong
+                                ? "!bg-red-100"
+                                : isSelected
+                                  ? "!bg-brand/9"
+                                  : "",
+                            bordercolor: showCorrect
+                              ? "!border-[var(--icon-positive-subtle)]"
+                              : showWrong
+                                ? "!border-red-500"
+                                : isSelected
+                                  ? "!border-brand"
+                                  : "",
                           }}
                           counter={{
-                            backgroundColor: isSelected ? "!bg-brand/9" : "",
-                            borderColor: isSelected ? "!border-brand" : "",
+                            backgroundColor: showCorrect
+                              ? "!bg-[var(--icon-positive-subtle)]/2"
+                              : showWrong
+                                ? "!bg-red-100"
+                                : isSelected
+                                  ? "!bg-brand/9"
+                                  : "",
+                            borderColor: showCorrect
+                              ? "!border-[var(--icon-positive-subtle)]"
+                              : showWrong
+                                ? "!border-red-500"
+                                : isSelected
+                                  ? "!border-brand"
+                                  : "",
+                            color: showCorrect
+                              ? "!text-[var(--icon-positive-subtle)]"
+                              : showWrong
+                                ? "!text-red-500"
+                                : isSelected
+                                  ? "!text-brand"
+                                  : "",
                           }}
-                          onClick={() => selectOption(q, number)}
+                          onClick={() => selectOption(number)}
                         />
-                      </motion.div>
+                      </OptionMotion>
                     );
                   })}
                 </div>
 
-                {/* Answering reveals nothing. Once an answer is picked, this question's explanation can be opened on demand. */}
+                {/* Nibbu reacts to the revealed answer (library AnswerFeedback); the explanation stays on demand below. */}
+                {isRevealed && (
+                  <div className="mt-4">
+                    <AnswerFeedback
+                      right={selected === correctOption}
+                      lang={motionLang}
+                      detail={
+                        selected === correctOption
+                          ? undefined
+                          : `${String.fromCharCode(64 + (correctOption ?? 1))}. ${options.find((o) => Number(o.key) === correctOption)?.text ?? ""}`
+                      }
+                    />
+                  </div>
+                )}
+                {revealFailed === q.question_id && !isRevealed && (
+                  <p role="alert" className="body-small mt-3 text-[var(--icon-negative-normal)]">
+                    {t("explanationFailed")}
+                  </p>
+                )}
+
+                {/* Once an answer is picked, this question's explanation can be opened on demand. */}
                 {selected != null && (
                   <div className="mt-4">
                     <div className="flex justify-center">
@@ -649,9 +817,13 @@ export default function PracticeTestPage() {
                       sx={{ borderRadius: "50px" }}
                       leftIcon={<Lightbulb size={14} />}
                       rightIcon={<ChevronIcon size={14} variant={explanationOpen ? "up" : "down"} color="currentColor" />}
-                      disabled={explainBusy === q.question_id}
+                      disabled={explainBusy === q.question_id || revealBusy === q.question_id}
                       aria-expanded={explanationOpen}
-                      onClick={() => toggleExplanation(q.question_id)}
+                      onClick={() => {
+                        const cur = sessionRef.current;
+                        const id = cur?.questions[cur.index]?.question_id;
+                        if (id != null) void toggleExplanation(id);
+                      }}
                     >
                       {explanationOpen ? t("hideExplanation") : t("showExplanation")}
                     </Button>
@@ -738,5 +910,7 @@ export default function PracticeTestPage() {
         />
       </div>
     </motion.div>
+      {submitOverlay}
+    </>
   );
 }

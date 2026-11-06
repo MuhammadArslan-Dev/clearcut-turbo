@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import s from "./motion.module.css";
-import { NibMascot } from "../../nibbu/NibMascot";
+import { NibMascot, type NibAccessory, type NibMood } from "../../nibbu/NibMascot";
 
 /**
  * Animation-only building blocks of the mini test, for hosts that already have their own
@@ -86,6 +86,36 @@ export function StreakCombo({ count, lang = "en", top = 12 }: { count: number; l
   return (
     <div className={s.combo} style={{ top }} role="status">
       <Flame /> {count} {L.inARow[lang]}
+    </div>
+  );
+}
+
+/**
+ * Neutral Nibbu message (no right/wrong): a happy hop and a short line, e.g. "Answer noted" in a graded test
+ * where the correct option must stay hidden. The host supplies the (translated) text.
+ */
+export function NibNote({
+  title,
+  detail,
+  mood = "happy",
+  accessory = "none",
+}: {
+  title: ReactNode;
+  detail?: ReactNode;
+  mood?: NibMood;
+  accessory?: NibAccessory;
+}) {
+  return (
+    <div className={s.feedback} role="status">
+      <div className={s.fbNib} aria-hidden="true">
+        <div className={s.fbHop}>
+          <NibMascot mood={mood} accessory={accessory} />
+        </div>
+      </div>
+      <div className={`${s.fbText} ${s.fbNeutral}`}>
+        <b>{title}</b>
+        {detail ? <span>{detail}</span> : null}
+      </div>
     </div>
   );
 }

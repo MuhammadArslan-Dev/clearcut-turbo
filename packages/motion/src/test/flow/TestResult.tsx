@@ -18,13 +18,17 @@ export type TestResultProps = {
   /** topic → next topic · daily → dashboard · full → retry */
   onSecondary?: () => void;
   /** Replaces the two default buttons with the host's own (e.g. the app's Button component). onReview/onSecondary are then unused. */
-  actions?: ReactNode;
+  actions?: ReactNode | false;
+  /** Badge text override (e.g. "Practice test"); the design still follows `type`. */
+  label?: string;
+  /** Desktop (>=1024px) two-column layout (ring left, text + stats right) for full-page hosts; modals keep the stacked layout. */
+  wide?: boolean;
 };
 
 const RING_DELAY = 300;
 const RING_MS = 1400;
 
-export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions }: TestResultProps) {
+export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions, label, wide }: TestResultProps) {
   const reduced = usePrefersReducedMotion();
   const outcome = getOutcome(data);
   const cutoff = data.cutoff ?? Math.round(data.maxScore * 0.6);
@@ -45,12 +49,12 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
   const tick = { x1: 100 + 72 * Math.cos(a), y1: 100 + 72 * Math.sin(a), x2: 100 + 97 * Math.cos(a), y2: 100 + 97 * Math.sin(a) };
 
   return (
-    <section className={`${f.root} ${s.result} ${s[outcome]}`} aria-labelledby="cc-result-title">
+    <section className={`${f.root} ${s.result} ${s[outcome]}${wide ? ` ${s.wide}` : ""}`} aria-labelledby="cc-result-title">
       <span className={f.srOnly} role="status">
         {`${data.score} / ${data.maxScore}. ${COPY.cutoff[lang]} ${cutoff}. ${fill(copy.title[lang], { gap })}`}
       </span>
 
-      <span className={`${f.badge} ${f[type]} ${s.badge}`}>{TYPE_LABEL[type][lang]}</span>
+      <span className={`${f.badge} ${f[type]} ${s.badge}`}>{label ?? TYPE_LABEL[type][lang]}</span>
 
       <div className={s.hero} aria-hidden="true">
         {outcome === "pass" && !reduced && <Confetti />}
@@ -114,6 +118,7 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
       {type === "daily" && data.streak && <Streak streak={data.streak} lang={lang} />}
       {type === "topic" && data.mastery && <Mastery m={data.mastery} lang={lang} />}
 
+      {actions !== false && (
       <div className={s.ctas}>
         {actions ?? (
           <>
@@ -126,6 +131,7 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
           </>
         )}
       </div>
+      )}
     </section>
   );
 }

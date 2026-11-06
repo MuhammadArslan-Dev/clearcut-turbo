@@ -242,3 +242,46 @@
   .miniFlame, .trackFill, .dot, .levelUp, .ctas, .pass .glow, .pass .ring, .today i { animation: none !important; }
   .flip span { animation: none; transform: translateY(-32px); }
 }
+
+/* ---------- wide (opt-in, full-page hosts, desktop): ring left, text + stats right ---------- */
+@media (min-width: 1024px) {
+  .wide {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    column-gap: 72px;
+    align-content: center;
+    justify-items: start;
+    max-width: 1000px;
+    padding: 24px 0 28px;
+    text-align: left;
+  }
+  .wide .hero { grid-column: 1; grid-row: 1 / span 6; align-self: center; justify-self: center; margin-top: 0; }
+  .wide .badge,
+  .wide .title,
+  .wide .sub,
+  .wide .stats,
+  .wide .timeLine { grid-column: 2; }
+  .wide .title { margin-top: 14px; font-size: 28px; }
+  .wide .sub { max-width: 46ch; font-size: 15.5px; }
+  .wide .stats { margin-top: 24px; gap: 14px; }
+  .wide .stat {
+    justify-items: center;
+    gap: 6px;
+    padding: 18px 8px 14px;
+    border-color: transparent;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .wide .stat.ok   { background: var(--cc-success-soft); }
+  .wide .stat.bad  { background: var(--cc-danger-soft); }
+  .wide .stat.skip { background: #f1f4f8; }
+  .wide .stat.acc  { background: var(--cc-soft); }
+  .wide .stat.ok .statVal   { color: #067647; }
+  .wide .stat.bad .statVal  { color: #b42318; }
+  .wide .stat.acc .statVal  { color: var(--cc-brand-dark); }
+  .wide .statVal { font-size: 32px; line-height: 1.1; }
+  .wide .statLabel { font-size: 13px; font-weight: 600; }
+  .wide .timeLine { margin-top: 14px; }
+  .wide .card,
+  .wide .ctas { grid-column: 1 / -1; justify-self: stretch; }
+}

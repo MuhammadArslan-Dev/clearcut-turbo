@@ -37,6 +37,7 @@
 .fbText { display: grid; gap: 2px; min-width: 0; padding-top: 2px; line-height: 1.45; color: #192839; }
 .fbText b { font-size: 18px; font-weight: 800; }
 .fbRight b { color: #067a46; }
+.fbNeutral b { color: #005cb8; }
 .fbWrong b { color: #b42318; }
 .fbText span { font-size: 13.5px; color: #566c82; }
 
