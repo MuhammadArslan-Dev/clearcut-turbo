@@ -1,10 +1,17 @@
 // src/components/FullScreenLoader.tsx
 //
-// Re-exports the shared @clearcut/ui/full-screen-loader component (same one
-// apps/landing uses for its auth-redirect loader — see that app's
-// AuthRedirectLoader.tsx) so both apps show the identical loading state
-// instead of maintaining duplicate copies. Kept as a re-export file, not a
-// straight import-and-replace at every call site, so every existing
-// `@/components/FullScreenLoader` import (ProtectedPage, payment/initiated,
-// ContentShell, dashboard/page.tsx) keeps working unchanged.
-export { default, MainLoader } from "@clearcut/ui/full-screen-loader";
+// The one place the dashboard's loader is chosen. Every call site (ProtectedPage, /dashboard, payment/initiated,
+// ContentShell) imports from here, so switching is a one-line change and nothing else moves.
+//
+// Phase 83 (approved): the new "Lesson Path" loader (loader/AppLoader.tsx, @clearcut/motion CCLoader) is active.
+// The previous loader is kept untouched — packages/ui/src/full-screen-loader.tsx (still used by apps/landing) —
+// and backed up in loader/legacy/ (see its README). Revert: NEXT_PUBLIC_LEGACY_LOADER=true (rebuild) or
+// USE_LEGACY = true below.
+import LegacyFullScreenLoader, { MainLoader as LegacyMainLoader } from "@clearcut/ui/full-screen-loader";
+import { AppFullScreenLoader, AppMainLoader } from "@/components/loader/AppLoader";
+
+const USE_LEGACY = process.env.NEXT_PUBLIC_LEGACY_LOADER === "true";
+
+const FullScreenLoader = USE_LEGACY ? LegacyFullScreenLoader : AppFullScreenLoader;
+export const MainLoader = USE_LEGACY ? LegacyMainLoader : AppMainLoader;
+export default FullScreenLoader;
