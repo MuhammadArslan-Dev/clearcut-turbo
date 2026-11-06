@@ -331,5 +331,18 @@
     },
 
     "close": "Close"
+  },
+
+  "examMotion": {
+    "notedTitle": "Answer noted",
+    "notedBody": "Tap Save & Next to save it.",
+    "savedTitle": "Nice, keep going!",
+    "savedBody": "You can still change it before you submit.",
+    "chapter": "Chapter test",
+    "sectional": "Sectional test",
+    "full": "Full test",
+    "chapterSubmitted": "Chapter test submitted",
+    "sectionalSubmitted": "Sectional test submitted",
+    "fullSubmitted": "Full test submitted"
   }
 }

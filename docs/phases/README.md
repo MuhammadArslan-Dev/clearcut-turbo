@@ -118,4 +118,6 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-10-30: added phase 71 (image download options sheet + free-PDF lead via Amplitude, tools; a DB request table was built and removed again).
 | 79 | [Motion library (animations package) + preview page](79-motion-library-animations.md) | — | CM `packages/motion`, `apps/dashboard` | Live in the Topic Test (intro, animations, result screen); rest not integrated | Integration instructions for other screens; approved-designs PDF |
 | 80 | [Daily + Practice Test motion (intro, Nibbu, submit, animated result)](80-daily-practice-test-motion.md) | — | CM `packages/motion`, `apps/dashboard` | Done (tested locally; merged to main) | Watch Amplitude test events after deploy |
+| 81 | [Chapter / Sectional / Full exam tests motion (start intro, Nibbu note, submit animation, animated result)](81-exam-tests-motion.md) | — | CM-dashboard, `packages/motion` | Built + tested (mocked API, list -> exam -> report); pending the user's own test. |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
+- 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).

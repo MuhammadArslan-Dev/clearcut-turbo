@@ -20,7 +20,6 @@ import Text from "@clearcut/ui/text";
 import { trackReportOpened, trackReportTab } from "@/lib/analytics/testFunnel";
 import TabSwitchInExamReport from "./TabSwitchInExamReport";
 import SectionSwitchInExamReport from "./SectionSwitchInExamReport";
-import { Card } from "@clearcut/ui/card";
 import Image from "next/image";
 import clsx from "clsx";
 import { useGetExamReport } from "./hook/useGetExamReport";
@@ -35,6 +34,9 @@ import { useTranslations } from "next-intl";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import OptionCard from "./OptionCard";
+import { TestResult } from "@clearcut/motion/test/flow";
+import type { ResultData } from "@clearcut/motion/test/flow";
+import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 
 type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
 
@@ -54,6 +56,7 @@ export default function ExamReportSheet() {
 
   const isMobile = useIsMobile();
   const t = useTranslations("modals.performanceReport");
+  const tMotion = useTranslations("modals.examMotion");
 
   // Why a given filter has nothing to show. Tapping an empty filter keeps
   // the current list in place and surfaces one of these instead of
@@ -156,34 +159,34 @@ export default function ExamReportSheet() {
     onClose: () => closeModal("exam-report"),
   });
 
-  const cardsData = useMemo(() => {
-    return [
-      {
-        id: "score",
-        title: t("stats.score"),
-        value: `${result?.correct || 0}/${result?.total_questions || 0}`,
-        image: "/images/grading-a+.png",
-      },
-      {
-        id: "timing",
-        title: t("stats.timing"),
-        value: t("stats.minutes", { time: result?.time }),
-        image: "/images/timer-clock.png",
-      },
-      {
-        id: "incorrect",
-        title: t("stats.incorrect"),
-        value: result?.wrong || 0,
-        image: "/images/cross-image.png",
-      },
-      {
-        id: "correct",
-        title: t("stats.correct"),
-        value: result?.correct || 0,
-        image: "/images/tick-image-green.png",
-      },
-    ];
-  }, [result]);
+  // Animated result hero (@clearcut/motion TestResult) replaces the four plain stat cards. One mark per question in
+  // these tests, no cutoff. Chapter test = the "topic" result, sectional + full = the "full" result (per-section marks).
+  const motionLang = useMotionLang();
+  const resultKind = exam?.type === "chapter" ? "chapter" : exam?.type === "sectional" ? "sectional" : "full";
+  const resultData = useMemo<ResultData | null>(() => {
+    const total = Number(result?.total_questions ?? 0);
+    if (!exam || !total) return null;
+    const used = Number(exam.time_used_seconds);
+    const minutes = Number(result?.time);
+    const timeTakenSec = used > 0 ? used : minutes > 0 ? Math.round(minutes * 60) : undefined;
+    const bySection =
+      resultKind !== "chapter" && sections.length > 1
+        ? sections.map((s: any) => ({
+            name: s.section?.name ?? "",
+            score: (s.questions ?? []).filter((q: any) => Number(q?.is_correct) === 1).length,
+            max: (s.questions ?? []).length,
+          }))
+        : undefined;
+    return {
+      score: Number(result?.correct ?? 0),
+      maxScore: total,
+      correct: Number(result?.correct ?? 0),
+      wrong: Number(result?.wrong ?? 0),
+      skipped: Number(result?.unanswered ?? 0),
+      timeTakenSec,
+      sections: bySection,
+    };
+  }, [exam, result, sections, resultKind]);
 
   // Moved below every hook in this component (see git history/blame if this
   // looks odd) — an early return here BEFORE the hooks that used to follow
@@ -270,46 +273,18 @@ export default function ExamReportSheet() {
                 <div>
                   {activeTab === "summary" && (
                     <div className="py-2 flex flex-col gap-2">
-                      <div className="flex justify-center">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {cardsData.map((tab, index) => (
-                            <Card
-                              key={tab.id}
-                              width={"144px"}
-                              height={"60px"}
-                              padding={0}
-                            >
-                              <div className="flex items-center gap-2 px-4 w-full h-full">
-                                <div className="relative w-10 h-10">
-                                  <Image
-                                    src={tab.image}
-                                    alt={tab.title}
-                                    fill
-                                    className="object-contain"
-                                  />
-                                </div>
-                                <div className="">
-                                  <Text
-                                    as="p"
-                                    variant="body-medium"
-                                    color="gray-muted"
-                                  >
-                                    {tab.title}
-                                  </Text>
-                                  <Text
-                                    as="p"
-                                    variant="body-large"
-                                    weight="semibold"
-                                    color="gray-normal"
-                                  >
-                                    {tab.value}
-                                  </Text>
-                                </div>
-                              </div>
-                            </Card>
-                          ))}{" "}
+                      {resultData && (
+                        <div className="mx-auto w-full max-w-[440px] px-3">
+                          <TestResult
+                            type={resultKind === "chapter" ? "topic" : "full"}
+                            label={tMotion(resultKind)}
+                            data={resultData}
+                            lang={motionLang}
+                            actions={false}
+                            noCutoff
+                          />
                         </div>
-                      </div>
+                      )}
 
                       <div>
                         {" "}

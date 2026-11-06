@@ -4,7 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import f from "./flow.module.css";
 import s from "./result.module.css";
 import { NibMascot } from "../../nibbu/NibMascot";
-import { COPY, OUTCOME_COPY, TYPE_LABEL, fill, lastSevenDays, marksAway } from "./copy";
+import { COPY, NEUTRAL_OUTCOME_COPY, OUTCOME_COPY, TYPE_LABEL, fill, lastSevenDays, marksAway } from "./copy";
 import { useCountUp, usePrefersReducedMotion } from "../../core/useCountUp";
 import { getOutcome, type Lang, type ResultData, type TestType } from "./types";
 
@@ -23,12 +23,14 @@ export type TestResultProps = {
   label?: string;
   /** Desktop (>=1024px) two-column layout (ring left, text + stats right) for full-page hosts; modals keep the stacked layout. */
   wide?: boolean;
+  /** Tests without a cutoff (the exam-series tests): hides the cutoff chip/tick and uses cutoff-free wording. */
+  noCutoff?: boolean;
 };
 
 const RING_DELAY = 300;
 const RING_MS = 1400;
 
-export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions, label, wide }: TestResultProps) {
+export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions, label, wide, noCutoff }: TestResultProps) {
   const reduced = usePrefersReducedMotion();
   const outcome = getOutcome(data);
   const cutoff = data.cutoff ?? Math.round(data.maxScore * 0.6);
@@ -41,7 +43,7 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
 
   const weak = weakArea ?? weakest(data) ?? (lang === "hi" ? "गलत सवालों" : "your wrong answers");
   const gap = marksAway(Math.max(0, Math.ceil(cutoff - data.score)), lang);
-  const copy = OUTCOME_COPY[outcome];
+  const copy = (noCutoff ? NEUTRAL_OUTCOME_COPY : OUTCOME_COPY)[outcome];
   const secondaryLabel = type === "topic" ? COPY.nextTopic : type === "daily" ? COPY.dashboard : COPY.retry;
 
   // cutoff tick position on the ring (12 o'clock = 0)
@@ -51,7 +53,7 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
   return (
     <section className={`${f.root} ${s.result} ${s[outcome]}${wide ? ` ${s.wide}` : ""}`} aria-labelledby="cc-result-title">
       <span className={f.srOnly} role="status">
-        {`${data.score} / ${data.maxScore}. ${COPY.cutoff[lang]} ${cutoff}. ${fill(copy.title[lang], { gap })}`}
+        {`${data.score} / ${data.maxScore}. ${noCutoff ? "" : `${COPY.cutoff[lang]} ${cutoff}. `}${fill(copy.title[lang], { gap })}`}
       </span>
 
       <span className={`${f.badge} ${f[type]} ${s.badge}`}>{label ?? TYPE_LABEL[type][lang]}</span>
@@ -69,14 +71,16 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
             pathLength={100}
             style={{ strokeDashoffset: 100 - shownPct }}
           />
-          <line className={s.cutTick} {...tick} />
+          {!noCutoff && <line className={s.cutTick} {...tick} />}
         </svg>
         <div className={s.center}>
           <span className={s.score}>{Math.round(shownScore)}</span>
           <span className={s.max}>/ {data.maxScore}</span>
-          <span className={s.cutChip}>
-            {COPY.cutoff[lang]} {cutoff}
-          </span>
+          {!noCutoff && (
+            <span className={s.cutChip}>
+              {COPY.cutoff[lang]} {cutoff}
+            </span>
+          )}
         </div>
         <div className={s.buddy}>
           <div className={s.buddyMove}>

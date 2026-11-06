@@ -333,5 +333,18 @@
     },
 
     "close": "बंद करा"
+  },
+
+  "examMotion": {
+    "notedTitle": "उत्तर नोंदवले",
+    "notedBody": "सेव्ह करण्यासाठी Save & Next दाबा.",
+    "savedTitle": "छान, पुढे चला!",
+    "savedBody": "सबमिट करण्यापूर्वी तुम्ही ते बदलू शकता.",
+    "chapter": "चॅप्टर टेस्ट",
+    "sectional": "सेक्शनल टेस्ट",
+    "full": "फुल टेस्ट",
+    "chapterSubmitted": "चॅप्टर टेस्ट सबमिट झाली",
+    "sectionalSubmitted": "सेक्शनल टेस्ट सबमिट झाली",
+    "fullSubmitted": "फुल टेस्ट सबमिट झाली"
   }
 }

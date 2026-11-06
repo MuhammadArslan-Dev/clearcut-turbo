@@ -84,5 +84,24 @@ export const OUTCOME_COPY: Record<Outcome, { title: T; sub: T }> = {
   },
 };
 
+/** Same tiers for tests that have no cutoff (the exam-series tests): no "cutoff" wording anywhere. */
+export const NEUTRAL_OUTCOME_COPY: Record<Outcome, { title: T; sub: T }> = {
+  pass: {
+    title: { en: "Great score!", hi: "शानदार स्कोर!" },
+    sub: {
+      en: "You're on the right track. Keep this pace and review the few you missed.",
+      hi: "आप सही राह पर हैं। यही रफ़्तार रखें और गलत सवाल दोबारा देखें।",
+    },
+  },
+  near: {
+    title: { en: "Good effort!", hi: "अच्छा प्रयास!" },
+    sub: {
+      en: "You're close to a great score. Fixing your mistakes in {weak} will lift it.",
+      hi: "आप शानदार स्कोर के करीब हैं। {weak} की गलतियाँ सुधारने से स्कोर बढ़ेगा।",
+    },
+  },
+  below: OUTCOME_COPY.below,
+};
+
 export const fill = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
