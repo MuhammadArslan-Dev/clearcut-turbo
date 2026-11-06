@@ -21,3 +21,7 @@ The dashboard's loading state = `@clearcut/ui/full-screen-loader` (white screen 
 
 ## 4. Tests (Playwright, local dev, mocked API)
 See section 5 of the hand-over; harness page removed afterwards.
+
+## 5. Follow-up (2026-11-06, user request): never cut the loader mid-animation
+Problem: when the data arrived, the loader unmounted at once (mid-hop). Fix: `components/loader/useLoaderHold.ts` — if the loader was actually visible (loading lasted > 250 ms), it stays until the CURRENT 3.2 s loop completes (max one loop); a load that ends before the loader appeared adds no wait. Used by `ProtectedPage` (only for its default loader fallback, not custom skeleton fallbacks) and `ContentShell`. Payment verifying screen unchanged (it already stays until the redirect).
+Tested on a harness: 100 ms load -> content immediately, no loader; 1.2 s load -> content at the first loop end (3.2 s after mount); 3.5 s load -> content at the second loop end (6.4 s). Trade-off: a slow load can now show the loader up to ~3 s longer. Pushed 2026-11-06.

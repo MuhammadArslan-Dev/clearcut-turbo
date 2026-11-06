@@ -19,6 +19,7 @@ import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import Text from "@clearcut/ui/text";
 import { MainLoader } from "@/components/FullScreenLoader";
+import { useLoaderHold } from "@/components/loader/useLoaderHold";
 import dynamic from "next/dynamic";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
 import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
@@ -53,6 +54,8 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
     refetchOnWindowFocus: false,
     retry: 1,
   });
+  // Lets the loader finish its current animation loop before the content replaces it (no mid-hop cut).
+  const showLoader = useLoaderHold(isLoading);
 
   // The notes/pyqs page below is held back until the syllabus resolves (see
   // the spinner gate further down), and its current-course query only
@@ -138,7 +141,7 @@ export default function ContentShell({ children, courseId }: { children: ReactNo
                 nothing left for it to push. Only gates the FIRST load of a
                 course's content — react-query serves cached syllabus data
                 instantly on later navigations between notes/pyqs. */}
-            {isLoading ? (
+            {showLoader ? (
               <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-4">
                 <MainLoader />
                 {syllabusSlow && <SlowLoadNotice className="w-full max-w-[480px]" onRetry={retrySyllabus} />}

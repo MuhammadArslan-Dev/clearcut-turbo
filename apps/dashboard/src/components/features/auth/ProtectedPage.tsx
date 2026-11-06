@@ -3,13 +3,14 @@
 import * as Sentry from "@sentry/nextjs";
 
 import FullScreenLoader from "@/components/FullScreenLoader";
+import { useLoaderHold } from "@/components/loader/useLoaderHold";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect } from "react";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 
 export default function ProtectedPage({
   children,
-  fallback = <FullScreenLoader />,
+  fallback: fallbackProp,
 }: {
   children: React.ReactNode;
   /** What to show while `!tokenReady`. Defaults to the shared spinner — pass
@@ -17,7 +18,10 @@ export default function ProtectedPage({
    * generic spinner doesn't fit that page's content. */
   fallback?: React.ReactNode;
 }) {
+  // Only the default loader is held until its animation loop ends; a custom fallback (a skeleton) is not.
+  const fallback = fallbackProp ?? <FullScreenLoader />;
   const { user, loading, tokenReady } = useAuth();
+  const holdLoader = useLoaderHold(!tokenReady);
   const { get, remove } = useQueryParams();
 
   const user_sourse = get("user_source");
@@ -45,7 +49,7 @@ export default function ProtectedPage({
   // need the token to already be in storage (see AuthProvider), so this lets
   // the shell and any token-only query start well before the profile
   // resolves instead of sitting behind a full-screen spinner for it.
-  if (!tokenReady) return <>{fallback}</>;
+  if (!tokenReady || (fallbackProp === undefined && holdLoader)) return <>{fallback}</>;
 
   return <>{children}</>;
 }
