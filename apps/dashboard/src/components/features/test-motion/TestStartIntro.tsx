@@ -42,6 +42,7 @@ export default function TestStartIntro({
       streakDays={streakDays}
       lang={lang}
       size="large"
+      presentation="sheet"
       onStart={onStart}
     />
   );

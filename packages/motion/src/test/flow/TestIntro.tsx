@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import f from "./flow.module.css";
 import s from "./intro.module.css";
 import { NibMascot } from "../../nibbu/NibMascot";
@@ -25,6 +25,8 @@ export type TestIntroProps = {
   label?: string;
   /** "large" scales the artwork up (full-page hosts: Daily/Practice Test); default keeps the compact modal size. */
   size?: "default" | "large";
+  /** "sheet" = dimmed backdrop + bottom sheet (mobile) / centred modal (desktop) over the host screen; "cover" (default) = the original full-screen takeover. */
+  presentation?: "cover" | "sheet";
   /** Called when the countdown ends or the user taps Skip. Start your timer here. */
   onStart: () => void;
 };
@@ -42,6 +44,7 @@ export function TestIntro({
   lang = "en",
   label,
   size = "default",
+  presentation = "cover",
   onStart,
 }: TestIntroProps) {
   const reduced = usePrefersReducedMotion();
@@ -78,9 +81,23 @@ export function TestIntro({
     marks ? `${marks} ${COPY.marks[lang]}` : null,
   ].filter(Boolean);
 
-  return (
-    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={`${label ?? TYPE_LABEL[type][lang]}: ${title}`}>
-      <div className={`${s.stage} ${s[type]} ${size === "large" ? s.large : ""}`}>
+  const sheet = presentation === "sheet";
+  // A plain function (not a component): a component defined here would remount the whole intro on every render.
+  const frame = (children: ReactNode) =>
+    sheet ? (
+      <div className={`${f.root} ${f.sheetBackdrop}`}>
+        <div className={f.sheetPanel} role="dialog" aria-modal="true" aria-label={`${label ?? TYPE_LABEL[type][lang]}: ${title}`}>
+          {children}
+        </div>
+      </div>
+    ) : (
+      <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={`${label ?? TYPE_LABEL[type][lang]}: ${title}`}>
+        {children}
+      </div>
+    );
+
+  return frame(
+      <div className={`${s.stage} ${s[type]} ${size === "large" ? s.large : ""} ${sheet ? s.inSheet : ""}`}>
         <span className={`${f.badge} ${f[type]}`}>{label ?? TYPE_LABEL[type][lang]}</span>
         <h2 className={s.title}>{title}</h2>
         <p className={s.meta}>{metaParts.join(" · ")}</p>
@@ -113,8 +130,7 @@ export function TestIntro({
           {COPY.skip[lang]}
         </button>
         <span className={f.srOnly} role="status">{COPY.startsIn[lang]}</span>
-      </div>
-    </div>
+      </div>,
   );
 }
 

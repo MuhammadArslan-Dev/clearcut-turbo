@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import f from "./flow.module.css";
 import s from "./submit.module.css";
 import { NibMascot } from "../../nibbu/NibMascot";
@@ -21,6 +21,8 @@ export type TestSubmitProps = {
   note?: string;
   /** "large" scales the artwork up (full-page hosts: Daily/Practice Test); default keeps the compact size. */
   size?: "default" | "large";
+  /** "sheet" = dimmed backdrop + bottom sheet (mobile) / centred modal (desktop) over the host screen; "cover" (default) = the original full-screen takeover. */
+  presentation?: "cover" | "sheet";
   /** minimum time on screen before the stamp, so it never feels like a glitch (ms) */
   minDuration?: number;
 };
@@ -36,13 +38,27 @@ const ROWS: { pick: number; mark: "ok" | "bad" | "skip" }[] = [
 const LOOP = 1.2; // seconds — keep in sync with sBeam
 const BEAM_TRAVEL = 140; // px
 
-export function TestSubmit({ type, total, done, onFinish, lang = "en", note, size = "default", minDuration = 1800 }: TestSubmitProps) {
+export function TestSubmit({ type, total, done, onFinish, lang = "en", note, size = "default", presentation = "cover", minDuration = 1800 }: TestSubmitProps) {
   const reduced = usePrefersReducedMotion();
   const [n, setN] = useState(0);
   const [stamped, setStamped] = useState(false);
   const started = useRef(Date.now());
   const finishRef = useRef(onFinish);
   finishRef.current = onFinish;
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Not dismissible, by design: no close/skip control, no backdrop tap, no Escape, and focus stays on the panel so
+  // Tab/Enter cannot reach (or trigger) the screen underneath. It ends only when the result is ready (onFinish).
+  useEffect(() => {
+    panelRef.current?.focus({ preventScroll: true });
+  }, []);
+  const lockKeys = (e: KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === "Tab" || e.key === "Escape") e.preventDefault();
+  };
+  // A tap on the dimmed area must not move focus out of the panel (the next Tab/Enter would reach the screen behind).
+  const keepFocus = (e: MouseEvent) => e.preventDefault();
+  const refocus = () => panelRef.current?.focus({ preventScroll: true });
 
   useEffect(() => {
     if (stamped) return;
@@ -68,9 +84,24 @@ export function TestSubmit({ type, total, done, onFinish, lang = "en", note, siz
     return () => clearTimeout(t);
   }, [stamped, reduced]);
 
-  return (
-    <div className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={note ?? SUBMIT_NOTE[type][lang]}>
-      <div className={`${s.stage} ${stamped ? s.isStamped : ""} ${size === "large" ? s.large : ""}`}>
+  const sheet = presentation === "sheet";
+  const label = note ?? SUBMIT_NOTE[type][lang];
+  // A plain function (not a component): a component defined here would remount the whole animation on every render.
+  const frame = (children: ReactNode) =>
+    sheet ? (
+      <div className={`${f.root} ${f.sheetBackdrop}`} onKeyDown={lockKeys} onMouseDown={keepFocus}>
+        <div ref={panelRef} tabIndex={-1} className={f.sheetPanel} role="dialog" aria-modal="true" aria-label={label} onBlur={refocus}>
+          {children}
+        </div>
+      </div>
+    ) : (
+      <div ref={panelRef} tabIndex={-1} className={`${f.root} ${f.overlay}`} role="dialog" aria-modal="true" aria-label={label} onKeyDown={lockKeys} onMouseDown={keepFocus} onBlur={refocus}>
+        {children}
+      </div>
+    );
+
+  return frame(
+      <div className={`${s.stage} ${stamped ? s.isStamped : ""} ${size === "large" ? s.large : ""} ${sheet ? s.inSheet : ""}`}>
         <span className={s.pill}>
           <span className={s.pillTick}>
             <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -125,7 +156,6 @@ export function TestSubmit({ type, total, done, onFinish, lang = "en", note, siz
         <span className={f.srOnly} role="status" aria-live="polite">
           {stamped ? COPY.allDone[lang] : COPY.checking[lang]}
         </span>
-      </div>
-    </div>
+      </div>,
   );
 }

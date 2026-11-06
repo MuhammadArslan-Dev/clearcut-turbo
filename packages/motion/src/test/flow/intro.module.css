@@ -59,6 +59,20 @@
 /* short phones: keep the whole intro on screen */
 @media (max-height: 640px) and (max-width: 767px) { .large { --k: 1.15; } .large .visualBox { margin-top: 16px; } }
 
+/* sheet presentation (modal / bottom sheet): a little smaller than the full-screen version so the test behind stays visible */
+.large.inSheet { --k: 1.2; max-width: none; }
+.inSheet .title { margin-top: 14px; font-size: 22px; }
+.inSheet .visualBox { margin-top: 20px; }
+.inSheet .skip { margin-top: 18px; }
+@media (min-width: 400px) { .large.inSheet { --k: 1.3; } }
+@media (min-width: 768px) {
+  .large.inSheet { --k: 1.55; }
+  .inSheet .title { font-size: 26px; }
+  .inSheet .visualBox { margin-top: 28px; }
+}
+@media (max-width: 359px) { .large.inSheet { --k: 1.05; } }
+@media (max-height: 640px) and (max-width: 767px) { .large.inSheet { --k: 1; } .inSheet .visualBox { margin-top: 10px; } }
+
 /* rules checklist (full mocks) */
 .rules {
   display: grid;
