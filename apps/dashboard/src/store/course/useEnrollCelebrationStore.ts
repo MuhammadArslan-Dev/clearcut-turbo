@@ -7,6 +7,8 @@ export type EnrollCelebration = {
   exam: string;
   /** The paper, then each chosen option (what the learner picked in the enrolment sheet). */
   selection: { title: string; subtitle?: string }[];
+  /** Desktop: the size of the enrolment modal's panel when the animation starts, so the animation frame can take over from it unnoticed. */
+  panel?: { width: number; height: number };
 };
 
 type State = {
@@ -33,6 +35,10 @@ export const useEnrollCelebrationStore = create<State>()((set) => ({
   awaitPath: undefined,
   start: (celebration) => set({ celebration, enrolled: false, awaitPath: undefined }),
   markEnrolled: (awaitPath) => set({ enrolled: true, awaitPath }),
-  cancel: () => set({ celebration: null, enrolled: false, awaitPath: undefined }),
-  finish: () => set({ celebration: null, enrolled: false, awaitPath: undefined }),
+  cancel: () => {
+    set({ celebration: null, enrolled: false, awaitPath: undefined });
+  },
+  finish: () => {
+    set({ celebration: null, enrolled: false, awaitPath: undefined });
+  },
 }));

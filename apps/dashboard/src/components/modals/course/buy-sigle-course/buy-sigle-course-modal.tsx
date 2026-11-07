@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
@@ -65,6 +65,7 @@ export default function BuySigleCourseModal() {
     null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   // CC-111: "Continue to Subjects" / "Start Learning" were tapped while still
   // disabled (no paper/subject picked) and nothing happened. A tap on the
@@ -200,7 +201,11 @@ export default function BuySigleCourseModal() {
     const celebrate = USE_ENROLL_MOTION;
     const enrollStore = useEnrollCelebrationStore.getState();
     if (celebrate) {
+      // Desktop: hand the modal panel's size to the animation frame so it takes over without a visible jump.
+      const panelEl = contentRef.current?.closest(".shadow-xl") as HTMLElement | null;
+      const box = !isMobile ? panelEl?.getBoundingClientRect() : undefined;
       enrollStore.start({
+        panel: box ? { width: box.width, height: box.height } : undefined,
         exam: `${data.short_name ?? ""} Exam`,
         selection: selectedPath.map((item, i) => {
           const tr = transCache.get(item.id)?.[locale];
@@ -304,7 +309,7 @@ export default function BuySigleCourseModal() {
     } finally {
       setSubmitting(false);
     }
-  }, [data?.id, data?.short_name, selectedPath, submitting, modalT, user?.uuid, transCache, locale]);
+  }, [data?.id, data?.short_name, selectedPath, submitting, modalT, user?.uuid, transCache, locale, isMobile]);
 
   const continueFromPrompt = useCallback(
     (path: "practice-test" | "preparation") => {
@@ -330,7 +335,7 @@ export default function BuySigleCourseModal() {
   /* ---------------------------------- render ---------------------------------- */
   const mainContent = () => {
     return (
-      <div className="flex flex-col gap-3 h-full bg-gray-100 ">
+      <div ref={contentRef} className="flex flex-col gap-3 h-full bg-gray-100 ">
         <div className="sticky top-0 z-50 bg-white">
           <StepIndicatorCard
             data={STEPS}

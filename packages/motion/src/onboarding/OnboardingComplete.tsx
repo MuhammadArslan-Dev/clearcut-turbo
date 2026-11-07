@@ -36,6 +36,10 @@ export type OnboardingCompleteProps = {
   lang?: Lang;
   /** Override the three loading steps. */
   steps?: string[];
+  /** How the layer leaves: "lift" (default) slides up like a curtain; "none" leaves it to the host (e.g. it fades its own frame out on `onReveal`). */
+  exit?: "lift" | "none";
+  /** Called when the exit starts (the steps are done), before `onDone`. */
+  onReveal?: () => void;
   /** Copy overrides, so other flows (e.g. enrollment) reuse this exact animation with their own wording. */
   title?: string;
   /** The word of `title` drawn in the brand blue. */
@@ -72,7 +76,7 @@ function Highlighted({ text, word }: { text: string; word: string }) {
   );
 }
 
-export function OnboardingComplete({ name, summary, logo, progress, fit = "screen", ready, onDone, lang = "en", steps, title, highlight, subtitle, buildingTitle, buildingSubtitle }: OnboardingCompleteProps) {
+export function OnboardingComplete({ name, summary, logo, progress, fit = "screen", exit = "lift", onReveal, ready, onDone, lang = "en", steps, title, highlight, subtitle, buildingTitle, buildingSubtitle }: OnboardingCompleteProps) {
   const titleText = title ?? T.title[lang](name);
   const highlightWord = highlight ?? T.highlight[lang];
   const subText = subtitle ?? T.sub[lang];
@@ -86,6 +90,8 @@ export function OnboardingComplete({ name, summary, logo, progress, fit = "scree
   const buildStart = useRef(0);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const revealRef = useRef(onReveal);
+  revealRef.current = onReveal;
 
   // celebrate → building
   useEffect(() => {
@@ -117,6 +123,7 @@ export function OnboardingComplete({ name, summary, logo, progress, fit = "scree
   // reveal → done
   useEffect(() => {
     if (phase !== "reveal") return;
+    revealRef.current?.();
     const t = setTimeout(() => doneRef.current(), reduced ? 150 : 620);
     return () => clearTimeout(t);
   }, [phase, reduced]);
@@ -125,7 +132,7 @@ export function OnboardingComplete({ name, summary, logo, progress, fit = "scree
 
   return (
     <div
-      className={`${ui.root} ${ui.rootTokens} ${s.overlay} ${fit === "parent" ? s.parent : ""} ${phase === "reveal" ? s.lift : ""}`}
+      className={`${ui.root} ${ui.rootTokens} ${s.overlay} ${fit === "parent" ? s.parent : ""} ${phase === "reveal" && exit === "lift" ? s.lift : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label={titleText}

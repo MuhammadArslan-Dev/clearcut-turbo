@@ -22,6 +22,9 @@ export type EnrollSuccessProps = {
   lang?: Lang;
   /** "screen" (default) covers the viewport; "parent" fills the nearest positioned parent (inside the sheet / modal). */
   fit?: "screen" | "parent";
+  /** See OnboardingComplete: "none" lets the host fade its own frame instead of the curtain. */
+  exit?: "lift" | "none";
+  onReveal?: () => void;
 };
 
 const T = {
@@ -41,11 +44,13 @@ const T = {
  * completion animation (same mascot, motion, timing and curtain, see ../onboarding) with the enrolment copy and the
  * user's real selection path (the paper, then one option per group) drawn as the app's selected option cards.
  */
-export function EnrollSuccess({ exam, selection, logo, ready, onDone, lang = "en", fit = "screen" }: EnrollSuccessProps) {
+export function EnrollSuccess({ exam, selection, logo, ready, onDone, lang = "en", fit = "screen", exit, onReveal }: EnrollSuccessProps) {
   return (
     <OnboardingComplete
       lang={lang}
       fit={fit}
+      exit={exit}
+      onReveal={onReveal}
       ready={ready}
       onDone={onDone}
       logo={logo}

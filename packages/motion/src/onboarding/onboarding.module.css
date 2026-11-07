@@ -11,7 +11,9 @@
   background: linear-gradient(180deg, #eef6ff 0%, #ffffff 46%);
   animation: oIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.parent { position: absolute; }
+.parent { position: absolute; padding: 16px; }
+/* inside a sheet / modal there is less height than a full screen: a slightly smaller mascot stage */
+.parent .hero { transform: scale(0.84); margin: -15px 0; }
 /* curtain: the whole layer slides up and away, the dashboard is already underneath */
 .lift { animation: oLift 0.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
 .lift .stage { animation: oStageUp 0.45s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
