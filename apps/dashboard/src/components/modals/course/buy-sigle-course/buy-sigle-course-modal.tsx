@@ -35,6 +35,12 @@ import PracticeTestPromptSheet from "@/components/features/practice-test/Practic
 import { getCourseState, offerPracticeTest, skipPracticeTest } from "@/lib/api/userState";
 import { isPracticeTestEnabled } from "@/lib/experiments/practiceTestFlag";
 import { useAuth } from "@/providers/AuthProvider";
+import { useEnrollCelebrationStore } from "@/store/course/useEnrollCelebrationStore";
+
+// Enrollment animation after "Start Learning" (phase 84). NEXT_PUBLIC_LEGACY_ENROLL_ANIMATION=true (and rebuild) restores the
+// previous behaviour (button spinner, then straight to the next screen); nothing else needs to change.
+const USE_ENROLL_MOTION = process.env.NEXT_PUBLIC_LEGACY_ENROLL_ANIMATION !== "true";
+const ENROLL_TIMEOUT_MS = 40_000;
 
 export default function BuySigleCourseModal() {
   const { isOpen, close, mode, data } = useCourseStore();
@@ -188,11 +194,32 @@ export default function BuySigleCourseModal() {
 
     setSubmitting(true);
     setPurchaseError(null);
-    try {
-      const req = await purchaseLevels({
-        exam_id: data.id,
-        selections,
+
+    // The animation starts NOW (the learner sees the tap was taken) while the request runs; it cannot finish before the
+    // request succeeds, and a failure removes it again so the error below is visible on the sheet.
+    const celebrate = USE_ENROLL_MOTION;
+    const enrollStore = useEnrollCelebrationStore.getState();
+    if (celebrate) {
+      enrollStore.start({
+        exam: `${data.short_name ?? ""} Exam`,
+        selection: selectedPath.map((item, i) => {
+          const tr = transCache.get(item.id)?.[locale];
+          return { title: tr?.name ?? item.name, subtitle: i === 0 ? tr?.detail : undefined };
+        }),
       });
+    }
+    try {
+      // A request that never answers must not trap the learner behind the animation.
+      let giveUp: ReturnType<typeof setTimeout> | undefined;
+      const req = await Promise.race([
+        purchaseLevels({
+          exam_id: data.id,
+          selections,
+        }),
+        new Promise<never>((_, reject) => {
+          giveUp = setTimeout(() => reject(new TypeError("enrolment timed out: network")), ENROLL_TIMEOUT_MS);
+        }),
+      ]).finally(() => clearTimeout(giveUp));
 
       if (req?.status === "success") {
         await trackEvent("New Exam Added", {
@@ -219,6 +246,7 @@ export default function BuySigleCourseModal() {
         const practiceTestOn = await isPracticeTestEnabled(user?.uuid);
         if (!practiceTestOn) {
           close();
+          if (celebrate) enrollStore.markEnrolled("/preparation");
           router.push(`/preparation/${groupCode}?subject_selected=1`);
           return;
         }
@@ -227,6 +255,7 @@ export default function BuySigleCourseModal() {
           .catch(() => false);
         if (alreadyTaken) {
           close();
+          if (celebrate) enrollStore.markEnrolled("/preparation");
           router.push(`/preparation/${groupCode}?subject_selected=1`);
           return;
         }
@@ -234,18 +263,22 @@ export default function BuySigleCourseModal() {
         // (refresh, closed tab), the Preparation page offers it again.
         void offerPracticeTest(groupCode).catch(() => {});
         setPracticePrompt({ groupCode });
+        // No navigation here: the practice-test sheet opens under the animation and is revealed when the curtain lifts.
+        if (celebrate) enrollStore.markEnrolled();
         return;
       }
 
       // Resolved without throwing but wasn't a success status either — was
       // previously silent (no error shown, no report), so a user hitting
       // this had no idea their submission didn't go through.
+      if (celebrate) enrollStore.cancel();
       setPurchaseError(modalT("error.generic"));
       logger.error(new Error("purchaseLevels resolved without success"), {
         tags: { module: "buy-single-course-modal", action: "handlePurchase" },
         extra: { examId: data.id, status: req?.status },
       });
     } catch (err) {
+      if (celebrate) enrollStore.cancel();
       // A retry-exhausted mobile network blip (Instagram/Facebook in-app
       // browsers, same recurring pattern as Sentry CLEARCUTOFF-NEXTJS-APP-74
       // /-2T) isn't actionable on our end — still shown to the user (they're
@@ -271,7 +304,7 @@ export default function BuySigleCourseModal() {
     } finally {
       setSubmitting(false);
     }
-  }, [data?.id, selectedPath, submitting, modalT, user?.uuid]);
+  }, [data?.id, data?.short_name, selectedPath, submitting, modalT, user?.uuid, transCache, locale]);
 
   const continueFromPrompt = useCallback(
     (path: "practice-test" | "preparation") => {

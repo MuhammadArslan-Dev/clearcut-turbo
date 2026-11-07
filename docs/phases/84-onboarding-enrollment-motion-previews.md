@@ -55,6 +55,13 @@ The old animation's "subjects fly in" (4-6 free picks) and "7-day study plan" do
 
 - Enrollment animation is NOT applied to the real enrollment modal yet.
 
+## 6c. Enrollment animation applied to the real enrolment modal (2026-11-07, user request)
+- `buy-sigle-course-modal.tsx` `handlePurchase`: on "Start Learning" the animation starts at once (`useEnrollCelebrationStore.start`), `purchaseLevels` still runs (40 s cap), then `markEnrolled("/preparation")` right before the existing `close()` + `router.push(...)`, or `markEnrolled()` when the practice-test sheet is shown (it opens under the animation and is revealed when the curtain lifts). Failure (non-success status, error, timeout) -> `cancel()` + the modal's existing inline error. All other logic (analytics, invalidate, practice-test flag) unchanged.
+- `EnrollCelebrationHost` (locale layout, lazy) -> `EnrollCelebration` -> library `EnrollSuccess` (ticket + stamp, then the selected paper/options as cards, steps, curtain). `ready` = enrolled + on `/preparation` + no query running for 700 ms (15 s safety).
+- Revert: `NEXT_PUBLIC_LEGACY_ENROLL_ANIMATION=true` + rebuild.
+- Files: `store/course/useEnrollCelebrationStore.ts`, `components/modals/course/buy-sigle-course/{EnrollCelebration,EnrollCelebrationHost,buy-sigle-course-modal}.tsx`, `app/[locale]/layout.tsx`.
+- Tested on localhost (mocked levels + selectedexam, real exam list): animation at 0.8 s on tap; failure (HTTP 500) removes it and shows the modal error with the sheet intact; success navigates to /preparation/g1 and the overlay lifts (preparation page itself 500s locally because the course is mocked). Not tested: practice-test sheet path (Amplitude flag), real backend, desktop modal, Hindi, real phones.
+
 ## 7. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|

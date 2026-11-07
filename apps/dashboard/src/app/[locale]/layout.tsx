@@ -20,6 +20,7 @@ import { SoundProvider } from "@/context/SoundContext";
 import DevAgentation from "@/components/thirdparties/DevAgentation";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 import OnboardingCelebrationHost from "@/components/features/onboarding/OnboardingCelebrationHost";
+import EnrollCelebrationHost from "@/components/modals/course/buy-sigle-course/EnrollCelebrationHost";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -134,6 +135,8 @@ export default async function LocaleLayout({
                     <AnalyticsProvider>{children}</AnalyticsProvider>
                     {/* Onboarding completion animation: survives the route change to the dashboard. */}
                     <OnboardingCelebrationHost />
+                    {/* Exam-enrolment animation: survives the route change to the Preparation page. */}
+                    <EnrollCelebrationHost />
                     <LazyGTM />
                     <LazyClarity />
                   </ThemeProvider>
