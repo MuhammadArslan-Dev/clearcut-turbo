@@ -62,6 +62,9 @@ The old animation's "subjects fly in" (4-6 free picks) and "7-day study plan" do
 - Files: `store/course/useEnrollCelebrationStore.ts`, `components/modals/course/buy-sigle-course/{EnrollCelebration,EnrollCelebrationHost,buy-sigle-course-modal}.tsx`, `app/[locale]/layout.tsx`.
 - Tested on localhost (mocked levels + selectedexam, real exam list): animation at 0.8 s on tap; failure (HTTP 500) removes it and shows the modal error with the sheet intact; success navigates to /preparation/g1 and the overlay lifts (preparation page itself 500s locally because the course is mocked). Not tested: practice-test sheet path (Amplitude flag), real backend, desktop modal, Hindi, real phones.
 
+- Update 2026-11-07 (user request): the enrolment animation is ONE animation now. The card/ticket stage (chips flying into the exam ticket + ENROLLED stamp) was removed; `EnrollSuccess` is again a thin wrapper over `OnboardingComplete` (same mascot, selected cards, steps, curtain). `enroll.module.css` deleted.
+- Full check of the real modal (localhost, mocked levels + selectedexam, real exam list): phone success (animation at 0.9 s, lifts onto /preparation/g1, no overlay left), double-click on Start Learning (1 request only), HTTP 500 and aborted network (overlay removed, modal error shown, sheet intact, stays on the page), desktop modal, Hindi route (copy + translated paper name), reduced motion, practice-test flag ON (animation first, then the practice-test sheet is revealed). Not tested: real backend, real phones.
+
 ## 7. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|

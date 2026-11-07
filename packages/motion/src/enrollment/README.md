@@ -6,7 +6,6 @@ Shown inside the exam-enrolment sheet ("Select Paper" → "Select Subjects" → 
 <EnrollSuccess
   exam="HTET Exam"
   selection={[{ title: "Level 2 (TGT)", subtitle: "Classes 6 to 8" }, "Hindi", "Maths & Science"]}
-  progress={{ current: 2, total: 2 }}
   fit="parent"                      // plays inside the sheet / modal (use position: relative on it)
   ready={!!prepData}
   onDone={() => router.push(`/preparation/${groupCode}?subject_selected=1`)}
@@ -14,6 +13,6 @@ Shown inside the exam-enrolment sheet ("Select Paper" → "Select Subjects" → 
 />
 ```
 
-Props: `exam`, `selection`, `ready`, `onDone`, `lang?`, `logo?`, `progress?`, `fit?` (`"screen"` | `"parent"`). The optional practice-test sheet (Amplitude flag) is not part of this animation.
+Props: `exam`, `selection`, `ready`, `onDone`, `lang?`, `logo?`, `fit?` (`"screen"` | `"parent"`). There is no separate ticket stage any more: it is one animation. The optional practice-test sheet (Amplitude flag) is not part of this animation.
 
-Preview: motion gallery → Enrollment tab (the real sheet in an iframe, phone = bottom sheet, desktop = modal). Not wired into the real enrolment modal yet.
+Preview: motion gallery → Enrollment tab (the real sheet in an iframe, phone = bottom sheet, desktop = modal). Wired into the real enrolment modal (phase 84): `components/modals/course/buy-sigle-course/EnrollCelebration*.tsx`; revert with `NEXT_PUBLIC_LEGACY_ENROLL_ANIMATION=true`.
