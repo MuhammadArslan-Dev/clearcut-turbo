@@ -178,7 +178,7 @@ export function EnrollPanel() {
       {stage === "pick" && <SubjectPicker lang={lang} picked={picked} toggle={toggle} onEnroll={() => setStage("enroll")} />}
       {stage !== "pick" && <PrepPage key={`p-${run}`} lang={lang} subjects={picked} />}
       {stage === "enroll" && (
-        <EnrollSuccess exam={lang === "hi" ? "HTET लेवल 2" : "HTET Level 2"} subjects={picked} lang={lang} ready={ready} onDone={() => setStage("prep")} />
+        <EnrollSuccess exam={lang === "hi" ? "HTET लेवल 2" : "HTET Level 2"} selection={picked} lang={lang} ready={ready} onDone={() => setStage("prep")} />
       )}
     </Panel>
   );

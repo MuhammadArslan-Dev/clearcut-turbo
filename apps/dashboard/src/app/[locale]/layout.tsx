@@ -19,6 +19,7 @@ import ChunkErrorReload from "@/components/thirdparties/ChunkErrorReload";
 import { SoundProvider } from "@/context/SoundContext";
 import DevAgentation from "@/components/thirdparties/DevAgentation";
 import NavigationProgress from "@/components/layout/NavigationProgress";
+import OnboardingCelebrationHost from "@/components/features/onboarding/OnboardingCelebrationHost";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -131,6 +132,8 @@ export default async function LocaleLayout({
                   {/* <AuthProvider> */}
                   <ThemeProvider>
                     <AnalyticsProvider>{children}</AnalyticsProvider>
+                    {/* Onboarding completion animation: survives the route change to the dashboard. */}
+                    <OnboardingCelebrationHost />
                     <LazyGTM />
                     <LazyClarity />
                   </ThemeProvider>

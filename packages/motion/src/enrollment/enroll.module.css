@@ -1,5 +1,5 @@
-/* Enrollment: subject chips fly into the exam ticket (counter ticks per landing) → ENROLLED stamp +
-   Nibbu cheer → 7-day plan fills (last day waits for data) → ticket zooms toward the user. */
+/* Enrollment, first half: the user's picks fly as chips into the exam ticket (counter ticks per landing) → ENROLLED stamp +
+   Nibbu cheer → the ticket zooms away and the onboarding-style stage (see ../onboarding) takes over. */
 
 .overlay {
   position: fixed;
@@ -9,11 +9,13 @@
   place-items: center;
   overflow-y: auto;
   padding: 24px 16px;
-  background: linear-gradient(180deg, #eef6ff 0%, #ffffff 50%);
+  background: linear-gradient(180deg, #eef6ff 0%, #ffffff 46%);
   animation: eIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.exit { animation: eOut 0.5s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
-.exit .ticket { animation: eZoom 0.5s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+.parent { position: absolute; }
+/* only the ticket leaves: the background stays so the next stage fades in on the same backdrop */
+.exit .ticket { animation: eZoom 0.42s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+.exit .chips, .exit .titles { opacity: 0; transition: opacity 0.25s; }
 
 .stage { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 380px; text-align: center; }
 
@@ -89,21 +91,13 @@
 .peek { animation: ePeek 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both, eBob 1.2s ease-in-out 1s infinite; }
 .cheer { animation: eCheer 0.9s cubic-bezier(0.3, 0, 0.3, 1) 0.15s both; }
 
-/* ---------- copy + plan ---------- */
-.titles { display: grid; gap: 4px; width: 100%; margin-top: 22px; min-height: 76px; }
+/* ---------- copy ---------- */
+.titles { display: grid; gap: 4px; width: 100%; margin-top: 22px; min-height: 60px; }
 .title { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.25; text-wrap: balance; animation: eUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.sub { margin: 0; font-size: 14.5px; color: var(--cc-slate); animation: eUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both; }
-
-.week { display: flex; justify-content: center; gap: 10px; margin-top: 14px; opacity: 0; transform: translateY(8px); transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
-.weekIn { opacity: 1; transform: none; }
-.week span { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--cc-slate); }
-.week i { width: 26px; height: 26px; border: 2px solid #dde6ef; border-radius: 8px; background: #fff; }
-.week .dayOn i { border-color: var(--cc-brand); background: var(--cc-brand); box-shadow: 0 3px 0 var(--cc-brand-dark); animation: eDay 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.week .dayOn { color: var(--cc-brand-dark); }
+.hl { color: var(--cc-brand); }
 
 /* ---------- keyframes ---------- */
 @keyframes eIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes eOut { 60% { opacity: 1; } to { opacity: 0; } }
 @keyframes eZoom { to { transform: scale(1.18) translateY(-14px); opacity: 0; } }
 @keyframes eChip { from { opacity: 0; transform: translateY(-12px) scale(0.6); } to { opacity: 1; transform: none; } }
 @keyframes eFly {
@@ -129,11 +123,9 @@
   100% { transform: none; }
 }
 @keyframes eUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@keyframes eDay { from { transform: scale(0.6); } to { transform: scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .ticket, .ticketStamped, .countNum, .stamp, .peek, .cheer, .title, .sub, .week .dayOn i, .exit .ticket { animation: none !important; }
+  .overlay, .ticket, .ticketStamped, .countNum, .stamp, .peek, .cheer, .title, .exit .ticket { animation: none !important; }
   .chip { animation: none; opacity: 0; }
-  .week { transition: none; }
-  .exit { animation: eIn 0.2s reverse forwards; }
+  .exit .ticket { opacity: 0; }
 }

@@ -121,6 +121,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 81 | [Chapter / Sectional / Full exam tests motion (start intro, Nibbu note, submit animation, animated result)](81-exam-tests-motion.md) | — | CM-dashboard, `packages/motion` | Built + tested (mocked API, list -> exam -> report); pending the user's own test. |
 | 82 | [Test start + submit animations as overlays (modal / bottom sheet)](82-test-start-submit-overlays.md) | — | CM `packages/motion`, dashboard | Built + tested (mocked API). |
 | 83 | [Lesson Path loader — replaces the dashboard loader (one-switch revert)](83-lesson-path-loader-trial.md) | — | CM-dashboard | Approved by the user; live. Backup in `components/loader/legacy/`. |
+| 84 | [Onboarding + Enrollment animations adapted to the real screens](84-onboarding-enrollment-motion-previews.md) | — | CM-dashboard | Onboarding animation live on the real flow (revert: NEXT_PUBLIC_LEGACY_ONBOARDING=true); enrollment is preview-only. |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).

@@ -19,6 +19,11 @@ import { AppLanguageCode } from "@/lib/analytics/events/onboarding";
 import { useCourseFilters } from "@/hooks/course/useCourseFilters";
 import Filters from "@/components/ui/widgets/filter/Filters";
 import MainButton from "@/components/ui/button/main-button";
+import { useOnboardingCelebrationStore } from "@/store/onboarding/useOnboardingCelebrationStore";
+
+// Completion animation after enrolling (phase 84). Set NEXT_PUBLIC_LEGACY_ONBOARDING=true (and rebuild) to go back to the
+// plain redirect; nothing else needs to change.
+const USE_COMPLETION_MOTION = process.env.NEXT_PUBLIC_LEGACY_ONBOARDING !== "true";
 
 export default function ExamStep({
   data,
@@ -148,6 +153,15 @@ export default function ExamStep({
           up_preferred_app_language: data.language as AppLanguageCode,
         });
 
+        if (USE_COMPLETION_MOTION) {
+          // The animation lives in the locale layout, so it keeps playing across this navigation and lifts over the dashboard.
+          useOnboardingCelebrationStore.getState().start({
+            languageCode: String(data.language ?? ""),
+            examShortName: data.exam.short_name ?? "",
+            examState: data.exam.state,
+            examType: data.exam.exam_type,
+          });
+        }
         router.replace("/dashboard?user_type=new");
       } else {
         console.error(response.message);

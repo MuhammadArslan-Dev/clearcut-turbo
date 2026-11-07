@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import ui from "../core/ui.module.css";
 import s from "./onboarding.module.css";
 import { NibMascot } from "../nibbu/NibMascot";
@@ -9,11 +9,26 @@ import { usePrefersReducedMotion } from "../core/useCountUp";
 
 type Lang = "en" | "hi";
 
+/** One thing the user chose in onboarding, drawn like the app's own selected option card. */
+export type SummaryItem = {
+  title: string;
+  /** Second line, e.g. "Haryana (State)". */
+  subtitle?: string;
+  /** Leading artwork, e.g. the language circle icon. */
+  icon?: ReactNode;
+};
+
 export type OnboardingCompleteProps = {
   /** First name for the headline. */
   name?: string;
-  /** What the user chose in onboarding, shown as chips, e.g. ["HTET Level 2", "Hindi medium", "20 min a day"]. */
-  summary: string[];
+  /** What the user chose, shown as the app's selected option cards, e.g. [{ title: "हिंदी", icon }, { title: "HTET Exam", subtitle: "Haryana (State)" }]. Plain strings work too. */
+  summary: (string | SummaryItem)[];
+  /** The app's brand logo, shown above the mascot's headline (optional). */
+  logo?: ReactNode;
+  /** Step indicator like the onboarding screens' "2/2" + bars, shown filled at the top (optional). */
+  progress?: { current: number; total: number };
+  /** "screen" (default) covers the viewport; "parent" fills the nearest positioned parent (e.g. inside a sheet). */
+  fit?: "screen" | "parent";
   /** Flip to true when the dashboard data has loaded. The last step never completes before this. */
   ready: boolean;
   /** Called after the curtain lifts — route to the dashboard here (or render it underneath). */
@@ -21,22 +36,49 @@ export type OnboardingCompleteProps = {
   lang?: Lang;
   /** Override the three loading steps. */
   steps?: string[];
+  /** Copy overrides, so other flows (e.g. enrollment) reuse this exact animation with their own wording. */
+  title?: string;
+  /** The word of `title` drawn in the brand blue. */
+  highlight?: string;
+  subtitle?: string;
+  buildingTitle?: string;
+  buildingSubtitle?: string;
 };
 
 const T = {
   title: { en: (n?: string) => (n ? `You're all set, ${n}!` : "You're all set!"), hi: (n?: string) => (n ? `सब तैयार है, ${n}!` : "सब तैयार है!") },
-  sub: { en: "Here's what we'll prepare you for", hi: "हम आपको इसकी तैयारी करवाएँगे" },
+  highlight: { en: "all set", hi: "तैयार" },
+  sub: { en: "You can change these anytime", hi: "आप इन्हें कभी भी बदल सकते हैं" },
   building: { en: "Setting up your dashboard", hi: "आपका डैशबोर्ड तैयार हो रहा है" },
   buildingSub: { en: "This takes a few seconds", hi: "बस कुछ सेकंड" },
   steps: {
-    en: ["Building your exam plan", "Picking today's daily test", "Loading your dashboard"],
-    hi: ["आपका एग्ज़ाम प्लान बन रहा है", "आज का डेली टेस्ट चुना जा रहा है", "डैशबोर्ड लोड हो रहा है"],
+    en: ["Saving your exam", "Setting up your courses", "Opening your dashboard"],
+    hi: ["आपका एग्ज़ाम सेव हो रहा है", "आपके कोर्स तैयार हो रहे हैं", "डैशबोर्ड खुल रहा है"],
   },
 };
 
 type Phase = "celebrate" | "building" | "reveal";
 
-export function OnboardingComplete({ name, summary, ready, onDone, lang = "en", steps }: OnboardingCompleteProps) {
+/** Colours one word of the headline in the brand blue, like the app's own headings. */
+function Highlighted({ text, word }: { text: string; word: string }) {
+  const i = text.indexOf(word);
+  if (i < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, i)}
+      <span className={s.hl}>{word}</span>
+      {text.slice(i + word.length)}
+    </>
+  );
+}
+
+export function OnboardingComplete({ name, summary, logo, progress, fit = "screen", ready, onDone, lang = "en", steps, title, highlight, subtitle, buildingTitle, buildingSubtitle }: OnboardingCompleteProps) {
+  const titleText = title ?? T.title[lang](name);
+  const highlightWord = highlight ?? T.highlight[lang];
+  const subText = subtitle ?? T.sub[lang];
+  const buildTitle = buildingTitle ?? T.building[lang];
+  const buildSub = buildingSubtitle ?? T.buildingSub[lang];
+  const items: SummaryItem[] = summary.map((x) => (typeof x === "string" ? { title: x } : x));
   const reduced = usePrefersReducedMotion();
   const labels = steps ?? T.steps[lang];
   const [phase, setPhase] = useState<Phase>("celebrate");
@@ -83,12 +125,23 @@ export function OnboardingComplete({ name, summary, ready, onDone, lang = "en", 
 
   return (
     <div
-      className={`${ui.root} ${ui.rootTokens} ${s.overlay} ${phase === "reveal" ? s.lift : ""}`}
+      className={`${ui.root} ${ui.rootTokens} ${s.overlay} ${fit === "parent" ? s.parent : ""} ${phase === "reveal" ? s.lift : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label={T.title[lang](name)}
+      aria-label={titleText}
     >
       <div className={`${s.stage} ${building ? s.isBuilding : ""}`}>
+        {progress && (
+          <div className={s.progress} aria-hidden="true">
+            <span className={s.counter}>{progress.current}/{progress.total}</span>
+            <span className={s.bars}>
+              {Array.from({ length: progress.total }, (_, i) => (
+                <i key={i} className={i < progress.current ? s.barOn : undefined} style={{ animationDelay: `${0.1 + i * 0.12}s` }} />
+              ))}
+            </span>
+          </div>
+        )}
+        {logo && <div className={s.logo} aria-hidden="true">{logo}</div>}
         <div className={s.hero} aria-hidden="true">
           <span className={s.ring} />
           <span className={`${s.ring} ${s.ring2}`} />
@@ -102,18 +155,27 @@ export function OnboardingComplete({ name, summary, ready, onDone, lang = "en", 
 
         <div className={s.titles}>
           <div className={`${s.titleSet} ${building ? s.out : s.in}`}>
-            <h2 className={s.title}>{T.title[lang](name)}</h2>
-            <p className={s.sub}>{T.sub[lang]}</p>
+            <h2 className={s.title}><Highlighted text={titleText} word={highlightWord} /></h2>
+            <p className={s.sub}>{subText}</p>
           </div>
           <div className={`${s.titleSet} ${building ? s.in : s.hidden}`} aria-hidden={!building}>
-            <h2 className={s.title}>{T.building[lang]}</h2>
-            <p className={s.sub}>{T.buildingSub[lang]}</p>
+            <h2 className={s.title}>{buildTitle}</h2>
+            <p className={s.sub}>{buildSub}</p>
           </div>
         </div>
 
-        <ul className={s.chips}>
-          {summary.map((c, i) => (
-            <li key={c} style={{ animationDelay: `${0.75 + i * 0.12}s` }}>{c}</li>
+        <ul className={s.cards}>
+          {items.map((c, i) => (
+            <li key={`${c.title}-${i}`} className={s.card} style={{ animationDelay: `${0.75 + i * 0.14}s` }}>
+              {c.icon && <span className={s.cardIcon}>{c.icon}</span>}
+              <span className={s.cardText}>
+                <b>{c.title}</b>
+                {c.subtitle && <small>{c.subtitle}</small>}
+              </span>
+              <span className={s.check}>
+                <svg viewBox="0 0 16 16"><path d="M4.2 8.3l2.5 2.4 5-5.2" pathLength={1} style={{ animationDelay: `${1.0 + i * 0.14}s` }} /></svg>
+              </span>
+            </li>
           ))}
         </ul>
 
@@ -136,7 +198,7 @@ export function OnboardingComplete({ name, summary, ready, onDone, lang = "en", 
         </ol>
 
         <span className={ui.srOnly} role="status" aria-live="polite">
-          {building ? `${T.building[lang]}. ${labels[Math.min(doneCount, labels.length - 1)]}` : T.title[lang](name)}
+          {building ? `${buildTitle}. ${labels[Math.min(doneCount, labels.length - 1)]}` : titleText}
         </span>
       </div>
     </div>

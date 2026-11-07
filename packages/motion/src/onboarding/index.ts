@@ -1,1 +1,1 @@
-export { OnboardingComplete, type OnboardingCompleteProps } from "./OnboardingComplete";
+export { OnboardingComplete, type OnboardingCompleteProps, type SummaryItem } from "./OnboardingComplete";

@@ -1,1 +1,1 @@
-export { EnrollSuccess, type EnrollSuccessProps } from "./EnrollSuccess";
+export { EnrollSuccess, type EnrollSuccessProps, type SelectionItem } from "./EnrollSuccess";

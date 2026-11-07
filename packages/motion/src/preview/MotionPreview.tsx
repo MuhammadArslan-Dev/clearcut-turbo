@@ -273,8 +273,28 @@ export function MotionPreview({ slots }: { slots?: Partial<Record<Tab, ReactNode
         ))}
       </nav>
       {tab === "loaders" && <LoadersPanel />}
-      {tab === "onboarding" && <OnboardingPanel />}
-      {tab === "enrollment" && <EnrollPanel />}
+      {tab === "onboarding" && (slots?.onboarding ? (
+        <section className="panel" aria-label="Onboarding">
+          <div className="panelHead">
+            <div>
+              <h2>Onboarding</h2>
+              <p>The app's real onboarding screens (language, exam) followed by the library's completion animation, then the dashboard.</p>
+            </div>
+          </div>
+          {slots.onboarding}
+        </section>
+      ) : <OnboardingPanel />)}
+      {tab === "enrollment" && (slots?.enrollment ? (
+        <section className="panel" aria-label="Enrollment">
+          <div className="panelHead">
+            <div>
+              <h2>Exam enrollment</h2>
+              <p>The app's real "Select Paper / Select Subjects" sheet followed by the library's enrollment animation, then the Preparation page.</p>
+            </div>
+          </div>
+          {slots.enrollment}
+        </section>
+      ) : <EnrollPanel />)}
       {tab === "mini-test" && (slots?.["mini-test"] ? (
         <section className="panel" aria-label="Mini test">
           <div className="panelHead">
