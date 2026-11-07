@@ -244,7 +244,6 @@ export default function EnrollmentDemo({ slowData }: { slowData: boolean }) {
               fit="parent"
               lang={lang}
               exam={examName}
-              progress={{ current: 2, total: 2 }}
               selection={path.map((n) => ({ title: n.name[lang], subtitle: n.detail?.[lang] }))}
               ready={ready}
               onDone={() => setStage("prep")}

@@ -52,7 +52,6 @@ export default function OnboardingCelebration() {
       ready={timedOut || (started && !isFetching)}
       onDone={finish}
       logo={<Image src="/logos/clear_cutoff_logo.png" width={239} height={48} alt="Clear Cutoff" className="h-[34px] w-auto" unoptimized />}
-      progress={{ current: 2, total: 2 }}
       summary={[
         ...(language ? [{ title: language.title, icon: language.icon }] : []),
         { title: `${celebration.examShortName} Exam`, subtitle: examLine || undefined },

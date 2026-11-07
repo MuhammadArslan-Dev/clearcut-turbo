@@ -232,7 +232,6 @@ export default function OnboardingDemo({ slowData }: { slowData: boolean }) {
           ready={ready}
           onDone={() => setStage("dashboard")}
           logo={<Image src="/logos/clear_cutoff_logo.png" width={239} height={48} alt="Clear Cutoff" className="h-[34px] w-auto" unoptimized />}
-          progress={{ current: 2, total: 2 }}
           summary={[
             { title: lang.title, icon: lang.icon },
             { title: `${exam.short} Exam`, subtitle: `${exam.state} (${exam.type})` },
