@@ -20,10 +20,13 @@ import { useCourseFilters } from "@/hooks/course/useCourseFilters";
 import Filters from "@/components/ui/widgets/filter/Filters";
 import MainButton from "@/components/ui/button/main-button";
 import { useOnboardingCelebrationStore } from "@/store/onboarding/useOnboardingCelebrationStore";
+import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
+import { logger } from "@/lib/sentry/sentry-logger";
 
 // Completion animation after enrolling (phase 84). Set NEXT_PUBLIC_LEGACY_ONBOARDING=true (and rebuild) to go back to the
 // plain redirect; nothing else needs to change.
 const USE_COMPLETION_MOTION = process.env.NEXT_PUBLIC_LEGACY_ONBOARDING !== "true";
+const ENROLL_TIMEOUT_MS = 40_000;
 
 export default function ExamStep({
   data,
@@ -37,6 +40,9 @@ export default function ExamStep({
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Shown above Continue when enrolling fails (copy reused from the enrolment modal's error messages).
+  const [enrollError, setEnrollError] = useState<"network" | "generic" | null>(null);
+  const errorT = useTranslations("modals.buySingleCourseModal.error");
 
   // 🔹 Reset level on mount
   useEffect(() => {
@@ -134,6 +140,23 @@ export default function ExamStep({
     if (!data?.exam || isSubmitting) return;
 
     setIsSubmitting(true);
+    setEnrollError(null);
+
+    // The completion animation starts NOW (the learner sees their tap was taken) while the enrolment request runs; it can't
+    // finish before the request succeeds, and a failure removes it again (see `fail` below).
+    const celebrate = USE_COMPLETION_MOTION;
+    const fail = (kind: "network" | "generic", err?: unknown) => {
+      if (celebrate) useOnboardingCelebrationStore.getState().cancel();
+      setEnrollError(kind);
+      if (kind === "generic") {
+        logger.error(err ?? new Error("enrolledToCourse resolved without success"), {
+          tags: { module: "onboarding", action: "enroll" },
+          extra: { examId: data.exam?.id, ...(err instanceof ApiError ? err.toContext() : {}) },
+        });
+      } else {
+        logger.breadcrumb("Onboarding enrolment hit a network failure", { tags: { module: "onboarding" } });
+      }
+    };
 
     try {
       trackEvent("Onboarding Step Completed", {
@@ -141,9 +164,22 @@ export default function ExamStep({
         step_name: "exam_selection",
         exam_choice: data?.exam?.short_name,
       });
-      const response = await enrolledToCourse({
-        exam_id: data.exam.id,
-      });
+      if (celebrate) {
+        useOnboardingCelebrationStore.getState().start({
+          languageCode: String(data.language ?? ""),
+          examShortName: data.exam.short_name ?? "",
+          examState: data.exam.state,
+          examType: data.exam.exam_type,
+        });
+      }
+      // A request that never answers must not trap the learner behind the animation.
+      let giveUp: ReturnType<typeof setTimeout> | undefined;
+      const response = await Promise.race([
+        enrolledToCourse({ exam_id: data.exam.id }),
+        new Promise<never>((_, reject) => {
+          giveUp = setTimeout(() => reject(new TypeError("enrolment timed out: network")), ENROLL_TIMEOUT_MS);
+        }),
+      ]).finally(() => clearTimeout(giveUp));
 
       if (response.status) {
         trackEvent("Onboarding Completed", {
@@ -153,21 +189,14 @@ export default function ExamStep({
           up_preferred_app_language: data.language as AppLanguageCode,
         });
 
-        if (USE_COMPLETION_MOTION) {
-          // The animation lives in the locale layout, so it keeps playing across this navigation and lifts over the dashboard.
-          useOnboardingCelebrationStore.getState().start({
-            languageCode: String(data.language ?? ""),
-            examShortName: data.exam.short_name ?? "",
-            examState: data.exam.state,
-            examType: data.exam.exam_type,
-          });
-        }
+        // The animation lives in the locale layout, so it keeps playing across this navigation and lifts over the dashboard.
+        if (celebrate) useOnboardingCelebrationStore.getState().markEnrolled();
         router.replace("/dashboard?user_type=new");
       } else {
-        console.error(response.message);
+        fail("generic");
       }
     } catch (err) {
-      console.error("Enrollment failed", err);
+      fail(isNetworkFailure(err) ? "network" : "generic", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -289,6 +318,11 @@ export default function ExamStep({
         {/* 🔹 Bottom Button */}
         <div className="py-2 px-4 bg-white fixed bottom-0 left-0 right-0 md:static">
           <div className="flex flex-col gap-2 items-center">
+            {enrollError && (
+              <p role="alert" className="body-small text-center text-red-500 w-full max-w-[400px]">
+                {errorT(enrollError)}
+              </p>
+            )}
            <MainButton
               text={t("actions.continue")}
               fullWidth={true}

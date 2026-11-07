@@ -2,9 +2,9 @@
 
 **Tickets:** (new, from user)
 **Repos:** CM (`packages/motion`, `apps/dashboard` preview route only)
-**Branch:** pushed to main (onboarding part), 2026-11-07
+**Branch:** local on `feature/practice-test-flag` working tree — not committed, not pushed
 **Created / start date:** 2026-11-07
-**Status:** In Progress — onboarding animation live on the real flow, enrollment animation is preview-only (not applied to the real modal)
+**Status:** In Review — both previews built and checked locally (not committed); nothing touches the real onboarding / enrollment screens
 
 ---
 
@@ -51,6 +51,8 @@ The old animation's "subjects fly in" (4-6 free picks) and "7-day study plan" do
 - Revert: `NEXT_PUBLIC_LEGACY_ONBOARDING=true` + rebuild (the exam step goes back to the plain redirect, no other change).
 - Files: `store/onboarding/useOnboardingCelebrationStore.ts`, `components/features/onboarding/{OnboardingCelebration,OnboardingCelebrationHost}.tsx`, `steps/ExamStep.tsx`, `app/[locale]/layout.tsx`.
 - Tested on localhost with mocked backend (exams, auth-user, enrollment create, my-courses delayed 2.5 s): real language step -> exam step -> Continue -> animation over the dashboard -> curtain -> dashboard (390x844). Not tested: real backend, desktop, Hindi on the real route, real phones, reduced motion.
+- Update 2026-11-07 (user request): the animation now starts the moment Continue is tapped (optimistic); the enrolment request still goes to the backend in parallel (needed to enrol the learner). The animation cannot finish before the request succeeds (`enrolled` flag in the store); on a failed request or a 40 s timeout it is removed and the exam step shows an inline error (`modals.buySingleCourseModal.error.generic|network`, existing en/hi/mr copy) with Continue enabled for a retry; non-network failures go to Sentry via `logger`. Tested (mocked backend): slow success (animation visible at 0.7 s, then dashboard), HTTP 500 (overlay gone, error shown, stays on /onboarding), aborted network (network message).
+
 - Enrollment animation is NOT applied to the real enrollment modal yet.
 
 ## 7. Decision log

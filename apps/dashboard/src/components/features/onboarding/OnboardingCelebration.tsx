@@ -18,7 +18,7 @@ const LANGUAGES: Record<string, { title: string; icon: React.ReactNode }> = {
   mr: { title: "मराठी", icon: <MarathiLangCircleIcon /> },
 };
 
-// Never keep the learner behind the animation if the dashboard data is slow or failed.
+// Once enrolled, never keep the learner behind the animation if the dashboard data is slow or failed.
 const MAX_WAIT_MS = 15000;
 
 /**
@@ -29,18 +29,21 @@ const MAX_WAIT_MS = 15000;
 export default function OnboardingCelebration() {
   const celebration = useOnboardingCelebrationStore((s) => s.celebration);
   const finish = useOnboardingCelebrationStore((s) => s.finish);
+  const enrolled = useOnboardingCelebrationStore((s) => s.enrolled);
   const lang = useMotionLang();
   const queryClient = useQueryClient();
   const { isFetching } = useMyActiveCourses();
   const [started, setStarted] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
-  // The user was just enrolled: make sure the courses are fetched fresh, then wait for that fetch.
+  // The animation starts the moment Continue is tapped, while the enrolment request is still running. Once the learner is
+  // enrolled: make sure the courses are fetched fresh, then wait for that fetch.
   useEffect(() => {
+    if (!enrolled) return;
     void queryClient.invalidateQueries({ queryKey: MY_COURSES_KEY }).finally(() => setStarted(true));
     const t = setTimeout(() => setTimedOut(true), MAX_WAIT_MS);
     return () => clearTimeout(t);
-  }, [queryClient]);
+  }, [enrolled, queryClient]);
 
   if (!celebration) return null;
   const language = LANGUAGES[celebration.languageCode];
@@ -49,7 +52,7 @@ export default function OnboardingCelebration() {
   return (
     <OnboardingComplete
       lang={lang}
-      ready={timedOut || (started && !isFetching)}
+      ready={enrolled && (timedOut || (started && !isFetching))}
       onDone={finish}
       logo={<Image src="/logos/clear_cutoff_logo.png" width={239} height={48} alt="Clear Cutoff" className="h-[34px] w-auto" unoptimized />}
       summary={[
