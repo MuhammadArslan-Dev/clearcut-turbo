@@ -39,6 +39,7 @@ import {
   createSubscription,
   getPaymentPricing,
   getSubscriptionMetaPurchase,
+  metaContentParams,
   type MetaPurchase,
   PaymentPricing,
   PaymentType,
@@ -741,6 +742,7 @@ export default function InitiatedPage() {
                   currency: meta.currency,
                   amount_paid: meta.amount_paid,
                   plan: "monthly_autopay",
+                  ...metaContentParams(meta),
                 },
                 meta.event_id,
               );

@@ -16,11 +16,25 @@
  *   - `setAttributionExtra({ tool: "resizer" })` — any page/feature can attach
  *     extra facts (validated + capped server-side) to the next verification.
  *
+ * The first landing is ALSO kept in a first-party cookie (`cc_attr_first`, 30 days, domain `.clearcutoff.in`, written
+ * once, never overwritten; see @clearcut/utils/first-touch-cookie) because blog / academy / landing / app are separate
+ * origins and localStorage does not cross them: without it a visitor who lands on the blog and signs up on the landing
+ * page was recorded as having landed on the landing page.
+ *
  * `getAttribution()` is attached automatically to `authApi.loginUser`,
  * `authApi.verifyOtp` and `authApi.truecallerInitiate`, so every caller (the
  * modal, /start, tool modals, anything added later) is covered with no
  * per-component code. Pure module (no React, no SDK), like ./token.
  */
+
+import {
+  FIRST_TOUCH_COOKIE,
+  buildFirstTouchCookie,
+  decodeFirstTouch,
+  encodeFirstTouch,
+  readCookie,
+  type FirstTouch,
+} from "@clearcut/utils/first-touch-cookie";
 
 export type AttributionApp = "landing" | "tools" | "blog" | "academy" | "dashboard" | "app";
 
@@ -112,12 +126,20 @@ export function captureFirstLanding(): void {
     const signals = readUrlSignals(window.location.search);
 
     const local = localStorageSafe();
-    if (local && !local.getItem(FIRST_LANDING_KEY)) {
-      write(local, FIRST_LANDING_KEY, {
+    const storedFirst = read<FirstTouch>(local, FIRST_LANDING_KEY);
+    const cookieFirst = readFirstTouchCookie();
+    if (!storedFirst) {
+      // First touch is whichever came first: another of our subdomains may already have set the cookie.
+      const first: FirstTouch = cookieFirst ?? {
         landing_page: page,
         referrer: referrerHost(document.referrer),
         ...signals,
-      });
+      };
+      write(local, FIRST_LANDING_KEY, first);
+      if (!cookieFirst) writeFirstTouchCookie(first);
+    } else if (!cookieFirst) {
+      // A browser that landed before the cookie existed: share its first touch with the other subdomains.
+      writeFirstTouchCookie(storedFirst);
     }
 
     // UTM / click ids on a later URL of this session win over the stored ones.
@@ -134,7 +156,9 @@ export function getAttribution(): AttributionPayload | undefined {
   if (typeof window === "undefined") return undefined;
   try {
     const { page, locale } = normalizePage(window.location.pathname);
-    const first = read<{ landing_page?: string; referrer?: string } & Pick<AttributionPayload, "utm" | "click_ids">>(localStorageSafe(), FIRST_LANDING_KEY);
+    const first =
+      read<{ landing_page?: string; referrer?: string } & Pick<AttributionPayload, "utm" | "click_ids">>(localStorageSafe(), FIRST_LANDING_KEY) ??
+      readFirstTouchCookie();
     const session = read<Pick<AttributionPayload, "utm" | "click_ids">>(sessionStorageSafe(), SESSION_KEY);
     const here = readUrlSignals(window.location.search);
     const storedExtra = read<Record<string, string | number | boolean>>(sessionStorageSafe(), EXTRA_KEY) ?? {};
@@ -175,6 +199,24 @@ export function withAttribution(): { attribution?: AttributionPayload } {
 }
 
 // --- storage helpers (private mode / blocked storage must never throw) ---
+
+function readFirstTouchCookie(): FirstTouch | undefined {
+  try {
+    return decodeFirstTouch(readCookie(document.cookie, FIRST_TOUCH_COOKIE));
+  } catch {
+    return undefined;
+  }
+}
+
+function writeFirstTouchCookie(value: FirstTouch): void {
+  try {
+    const encoded = encodeFirstTouch(value);
+    if (!encoded) return;
+    document.cookie = buildFirstTouchCookie(encoded, window.location.hostname, window.location.protocol === "https:");
+  } catch {
+    /* a blocked cookie must never break a page */
+  }
+}
 
 function localStorageSafe(): Storage | undefined {
   try {

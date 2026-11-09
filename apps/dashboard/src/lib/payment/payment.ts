@@ -38,6 +38,8 @@ export type CreateOrderResponse = {
   key: string;
   order: RazorpayOrder;
   transaction_id: number;
+  /** The order's public id (CC-173); lets browser events name the same transaction as the server ones. */
+  transaction_uuid?: string;
 };
 
 /**
@@ -52,7 +54,23 @@ export type MetaPurchase = {
   amount_paid: number;
   plan: "monthly_autopay" | "monthly_onetime" | "annual" | null;
   currency: string;
+  /** CC-173: the exam this purchase is for (short name) and its id, when the backend knows it. */
+  content_category?: string;
+  content_ids?: string[];
 };
+
+/**
+ * Meta Purchase params that name the exam; empty when the backend did not send them (older backend / unknown exam).
+ * OFF until `NEXT_PUBLIC_META_CONTENT_PARAMS=true` is set at build time: these params can change how Meta attributes
+ * and optimises Purchases, so they are switched on only after a check with an Events Manager test code.
+ */
+export function metaContentParams(meta: Pick<MetaPurchase, "content_category" | "content_ids">) {
+  if (process.env.NEXT_PUBLIC_META_CONTENT_PARAMS !== "true") return {};
+  return {
+    ...(meta.content_category ? { content_category: meta.content_category } : {}),
+    ...(meta.content_ids && meta.content_ids.length > 0 ? { content_ids: meta.content_ids } : {}),
+  };
+}
 
 export type VerifyPaymentResponse = {
   success: boolean;

@@ -88,6 +88,8 @@ export interface MonetizationEventPayloads {
     // `reason` (or verification_failed) is sent as-is.
     failure_reason?: 'insufficient_funds' | 'cancelled' | (string & {});
     payment_session_id: string;
+    // transactions.uuid (CC-173): the same id the server's Payment Completed carries.
+    transaction_id?: string;
     exam_name?: string;
     // return_check = the payment page came back (in-app browser killed it
     // during UPI) and the backend confirmed the payment (CC-59).
@@ -101,6 +103,7 @@ export interface MonetizationEventPayloads {
   // Razorpay checkout actually opened (no existing event covered it, CC-69).
   'Checkout Opened': {
     billing_type: 'auto_renew' | 'one_time';
+    transaction_id?: string;
   } & PayContext;
 
   // "Continue free learning" → "Why not now?" (CC-63). One event when the
