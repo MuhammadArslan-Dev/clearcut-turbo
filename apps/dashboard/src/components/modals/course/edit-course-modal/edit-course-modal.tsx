@@ -83,6 +83,8 @@ export default function EditCourseModal() {
   const { isOpen, data, close, mode, onSuccess } = useCourseStore();
   const isMobile = useIsMobile();
   const modalT = useTranslations("modals.editCourseModal");
+  // Reused from the buy modal: the same "Select any one option" hint (CC-176).
+  const pickHintT = useTranslations("modals.buySingleCourseModal.paperSelection");
   const invalidateMyCourses = useInvalidateQuery(MY_COURSES_KEY);
   const { locale } = useLanguageSwitch();
   useDrawerBackHandler();
@@ -90,6 +92,9 @@ export default function EditCourseModal() {
   const { courses, clearCache: clearMyActiveCourses } = useMyActiveCourses();
   const [saveChangesLoading, setSaveChangesLoading] = useState(false);
   const [continueLearningLoading, setContinueLearningLoading] = useState(false);
+  // The save buttons are disabled until every subject path is complete; a disabled <button> swallows the
+  // tap, so a tap on it shows this hint instead of doing nothing (same pattern as buy-sigle-course-modal).
+  const [showPickHint, setShowPickHint] = useState(false);
 
   const course = useMemo(() => {
     return courses?.courses.find((c) => c.exam_id === data?.id);
@@ -285,6 +290,10 @@ export default function EditCourseModal() {
 
   const currentChildren =
     currentParentId != null ? (levelsByParent.get(currentParentId) ?? []) : [];
+
+  useEffect(() => {
+    if (currentChildren.length === 0) setShowPickHint(false);
+  }, [currentChildren.length]);
 
   const isAllSelected = useMemo(() => {
     if (!parentLevels.length) return false;
@@ -630,8 +639,13 @@ export default function EditCourseModal() {
           {/* FOOTER */}
           <div className="p-4 sticky bottom-0 w-full bg-white flex justify-center">
             <div className="w-full max-w-[600px] space-y-1">
+              {showPickHint && currentChildren.length > 0 && (
+                <p role="status" className="body-small !font-semibold text-center text-brand w-full">
+                  {pickHintT("selectAnyOneOption")}
+                </p>
+              )}
               <div className="flex md:flex-row flex-col gap-3 items-center w-full justify-center">
-                <div className="w-full md:w-[300px]">
+                <div className="relative w-full md:w-[300px]">
                   <ShimmerButton
                     loading={continueLearningLoading}
                     text={modalT("saveContinue")}
@@ -654,13 +668,22 @@ export default function EditCourseModal() {
                     }
                     iconPosition="right"
                   />
+                  {currentChildren.length > 0 && !saveChangesLoading && (
+                    // A disabled <button> swallows the tap, so this layer catches it.
+                    <button
+                      type="button"
+                      aria-label={pickHintT("selectAnyOneOption")}
+                      onClick={() => setShowPickHint(true)}
+                      className="absolute inset-0 cursor-pointer rounded-full"
+                    />
+                  )}
                 </div>
               </div>
               <p className="body-small text-center text-surface-gray-muted mt-1">
                 {modalT("helperText")}
               </p>
               <div className="flex md:flex-row flex-col gap-3 items-center w-full justify-center">
-                <div className="w-full md:w-[300px]">
+                <div className="relative w-full md:w-[300px]">
                   <Button
                     fullWidth
                     size="sm"
@@ -675,6 +698,14 @@ export default function EditCourseModal() {
                   >
                     {modalT("saveChanges")}{" "}
                   </Button>
+                  {currentChildren.length > 0 && !continueLearningLoading && (
+                    <button
+                      type="button"
+                      aria-label={pickHintT("selectAnyOneOption")}
+                      onClick={() => setShowPickHint(true)}
+                      className="absolute inset-0 cursor-pointer rounded-full"
+                    />
+                  )}
                 </div>
               </div>
             </div>
