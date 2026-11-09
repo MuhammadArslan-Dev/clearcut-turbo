@@ -31,6 +31,8 @@ import {
   readAttempt,
   saveAttempt,
 } from "@/lib/payment/paymentAttempt";
+import { startPendingWatch } from "@/lib/payment/pendingWatch";
+import { isUpiWaitingWatchEnabled } from "@/lib/experiments/upiWaitingFlag";
 import { useLocale } from "next-intl";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import { useAuth } from "@/providers/AuthProvider";
@@ -137,10 +139,44 @@ export function useRazorpayPayment({
     setPhase("idle");
   };
 
-  // CC-59: the page came back (reload, back from the UPI app, bfcache) with
-  // an attempt from a checkout whose handler never ran. Ask the backend.
   const latest = React.useRef({ onSuccess, onFailure, examId });
   latest.current = { onSuccess, onFailure, examId };
+  // A payment found paid by asking the backend: the return check, or the UPI
+  // wait watch (CC-70). Same steps either way; `via` is the only difference.
+  const reportPaidFromAttempt = async (
+    status: Awaited<ReturnType<typeof getAttemptStatus>>,
+    attempt: NonNullable<ReturnType<typeof readAttempt>>,
+    via: "return_check" | "upi_wait_watch",
+  ) => {
+    clearAttempt();
+    const meta = status.meta_purchase;
+    if (meta?.send) {
+      trackFacebookEventOnce(
+        "Purchase",
+        {
+          value: meta.value,
+          currency: meta.currency,
+          amount_paid: meta.amount_paid,
+          ...(meta.plan ? { plan: meta.plan } : {}),
+        },
+        meta.event_id,
+      );
+    }
+    trackEvent("Payment Outcome", {
+      outcome: "payment_successful",
+      billing_type: "one_time",
+      final_price: Number(meta?.amount_paid ?? 0),
+      payment_session_id: String(status.transaction_id ?? attempt.transactionId),
+      confirmed_via: via,
+      ...(attempt.source ? { source: attempt.source } : {}),
+    });
+    await invalidateQuery().catch(() => {});
+    await queryClient.invalidateQueries({ queryKey: CURRENT_COURSE_QUERY_KEY });
+    latest.current.onSuccess({ price: attempt.price, source: attempt.source });
+  };
+
+  // CC-59: the page came back (reload, back from the UPI app, bfcache) with
+  // an attempt from a checkout whose handler never ran. Ask the backend.
   React.useEffect(() => {
     if (!returnCheck) return;
     let checking = false;
@@ -153,31 +189,7 @@ export function useRazorpayPayment({
       try {
         const status = await getAttemptStatus(attempt.transactionId);
         if (status.state === "paid") {
-          clearAttempt();
-          const meta = status.meta_purchase;
-          if (meta?.send) {
-            trackFacebookEventOnce(
-              "Purchase",
-              {
-                value: meta.value,
-                currency: meta.currency,
-                amount_paid: meta.amount_paid,
-                ...(meta.plan ? { plan: meta.plan } : {}),
-              },
-              meta.event_id,
-            );
-          }
-          trackEvent("Payment Outcome", {
-            outcome: "payment_successful",
-            billing_type: "one_time",
-            final_price: Number(meta?.amount_paid ?? 0),
-            payment_session_id: String(status.transaction_id ?? attempt.transactionId),
-            confirmed_via: "return_check",
-            ...(attempt.source ? { source: attempt.source } : {}),
-          });
-          await invalidateQuery().catch(() => {});
-          await queryClient.invalidateQueries({ queryKey: CURRENT_COURSE_QUERY_KEY });
-          latest.current.onSuccess({ price: attempt.price, source: attempt.source });
+          await reportPaidFromAttempt(status, attempt, "return_check");
         } else if (status.state === "failed") {
           clearAttempt();
         }
@@ -289,6 +301,8 @@ export function useRazorpayPayment({
       // failure has been reported, so closing the popup afterwards is not ALSO
       // reported as a cancellation.
       let outcomeReported = false;
+      // CC-70: stops the UPI wait watch (flag-gated, below).
+      let stopWatch: (() => void) | null = null;
 
       const options = {
         key: order.key,
@@ -304,6 +318,8 @@ export function useRazorpayPayment({
           : {}),
 
         handler: async (response: any) => {
+          stopWatch?.();
+          if (outcomeReported) return; // the wait watch already confirmed this payment
           clearAttempt();
           onClose?.();
           setPhase("verifying");
@@ -458,6 +474,7 @@ export function useRazorpayPayment({
         // without this handler a cancelled checkout was never reported at all.
         modal: {
           ondismiss: () => {
+            stopWatch?.();
             // Closed without paying: the button works again.
             if (!outcomeReported) release();
             if (outcomeReported) return;
@@ -491,6 +508,7 @@ export function useRazorpayPayment({
       }) => {
         const { error } = errorResponse;
 
+        stopWatch?.();
         outcomeReported = true;
         clearAttempt();
 
@@ -518,6 +536,39 @@ export function useRazorpayPayment({
       razorpay.open();
       checkoutOpened = true;
       setPhase("idle");
+
+      // CC-70: while the student approves in the UPI app the page used to learn
+      // nothing until Razorpay called back. With the flag on, ask the backend
+      // every few seconds and finish as soon as the payment is paid.
+      void isUpiWaitingWatchEnabled(authUser?.uuid)
+        .then((on) => {
+          if (!on || outcomeReported) return;
+          stopWatch = startPendingWatch({
+            check: async () => {
+              if (outcomeReported) return true;
+              const status = await getAttemptStatus(order.transaction_id);
+              if (status.state === "failed") return true;
+              if (status.state !== "paid") return false;
+              outcomeReported = true;
+              const attempt = readAttempt(examId) ?? {
+                transactionId: order.transaction_id,
+                examId,
+                at: Date.now(),
+                price: Number(price),
+                ...(orderSource ? { source: orderSource } : {}),
+              };
+              try {
+                (razorpay as { close?: () => void }).close?.();
+              } catch {
+                // The popup was already gone.
+              }
+              await reportPaidFromAttempt(status, attempt, "upi_wait_watch");
+              release();
+              return true;
+            },
+          });
+        })
+        .catch(() => {});
       trackPaymentEvent("Checkout Opened", { billing_type: "one_time", ...funnelProps });
     } catch (error) {
       console.error(error);

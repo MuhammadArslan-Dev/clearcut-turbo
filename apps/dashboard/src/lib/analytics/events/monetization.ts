@@ -91,7 +91,8 @@ export interface MonetizationEventPayloads {
     exam_name?: string;
     // return_check = the payment page came back (in-app browser killed it
     // during UPI) and the backend confirmed the payment (CC-59).
-    confirmed_via?: 'return_check';
+    // upi_wait_watch = found paid while the checkout was still open (CC-70).
+    confirmed_via?: 'return_check' | 'upi_wait_watch';
     // Razorpay's own error.code / error.reason on a failed payment (CC-69).
     error_code?: string;
     error_reason?: string;
