@@ -42,6 +42,11 @@ export default function ExamStep({
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Shown above Continue when enrolling fails (copy reused from the enrolment modal's error messages).
   const [enrollError, setEnrollError] = useState<"network" | "generic" | null>(null);
+  // Continue is not ready until an exam is picked; a tap on it says why (CC-90).
+  const [pickHint, setPickHint] = useState(false);
+  useEffect(() => {
+    if (data.exam) setPickHint(false);
+  }, [data.exam]);
   const errorT = useTranslations("modals.buySingleCourseModal.error");
 
   // 🔹 Reset level on mount
@@ -323,6 +328,13 @@ export default function ExamStep({
                 {errorT(enrollError)}
               </p>
             )}
+           {/* The hint floats above the button (absolute), so showing it never moves the button. */}
+           <div className="relative w-full">
+            {pickHint && !data.exam && !enrollError && (
+              <p role="status" className="absolute bottom-full left-0 right-0 pb-1 bg-white body-small !font-semibold text-center text-brand">
+                {t("Onboarding.pickOption")}
+              </p>
+            )}
            <MainButton
               text={t("actions.continue")}
               fullWidth={true}
@@ -330,10 +342,13 @@ export default function ExamStep({
                 buttonPhase === "shimmer" ||
                 (buttonPhase === "icon" && !isSubmitting)
               }
-              disabled={!data.exam || isSubmitting}
+              disabled={isSubmitting}
+              notReady={!data.exam}
+              onNotReadyTap={() => setPickHint(true)}
               onClick={handleEnroll}
               loading={isSubmitting} // ✅ loader support
             />
+           </div>
             
 
             <RotatingBadge

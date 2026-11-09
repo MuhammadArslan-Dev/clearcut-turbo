@@ -1,5 +1,5 @@
 // app/onboarding/steps/LanguageStep.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import EnLangCirlcIcon from "@/components/ui/icons/en-lang-circle-icon";
@@ -68,6 +68,12 @@ export default function LanguageStep({
 
   const step = steps[currentStep];
 
+  // The Continue button is not ready until a language is picked; a tap on it says why (CC-90).
+  const [pickHint, setPickHint] = useState(false);
+  useEffect(() => {
+    if (data.language) setPickHint(false);
+  }, [data.language]);
+
   const { buttonPhase } = useButtonArrowAnimation({
     data: !!data.language || null,
   });
@@ -127,21 +133,29 @@ export default function LanguageStep({
         </div>
 
         <div className="py-2 px-4 bg-white fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
-          <MainButton
-            text={t("actions.continue")}
-            fullWidth={true}
-            showShimmer={buttonPhase === "shimmer" || buttonPhase === "icon"}
-            disabled={!data.language}
-            onClick={() => {
-              trackEvent("Onboarding Step Completed", {
-                step_number: 1,
-                step_name: "language_selection",
-                app_language_choice: data.language as AppLanguageCode,
-              });
-              goNext();
-            }}
-            
-          />
+          {/* The hint floats above the button (absolute), so showing it never moves the button. */}
+          <div className="relative">
+            {pickHint && !data.language && (
+              <p role="status" className="absolute bottom-full left-0 right-0 pb-1 bg-white body-small !font-semibold text-center text-brand">
+                {t("Onboarding.pickOption")}
+              </p>
+            )}
+            <MainButton
+              text={t("actions.continue")}
+              fullWidth={true}
+              showShimmer={buttonPhase === "shimmer" || buttonPhase === "icon"}
+              notReady={!data.language}
+              onNotReadyTap={() => setPickHint(true)}
+              onClick={() => {
+                trackEvent("Onboarding Step Completed", {
+                  step_number: 1,
+                  step_name: "language_selection",
+                  app_language_choice: data.language as AppLanguageCode,
+                });
+                goNext();
+              }}
+            />
+          </div>
       
         </div>
       </MainContainer>

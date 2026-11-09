@@ -37,6 +37,10 @@ type MainButtonProps = {
   leftIcon?: React.ReactNode;
   loading?: boolean;
   disabled?: boolean;
+  /** Opt-in "not ready yet" look (CC-90): the button stays tappable (a `disabled` one swallows the tap),
+   *  is drawn grey with no shimmer, and a tap calls `onNotReadyTap` instead of `onClick`. */
+  notReady?: boolean;
+  onNotReadyTap?: () => void;
   className?: string;
   onClick?: () => void;
 };
@@ -62,18 +66,20 @@ const AnimatedArrowIcon = ({
   icon,
   disabled,
   loading,
+  notReady,
 }: {
   phase: string;
   icon?: React.ReactNode;
   disabled?: boolean;
   loading?: boolean;
+  notReady?: boolean;
 }) => {
   const defaultIcon = (
     <ChevronIcon
       type="double"
       variant="right"
       size={24}
-      color={disabled || loading ? "#0088ff30" : "white"}
+      color={notReady ? "var(--icon-gray-muted)" : disabled || loading ? "#0088ff30" : "white"}
     />
   );
 
@@ -134,6 +140,8 @@ export default function MainButton({
   leftIcon,
   loading = false,
   disabled = false,
+  notReady = false,
+  onNotReadyTap,
   className,
   onClick,
 }: MainButtonProps) {
@@ -144,6 +152,10 @@ export default function MainButton({
   const paddingY = useMemo(() => (pY ? pY : getPaddingY(size)), [size, pY]);
 
   const handleClick = () => {
+    if (notReady) {
+      onNotReadyTap?.();
+      return;
+    }
     if (!linkButton && onClick) {
       onClick();
     }
@@ -159,13 +171,19 @@ export default function MainButton({
         variant={variant}
         color={color}
         disabled={disabled}
+        aria-disabled={notReady || undefined}
+        className={
+          notReady
+            ? "!bg-[var(--color-gray-bg-soft)] !text-[var(--icon-gray-muted)] hover:!bg-[var(--color-gray-bg-soft)]"
+            : undefined
+        }
         loading={loading}
         fullWidth={fullWidth}
         onClick={handleClick}
         bgColor={bgColor}
-        {...hoverScale}
+        {...(notReady ? {} : hoverScale)}
       >
-        {buttonPhase === "shimmer" && <ButtonShimmerOverlay />}
+        {buttonPhase === "shimmer" && !notReady && <ButtonShimmerOverlay />}
 
         <ContentWrapper
           gap={gap}
@@ -178,6 +196,7 @@ export default function MainButton({
                 icon={rightIcon}
                 disabled={disabled}
                 loading={loading}
+                notReady={notReady}
               />
             )
           }
