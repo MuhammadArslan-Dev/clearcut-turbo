@@ -2,9 +2,9 @@
 
 **Tickets:** CC-147 (High, queue 05) + CC-149 (High, queue 06)
 **Repos:** BE, CM (`apps/blog` server code); CC-147 = infrastructure outside our repos
-**Branch:** `perf/slow-apis-safe-wins` — not created yet, not committed, not pushed
+**Branch:** frontend `perf/blog-year-page-parallel-fetch` (D, committed, not pushed); backend: no change made (B and C dropped, see 4a)
 **Created / start date:** 2026-11-09
-**Status:** Blocked – Decision (infra steps are the user's; code changes only where the JSON response stays identical)
+**Status:** In Progress — D done; B, C and E judged not worth it with evidence; A and the CC-147 console steps are the user's
 **Continues:** phase 44 (CC-146, request storm — CC-147 note), phase 49 (CC-149, "waiting for 3 days of server spans")
 
 > User rule: investigate; fix only if nothing can break, otherwise tell the user. API response JSON must stay byte-identical; we do not change response shapes.
@@ -44,12 +44,27 @@ CC-147: the Meta Conversions API gateway `/events` takes ~12.4 s at p75 (330 cal
 - [ ] E. Index on `question_news.stage_id_b` → **migration on a prod table — NOT done without approval (phase 49 D1)**.
 - Not done: any response-shape change, gzip/ETag work unless Cloudflare/Coolify is not already compressing.
 
+## 4a. Result of the investigation (2026-11-09)
+**Key measurement (local DB copy, read-only): the get-subject cold query is NOT slow.** `question_new` has ~37k rows; the non-CTET query (`DISTINCT section_id_b WHERE stage_id_b LIKE 'HTET_L1%'`) takes 60-180 ms, EXPLAIN = full index scan of `question_new_section_id_b_index` (37,283 rows). Nowhere near the 26.8 s in the ticket. So server-side query cost does not explain the ticket's browser numbers.
+- **D — done** (`apps/blog/.../[level_id]/year/page.tsx`): the `get-years` fetch now starts together with the exam-index check (same pattern as the level page); the awaited result and any error are unchanged; an unused request after an early `notFound()` gets a no-op catch. **Proof (blog dev server on the local backend, same URLs before/after):** `/ctet/paper-1/year` 200 and byte-identical HTML; `/ctet/paper-9/year` and `/htet/level-3/year` 404 and identical (only the per-request `__next_r` id and dev-mode stack-trace paths/chunk ids differ, which also differ between two runs of the SAME code). eslint 2/9 before and after; tsc 33 = clean main 33. Effect is small (saves one index-check wait on a render that is cached anyway); it is safe, not a fix for the ticket.
+- **B — not done:** `isPaidForSection` runs one small `getOrderedSections` query per enrolment (a student has 1-3) and stops at the first match. Caching it for 30 min would save a few ms and would put an access check behind a cache.
+- **C — not done:** the blog sends only `exam_id` + `slug` (two spellings of the exam may give two cache keys at most); normalising saves almost nothing, and the cold query it protects is 60-180 ms.
+- **E — recommend NO:** a `stage_id_b` index cannot help `LIKE 'HTET_L1%'` much on 37k rows (already an index scan, 60-180 ms) and it would be a migration on a prod table. Dropped unless prod measurements say otherwise.
+- **What is left (needs prod data/decisions, not code):** (1) **A: `CACHE_LIMITER=file|redis`** — the known contention source (LARAVEL-BACKEND-F5, the MySQL `cache` table used by the throttle limiter deadlocks under load and also explains the PDOExceptions on `get-questions` / `v2/interactions`); (2) check `SENTRY_TRACES_SAMPLE_RATE` is set on Coolify and read server spans after 3 days — the ticket's numbers are browser times (network + cold starts + the limiter), the server share is unknown; (3) `getSections` cold misses (30 min cache) are the heavy ones.
+- Reported, not changed (security): `UserLearningInteractionController` returns `'error' => $e` in its 500 responses (internal exception text to the client).
+
+### CC-147 checklist for the user (we cannot access Meta or Cloud Run)
+1. Meta Events Manager → Data Sources → the pixel → Settings → Conversions API Gateway: remove or disable the old `us-central1` `run.app` gateway (the primary AWS one already answers in ~0.5 s at p75); check the fallback domain is the intended, healthy one.
+2. If a Cloud Run gateway is kept: min instances 1, region `asia-south1` (Mumbai), higher concurrency, CPU boost; it must answer 202 before forwarding.
+3. Verify with an Events Manager Test Events code: Purchase and StartTrial arrive, de-duplicated by `eventID`.
+Nothing in our repos changes for CC-147; the 6 s / 15 s retries are Meta's own `fbevents.js`.
+
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
 | 2026-11-09 | 🛑 **A — `CACHE_LIMITER`** `file` or `redis` on prod? (needs Redis available; `file` is the safe fallback) | open |
-| 2026-11-09 | 🛑 **E — approve the `question_news.stage_id_b` index migration?** (table-lock time on a large prod table; recommend off-peak) | open |
-| 2026-11-09 | 🛑 **Cache TTL for B/C** (how long a content/pricing change takes to appear) | open |
+| 2026-11-09 | 🛑 **E: `question_new.stage_id_b` index migration** - recommendation is NO (measured in 4a). Confirm the drop? | open |
+| 2026-11-09 | B and C dropped (no TTL decision needed) | Claude, with evidence in 4a |
 | 2026-11-09 | 🛑 **CC-147 console steps** — the user performs them (we cannot access Meta/Cloud Run) | open |
 
 ## 6. Blockers / risks
@@ -60,7 +75,9 @@ CC-147: the Meta Conversions API gateway `/events` takes ~12.4 s at p75 (330 cal
 None. E would add one migration (approval needed).
 
 ## 8. Tests and verification
-- [ ] identical-JSON proof per touched endpoint; [ ] backend tests (sqlite memory); [ ] `tsc`/lint for the blog change; [ ] user: before/after p75 in Sentry once server spans exist
+- [x] D: identical HTML before/after on three URLs (4a); eslint and tsc unchanged. No backend endpoint was touched, so no JSON proof was needed.
+- [ ] user: `CACHE_LIMITER` (A), `SENTRY_TRACES_SAMPLE_RATE` on Coolify, CC-147 console steps, and p75 in Sentry once server spans exist.
+- Not verified: production timings (all my numbers are the local snapshot), the effect of D on real latency, whether Redis is reachable for A.
 
 ## 9. Next steps
-Give the user the CC-147 checklist and the A/E questions; implement only B, C, D after the user agrees they are safe to ship (each with its identical-JSON proof).
+User: do the CC-147 console steps, decide A, set/check the tracing env var; then re-measure from Sentry server spans before touching any other endpoint.

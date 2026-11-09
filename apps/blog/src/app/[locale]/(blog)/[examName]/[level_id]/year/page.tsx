@@ -67,16 +67,25 @@ export default async function page({ params }: Props) {
     notFound();
   }
 
-  const index = await tryLoadExamIndex(String(examNameParam));
-  if (index && !findLevel(index, String(level_id))) notFound();
   // Build query string safely
   const queryYears = `exam_id=${examNameParam}`;
 
-  // ✅ Correct API fetch Years
-  const resYears = await fetch(
+  // The years request does not depend on the exam index: start it together with
+  // the index check instead of after it (same pattern as the level page). If the
+  // index says the level is unknown we notFound() below and this request is simply
+  // not used; the no-op catch only stops an unused failure from being reported as
+  // unhandled. The awaited result and any error are exactly what they were.
+  const yearsRequest = fetch(
     `${process.env.BACKEND_URL}/blog/get-years?${queryYears}`,
     { cache: "force-cache", headers: backendServerHeaders() },
   );
+  yearsRequest.catch(() => {});
+
+  const index = await tryLoadExamIndex(String(examNameParam));
+  if (index && !findLevel(index, String(level_id))) notFound();
+
+  // ✅ Correct API fetch Years
+  const resYears = await yearsRequest;
 
   const dataYears = await resYears.json();
   if (dataYears?.data?.length === 0) {
