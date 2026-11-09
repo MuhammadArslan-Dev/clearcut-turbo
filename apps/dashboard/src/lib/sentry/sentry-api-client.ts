@@ -25,6 +25,12 @@ export async function sentryApiClient<T>(
   context?: {
     endpoint?: string;
     module?: string;
+    /**
+     * HTTP statuses that are an expected answer for THIS call (CC-153): e.g. an unknown or not-enrolled course reads
+     * 404/403 and the page already handles that. They are kept as a breadcrumb instead of an error issue. Opt-in per
+     * call; anything else (5xx, other 4xx) still reports as an error, and the error is always rethrown.
+     */
+    expectedStatuses?: number[];
   },
 ): Promise<T> {
   try {
@@ -57,6 +63,8 @@ export async function sentryApiClient<T>(
 
     if (isNetworkFailure(error)) {
       logger.breadcrumb(`API call hit a network blip: ${tags.endpoint}`, { tags, extra });
+    } else if (isApiError(error) && context?.expectedStatuses?.includes(error.status)) {
+      logger.breadcrumb(`API call answered ${error.status} (expected): ${tags.endpoint}`, { tags, extra });
     } else {
       logger.error(error, { tags, extra });
     }

@@ -32,6 +32,8 @@ export function currentCourseQueryOptions(courseId: number | string | undefined)
       sentryApiClient(() => getCurrentCourse({ courseId }), {
         endpoint: "/current-course",
         module: "dashboard",
+        // An unknown / not-enrolled course: the page handles it (CC-153).
+        expectedStatuses: [403, 404],
       }),
     staleTime: 1000 * 60 * 15, // 5 minutes fresh
     gcTime: 1000 * 60 * 25, // 10 minutes cache
