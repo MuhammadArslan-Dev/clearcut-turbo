@@ -67,3 +67,5 @@ CC-120 Testing · CC-117 To Do · CC-71 Testing · CC-49 To Do · CC-87 Testing 
 
 ## Verification
 Mapping table complete; each fix verified per DEVELOPMENT_RULES section 8.
+
+> 2026-11-09 — continued in phase 91 (`91-money-path-and-sentry-triage.md`): the two no-ticket groups on `/exam/:examId` and `/preparation/:courseId` now keep expected 403/404 answers as breadcrumbs (opt-in `expectedStatuses`, branch `fix/cc-153-expected-404-breadcrumb`).

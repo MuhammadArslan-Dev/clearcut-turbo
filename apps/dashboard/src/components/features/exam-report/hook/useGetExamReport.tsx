@@ -33,6 +33,8 @@ export function useGetExamReport({
       const res = await sentryApiClient(() => getExamById(examId!), {
         endpoint: "/exams",
         module: "exam-page",
+        // An unknown exam id or one the student has no access to: the page handles it (CC-153).
+        expectedStatuses: [403, 404],
       });
 
       return res.data;
