@@ -12,7 +12,8 @@ import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { Button } from "@clearcut/ui/button";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { useTranslations } from "next-intl";
-import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
+import { useRouter } from "@/i18n/navigation";
+import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
@@ -23,7 +24,7 @@ const FEATURES = [
 ] as const;
 
 export default function PaymentFailedWarningModal() {
-  const { isOpen, data, close, mode, open } = useCourseStore();
+  const { isOpen, data, close, mode } = useCourseStore();
   const modalT = useTranslations("payment");
   const isMobile = useIsMobile();
   useDrawerBackHandler();
@@ -34,15 +35,13 @@ export default function PaymentFailedWarningModal() {
     [isMobile]
   );
 
-  /* ---------------------------------- payment hook ---------------------------------- */
-  const { handlePayment, loading } = useRazorpayPayment({
-    examId: data?.id!,
-    examName: data?.short_name!,
-    price: Number(data?.price),
-    onClose: close,
-    onSuccess: () => open("payment-success", data!),
-    onFailure: () => open("payment-failed", data!),
-  });
+  /* ---------------------------------- payment ---------------------------------- */
+  // Phase 77: this modal used to create its own order with `Number(data?.price)` (the exam's price
+  // is a JSON string, so that was NaN or the old list price, bypassing the plan prices) and opened a
+  // success modal that is not mounted on payment pages. It now sends the student to the one real
+  // checkout page, where plans, prices, autopay and success handling already live.
+  const router = useRouter();
+  const { allCourses = [] } = useMyActiveCourses();
 
   /* ---------------------------------- derived values ---------------------------------- */
   const examTitle = useMemo(
@@ -52,8 +51,18 @@ export default function PaymentFailedWarningModal() {
 
   /* ---------------------------------- handlers ---------------------------------- */
   const handleRetryPayment = useCallback(() => {
-    handlePayment();
-  }, [handlePayment]);
+    const groupCode = allCourses.find((c) => c?.exam?.id === data?.id)?.group_code;
+    close();
+    if (!groupCode) {
+      router.push("/dashboard");
+      return;
+    }
+    router.push(
+      `/payment/initiated?exam_id=${groupCode}&course_name=${encodeURIComponent(
+        data?.short_name ?? "",
+      )}&source=payment_failed_warning_clicked`,
+    );
+  }, [allCourses, data?.id, data?.short_name, close, router]);
 
   /* ---------------------------------- render ---------------------------------- */
   return (
@@ -120,7 +129,6 @@ export default function PaymentFailedWarningModal() {
                   <div className="w-full max-w-[400px]">
                     <ShimmerButton
                       onClick={handleRetryPayment}
-                      loading={loading}
                       size="lg"
                       iconPosition="right"
                       icon={

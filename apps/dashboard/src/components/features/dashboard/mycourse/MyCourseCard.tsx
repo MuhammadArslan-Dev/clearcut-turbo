@@ -265,7 +265,7 @@ export default function MyCourseCard({
                 fullWidth
                 loading={unlockLoading}
                 color="success"
-                text={t("myCourses.buyFullCourse")}
+                text={badge === "expired" ? t("myCourses.renewCourse") : t("myCourses.buyFullCourse")}
                 rightIcon={<ChevronIcon size={20} />}
                 onClick={() => {
                   setUnlockLoading(true);
@@ -282,9 +282,12 @@ export default function MyCourseCard({
                     })}
                   </span>
                 </p>
-                <p className="body-medium !font-normal text-surface-gray-muted">
-                  {t("myCourses.trialLimit", { days: 3 })}
-                </p>
+                {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
+                {badge !== "expired" && badge !== "trial_end" && (
+                  <p className="body-medium !font-normal text-surface-gray-muted">
+                    {t("myCourses.trialLimit", { days: 3 })}
+                  </p>
+                )}
               </div>
             </>
           )}

@@ -66,6 +66,9 @@
   },
 
   "checkout": {
+    "existingPaused": "Your subscription for this course is paused. You can resume it from your Profile.",
+    "existingActivating": "Your subscription for this course is being activated.",
+    "existingActive": "You already have an active subscription for this course.",
     "opening": "Opening payment…",
     "confirming": "Confirming your payment…",
     "activating": "Payment received. Activating your course…",
@@ -74,6 +77,9 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "errorUnavailable": "Payments are temporarily unavailable. Please try again in a few minutes.",
     "receivedTitle": "Payment received",
-    "activatingNote": "Payment received. Your course will be active in a few minutes — no need to pay again."
+    "activatingNote": "Payment received. Your course will be active in a few minutes — no need to pay again.",
+    "stillActivating": "Your payment was received but the course is not active yet. Please do not pay again. Message us on WhatsApp and we will fix it.",
+    "contactSupport": "Get help on WhatsApp",
+    "supportMessage": "My payment went through but my {exam} course is not active yet."
   }
 }

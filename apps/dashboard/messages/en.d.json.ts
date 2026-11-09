@@ -256,6 +256,7 @@ declare const messages: {
     "unlockFullAccess": "Unlock Full Access",
     "unlockCourse": "Unlock {exam} course",
     "buyFullCourse": "Buy Full Course",
+    "renewCourse": "Renew plan",
     "priceNote": "₹{price} only • Subscription per month",
     "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only"
   },
@@ -348,6 +349,8 @@ declare const messages: {
     "nextPaymentLine": "Next payment: {amount}, {date}",
     "periodEnds": "Access until",
     "cancelledOn": "Cancelled on",
+    "renewPlan": "Renew plan",
+    "cancelledStillActive": "Autopay is cancelled. You keep access until the period you paid for ends.",
     "started": "Started",
     "paymentsMade": "Payments made",
     "empty": "No subscriptions yet",

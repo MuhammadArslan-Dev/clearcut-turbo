@@ -63,6 +63,9 @@ import PlanCard from "@/components/features/payment/PlanCard";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
 import { paymentHeadlineKey } from "@/lib/payment/paymentHeadline";
+import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
+import { waitForMandate } from "@/lib/payment/waitForMandate";
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "@/i18n/navigation";
 import React, { useCallback, useEffect, useMemo } from "react";
@@ -155,6 +158,9 @@ export default function InitiatedPage() {
   const [payError, setPayError] = React.useState<string | null>(null);
   // Synchronous double-tap guard for the pay button (state lags a render).
   const payBusyRef = React.useRef(false);
+  // Set while the "you already have a subscription" message is on screen before the redirect:
+  // the pay button must not start a second subscribe in that window.
+  const redirectScheduledRef = React.useRef(false);
 
   // Fetch Razorpay's checkout.js while the student reads the page, so the
   // tap only has to create the order (CC-60, D2: script only, no order).
@@ -164,6 +170,7 @@ export default function InitiatedPage() {
 
   const { allCourses = [] } = useMyActiveCourses();
 
+  const queryClient = useQueryClient();
   const datacourse = allCourses?.find((c) => c?.group_code === courseId);
   const data = datacourse?.exam;
 
@@ -589,18 +596,20 @@ export default function InitiatedPage() {
               tags: { module: "subscription-payment" },
               extra: { course_id: courseId, user_id: authUser?.id, status: existingStatus },
             });
-            setRedirecting(true);
-            if (existingStatus === "paused") {
-              alert("Your subscription for this course is paused. You can resume it from your Profile.");
-              router.push("/dashboard/profile");
-            } else {
-              alert(
-                existingStatus === "authenticated"
-                  ? "Your subscription is being activated for this course."
-                  : "You already have an active subscription for this course.",
-              );
-              router.push(`/preparation/${courseId}`);
-            }
+            // Phase 77: said in place instead of alert(), which in-app WebViews suppress (the student
+            // used to be redirected with no explanation). Redirect after a moment so it can be read.
+            // No setRedirecting(true) here: it swaps the whole page for the "Processing payment"
+            // spinner, which would hide this message.
+            redirectScheduledRef.current = true;
+            setPayError(
+              existingStatus === "paused"
+                ? checkoutT("existingPaused")
+                : existingStatus === "authenticated"
+                  ? checkoutT("existingActivating")
+                  : checkoutT("existingActive"),
+            );
+            const destination = existingStatus === "paused" ? "/dashboard/profile" : `/preparation/${courseId}`;
+            setTimeout(() => router.push(destination), 2500);
             return;
           }
         }
@@ -751,8 +760,16 @@ export default function InitiatedPage() {
             });
           }
           setRedirecting(true);
+          // Phase 77: access is granted by the backend's webhook, not by this handler. Wait (bounded)
+          // until the backend confirms the mandate, refresh every cached course/lock state, and only
+          // then show success. If it is not confirmed in time the success page opens in its
+          // "payment received, activating" state and keeps checking: it never claims access early.
+          const mandate = await waitForMandate(res.subscription.id);
+          await invalidateAfterPayment(queryClient);
           router.push(
-            `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}`,
+            `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}${
+              mandate === "pending" ? "&pending=1" : ""
+            }`,
           );
         },
         prefill: {
@@ -909,7 +926,7 @@ export default function InitiatedPage() {
     // order and fire AddPaymentInfo again (CC-60).
     // `loading`/`subscriptionLoading` stay on while a checkout is open or a
     // payment is being confirmed, so a tap then does nothing at all.
-    if (payBusyRef.current || loading || subscriptionLoading) return;
+    if (payBusyRef.current || redirectScheduledRef.current || loading || subscriptionLoading) return;
     payBusyRef.current = true;
     setPayError(null);
     trackFacebookEventWithUserData("AddPaymentInfo", buildMetaParams(selectedPrice));
@@ -1012,7 +1029,7 @@ export default function InitiatedPage() {
 
             <div className="w-full">
               <div className="heading-medium sm:text-center !font-semibold text-surface-gray-normal lg:heading-2xlarge">
-                {modalT(paymentHeadlineKey(source), { exam: examTitle })}
+                {modalT(paymentHeadlineKey(datacourse?.status === "expired" ? "plan_ended" : source), { exam: examTitle })}
               </div>
               <div className="body-small sm:text-center !font-normal text-surface-gray-muted lg:body-large">
                 {modalT("subtitle", { exam: examTitle })}
@@ -1132,7 +1149,7 @@ export default function InitiatedPage() {
                 strikePrice={`₹${ORIGINAL_AUTOPAY_PRICE}`}
                 subtitle={modalT("full_access_all_levels")}
                 badge={{
-                  label: modalT("best_for_new_students"),
+                  label: modalT(datacourse?.status === "expired" ? "best_value" : "best_for_new_students"),
                   placement: "ribbon",
                   tone: "info",
                 }}
