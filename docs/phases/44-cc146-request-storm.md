@@ -1,5 +1,7 @@
 # Phase 44 — Request storm on navigation (analytics/tracking)
 
+> **Update 2026-11-09:** CC-147 (`/events` 12 s) is continued in [phase 90](90-performance-events-gateway-and-slow-apis.md): it is the Meta CAPI gateway, infrastructure outside our repos (user checklist there).
+
 **Tickets:** CC-146 (Highest). Related, not in the list: CC-147 (Cloud Run /events), CC-148 (third-party tags)
 **Repos:** CM dashboard (+ landing), maybe ASTRO
 **Status:** Built + Playwright-tested (not committed). Clarity and the Meta CAPI gateway were left for now (user)

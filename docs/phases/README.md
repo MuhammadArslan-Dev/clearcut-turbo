@@ -123,7 +123,17 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 82 | [Test start + submit animations as overlays (modal / bottom sheet)](82-test-start-submit-overlays.md) | — | CM `packages/motion`, dashboard | Built + tested (mocked API). |
 | 83 | [Lesson Path loader — replaces the dashboard loader (one-switch revert)](83-lesson-path-loader-trial.md) | — | CM-dashboard | Approved by the user; live. Backup in `components/loader/legacy/`. |
 | 84 | [Onboarding + Enrollment animations adapted to the real screens](84-onboarding-enrollment-motion-previews.md) | — | CM-dashboard | Onboarding animation live on the real flow (revert: NEXT_PUBLIC_LEGACY_ONBOARDING=true); enrollment is preview-only. |
+| 85 | [Small UI fixes batch (dead taps, retry, labels)](85-small-ui-fixes-batch.md) | CC-175, CC-177, CC-176, CC-178, CC-90 | CM-dashboard | Not Started (plan approved 2026-11-09); CC-90 popup + CC-178 card are Blocked – Decision | User: which popup (CC-90), which card (CC-178); Clarity check after deploy |
+| 86 | [Paper/level step inside onboarding + all subjects by default](86-onboarding-paper-level-step.md) | CC-81 | CM-dashboard, BE? | Blocked – Decision | User: meaning of 'all subjects' in the selectedexam contract; backend change or not |
+| 87 | [Paid subscriptions stuck in `authenticated`](87-stuck-authenticated-subscriptions.md) | CC-117 | BE | In Progress (analysis; Razorpay checked read-only) | User: 38 subscription ids from prod SQL; approve dry-run before any repair |
+| 88 | ["Waiting for UPI approval" screen + auto status check](88-upi-waiting-screen.md) | CC-70 | CM-dashboard | Not Started (plan approved) | Real-phone UPI test by the user after build |
+| 89 | [Exam on every payment + correct acquisition source](89-payment-exam-data-and-acquisition-source.md) | CC-173, CC-171 | BE, CM | Blocked – Decision (read-only trace can start) | User: paid_at, Meta params, source default, cookie, backfills |
+| 90 | [Performance: /events gateway (infra) + slow backend APIs](90-performance-events-gateway-and-slow-apis.md) | CC-147, CC-149 | BE, CM-blog | Blocked – Decision | User: Meta/Cloud Run console steps, CACHE_LIMITER, index migration, TTLs |
+| 91 | [Money-path & Sentry triage](91-money-path-and-sentry-triage.md) | CC-49, CC-153 | BE, CM (small) | In Progress (CC-49: nothing stuck authorized in Razorpay) | User: Sentry alerts + fresh Sentry data; 2 small go/no-go answers |
+| 92 | [Guest mode A/B test — DESIGN ONLY](92-guest-mode-ab-test-design.md) | CC-179 | BE, CM | Blocked – Decision (no code this round) | User: OTP triggers, exam, guest model; CC-84 verified first |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).
 - 2026-11-06: added phase 83 (Lesson Path loader replaces the dashboard loader; approved).
+
+- 2026-11-09: added phases 85–92 (Arslan's Jira backlog after Rohit's re-ordering: small UI batch, onboarding level step, stuck subscriptions, UPI waiting screen, payment exam + source data, performance, money/Sentry triage, guest-mode design). Old docs 27/44/47/49/62/70 point to them.

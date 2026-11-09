@@ -1,7 +1,9 @@
 # Phase 70 — User-acquisition attribution (DB `users.metadata` + Amplitude)
 
+> **Update 2026-11-09:** remaining gaps (cookie first-touch, `unknown`/`referral`, `acquisition_channel`, backfill) are continued in [phase 89](89-payment-exam-data-and-acquisition-source.md) (CC-171).
+
 **Repos:** backend `clearcutoff-main-backend` (Laravel) + CM (`packages/auth`, landing, blog, tools). Dashboard / RN app are not auth consumers and are out of scope.
-**Status:** **Implemented and verified locally (2026-10-30); NOT committed, pushed or deployed.** Backend branch `feature/attribution` (worktree `clearcutoff-backend-attr`), frontend branch `feature/attribution` (worktree `clearcut-master-attr`).
+**Status:** **Implemented, verified and merged to `main`** (backend `961615f`, frontend `7f96638`; confirmed 2026-11-09). The branches `feature/attribution` and their worktrees no longer exist. Remaining gaps: phase 89.
 **Rule:** nothing goes live (backend deploy or Amplitude changes) without your approval. Deploy order: backend first (the new `attribution` field is optional), then the apps.
 
 ## 1. Request (summary)

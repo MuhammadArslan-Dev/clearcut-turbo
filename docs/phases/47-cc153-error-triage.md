@@ -1,5 +1,7 @@
 # Phase 47 — Triage production errors on money paths
 
+> **Update 2026-11-09:** CC-153 is continued in [phase 91](91-money-path-and-sentry-triage.md) (status refreshed; code-side items need a go/no-go).
+
 **Tickets:** CC-153 (High)
 **Repos:** read-only first (Sentry, Jira), then BE/CM fixes
 **Status:** Mapping done (2026-10-27). Every group is mapped; no new code needed. Open items: Razorpay reconciliation (user), Sentry alerts (user)
