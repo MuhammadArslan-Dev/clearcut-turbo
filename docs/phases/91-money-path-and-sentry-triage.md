@@ -4,7 +4,7 @@
 **Repos:** BE, CM (small); Sentry/Razorpay consoles are the user's
 **Branch:** `fix/cc-153-expected-404-breadcrumb` (frontend, item b, committed locally, not pushed); (c) and CC-49 alert: no branch, waiting for the user
 **Created / start date:** 2026-11-09
-**Status:** In Progress — CC-49: no code; CC-153 (b) built and unit-tested; CC-153 (c) and the CC-49 alert are `Blocked – Decision`
+**Status:** In Progress — CC-49: no code; CC-153 (b) built and unit-tested; CC-153 (c) built (see §5); the CC-49 alert stays `Blocked – Decision` (recommendation: no)
 **Continues:** phase 27 (CC-71/CC-59 one order per attempt, auto-capture) and phase 47 (CC-153 error triage, mapping done 2026-10-27)
 
 > Razorpay is strictly READ-ONLY. We never capture, refund or edit anything there.
@@ -41,7 +41,7 @@ Also seen: many recent UPI payments `Customer – Payment Timed Out` / `Created`
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
-| 2026-11-09 | 🛑 CC-153 (c) — free the soft-deleted account's `email`: touches account/auth data. Approve building it? Options: (a) yes, same hook pattern as `phone`; (b) leave. | open |
+| 2026-11-09 | CC-153 (c) — free the soft-deleted account's `email`: **built** (backend branch `fix/cc-153-free-deleted-email`, commit `f161fe0`): `User::releaseEmailOfDeletedAccounts`, called when a new account is created and when a live account changes its email; the deleted row keeps its data and its email becomes `x<id>-<original>` (cut to 255). 5 tests (MySQL scratch DB): 3 fail on the old code, all pass now; AccessAuthority/EventTracking tests still green. A LIVE account holding the same email is still a real duplicate (tested). Not verified: prod volume, and that no job emails a deleted account's address (CC-120 already skips deleted accounts). | user: "do what you recommend" |
 | 2026-11-09 | 🛑 CC-49 follow-up — add the alert-only `payment.authorized` sweep? (a) yes alert-only; (b) no, Razorpay shows none stuck. Recommendation: (b) for now, revisit if the list is ever non-empty. | open |
 
 ## 6. Blockers / risks
