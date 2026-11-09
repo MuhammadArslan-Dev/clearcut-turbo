@@ -2,9 +2,9 @@
 
 **Tickets:** CC-173 (High, queue 11) + CC-171 (High, queue 12) — two closely related data tasks (same goal: the team can judge ads per exam and per channel from our own data)
 **Repos:** BE, CM (`apps/dashboard` events, `packages/auth/src/attribution.ts`)
-**Branch:** `feature/payment-exam-and-source-data` — not created yet, not committed, not pushed (split into two branches if the decisions arrive separately)
+**Branch:** backend `feature/payment-exam-and-source-data` (commit `3d5194f`, not pushed); frontend: this docs branch only
 **Created / start date:** 2026-11-09
-**Status:** Blocked – Decision — read-only tracing can start; every behaviour change below waits for its 🛑 answer
+**Status:** In Progress — CC-173 additive event properties built and tested (backend); everything that changes behaviour (paid_at, Meta params, source default, cookie, backfills) waits for its 🛑
 **Supersedes / continues:** phase 62 (CC-136/CC-137 — "reported done, no code found") and phase 70 (acquisition attribution — **already merged to main**: backend `961615f`, frontend `7f96638`).
 
 > Both tasks touch money-adjacent and ad-optimisation data. Nothing is backfilled or deployed without approval; every backfill is dry-run first.
@@ -25,9 +25,23 @@
 **CC-171 already in main (phase 70):** `AttributionService` (sanitize, classify, locked merge into `users.metadata.attribution`; first_touch once, last_touch each verify), prefixed Amplitude `attribution_*`, frontend `packages/auth/src/attribution.ts`. **Gaps:** first-touch only in localStorage/sessionStorage (blog/dashboard origins are separate → lost); raw `fbclid/gclid` stored as `true` only; no `users.acquisition_channel`; `AuthController::login` still `'source' => $request->source ?? 'organic'` (l.282) and the DB default is `organic`; no `referral` class; mobile app/blog/Truecaller map to `other` not `unknown`; no Amplitude backfill; no Grafana changes; campaign ids not on transactions (overlaps phase 62). `users.source` is read by `User.php` (~l.164–184), Grafana and Meta lead flows.
 **Stale docs:** phase 70's "NOT committed" status and the Jira status are out of date (fixed in this change set).
 
+## 3a. Read-only trace result (2026-11-09; local DB copy = prod snapshot to 23 Sep / users to 29 Oct)
+- **Most likely cause of "blank exam on Payment Completed 28 Oct–5 Nov":** the server event (`PaymentAnalytics`, added 23–27 Oct, commits `d39e2eb`, `4a91041`, `c3ac332`) sent the exam only as `exam` (short name) and `course_id`; the client events and the dashboards use `exam_name`. So every server `Payment Completed` had no `exam_name`/`exam_id`/`transaction_id` property. The window matches the date the server events went live.
+- Secondary cause: `examName()` returns null when the group code has no enrolment row: 12 of 523 group codes behind successful payments (2.3%) have no row at all, even soft-deleted (rows hard-deleted by the old delete-and-recreate in `enrollExam`, replaced by in-place updates in phase 26); plus 1 successful transaction with no `group_code`. Too small to explain 19/83 in the last 30 days on its own; the prod number is unknown.
+- **No `group_code` spans two exams (0 of 523)** → the exam can safely be derived from the group code. Mix of successful transactions: 684 subscription + 114 one-time.
+- `u_exam_enrollments.purchase_id` is set on **0 of 14,241** rows (never used). All 114 one-time successful transactions in the snapshot have `paid_at` NULL (old rows; the current code writes `paid_at = now()` in `activateEnrollment`) → check on prod.
+- **CC-171, `users.source` today (local snapshot, before phase 70 data):** 17,379 `organic`, 597 `meta_lead`, nothing else; the column default is `organic`; no user has `metadata.attribution` yet (the snapshot predates phase 70). Matches the ticket.
+- **Correction to my earlier note:** `AttributionService::channel()` already has `referral` (another site) next to `search` / `direct` / platform names; only `users.source` has no `referral`/`unknown`. And `source()` maps `app=landing` → `paid` for ANY landing OTP (not only ad clicks), `tools` → `organic`, everything else (blog, app, Truecaller) → `other`; `users.source` is only overwritten once, from `organic`, by `paid`/`organic` (`record()` l.345).
+
+## 4a. Built (2026-11-09, backend commit `3d5194f`) — additive only
+- `PaymentAnalytics::send` now ADDS `exam_name`, `exam_id` (the real exam id) next to `exam` and `course_id`; the exam comes from the caller when known (`activateEnrollment` passes its `$examId`), else from the enrolment of the group code. A property a caller already set is never overridden (`statusChanged` keeps its group-code `exam_id` as before).
+- `Payment Completed` also carries `transaction_id` (= `transactions.uuid`): one-time from `activateEnrollment`, autopay first charge and renewals from the Razorpay payment id.
+- 6 tests (`PaymentAnalyticsExamTest`, MySQL scratch DB): 4 fail on the old code, all 6 pass now; `AmplitudeServiceTest`, `AccessAuthorityTest`, `EventTrackingServiceTest`, `RazorpayWebhookBackfillTest` still green (70 passed); pint clean. No migration, no new event name.
+- Not done yet: the client `Payment Initiated/Outcome` `transaction_id` (the create-order response only returns the integer id; sending the uuid needs one additive field in `POST /v2/payment/create`), `purchase_id`, Meta params, `paid_at`, all CC-171 work, backfills.
+
 ## 4. Implementation plan
-- [ ] 1. **Read-only trace** of every payment flow to find where the exam is not resolved: one-time (`PaymentController::createPayment`, `PaymentService::activateEnrollment`), autopay (`SubscriptionService::createSubscription`, `handleRenewalSuccess`), QR path, client events. Reuse `PaymentAnalytics::examName`. Output: the list of flows behind the 19/83 blanks, written here.
-- [ ] 2. BE: add `exam_id`, `exam_name`, `transaction_id` (= `transactions.uuid`) to `PaymentAnalytics::send` props; set `purchase_id` on one-time; fix the misleading `statusChanged` `exam_id`.
+- [x] 1. **Read-only trace** of every payment flow to find where the exam is not resolved: one-time (`PaymentController::createPayment`, `PaymentService::activateEnrollment`), autopay (`SubscriptionService::createSubscription`, `handleRenewalSuccess`), QR path, client events. Reuse `PaymentAnalytics::examName`. Output: the list of flows behind the 19/83 blanks, written here.
+- [x] 2a. BE: add `exam_id`, `exam_name`, `transaction_id` (= `transactions.uuid`) to the `Payment Completed` props (done, see 4a). [ ] 2b. set `purchase_id` on one-time (nothing reads it today; wait for the user's call); the misleading `statusChanged` `exam_id` (group code) is left as is, a dashboard may rely on it (🛑 below).
 - [ ] 3. CM: add `transaction_id`/`exam_id` to the existing `Payment Initiated`/`Payment Outcome` payloads (`src/lib/analytics/events/monetization.ts`). No new event names (DEVELOPMENT_RULES §2.5).
 - [ ] 4. Meta Purchase: `content_category` (exam short name) + `content_ids` via `MetaPurchaseService::payload`; **`event_id` unchanged**.
 - [ ] 5. CC-171: cookie helper in `packages/auth/src/attribution.ts` (domain `.clearcutoff.in`, first-touch only, 30 days, never overwritten); keep raw click ids; `referral` + `unknown` in `AttributionService::classify`; default `unknown` in `AuthController::login`; migration `users.acquisition_channel`; raw values in `metadata.acquisition`.
@@ -37,6 +51,8 @@
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
+| 2026-11-09 | 🛑 **`statusChanged` sends the group code as `exam_id`** while `Payment Completed` now sends the real exam id under the same name. Options: (a) leave (no dashboard breaks; the name means two things); (b) rename the old one to `course_id` / keep both for a while. Recommendation (a) until someone checks which charts use it. | open |
+| 2026-11-09 | 🛑 **Client events `transaction_id`**: add `transaction_uuid` to the `POST /v2/payment/create` answer (additive) so `Payment Initiated/Outcome` can send it? | open |
 | 2026-11-09 | 🛑 **`paid_at` = gateway capture time instead of webhook time?** Behaviour change for date-based payment reports. Options: (a) change + backfill last 90 days from `webhook_logs`/entity `created_at`; (b) keep, document the delay. | open |
 | 2026-11-09 | 🛑 **Meta Purchase params (`content_category`, `content_ids`)** can shift ad optimisation/attribution in Meta. Options: (a) add (recommended, `event_id` unchanged, test code in Events Manager first); (b) skip. | open |
 | 2026-11-09 | 🛑 **Default `users.source` → `unknown` (never `organic`)** reclassifies only new users; Grafana/Meta-lead logic reads this column (`meta_lead` must stay protected). Options: (a) change default + `referral`/`unknown` rules (recommended); (b) keep `organic` default and add only `acquisition_channel`. | open |
@@ -52,7 +68,7 @@
 Migration `users.acquisition_channel` (only if the source decision is approved). No new packages. No `transactions` migration.
 
 ## 8. Tests and verification
-- [ ] BE + CM tests; [ ] Playwright/real-phone check of first-touch cookie across landing → academy → app (user)
+- [x] BE tests for 4a (see above); [ ] CM tests; [ ] Playwright/real-phone check of first-touch cookie across landing → academy → app (user)
 - [ ] After deploy (user): last-7-days payments 100% carry exam in Amplitude; Amplitude vs DB successful payments within 5%; shared SQL "payments by exam × campaign" (from phase 62 acceptance)
 
 ## 9. Next steps
