@@ -18,6 +18,7 @@ import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import Text from "@clearcut/ui/text";
 import { clearAttempt, getAttemptStatus } from "@/lib/payment/paymentAttempt";
 import { trackFacebookEventOnce } from "@/lib/analytics/facebook-pixel";
+import { metaContentParams } from "@/lib/payment/payment";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
 
@@ -64,6 +65,7 @@ export default function Success() {
             currency: meta.currency,
             amount_paid: meta.amount_paid,
             ...(meta.plan ? { plan: meta.plan } : {}),
+            ...metaContentParams(meta),
           },
           meta.event_id,
         );

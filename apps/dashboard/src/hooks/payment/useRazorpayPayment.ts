@@ -16,6 +16,7 @@ import {
 } from "@/lib/payment/metaPurchaseConfig";
 import {
   createOrder,
+  metaContentParams,
   PaymentType,
   pollVerifyPaymentResult,
   type VerifyPollResult,
@@ -163,6 +164,7 @@ export function useRazorpayPayment({
                 currency: meta.currency,
                 amount_paid: meta.amount_paid,
                 ...(meta.plan ? { plan: meta.plan } : {}),
+                ...metaContentParams(meta),
               },
               meta.event_id,
             );
@@ -170,6 +172,7 @@ export function useRazorpayPayment({
           trackEvent("Payment Outcome", {
             outcome: "payment_successful",
             billing_type: "one_time",
+            ...(attempt.transactionUuid ? { transaction_id: attempt.transactionUuid } : {}),
             final_price: Number(meta?.amount_paid ?? 0),
             payment_session_id: String(status.transaction_id ?? attempt.transactionId),
             confirmed_via: "return_check",
@@ -273,8 +276,11 @@ export function useRazorpayPayment({
         }
         throw error;
       }
+      // CC-173: the order's public id, named on the one-time events below and kept with the saved attempt.
+      const txProps = order.transaction_uuid ? { transaction_id: order.transaction_uuid } : {};
       saveAttempt({
         transactionId: order.transaction_id,
+        transactionUuid: order.transaction_uuid,
         examId,
         price: Number(price),
         ...(orderSource ? { source: orderSource } : {}),
@@ -360,6 +366,7 @@ export function useRazorpayPayment({
             trackPaymentEvent("Payment Outcome", {
               outcome: "payment_successful",
               billing_type: "one_time",
+              ...txProps,
               final_price: Number(price),
               payment_session_id: response.razorpay_payment_id,
               ...funnelProps,
@@ -399,6 +406,7 @@ export function useRazorpayPayment({
                     currency: meta.currency,
                     amount_paid: meta.amount_paid,
                     ...(meta.plan ? { plan: meta.plan } : {}),
+                    ...metaContentParams(meta),
                   },
                   meta.event_id,
                 );
@@ -428,6 +436,7 @@ export function useRazorpayPayment({
             trackEvent("Payment Outcome", {
               outcome: "payment_failed",
               billing_type: "one_time",
+              ...txProps,
               final_price: Number(price),
               failure_reason: "verification_failed",
               payment_session_id: response.razorpay_payment_id,
@@ -469,6 +478,7 @@ export function useRazorpayPayment({
             trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",
               billing_type: "one_time",
+              ...txProps,
               final_price: Number(price),
               exam_name: examName,
               failure_reason: "cancelled",
@@ -497,6 +507,7 @@ export function useRazorpayPayment({
         trackPaymentEvent("Payment Outcome", {
           outcome: "payment_failed",
           billing_type: "one_time",
+              ...txProps,
           final_price: Number(price),
           exam_name: examName,
           failure_reason: getPaymentFailureReason(error),
@@ -518,7 +529,7 @@ export function useRazorpayPayment({
       razorpay.open();
       checkoutOpened = true;
       setPhase("idle");
-      trackPaymentEvent("Checkout Opened", { billing_type: "one_time", ...funnelProps });
+      trackPaymentEvent("Checkout Opened", { billing_type: "one_time", ...txProps, ...funnelProps });
     } catch (error) {
       console.error(error);
       reportError("unknown");

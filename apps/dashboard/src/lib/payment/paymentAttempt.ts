@@ -10,6 +10,8 @@ import type { MetaPurchase } from "./payment";
  */
 export type PaymentAttempt = {
   transactionId: number;
+  /** The order's public id (CC-173), when the backend sent it. */
+  transactionUuid?: string;
   examId: number;
   at: number;
   /** What was actually charged and where the order came from, for the return check. */
