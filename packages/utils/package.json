@@ -9,6 +9,7 @@
   "exports": {
     "./analytics-hosts": "./src/analytics-hosts.ts",
     "./build-metadata": "./src/build-metadata.ts",
+    "./first-touch-cookie": "./src/first-touch-cookie.ts",
     "./highlight-text": "./src/highlight-text.tsx",
     "./meta-geo": "./src/meta-geo.ts",
     "./meta-fbc": "./src/meta-fbc.ts",
