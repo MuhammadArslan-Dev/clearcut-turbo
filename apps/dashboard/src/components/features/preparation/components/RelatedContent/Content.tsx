@@ -354,10 +354,11 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
                             color="gray-muted"
                           >
                             {t("notes.meta.language")}:{" "}
+                            {/* A label, not a control (CC-178): neutral, so it no longer looks like the blue buttons below it. */}
                             <StatusChip
-                              variant="outline"
-                              tone="info"
-                              className="!text-brand !bg-brand/7 body-xsmall !font-normal !py-0.5"
+                              variant="soft"
+                              tone="neutral"
+                              className="body-xsmall !font-normal !py-0.5"
                               label={filterNotes?.language === "en" ? "English" : "Hindi"}
                             />
                           </Text>
