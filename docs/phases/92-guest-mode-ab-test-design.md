@@ -4,7 +4,7 @@
 **Repos:** BE (largest piece), CM (`apps/landing`, `apps/dashboard`, `packages/auth`)
 **Branch:** none — documentation only this round
 **Created / start date:** 2026-11-09
-**Status:** Blocked – Decision — the user chose "phase file + plan only, no code" (2026-11-09)
+**Status:** Blocked – Decision — design only (user's choice, 2026-11-09); backend spike added (4a); waiting for the 🛑 answers below
 
 ---
 
@@ -31,6 +31,15 @@ Ad visitors must give phone + OTP **before** seeing anything. In 90 days about 1
 6. Auth UI: reusing `packages/auth` `AuthModal`/`LoginCopy` in the dashboard breaks the "dashboard is a partial consumer, never import `@clearcut/auth`" rule → needs a deliberate exception.
 7. Analytics: add a `guest_mode` property to existing events (DEVELOPMENT_RULES §2.5), no new event names. Ticket events: `guest_started`, `otp_prompt_shown` (which action), `otp_verified`.
 
+## 4a. Backend spike (read-only, 2026-11-09) — sizes the biggest risk
+Counted from `php artisan route:list` on current `main` (no code run, nothing changed):
+- Of **249** `api/v1` + `api/v2` routes, **158 need login** (`auth:sanctum`).
+- **Everything the learning screens call needs login and is keyed on the student's own enrolment `group_code`:** `v2/preparation/get-course/{courseId}`, `get-sections/{course_id}`, `get-section-chapters`, `get-all-levels`, `get-instances`, `get-pyqs`, `instance-questions`, `instance-sections`, `note-url/{id}`, `download-note/{id}`; `v2/daily-tests/{course}/…/start|submit|result|history`; `v2/enrollment/*`; `v2/payment/create`. A guest has no enrolment, so none of these can answer today.
+- **Already public and reusable for browsing:** `v1/exam/allexams`, `v1/exam/all-levels/{id}` (paper/subject tree), `v1/get-sections/{id}`, `v1/test/all-tests/{id}`, the blog's `blog/get-sections` + `blog/get-questions*`, and `tools/syllabus/*` (exams, levels, syllabus tree; the Syllabus Tracker already reads it anonymously).
+- Not present as a route here: video (no `video` route in the API list; video is probably served from the front end / CMS) — to confirm with the user.
+- Consequence for the 🛑 "guest model" below: **(a) public read endpoints** can reuse the public tree + blog endpoints for BROWSING (syllabus, chapter list, sample questions) at low cost, but **notes download, test start and results need new guest-safe endpoints** (a guest has no `group_code`; the content would have to be addressed by exam/stage/section instead). **(b) an anonymous Sanctum user** keeps all 158 routes working unchanged but needs: a server-created throw-away user + enrolment per visitor (DB growth, abuse/bot risk, cleanup job, rate limits), a merge at OTP, and care that Meta/Amplitude/CAPI events and counts do not treat guests as signups. Recommendation: **(a) for browsing + (b-lite) only at the moment a guest taps a key action** — i.e. the OTP gate runs BEFORE any enrolment is created, so no anonymous users are ever stored.
+- Cheapest first prototype (still design, not built): the landing button opens the dashboard's **public syllabus/levels view** (the data the Syllabus Tracker already uses) with guest choices kept in a cookie, and the OTP gate on "download notes / start test / play video" using the same `onAuthenticated` pattern as the tools `ToolsAuthGate`. This needs **zero new backend endpoints** for the first A/B arm and tests the real question: do visitors who see content first convert better?
+
 ## 5. Proposed phased breakdown (when approved)
 P0 decision + backend spike (public endpoints vs anonymous user; OTP trigger list) → P1 flag (`guest_mode`, keyed on a device/landing scope id like tools) + `useGuest()` fail-open → P2 OTP gate on notes / test start / video with resume-after-login → P3 guest→user merge (attribution, Amplitude id merge, pixel re-init via `trackFacebookEventWithUserData`, onboarding) → P4 metrics/dashboards/rollout. Feasibility medium-high; a prototype is possible with the anonymous-user option + a flag; full guest browsing is multi-week and mostly backend.
 
@@ -52,4 +61,4 @@ P0 decision + backend spike (public endpoints vs anonymous user; OTP trigger lis
 None (design only).
 
 ## 9. Next steps
-Nothing until the user answers the 🛑 items and CC-84 is verified.
+Nothing is built. When the user answers the 🛑 items AND CC-84 is verified (Jira: Testing, Ganesh), the first step is the zero-new-endpoint prototype in 4a behind a flag keyed on a landing-scope id. Not checked here: Jira status today, video serving, how Clarity's "signup loop" splits by browser, and the real share of ad sessions that would reach a key action.
