@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Before Any Task
 
-**Read `docs/DEVELOPMENT_RULES.md` first, before starting any task**, and follow it (reuse existing components/tokens, no new colours/patterns, i18n in en/hi/mr, verification workflow). Update it when you discover a new reusable pattern or convention.
+**Read `docs/DEVELOPMENT_RULES.md` first, before starting any task**, and follow it (reuse existing components/tokens, no new colours/patterns, i18n in en/hi/mr, verification workflow). Update it when you discover a new reusable pattern or convention. **Before reporting any change as done, run the break-it pass in `docs/DEVELOPMENT_RULES.md` §8.1.**
 
 ## Git Workflow (permanent, all repos — frontend, backend, tools-backend, CMS, RN app, Astro)
 
@@ -176,6 +176,8 @@ Each app imports the shared tokens **first** so its own later definitions win th
 ## Testing
 
 Vitest, per-package (`vitest.config.ts` + `"test": "vitest run"` script) — not a single root test runner. `packages/utils` and `packages/state` have tests; `apps/blog` gained a minimal Vitest setup 2026-10-16 (its own `vitest.config.ts` with a `"@"` alias, since Vite doesn't read `tsconfig.json` paths) for `lib/sitemap/build-questions-sitemap-xml.test.ts` — see `docs/DEVELOPMENT_RULES.md` §10 before adding a second test file there. Every other package and the other three apps still have none. `pnpm test` (via `turbo run test`) runs whichever packages define the script and skips the rest — this is expected, not a misconfiguration.
+
+**Verification is client-style, not happy-path:** test dead taps, retry request counts, double taps, failing networks, en/hi/mr at 390px, numbers against the DB, analytics, other callers of anything shared, and (backend) another user's token, duplicates and invalid input — see `docs/DEVELOPMENT_RULES.md` §8.1 for the checklist and the "Not verified:" reporting rule. Fix a defect class once, then add it to that list.
 
 ## CI
 

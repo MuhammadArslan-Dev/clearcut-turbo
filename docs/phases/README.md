@@ -131,9 +131,11 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 90 | [Performance: /events gateway (infra) + slow backend APIs](90-performance-events-gateway-and-slow-apis.md) | CC-147, CC-149 | BE, CM-blog | Blocked – Decision | User: Meta/Cloud Run console steps, CACHE_LIMITER, index migration, TTLs |
 | 91 | [Money-path & Sentry triage](91-money-path-and-sentry-triage.md) | CC-49, CC-153 | BE, CM (small) | In Progress (CC-49: nothing stuck authorized in Razorpay) | User: Sentry alerts + fresh Sentry data; 2 small go/no-go answers |
 | 92 | [Guest mode A/B test — DESIGN ONLY](92-guest-mode-ab-test-design.md) | CC-179 | BE, CM | Blocked – Decision (no code this round) | User: OTP triggers, exam, guest model; CC-84 verified first |
+| 93 | [Client-style testing methodology (the break-it pass)](93-client-style-testing-methodology.md) | — | CM docs | Completed (docs only) | User: Co-Authored-By trailer rule, optional backend CLAUDE.md pointer, optional i18n parity script |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).
 - 2026-11-06: added phase 83 (Lesson Path loader replaces the dashboard loader; approved).
 
 - 2026-11-09: added phases 85–92 (Arslan's Jira backlog after Rohit's re-ordering: small UI batch, onboarding level step, stuck subscriptions, UPI waiting screen, payment exam + source data, performance, money/Sentry triage, guest-mode design). Old docs 27/44/47/49/62/70 point to them.
+- 2026-11-09: added phase 93 (client-style testing methodology; DEVELOPMENT_RULES §8.1, CLAUDE.md pointer, template checklist).

@@ -36,6 +36,9 @@ New npm/composer packages, env vars, migrations, third-party services. "None" if
 
 ## 8. Tests and verification
 Commands run and results (`tsc`, `eslint`, `check:colors`, feature tests, Playwright viewports/locales). Unticked box = not done.
+- [ ] Baseline measured on the OLD code (CLS / request count / dead taps / the failing request)
+- [ ] Break-it pass done (DEVELOPMENT_RULES §8.1): dead taps · retry = +1 request · double tap · network failures · en/hi/mr at 390px · numbers vs DB · analytics · other callers of shared code · (backend) second user's token, duplicates, invalid input
+- [ ] **Not verified:** (list what was not checked and what only the user can check)
 - [ ] 
 
 ## 9. Next steps
