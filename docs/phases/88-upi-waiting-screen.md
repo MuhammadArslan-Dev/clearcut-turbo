@@ -2,9 +2,9 @@
 
 **Tickets:** CC-70 (High, queue 04)
 **Repos:** CM (`apps/dashboard`); BE read-only (existing status endpoints are enough)
-**Branch:** `feature/upi-waiting-screen` — not created yet, not committed, not pushed
+**Branch:** `feature/upi-waiting-screen` — committed locally, not pushed
 **Created / start date:** 2026-11-09
-**Status:** Not Started — plan approved 2026-11-09
+**Status:** In Progress — detection part built behind a flag (default OFF); the waiting/options screen is `Blocked – Decision`
 
 > Payment path = money-critical. Behind an Amplitude flag so it can be switched off without a deploy. Razorpay stays read-only.
 
@@ -27,11 +27,18 @@ Today: one-time `src/hooks/payment/useRazorpayPayment.ts` (return check via `pag
 
 ## 4. Progress / completed changes
 - 2026-11-09 — phase file written; code read only.
+- 2026-11-09 — **built (detection part, flag `upi_waiting_watch`, default OFF → today's behaviour):**
+  - `lib/payment/pendingWatch.ts` — framework-free watch: polls every 4 s while the page is visible, re-checks at once when it becomes visible, never overlaps two checks, survives a failing check, "slow" after 2 min, gives up after 15 min. 6 Vitest tests (fake clock) pass.
+  - `lib/experiments/upiWaitingFlag.ts` — Amplitude flag `upi_waiting_watch`, ON only for variant `on`, never throws.
+  - `hooks/payment/useRazorpayPayment.ts` — after `razorpay.open()`, with the flag on, polls `getAttemptStatus(order.transaction_id)`; when paid it closes the Razorpay popup, runs the SAME success steps as the CC-59 return check (extracted unchanged into `reportPaidFromAttempt`, `confirmed_via` is now `return_check` or `upi_wait_watch`) and calls `onSuccess`. Stops on handler / dismiss / payment.failed; if the watch already confirmed, a late Razorpay `handler` returns early (no double success, no double Purchase). The in-flight guard is untouched.
+  - `lib/analytics/events/monetization.ts` — `confirmed_via` also accepts `upi_wait_watch` (existing event, new property value; no new event name).
+  - Autopay (`waitForMandate`, `payment/initiated`) NOT touched in this step.
 
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
-| — | none open now. A 🛑 will be added if a UX/business choice appears (e.g. wording of the 2-minute options, whether "pay once" is offered for one-time attempts). | — |
+| 2026-11-09 | 🛑 **Where can the "waiting" screen + 2-minute options show?** Razorpay's popup is an iframe at the top of the page, so while it is open our page cannot show anything above it (we cannot beat its z-index). Our screen is only visible after the popup is closed or in the in-app-browser redirect mode (page reloads, attempt still pending). Options: (a) show the waiting sheet only in those two situations (safe, but not while the popup is open); (b) at 2 min, close the popup on purpose and show our sheet — but `ondismiss` would then call `closeAttempt`, so a late UPI payment must still be found by the watch (needs care, more risk); (c) leave the popup alone and rely on detection only (what is built now). Recommendation: (c) now, (a) next. | open |
+| 2026-11-09 | 🛑 Autopay path (`waitForMandate`, 20 s) — extend with the same watch in a later step? | open |
 
 ## 6. Blockers / risks
 - Risk: medium (UI beside the payment flow). Real UPI timing (7–22 min), FB/IG in-app browsers (phase 27's open real-phone test) and whether Razorpay keeps its modal alive in the background **cannot be verified from code** — needs the user's real-phone UPI test.
@@ -40,8 +47,16 @@ Today: one-time `src/hooks/payment/useRazorpayPayment.ts` (return check via `pag
 None. New i18n keys; one Amplitude flag key.
 
 ## 8. Tests and verification
-- [ ] tsc / eslint / `check:colors`; unit test of the hook timing (fake timers: 3 s polls, 120 s options, 15 min stop)
-- [ ] Playwright (Sonnet) with mocked `attempt-status`: pending → paid → success page; 2-min options; tab hidden/visible re-check; en/hi/mr; mobile 390
+- [x] tsc 93 errors = clean `main` 93 (no new); eslint `useRazorpayPayment.ts` 2/0 before and after, new files 0/0; `check:colors` passes; `pendingWatch.test.ts` 6 passed (poll, no overlap, hidden/visible re-check, failing check, 2 min slow / 15 min stop, stop())
+- [x] **Browser test (Chrome, local dashboard `payment/initiated?plan=1year`, 2026-11-09).** `window.Razorpay`, `/v2/payment/create`, `attempt-status` and the Amplitude flag were stubbed inside the page, so nothing reached Razorpay or the backend:
+  - flag ON, pending: 1 order, 1 flag fetch, 5 status polls in ~20 s (one per ~4 s);
+  - then paid: found by the very next poll (+1), popup closed once, ONE navigation to `/payment/success`, saved attempt cleared, polling stopped (8 → 8 over the next 9 s);
+  - a late Razorpay `handler` after that did nothing (push 1→1, status 8→8, create 1→1): no double success;
+  - flag OFF, triple tap: 1 order, 1 popup, 0 status polls (today's behaviour unchanged);
+  - flag ON, popup dismissed: polling stopped (2→2 over 10 s), `closeAttempt` called once, 1 order.
+  - Note (not mine): the success URL carries `source=null` when the page has no `source` param — existing code at `payment/initiated/page.tsx` l.406.
+  - Lesson: the flag cache lives in `sessionStorage` under `cc-flag:<flag>:<user>` (10 min), clear it between flag scenarios.
+- [ ] **Not verified:** a failing/500 `attempt-status` in the browser (covered only by the unit test), tab hidden then visible in the browser, hi/mr and 390px (no new UI was added), `payment.failed` event, redirect mode in an FB/IG browser, Meta Purchase / `Payment Outcome` payload (analytics disabled locally), real UPI on a phone, and the other callers of the hook (`MainPaywall`, `PreparationPaywall`, `full-course-payment-modal`, `useAutopayFallback`: same hook, flag decides, but not opened one by one).
 - [ ] User: real-phone UPI test inside FB/IG browser and Chrome
 
 ## 9. Next steps
