@@ -48,7 +48,15 @@ None. New i18n keys; one Amplitude flag key.
 
 ## 8. Tests and verification
 - [x] tsc 93 errors = clean `main` 93 (no new); eslint `useRazorpayPayment.ts` 2/0 before and after, new files 0/0; `check:colors` passes; `pendingWatch.test.ts` 6 passed (poll, no overlap, hidden/visible re-check, failing check, 2 min slow / 15 min stop, stop())
-- [ ] **Not verified yet:** the wiring in a real browser (stub `window.Razorpay`, mock `attempt-status` pending → paid, check one `Payment Outcome`, one `onSuccess`, popup closed, flag OFF = zero extra requests, flag ON request count ≈ 1 per 4 s, double tap still creates one order); Playwright MCP is not connected in this session.
+- [x] **Browser test (Chrome, local dashboard `payment/initiated?plan=1year`, 2026-11-09).** `window.Razorpay`, `/v2/payment/create`, `attempt-status` and the Amplitude flag were stubbed inside the page, so nothing reached Razorpay or the backend:
+  - flag ON, pending: 1 order, 1 flag fetch, 5 status polls in ~20 s (one per ~4 s);
+  - then paid: found by the very next poll (+1), popup closed once, ONE navigation to `/payment/success`, saved attempt cleared, polling stopped (8 → 8 over the next 9 s);
+  - a late Razorpay `handler` after that did nothing (push 1→1, status 8→8, create 1→1): no double success;
+  - flag OFF, triple tap: 1 order, 1 popup, 0 status polls (today's behaviour unchanged);
+  - flag ON, popup dismissed: polling stopped (2→2 over 10 s), `closeAttempt` called once, 1 order.
+  - Note (not mine): the success URL carries `source=null` when the page has no `source` param — existing code at `payment/initiated/page.tsx` l.406.
+  - Lesson: the flag cache lives in `sessionStorage` under `cc-flag:<flag>:<user>` (10 min), clear it between flag scenarios.
+- [ ] **Not verified:** a failing/500 `attempt-status` in the browser (covered only by the unit test), tab hidden then visible in the browser, hi/mr and 390px (no new UI was added), `payment.failed` event, redirect mode in an FB/IG browser, Meta Purchase / `Payment Outcome` payload (analytics disabled locally), real UPI on a phone, and the other callers of the hook (`MainPaywall`, `PreparationPaywall`, `full-course-payment-modal`, `useAutopayFallback`: same hook, flag decides, but not opened one by one).
 - [ ] User: real-phone UPI test inside FB/IG browser and Chrome
 
 ## 9. Next steps
