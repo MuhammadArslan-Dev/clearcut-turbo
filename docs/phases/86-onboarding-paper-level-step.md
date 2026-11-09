@@ -2,9 +2,9 @@
 
 **Tickets:** CC-81 (Medium, queue 10)
 **Repos:** CM (`apps/dashboard`), BE only if the `selectedexam` contract needs it (decision below)
-**Branch:** `feature/onboarding-level-step` — not created yet, not committed, not pushed
+**Branch:** `feature/onboarding-level-step` — created from `main`, docs only so far
 **Created / start date:** 2026-11-09
-**Status:** Blocked – Decision — backend contract for "all subjects by default" must be read and confirmed first
+**Status:** Blocked – Decision — backend contract READ (2026-11-09): "all subjects by default" is not possible; the user must choose how to shorten the flow (see §5)
 
 > Start only after phase 85 and the money phases (87, 88). Nothing implemented.
 
@@ -27,11 +27,18 @@ Today: `features/onboarding/OnboardingWizard.tsx` has two steps (`LanguageStep`,
 
 ## 4. Progress / completed changes
 - 2026-11-09 — phase file written; code read only.
+- 2026-11-09 — **step 1 done (read-only, nothing changed): the backend contract.**
+  - `POST /v1/exam/selectedexam` (`ExamController::enrollExam`) validates `exam_id` + `selections` (min 1). Each entry of `selections` is a **path of navigation ids**; one enrolment row is written per entry (updated in place if the exam row exists, group_code kept) and its `stage_id` = the LAST id of the path. The key of each entry is arbitrary.
+  - Content hangs ONLY on leaf navigation nodes: `getOrderedSections($stageId)` reads `mapping_navigation_sections` where `navigation_id = stageId`. A paper (root) that has children has 0 sections → a root-only selection would give an EMPTY course.
+  - The leaves are **alternatives**, not parts of one course (local DB, `e_navigations` + `mapping_navigation_sections`): CTET Paper 1 = 3 language combinations (leaf = 5 sections each); CTET Paper 2 = 3 combinations × {Social Studies, Maths and Science} = 6 tracks; HTET Level 1 = leaf itself (6 sections), Level 2 = 12 subjects, Level 3 = 21 subjects. Exams with more than one paper: 7 of 10 largest; CTET 6068 and HTET 5617 enrolments.
+  - So **"select all subjects by default" cannot be built as written**: sending every leaf would create 6–21 enrolment rows per student (different course data, access, counts, analytics) and a root-only stage gives nothing. What CAN be moved is the same choice (paper → combination/subject) into onboarding.
+  - `POST /v2/enrollment/create` (unchanged) creates the row (status `trial`, dates, `active_level`) with `stage_id` null for multi-leaf exams; `selectedexam` then updates that row in place — exactly what the existing modal does today. **No backend change is needed** if onboarding calls `create` and then `selectedexam` with the chosen path; if the second call fails the student is still enrolled and sees today's "विषय जोड़ें".
 
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
-| 2026-11-09 | 🛑 **What does "select all subjects by default" mean in the backend?** Options: (a) send every leaf path in `selections` (no backend change, bigger payload, depends on tree depth per exam); (b) backend accepts a paper-only selection and treats it as "all subjects" (backend change + migration of meaning for `stage_id`); (c) keep subject choice but pre-tick all in the existing modal. Recommendation after reading the handler: decided with the user. Nothing built until answered. | open |
+| 2026-11-09 | 🛑 **How do we shorten the flow, given "all subjects" does not exist?** Options: **(A) Move the whole existing choice into onboarding** (paper → combination/subject, same UI as the "add subject" modal, auto-skip a step with one option), then `create` + `selectedexam`, land on `/preparation/{group_code}?subject_selected=1` — saves the "विषय जोड़ें" tap, the modal, "Start Learning"; no backend change; choices unchanged. **(B)** Move only the paper — saves little, subject modal still follows. **(C)** Send every leaf (rejected: 6–21 rows, changes what a student owns). **(D)** Pre-select a default leaf, e.g. the most chosen one (silent wrong content for many; needs a business decision and data from the user). Recommendation: **(A)**, behind an Amplitude flag. | open |
+| 2026-11-09 | 🛑 If (A): where does the subject choice sit for HTET Level 3 (21 subjects) — a plain list on the onboarding card, or a searchable list? (UI/UX choice for the user.) | open |
 
 ## 6. Blockers / risks
 - HTET vs CTET have different tree depths; language and `exam_content_language` handling differ (see `EditCourseModal`).
@@ -46,4 +53,4 @@ None expected. Possibly one backend change (see §5).
 - [ ] After deploy (user): onboarding completion > 90%, onboarding → content same day rises (Amplitude)
 
 ## 9. Next steps
-After the 🛑 answer: implement behind a flag on branch `feature/onboarding-level-step`.
+After the 🛑 answer (recommended A): implement behind a flag on branch `feature/onboarding-level-step`: new `LevelStep` in `OnboardingWizard` (levels prefetched in `ExamStep` via `prefetchLevels`, reuse the modal's selection UI), `create` then `selectedexam`, then redirect; analytics `step_name: "level_selection"` on the existing `Onboarding Step Completed`; test 1-root and multi-root exams, en/hi/mr, 390 px, back button, failing second call.
