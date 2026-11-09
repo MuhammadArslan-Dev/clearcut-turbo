@@ -38,6 +38,9 @@ type QOptionProps = {
   counter?: CounterProps;
   mainContainer?: MainContainerProps;
   quesClass?: string;
+  /** Opt-in: instant pressed feedback + no 300 ms tap delay. Off by default so the
+   *  other QOption users (exam, daily test, weekly test, modals) render unchanged. */
+  pressable?: boolean;
 
   onClick?: () => void;
 };
@@ -58,6 +61,7 @@ function QOption({
     bordercolor: "!border-[var(--border-gray-muted)]",
   },
   counter,
+  pressable,
   onClick,
 }: QOptionProps) {
   return (
@@ -68,6 +72,7 @@ function QOption({
       borderRadius={mainContainer?.borderRadius}
       className={clsx(
         "cursor-pointer transition border",
+        pressable && "touch-manipulation active:scale-[.985]",
         mainContainer?.bgcolor,
         mainContainer?.bordercolor,
       )}

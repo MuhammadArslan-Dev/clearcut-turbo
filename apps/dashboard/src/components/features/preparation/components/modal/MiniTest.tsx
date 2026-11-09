@@ -210,11 +210,9 @@ export default function MiniTest() {
         maxWidth="md:max-w-[680px]"
         onClose={() => closeModal("mini-test")}
       >
-        <motion.div
-          layout
-          className="bg-white min-h-[50dvh] max-h-[90dvh] flex flex-col justify-between"
-          transition={{ duration: 0.3 }}
-        >
+        {/* Fixed height, no `layout` animation: the pane used to grow/shrink with every
+            question and explanation (CLS 0.74-0.96), so the footer buttons moved under the finger. */}
+        <motion.div className="bg-white h-[85dvh] md:h-[min(85dvh,760px)] flex flex-col">
           <Header onClose={() => closeModal("mini-test")} />
 
           {!introDone ? (
@@ -230,11 +228,15 @@ export default function MiniTest() {
               />
             </div>
           ) : loading ? (
-            <SekeletonMiniTest />
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <SekeletonMiniTest />
+            </div>
           ) : !question ? (
             // Server unreachable or empty/partial payload — show a recoverable
             // message instead of an endless skeleton or a crash.
-            <LoadFailed onRetry={refetchData} isError={!!error} />
+            <div className="flex-1 min-h-0 flex items-center justify-center">
+              <LoadFailed onRetry={refetchData} isError={!!error} />
+            </div>
           ) : (
             <Content
               question={translate}
@@ -355,9 +357,9 @@ const Content = ({
   }, [hasChecked, currentIndex]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full flex-1 min-h-0">
     {combo !== null && <StreakCombo count={combo} lang={lang} top={64} />}
-    <div className="w-full flex justify-center min-h-[30dvh] max-h-[90dvh] overflow-y-auto py-2">
+    <div className="w-full h-full flex justify-center overflow-y-auto py-2">
       <div className="w-full flex flex-col gap-5 bg-white md:p-5">
         {/* Progress */}
         <div className="flex justify-between bg-brand/9 items-center gap-4 px-3 py-2 border-l-4 border-brand">
@@ -487,6 +489,7 @@ const Content = ({
                 }
               >
                 <QOption
+                  pressable
                   value={{
                     index: option?.option - 1,
                     text: option.text!,
@@ -593,13 +596,29 @@ const Footer = ({
   onNext,
   onResult,
 }: any) => {
+  const t = useTranslations("modals.miniTest.buttons");
+  // Tapping "Check My Answer" with nothing picked used to do nothing at all (the
+  // button was `disabled`, which swallows the tap). Keep it enabled and say why,
+  // inline (the same pattern as buy-sigle-course-modal's showPickHint).
+  const [pickHint, setPickHint] = useState(false);
+  useEffect(() => {
+    setPickHint(false);
+  }, [hasSelected, currentIndex, hasChecked]);
+
+  // Instant pressed feedback for this bar (the shared Button eases `filter` over 150 ms).
+  const press = "transition-none active:scale-[.98] touch-manipulation";
+
   return (
-    <div className="sticky bottom-0 px-3 py-2 bg-white">
-      <div className="flex gap-3 max-w-[420px] mx-auto">
+    // Fixed height + fixed slots (Previous | primary button | hint line): nothing in
+    // here changes size or position whatever state the question is in.
+    <div className="sticky bottom-0 shrink-0 h-[88px] px-3 py-2 bg-white">
+      <div className="flex gap-3 max-w-[420px] mx-auto items-start">
         {currentIndex > 0 && (
           <Button
             variant="soft"
             color="gray"
+            size="lg"
+            className={press}
             onClick={onPrev}
             fullWidth
             sx={{
@@ -608,84 +627,90 @@ const Footer = ({
           >
             <div className="flex items-center gap-2">
               <ChevronIcon variant="left" color="black" type="double" />
-              <p>Previous</p>
+              <p>{t("previous")}</p>
             </div>
           </Button>
         )}
 
-        {!hasChecked && (
-          <div className="w-full flex items-center flex-col gap-2">
-            <div className="w-[200px]">
+        <div className="w-full flex items-center flex-col gap-2">
+          <div className="w-[220px] max-w-full">
+            {!hasChecked && (
               <Button
-                disabled={!hasSelected}
-                onClick={onCheck}
+                aria-disabled={!hasSelected}
+                onClick={() => (hasSelected ? onCheck() : setPickHint(true))}
                 color="primary"
+                size="lg"
+                className={`${press} ${hasSelected ? "" : "opacity-50"}`}
                 fullWidth
                 sx={{
                   borderRadius: "50px",
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <p>Check My Answer</p>
-                  {/* Keep the tick visible in the disabled (nothing selected)
+                  <p>{t("check")}</p>
+                  {/* Keep the tick visible in the not-ready (nothing selected)
                       state too — it used to be #006bd130, which is ~19% alpha
                       and invisible against the button's light blue fill. */}
                   <TickIcon color="white" />
                 </div>
               </Button>
-            </div>
-            {currentIndex === 0 && (
-              <div className="flex items-center gap-1">
-                <WarningCirleIcon size={20} />
-                <Text
-                  as="p"
-                  variant="body-small"
-                  weight="normal"
-                  color="gray-subtle"
-                >
-                  Select an option to continue
-                </Text>
-              </div>
             )}
-          </div>
-        )}
 
-        {hasChecked && !isLast && (
-          <div className="w-full flex items-center flex-col gap-2">
-            <div className="w-[200px]">
+            {hasChecked && !isLast && (
               <Button
                 onClick={onNext}
                 variant="soft"
                 color="gray"
+                size="lg"
+                className={press}
                 fullWidth
                 sx={{
                   borderRadius: "50px",
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <p>Next Question </p>
+                  <p>{t("next")} </p>
                   <ChevronIcon variant="right" color="black" type="double" />
                 </div>
               </Button>
-            </div>
-          </div>
-        )}
+            )}
 
-        {hasChecked && isLast && (
-          <Button
-            onClick={onResult}
-            color="primary"
-            fullWidth
-            sx={{
-              borderRadius: "50px",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <p>Finish Topic Test</p>
-              <ChevronIcon variant="right" color="white" type="double" />
-            </div>
-          </Button>
-        )}
+            {hasChecked && isLast && (
+              <Button
+                onClick={onResult}
+                color="primary"
+                size="lg"
+                className={press}
+                fullWidth
+                sx={{
+                  borderRadius: "50px",
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <p>{t("finish")}</p>
+                  <ChevronIcon variant="right" color="white" type="double" />
+                </div>
+              </Button>
+            )}
+          </div>
+
+          {/* Hint slot: always rendered (fixed height) so showing/hiding the text never moves the buttons. */}
+          <div className="h-5 flex items-center gap-1" aria-live="polite">
+            {!hasChecked && !hasSelected && (pickHint || currentIndex === 0) && (
+              <>
+                <WarningCirleIcon size={20} />
+                <Text
+                  as="p"
+                  variant="body-small"
+                  weight="normal"
+                  color={pickHint ? "gray-normal" : "gray-subtle"}
+                >
+                  {pickHint ? t("pickOption") : t("selectToContinue")}
+                </Text>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

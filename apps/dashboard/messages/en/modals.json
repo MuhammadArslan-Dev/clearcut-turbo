@@ -197,7 +197,11 @@
       "quick_practice": "Quick topic practice",
       "previous": "Previous",
       "result": "Check Result",
-      "next": "Next Question"
+      "next": "Next Question",
+      "check": "Check My Answer",
+      "finish": "Finish Topic Test",
+      "pickOption": "Select an option first",
+      "selectToContinue": "Select an option to continue"
     }
   },
 

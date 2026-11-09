@@ -63,12 +63,19 @@ File: `app/[locale]/(protected)/(exam)/daily-test-attempt/[courseId]/[testId]/[[
   - [ ] Do not break the phase 84 animation (`ENROLL_TIMEOUT_MS` 40 s, `fail()`).
 
 ## 4. Progress / completed changes
-- 2026-11-09 — phase file written (docs only). Code exploration done read-only; nothing implemented.
+- 2026-11-09 — phase file written (docs only). Code exploration done read-only.
+- 2026-11-09 — **CC-175 built** on branch `fix/ui-small-fixes-batch` (not pushed; **not yet checked in a browser**):
+  - `features/preparation/components/modal/MiniTest.tsx`: root `motion.div` has no `layout` animation and a fixed height (`h-[85dvh] md:h-[min(85dvh,760px)]`); content area is `flex-1 min-h-0` with its own scroll; skeleton and `LoadFailed` sit in the same slot; Footer is a fixed `h-[88px]` bar with fixed slots (Previous | one 220px primary button | 20px hint line), all buttons `size="lg"` (44px) with instant pressed state (`transition-none active:scale-[.98]`); **Check My Answer is no longer `disabled`** — it is `aria-disabled` + faded, and tapping it with nothing picked shows an inline hint (`pickOption`) instead of doing nothing; hard-coded English in the footer replaced by i18n keys.
+  - `components/ui/cards/QuestionMaterial/Qoption/QOption.tsx`: new opt-in `pressable` prop (touch-manipulation + `active:scale-[.985]`); default unchanged, only MiniTest passes it.
+  - `messages/{en,hi,mr}/modals.json`: `miniTest.buttons.{check,finish,pickOption,selectToContinue}` appended (existing keys byte-identical, asserted).
+  - **Not done on purpose:** skeleton was not redrawn (it now sits in the same fixed slot, so it can no longer move the footer); the other hard-coded English strings in `Content` / `LoadFailed` ("Questions x/y", "Couldn't load the test") were not in the ticket and are left alone.
+- 2026-11-09 — **Finding (not fixed): no `ToastContainer` is mounted anywhere in the repo**, although `react-toastify` is installed and ~6 `toast.*` calls exist in the dashboard (e.g. the daily-test attempt page). Those toasts probably never appear. For that reason CC-175 uses an inline hint, not a toast. 🛑 see §5.
 
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
 | 2026-11-09 | 🛑 **CC-90 — which popup did QA/the Clarity recording show?** The class in the ticket is the dev-only `agentation` toolbar. Options: (a) ticket came from a dev/staging build → fix only the Continue look (recommended); (b) a real production popup exists → send the Clarity link/screenshot, I trace it; (c) also hide `DevAgentation` on staging. Implication: no popup change is made until answered. | open |
+| 2026-11-09 | 🛑 **No `ToastContainer` anywhere — do the existing ~6 `toast.*` calls show anything?** Options: (a) leave as is, report only (default; this phase uses inline hints); (b) mount one `ToastContainer` in the locale layout (small, but it would make the existing toasts start appearing — a visible behaviour change); (c) first check on the live site whether any toast ever shows. | open |
 | 2026-11-09 | 🛑 **CC-178 — which screen/card shows the 'English / हिंदी' chip?** Found only on the Notes card and the PDF card; not on daily-test, test-series or practice cards. Options: (a) restyle those two as labels (recommended); (b) make them real language toggles (only if both languages exist for that content); (c) send the screenshot. | open |
 
 ## 6. Blockers / risks
@@ -81,8 +88,9 @@ File: `app/[locale]/(protected)/(exam)/daily-test-attempt/[courseId]/[testId]/[[
 None (no new packages). New i18n keys only.
 
 ## 8. Tests and verification
-- [ ] `pnpm --filter dashboard exec tsc --noEmit` — compare against the existing backlog (93 errors on 2026-11-09, none in these files)
-- [ ] eslint on touched files; `pnpm check:colors`; `pnpm check:tour` if the header is touched
+- [x] CC-175: `tsc --noEmit` — 93 source errors, same as before, none in `MiniTest.tsx` / `QOption.tsx` (a raw run shows +18 errors only in generated `.next/types/**` left by an earlier `turbo build`, not source)
+- [x] CC-175: eslint JSON counts before vs after — `MiniTest.tsx` 12 errors / 5 warnings → 12 / 5 (all pre-existing `any` etc.), `QOption.tsx` 0 / 0 → 0 / 0; `pnpm check:colors` passes (no new colours)
+- [ ] eslint on the other touched files; `pnpm check:tour` if the header is touched
 - [ ] Playwright (Sonnet subagent), mobile 390 + desktop, en/hi/mr, mocked API: topic test (tap Check with no pick, long explanation, no layout jump), daily test (500 → auto-retry → Retry button), notes view, onboarding Continue
 - [ ] Layout shift measured before/after on the topic test
 
