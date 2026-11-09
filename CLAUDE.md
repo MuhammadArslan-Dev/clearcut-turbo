@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Read `docs/DEVELOPMENT_RULES.md` first, before starting any task**, and follow it (reuse existing components/tokens, no new colours/patterns, i18n in en/hi/mr, verification workflow). Update it when you discover a new reusable pattern or convention.
 
+## Git Workflow (permanent, all repos — frontend, backend, tools-backend, CMS, RN app, Astro)
+
+- **One canonical repository per project. Never create extra copies** — no second clone, no `git worktree`, no backup/duplicate folder, no "-exp"/"-p75"-style workspace — as a shortcut. If one seems necessary, **ask the user first**.
+- Work inside the existing canonical repo, **on a new dedicated branch per task**. Make and verify all changes (lint, typecheck, tests, build, and a real check for UI work) on that branch.
+- Merge the finished, tested branch into the appropriate main branch; keep `main` clean and up to date with `origin/main`. **`origin/main` is the live, correct code** — pushing to `main` auto-deploys the backend, dashboard and Astro, so never push `main` without the user's explicit go-ahead.
+- Delete the task branch (local and remote) after a successful merge and verification, when safe (`git branch -d`, never `-D` on unmerged work). Never delete a branch or repo holding unmerged or unverified work.
+- **Ask for explicit approval before:** creating any copy/clone/workspace, merging repositories, deleting any repository, folder or data, or deploying to production. Approval in one context does not carry to the next.
+- Uncommitted work must not sit only on one machine: commit it to a branch and push it before switching task.
+
 ## Repository Overview
 
 `clearcut-master` is a **Turborepo + pnpm workspace** for ClearCutOff's web apps. It consolidates what used to be separate projects into one monorepo with a shared-package architecture — `apps/*` consume `@clearcut/*` packages instead of maintaining parallel copies of auth, API clients, state, design tokens, analytics, and UI primitives.

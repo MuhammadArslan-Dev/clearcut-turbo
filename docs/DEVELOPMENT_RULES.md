@@ -23,6 +23,7 @@ Hard "don'ts":
 - Don't redesign things the user did not ask to change (e.g. `MyCourseCard` was explicitly kept as-is — client-approved).
 - Don't add features the user didn't ask for (e.g. an extra "Next" button). Restyle only what's requested.
 - Don't add a `Co-Authored-By: Claude` trailer to git commits (user preference). Commit/push only when asked.
+- Don't create project copies, clones, worktrees or backup folders; one dedicated branch per task inside the canonical repo, merged into `main` only after verification and the user's go-ahead (full rule: root `CLAUDE.md` → "Git Workflow").
 
 ---
 
