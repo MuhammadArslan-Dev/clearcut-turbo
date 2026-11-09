@@ -112,7 +112,7 @@ export default function QuestionNavigatorSheet() {
             }}
           >
             {" "}
-            <div className="bg-white min-h-[20vh] max-h-[95vh] flex flex-col justify-between">
+            <div className="bg-white min-h-[20dvh] max-h-[95dvh] flex flex-col justify-between">
               {/* Header */}
               <ModalHeader
                 title={"Progress and Questions"}
@@ -120,7 +120,7 @@ export default function QuestionNavigatorSheet() {
               />
 
               {/* main content  */}
-              <div className=" flex flex-col max-h-[90vh] md:items-center gap-2 overflow-scroll">
+              <div className=" flex flex-col max-h-[90dvh] md:items-center gap-2 overflow-scroll">
                 {/* Breathing room around the legend inside the bottom sheet */}
                 <div className="w-full px-4 py-2">
                   <QuestionStatusLegend />

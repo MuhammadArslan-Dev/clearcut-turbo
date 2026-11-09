@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
-import { BookOpen, Check, CheckCircle2, FileText, Target, Timer, Trophy, X, XCircle } from "lucide-react";
+import { BookOpen, CheckCircle2, XCircle } from "lucide-react";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
 import { Card } from "@clearcut/ui/card";
@@ -16,7 +15,8 @@ import { ChevronIcon, LanguageIcon } from "@/components/ui/icons";
 import MountainFlagIllustration from "@/components/ui/illustrations/MountainFlagIllustration";
 import OptionCard from "@/components/features/exam-report/OptionCard";
 import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
-import AnimatedScoreRing from "./AnimatedScoreRing";
+import { TestResult } from "@clearcut/motion/test/flow";
+import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 import PracticeFooter from "./PracticeFooter";
 import {
   localizeExplanation,
@@ -25,34 +25,6 @@ import {
 } from "./practiceTestSession";
 
 type RowStatus = "correct" | "incorrect" | "notAttempted";
-
-const StatCard = ({
-  icon,
-  tone,
-  value,
-  label,
-  className = "",
-}: {
-  icon: React.ReactNode;
-  tone: string;
-  value: string;
-  label: string;
-  className?: string;
-}) => (
-  <Card bgcolor="white" border="border-none" padding="16px" borderRadius={14} className={`!h-auto !min-h-0 shadow-sm max-md:!rounded-none ${className}`}>
-    <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full md:h-[52px] md:w-[52px] ${tone}`}>{icon}</span>
-      <div className="min-w-0">
-        <Text as="p" variant="heading-medium" weight="bold" color="gray-normal" className="whitespace-nowrap leading-tight">
-          {value}
-        </Text>
-        <Text as="p" variant="body-medium" color="gray-muted" className="whitespace-nowrap">
-          {label}
-        </Text>
-      </div>
-    </div>
-  </Card>
-);
 
 const LegendDot = ({ color, label }: { color: string; label: string }) => (
   <span className="flex items-center gap-1.5">
@@ -68,14 +40,14 @@ const letter = (n: number | null | undefined) => (n ? String.fromCharCode(64 + n
 export default function PracticeTestResult({
   session,
   examName,
-  userName,
   language,
   onContinue,
   onToggleLanguage,
 }: {
   session: PracticeSession;
   examName: string;
-  userName: string | null;
+  /** Kept for the caller; the animated result no longer greets by name. */
+  userName?: string | null;
   language: string | null;
   onContinue: () => void;
   /** Present only when the questions exist in 2+ languages: shows the same toggle as the attempt screen. */
@@ -83,6 +55,7 @@ export default function PracticeTestResult({
 }) {
   const t = useTranslations("PracticeTest");
   const td = useTranslations("DailyTests");
+  const motionLang = useMotionLang();
   const [openId, setOpenId] = useState<number | null>(null);
   const reduceMotion = useReducedMotion();
   // One quiet fade-up per block, staggered top to bottom (none for reduced motion).
@@ -111,24 +84,9 @@ export default function PracticeTestResult({
   const correct = rows.filter((r) => r.status === "correct").length;
   const incorrect = rows.filter((r) => r.status === "incorrect").length;
   const attempted = correct + incorrect;
-  const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
-  const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   // Active time measured while the test was open (no limit); tests stored before that fall back to start -> finish.
   const seconds = Math.max(0, Math.round((session.elapsedMs ?? (session.finishedAt ?? Date.now()) - session.startedAt) / 1000));
-  const timeTaken =
-    seconds >= 60
-      ? t("result.timeValue", { min: Math.floor(seconds / 60), sec: seconds % 60 })
-      : t("result.timeValueShort", { sec: seconds });
-
-  const tier = percent >= 70 ? "Good" : percent >= 40 ? "Ok" : "Keep";
-  const tierTone =
-    tier === "Good"
-      ? "bg-[var(--color-success-bg-soft)] text-[var(--icon-positive-normal)]"
-      : tier === "Ok"
-        ? "bg-[var(--color-primary-bg-soft)] text-brand"
-        : "bg-[var(--color-danger-bg-soft)] text-[var(--icon-negative-normal)]";
-
   const rawStatusIcon = (s: RowStatus) =>
     s === "correct" ? (
       <CheckCircle2 size={22} className="text-[var(--icon-positive-normal)]" />
@@ -162,7 +120,7 @@ export default function PracticeTestResult({
         : "text-surface-gray-muted";
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-white">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-white">
       {/* Soft blue wash + faint hills behind the content (decorative, token colours only). Solid blue on phones so the white cards stand out; fades to white from md. */}
       <div
         className="pointer-events-none absolute inset-0 bg-[var(--color-primary-bg-soft)]/40 md:bg-gradient-to-b md:from-[var(--color-primary-bg-soft)] md:via-white md:to-white"
@@ -194,45 +152,28 @@ export default function PracticeTestResult({
 
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-[1405px] flex-col gap-4 px-0 py-4 md:p-4 md:py-4 lg:w-[84%] lg:min-w-[980px] lg:px-0">
-            <motion.div {...rise(0)} className="grid items-center gap-2 px-4 text-left md:px-0 md:text-center lg:grid-cols-[1fr_auto_1fr]">
-              <span className="hidden lg:block" aria-hidden="true" />
-              <div>
-                <h1 className="text-2xl !font-bold leading-tight md:text-5xl">
-                  {userName ? (
-                    <>
-                      {t("result.greatJobPrefix")} <span className="text-brand">{t("result.greatJobName", { name: userName })}</span>
-                    </>
-                  ) : (
-                    t("result.greatJobNoName")
-                  )}
-                </h1>
-                <p className="body-large mt-2 !font-medium">{t("result.completed")}</p>
-              </div>
-              <div className="pointer-events-none hidden justify-self-start pl-6 lg:block">
-                <Image src="/images/practice-test-trophy.webp" alt="" width={170} height={142} priority className="h-auto w-[170px]" />
-              </div>
+            {/* Animated result (@clearcut/motion TestResult): score ring count-up, Nibbu, stat chips, confetti when the cutoff is cleared. */}
+            <motion.div {...rise(0)} className="mx-auto w-full max-w-[560px] lg:max-w-none">
+              <Card bgcolor="white" border="border-none" padding="12px 32px" borderRadius={16} className="!h-auto !min-h-0 shadow-sm max-md:!rounded-none">
+                <TestResult
+                  type="topic"
+                  label={t("motion.badge")}
+                  lang={motionLang}
+                  data={{
+                    score: correct,
+                    maxScore: Math.max(1, total),
+                    correct,
+                    wrong: incorrect,
+                    skipped: Math.max(0, total - attempted),
+                    timeTakenSec: seconds,
+                  }}
+                  actions={false}
+                  wide
+                />
+              </Card>
             </motion.div>
 
-            <motion.div {...rise(0.1)} className="relative z-10 grid items-stretch gap-4 lg:grid-cols-[1.36fr_1fr]">
-              <Card bgcolor="white" border="border-none" padding="14px 24px" borderRadius={16} className="!h-auto !min-h-0 shadow-sm max-md:!rounded-none">
-                <div className="flex h-full flex-col items-center gap-6 sm:flex-row">
-                  <AnimatedScoreRing score={correct} total={total} label={t("result.score")} />
-                  <div className="flex flex-col items-start gap-3">
-                    <span className={`body-medium inline-flex items-center gap-2 rounded-lg px-3 py-1.5 !font-semibold ${tierTone}`}>
-                      <Trophy size={18} />
-                      {t(`result.perf${tier}`)}
-                    </span>
-                    <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
-                      {t("result.answeredSummary", { correct, total })}
-                    </Text>
-                    <Text as="p" variant="body-large" color="gray-muted">
-                      {t(`result.perf${tier}Body`)}
-                    </Text>
-                  </div>
-                </div>
-              </Card>
-
-              {/* A white card holding a pale-blue panel, as in the design. */}
+            <motion.div {...rise(0.15)} className="mx-auto w-full max-w-[560px] lg:max-w-none">
               <Card bgcolor="white" border="border-none" padding="12px" borderRadius={16} className="!h-auto !min-h-0 shadow-sm max-md:!rounded-none">
                 <div className="relative flex h-full flex-col justify-center overflow-hidden rounded-xl bg-[var(--color-primary-bg-soft)] p-4">
                   <MountainFlagIllustration className="pointer-events-none absolute bottom-0 right-0 hidden h-[96px] w-[170px] opacity-80 sm:block" />
@@ -251,30 +192,6 @@ export default function PracticeTestResult({
                   </div>
                 </div>
               </Card>
-            </motion.div>
-
-            <motion.div {...rise(0.25)} className="grid grid-cols-2 gap-px md:grid-cols-5 md:gap-3">
-              <StatCard icon={<FileText size={24} />} tone="bg-[var(--color-primary-bg-soft)] text-brand" value={String(total)} label={t("result.totalQuestions")} />
-              <StatCard
-                icon={<Check size={26} strokeWidth={3} />}
-                tone="bg-[var(--icon-positive-normal)] text-white"
-                value={String(correct)}
-                label={t("result.correctAnswers")}
-              />
-              <StatCard
-                icon={<X size={26} strokeWidth={3} />}
-                tone="bg-[var(--icon-negative-normal)] text-white"
-                value={String(incorrect)}
-                label={t("result.incorrectAnswers")}
-              />
-              <StatCard icon={<Timer size={24} />} tone="bg-[var(--color-primary-bg-soft)] text-brand" value={timeTaken} label={t("result.timeTaken")} />
-              <StatCard
-                icon={<Target size={24} />}
-                tone="bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-subtle)]"
-                value={`${accuracy}%`}
-                label={t("result.accuracy")}
-                className="max-md:hidden"
-              />
             </motion.div>
 
             <motion.div {...rise(0.4)}>

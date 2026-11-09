@@ -132,7 +132,7 @@ export default function PreparationPaywall() {
         <Container
           maxWidth="max-w-[600px] !rounded-t-lg"
           isHeader={false}
-          maxHeight="max-h-[95vh]"
+          maxHeight="max-h-[95dvh]"
           isOpen
           onClose={close}
         >

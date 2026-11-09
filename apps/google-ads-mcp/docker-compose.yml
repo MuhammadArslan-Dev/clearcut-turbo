@@ -1,0 +1,35 @@
+# Used by Coolify's "Docker Compose" build pack (or `docker compose up -d` locally).
+# Secrets come from the environment (Coolify secrets / local .env), never from this file.
+services:
+  google-ads-mcp:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      GOOGLE_ADS_MCP_OAUTH_CLIENT_ID: ${GOOGLE_ADS_MCP_OAUTH_CLIENT_ID:?}
+      GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET: ${GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET:?}
+      GOOGLE_ADS_MCP_BASE_URL: ${GOOGLE_ADS_MCP_BASE_URL:?}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN:?}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID:-}
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS:?}
+      GOOGLE_ADS_MCP_JWT_SIGNING_KEY: ${GOOGLE_ADS_MCP_JWT_SIGNING_KEY:?}
+      GOOGLE_ADS_MCP_STORAGE_TYPE: filetree
+      GOOGLE_ADS_MCP_STORAGE_PATH: /var/lib/google-ads-mcp
+      GOOGLE_ADS_MCP_STORAGE_ENCRYPTION_KEY: ${GOOGLE_ADS_MCP_STORAGE_ENCRYPTION_KEY:?}
+    volumes:
+      - oauth-state:/var/lib/google-ads-mcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  oauth-state:

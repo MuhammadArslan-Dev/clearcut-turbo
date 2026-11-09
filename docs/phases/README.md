@@ -19,6 +19,7 @@ Investigation done read-only on 2026-10-21 across 4 repos:
 5. Record every answer in the phase file's **Decision log**, with a date, before continuing.
 6. Follow `docs/DEVELOPMENT_RULES.md`: reuse components and tokens, i18n en/hi/mr, verify with tsc, eslint and check:colors, plus screenshots for UI.
 7. Never commit or push unless asked, and no Co-Authored-By trailer.
+8. **Phase doc first.** Before any major task, new feature or substantial improvement: check this folder for an existing doc on it (no duplicates), copy `_TEMPLATE.md` to the next free `NN-slug.md`, fill it, add a tracker row, and wait for the user to review the plan. No implementation before that. Keep the same doc updated (progress, decisions, blockers, test results, next steps) so a new session can resume from it. Small fixes and one-line tweaks don't need a phase doc.
 
 ## Status values
 
@@ -86,12 +87,28 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 54 | [Blog home + exam page redesign](54-blog-home-exam-redesign.md) | — | CM-blog | Built + Playwright-tested, 1 bug found and fixed (not committed) | Commit approval |
 | 55 | [Payment page redesign](55-payment-page-redesign.md) | — | CM-dashboard | Built + Playwright-tested; 4 fixes applied, behaviour unchanged (not committed) | Commit approval |
 | 56 | [Profile screens redesign](56-profile-screens-redesign.md) | — | CM-dashboard | All 3 screens built + browser-tested on real data, behaviour unchanged (not committed) | hi/mr + 390 px pass |
+| 57 | [First-enrollment Practice Test](57-first-enrollment-practice-test.md) | — | CM-dashboard, backend | Built on branch `feature/first-enrollment-practice-test`; tsc/eslint/colors pass, **not run end to end** (not committed/pushed) | local test token for backend + browser check |
+| 58 | [Generic user_states](58-user-states.md) | — | CM-dashboard, backend | Built + tested in Playwright (en, desktop + mobile) and Pest; local branch, not committed | commit approval |
+| 59 | [Practice Test results — match new desktop design](59-practice-test-results-design-match.md) | — | CM-dashboard | Task written, not started (needs 3 art/logo decisions) | trophy art, background hills, logo |
 | 60 | [SEO: canonical host + leftover test page](60-cc138-cc139-seo-host-and-test-page.md) | CC-138, CC-139 | Cloudflare, SEO | CC-139 done + verified live; CC-138 **not done** (www still 200, needs a Cloudflare Redirect Rule) | Cloudflare rule |
 | 61 | [Payment plan cards](61-cc73-cc76-payment-plan-cards.md) | CC-73, CC-76 (CC-74 see 33/37) | CM-dashboard | Reported done; no commit found — verify in testing | Ganesh testing |
 | 62 | [Payment attribution: campaign, exam, transaction id](62-cc136-cc137-payment-attribution.md) | CC-136, CC-137 | BE, CM-dashboard | Reported done; no code found on this machine — verify against acceptance list | Ganesh testing |
 | 63 | [Question pages: raw LaTeX](63-cc166-academy-math-rendering.md) | CC-166 | CM-blog | Fixed + live (`f672a26`, 2026-10-28) | Ganesh testing |
+| 64 | [Enrollments: `u_exam_enrollments` → `u_enrollments` + levels](64-enrollment-table-migration.md) · [runbook](64a-enrollment-migration-runbook.md) | — | BE (CM-dashboard: no change) | Built + tested on the local dev DB (27 tests, races, rollback rehearsal); branch `feature/enrollment-table-migration` in worktrees, **uncommitted**; nothing run on prod | Browser check (needs a backend running the branch), commit approval, prod rollout by the user |
+| 65 | [Topic Test results — match new design](65-topic-test-result-design-match.md) | — | CM-dashboard | Built; desktop + mobile checked in en/hi; animation to be watched by eye, mr/reduced-motion left | user review |
 | 66 | [Autopay ₹99 offer / A/B test — built, then removed](66-autopay-price-ab-test.md) | — (CC-62 lineage) | CM-dashboard | **Removed** from the dashboard (code identical to before); implementation kept in git history for the Practice Test A/B | Delete the unused Amplitude objects (list in the doc) |
 | 67 | [Standardize prices: ₹99 autopay / ₹139 one-time / ₹699 year](67-pricing-standardization.md) | — | CM-dashboard, CM-landing, Astro `/go` | In review: implemented and verified locally, not pushed | Owner sets production `payment.onetime_1year_price` = 699 (command in the doc); approve push |
+| 72 | [Feature flag for the first-enrollment Practice Test](72-practice-test-feature-flag.md) | — | CM-dashboard | Built; Amplitude flag `practice_test` enabled at 100 %; browser verification in progress | verify, commit approval |
+| 73 | [Google Ads MCP server (read + write) on Coolify](73-cc124-google-ads-mcp-server.md) | CC-124, CC-126 | CM `apps/google-ads-mcp`, Coolify | In Progress: built + 80 tests pass locally, not deployed | User: Google Cloud OAuth client, Ads developer token (Basic), DNS `mcp-ads`, team account list |
+| 74 | [GA4 MCP server (read + write) on Coolify](74-cc125-ga4-mcp-server.md) | CC-125, CC-127 | CM `apps/google-analytics-mcp`, Coolify | In Progress: built + 21 tests pass locally, not deployed | User: same Google Cloud/OAuth client + Analytics APIs enabled, DNS `mcp-ga`, team list |
+| 76 | [Rich text (bold, blue, links) for FAQ questions and answers](76-faq-rich-text.md) | — | CMS, CM-landing | In Review (built, verified on a DB clone; not committed) | User review; CMS backup + deploy CMS then landing; Hindi slug issue is a separate task |
+| 77 | [Renewal after access expiry: end-to-end audit + plan](77-renewal-after-expiry-audit.md) | — | BE, CM-dashboard | In Progress (0, A, most of B, core of C built locally; nothing deployed) | Deploy approval + env prerequisites (doc §13); remaining B, C, D, E |
+| 78 | [Backend speed: slow APIs, TTFB, caching (CC-149)](78-cc149-backend-speed.md) | CC-149 | BE | Blocked – Decision (plan written, nothing implemented) |
+| 79 | [Motion library (animations package) + preview page](79-motion-library-animations.md) | — | CM `packages/motion`, `apps/dashboard` | In Progress (built + typechecked; visual check pending, not integrated anywhere) | User runs dashboard dev, checks `/animation-preview`; approved-designs PDF; integration instructions |
+| 80 | [Daily + Practice Test motion (intro, Nibbu, submit, animated result)](80-daily-practice-test-motion.md) | — | CM `packages/motion`, `apps/dashboard` | In Progress (built + tested locally; nothing committed/pushed/deployed) | User review of final summary; go-ahead to commit/deploy |
+| 82 | [Test start + submit animations as overlays (modal / bottom sheet)](82-test-start-submit-overlays.md) | — | CM `packages/motion`, dashboard | Built + tested (mocked API); pending the user's own test. |
+| 83 | [Lesson Path loader — trial replacement of the dashboard loader](83-lesson-path-loader-trial.md) | — | CM-dashboard | Trial built + tested locally; one-switch revert; pending approval. |
+| 84 | [Onboarding + Enrollment animations adapted to the real screens (previews only)](84-onboarding-enrollment-motion-previews.md) | — | CM-dashboard | Previews built, checked locally; awaiting user review; nothing wired into real screens. |
 
 ## Cross-phase dependencies
 
@@ -109,9 +126,18 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-10-21: created folder, 14 phase files, investigation results copied in.
 
 - 2026-10-27: added phases 42–53 (wave 2: CC-143, 159, 146, 145, 163, 153, 144, 149, 150, 151, 152, 154, 141).
+- 2026-10-28: added phase 59 (Practice Test results screen — match the new desktop design).
+- 2026-10-28: added phases 60–63 (CC-138/139, CC-73/76, CC-136/137, CC-166). CC-95 and CC-74 already covered by phases 34/38 and 33/37.
+- 2026-10-28: added phase 58 (generic user_states: onboarding, practice test, guide, topic tour).
+- 2026-10-28: added phase 57 (first-enrollment Practice Test).
 - 2026-10-27: added phase 54 (blog home + exam page redesign from design screenshots).
 
 - 2026-10-24: added phases 35–40 (tour, CC-94, CC-74, CC-95 rest, CC-113, CC-122). Jira: CC-51 → Testing; CC-1, CC-44, CC-86 → Done.
 
 - 2026-10-30: added phases 68–70 (tools login gate, auth modal redesign, acquisition attribution).
 - 2026-10-30: added phase 71 (image download options sheet + free-PDF lead via Amplitude, tools; a DB request table was built and removed again).
+- 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit animation, animated result; local only, not pushed).
+- 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result; local only, not pushed).
+- 2026-11-06: added phase 82 (test start + submit animations as overlays; local only).
+- 2026-11-06: added phase 83 (Lesson Path loader trial, local only).
+- 2026-11-07: added phase 84 (onboarding + enrollment animations adapted to the real screens, previews only, local).

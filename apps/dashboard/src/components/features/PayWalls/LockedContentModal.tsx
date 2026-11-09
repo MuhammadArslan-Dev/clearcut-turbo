@@ -93,7 +93,7 @@ export default function LockedContentModal() {
           <Container
             maxWidth="max-w-[420px] !rounded-t-lg"
             isHeader={false}
-            maxHeight="max-h-[95vh]"
+            maxHeight="max-h-[95dvh]"
             isOpen
             onClose={close}
           >
@@ -112,14 +112,16 @@ export default function LockedContentModal() {
 
               {/* Lock icon + title */}
               <div className="flex flex-col items-center gap-1">
-                <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4">
-                
-                  <DotLottieReact
-                    src="https://lottie.host/a5ed70b4-cf37-4dd6-9017-f8bb2308cef1/3gFWeilvP5.lottie"
-                    loop
-                    autoplay
-                  />
-                </div>
+                {/* Lock animation: only the daily-test modals keep it; topic and test locks show the illustration below */}
+                {isDaily && (
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4">
+                    <DotLottieReact
+                      src="https://lottie.host/a5ed70b4-cf37-4dd6-9017-f8bb2308cef1/3gFWeilvP5.lottie"
+                      loop
+                      autoplay
+                    />
+                  </div>
+                )}
                 <div className="heading-large !font-semibold text-surface-gray-normal text-center">
                   {modalT("title")}
                 </div>
@@ -134,8 +136,8 @@ export default function LockedContentModal() {
                 <Image
                   src={
                     isTest
-                      ? "/images/test-locked-illustration.png"
-                      : "/images/topic-locked-illustration.png"
+                      ? "/images/test-locked-illustration.webp"
+                      : "/images/topic-locked-illustration.webp"
                   }
                   alt={modalT("title")}
                   width={isTest ? 545 : 550}

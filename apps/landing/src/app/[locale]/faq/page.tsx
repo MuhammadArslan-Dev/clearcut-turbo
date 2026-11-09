@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { generateSeoMetadata, SITE_URL, SITE_NAME } from "@/lib/seo/metadata";
 import { getFaq } from "@/lib/api/cms";
 import FaqPageContent from "@/components/pages/faq/FaqPageContent";
+import { unwrapRichHtml } from "@/components/shared/RichFaqText";
 
 export const revalidate = 3600;
 
@@ -132,7 +133,9 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
         name: q.question,
         acceptedAnswer: {
           "@type": "Answer",
-          text: q.answer,
+          // Formatted answers go out as HTML (Google allows a, b, strong, p, ul, ol, li, br
+          // in FAQ answers; the blue <span> is dropped), plain ones exactly as before.
+          text: q.answerHtml ? unwrapRichHtml(q.answerHtml).replace(/<\/?span[^>]*>/g, "") : q.answer,
         },
       })),
     ),

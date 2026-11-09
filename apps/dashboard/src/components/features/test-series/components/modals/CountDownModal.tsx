@@ -1,15 +1,12 @@
 "use client";
 
-import { useIsMobile } from "@/hooks/useIsMobile";
-import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
 import { useTestListDataStore } from "../../store/useTestListDataStore";
 
-import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
-import { Modal } from "@/components/features/Sheets/Modal";
+import TestStartIntro from "@/components/features/test-motion/TestStartIntro";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 
 import {
@@ -30,8 +27,6 @@ import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatin
 /*                                  CONFIG                                    */
 /* -------------------------------------------------------------------------- */
 
-const COUNTDOWN_TIME = 5;
-
 /* -------------------------------------------------------------------------- */
 /*                               COMPONENT                                    */
 /* -------------------------------------------------------------------------- */
@@ -42,7 +37,9 @@ export default function CountDownModal() {
 
   const { paper } = useTestListDataStore();
 
-  const t = useTranslations("modals.countDownModal");
+  const t = useTranslations("testListContent");
+  const tMotion = useTranslations("modals.examMotion");
+  const currentExam = useGetCurrentCourseStore((s) => s.exam);
 
   const flow = useFlowNavigation();
   const router = useRouter();
@@ -53,11 +50,9 @@ export default function CountDownModal() {
   const testType = get("testType");
   const active = stack[stack.length - 1];
 
-  const isMobile = useIsMobile();
-  const Container = useMemo(() => (isMobile ? BottomSheet : Modal), [isMobile]);
-
   const [attempt, setAttempt] = useState<Attempt | null>(null);
-  const [timeLeft, setTimeLeft] = useState(COUNTDOWN_TIME);
+  // The start animation (3-2-1-Go) has played out. The attempt is created in the background while it plays.
+  const [introDone, setIntroDone] = useState(false);
 
   const hasCreatedRef = useRef(false);
 
@@ -139,27 +134,10 @@ export default function CountDownModal() {
   ]);
 
   /* -------------------------------------------------------------------------- */
-  /*                          START COUNTDOWN                                   */
-  /* -------------------------------------------------------------------------- */
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (active !== "test-start-countdown") return;
-
-    setTimeLeft(COUNTDOWN_TIME);
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isOpen, active]);
-
-  /* -------------------------------------------------------------------------- */
   /*                         REDIRECT WHEN READY                                */
   /* -------------------------------------------------------------------------- */
 
-  const readyToStart = timeLeft === 0 && attempt?.uuid;
+  const readyToStart = introDone && attempt?.uuid;
 
   useEffect(() => {
     if (!readyToStart) return;
@@ -177,7 +155,7 @@ export default function CountDownModal() {
   useEffect(() => {
     if (!isOpen) {
       setAttempt(null);
-      setTimeLeft(COUNTDOWN_TIME);
+      setIntroDone(false);
       hasCreatedRef.current = false;
     }
   }, [isOpen]);
@@ -189,112 +167,50 @@ export default function CountDownModal() {
   if (!isOpen || active !== "test-start-countdown") return null;
 
   /* -------------------------------------------------------------------------- */
-  /*                             PROGRESS RING                                  */
-  /* -------------------------------------------------------------------------- */
-
-  const progress = (timeLeft / COUNTDOWN_TIME) * 100;
-  const circumference = 2 * Math.PI * 46;
-  const offset = circumference - (progress / 100) * circumference;
-
-  /* -------------------------------------------------------------------------- */
   /*                                   JSX                                      */
   /* -------------------------------------------------------------------------- */
 
+  // Same title / scope / size / duration the pre-test confirmation shows (Pre-TestConfirmationModal).
+  const testAny = test as
+    | (NonNullable<typeof test> & {
+        metadata?: { chapter_name?: string; section_name?: string };
+        number_of_questions?: number;
+        total_time?: number;
+      })
+    | null;
+  const testNumber = String(test?.order ?? "");
+  const kind =
+    testType === "chapter-tests" ? "chapter" : testType === "full-length-papers" ? "full" : "sectional";
+  const heading =
+    kind === "chapter"
+      ? t("testCard.chapterTitle", { number: testNumber })
+      : kind === "full"
+        ? t("sectionalTestModal.fullLengthTest", { number: testNumber })
+        : t("sectionalTestModal.sectionTest", { number: testNumber });
+  const scope =
+    kind === "chapter"
+      ? (testAny?.metadata?.chapter_name ?? testAny?.metadata?.section_name)
+      : kind === "full"
+        ? (currentExam?.name ?? currentExam?.short_name)
+        : testAny?.metadata?.section_name;
+  const questions = kind === "full" ? 150 : (testAny?.number_of_questions ?? (kind === "chapter" ? 10 : 30));
+  const minutes =
+    kind === "chapter"
+      ? 10 // chapter tests are always 10 mins
+      : kind === "full"
+        ? 150
+        : testAny?.total_time
+          ? Math.round(testAny.total_time / 60)
+          : 30;
+
   return (
-    <AnimatePresence>
-      <Container
-        isHeader={false}
-        isOpen={isOpen}
-        maxWidth="md:max-w-[420px]"
-        onClose={() => {}}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 40, scale: 0.95 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="relative flex flex-col items-center justify-center"
-        >
-          <div className="w-full rounded-2xl bg-white shadow-xl border border-white p-8 flex flex-col items-center">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="mb-4 px-4 py-1 rounded-full text-xs font-semibold bg-brand/9 text-brand"
-            >
-              {t("getReady")}
-            </motion.div>
-
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              {t("testStartingSoon")}
-            </h2>
-
-            <p className="text-sm text-gray-500 mb-6 text-center">
-              {t("focusAndPrepare")}
-            </p>
-
-            <div className="relative w-36 h-36 mb-6">
-              <svg
-                className="w-full h-full rotate-[-90deg]"
-                viewBox="0 0 100 100"
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  stroke="#E5E7EB"
-                  strokeWidth="5"
-                  fill="none"
-                />
-
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  stroke="url(#gradient)"
-                  strokeWidth="6"
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={offset}
-                  strokeLinecap="round"
-                  animate={{ strokeDashoffset: offset }}
-                  transition={{ duration: 0.6 }}
-                />
-
-                <defs>
-                  <linearGradient
-                    id="gradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="#0083ff" />
-                    <stop offset="100%" stopColor="#3B82F6" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.span
-                  key={timeLeft}
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="text-4xl font-extrabold text-gray-900"
-                >
-                  {timeLeft}
-                </motion.span>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-400 text-center">
-              {timeLeft === 0 && !attempt
-                ? t("preparingYourTest")
-                : t("testWillBeginAutomatically")}
-            </p>
-          </div>
-        </motion.div>
-      </Container>
-    </AnimatePresence>
+    <TestStartIntro
+      type={kind === "chapter" ? "topic" : "full"}
+      label={tMotion(kind)}
+      title={scope ? `${heading} · ${scope}` : heading}
+      questions={questions}
+      minutes={minutes}
+      onStart={() => setIntroDone(true)}
+    />
   );
 }

@@ -414,13 +414,13 @@ export default function EditCourseModal() {
         isOpen={isOpen}
         onClose={close}
         maxWidth="max-w-[800px]"
-        maxHeight="md:max-h-[95vh]"
+        maxHeight="md:max-h-[95dvh]"
       >
         {/* ROOT WRAPPER */}
         <div
-          className="!bg-gray-100 min-h-[50vh] max-h-[95vh] flex flex-col overflow-hidden"
+          className="!bg-gray-100 min-h-[50dvh] max-h-[95dvh] flex flex-col overflow-hidden"
         >
-          {/* <div className="flex flex-col !bg-gray-100 h-full md:max-h-[95vh] overflow-hidden"> */}
+          {/* <div className="flex flex-col !bg-gray-100 h-full md:max-h-[95dvh] overflow-hidden"> */}
           {/* HEADER */}
           <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-4 bg-white">
             <div className="cursor-pointer" onClick={close}>

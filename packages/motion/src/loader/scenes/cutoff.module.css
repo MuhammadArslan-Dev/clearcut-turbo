@@ -1,0 +1,228 @@
+/* V2 Cutoff Climb — fill grows, Nibbu runs on the leading edge, line turns green when crossed.
+   Scene is 200px wide; cutoff marker sits at 70% (140px). Same 3.2s loop as v1.
+   Layers: rider (X, synced with fill) › boost (crossing + finish jumps) › run (0.4s stride). */
+
+.scene { position: relative; isolation: isolate; width: 200px; height: 120px; }
+
+.track {
+  position: absolute;
+  inset: auto 0 18px 0;
+  height: 10px;
+  border-radius: 10px;
+  background: var(--cc-soft);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--cc-brand-dark), var(--cc-brand));
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  animation: cuFill var(--cc-loop) infinite;
+}
+
+.fillWin {
+  background: linear-gradient(90deg, var(--cc-brand), var(--cc-success));
+  opacity: 0;
+  animation: cuFill var(--cc-loop) infinite, cuWin var(--cc-loop) infinite;
+}
+
+/* a soft highlight sweeps the bar so it never looks static */
+.sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 36px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0), rgb(255 255 255 / 0.55), rgb(255 255 255 / 0));
+  animation: cuSheen 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.marker { position: absolute; left: 140px; bottom: 10px; width: 0; height: 70px; }
+
+.line {
+  position: absolute;
+  left: -1px;
+  bottom: 0;
+  height: 70px;
+  border-left: 2px dashed var(--cc-slate);
+  transform-origin: 50% 100%;
+  animation: cuLine var(--cc-loop) infinite;
+}
+
+/* ring that bursts where Nibbu crosses the line */
+.burst {
+  position: absolute;
+  left: -14px;
+  bottom: -6px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cc-success);
+  border-radius: 50%;
+  opacity: 0;
+  animation: cuBurst var(--cc-loop) infinite;
+}
+
+.tag {
+  position: absolute;
+  bottom: 72px; /* clears Nibbu's head (45px tall + hop) as it passes */
+  left: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.tagA {
+  border: 1px solid var(--cc-line);
+  background: #fff;
+  color: var(--cc-slate);
+  transform: translateX(-50%);
+  animation: cuTagA var(--cc-loop) infinite;
+}
+.tagB {
+  background: var(--cc-success);
+  color: #fff;
+  transform: translateX(-50%) scale(0);
+  animation: cuTagB var(--cc-loop) infinite;
+}
+
+.spk {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: cuSpark var(--cc-loop) infinite;
+}
+.spk1 { left: -48px; bottom: 82px; background: var(--cc-gold); --sx: -6px; --sy: -4px; }
+.spk2 { left: 40px; bottom: 90px; width: 10px; height: 10px; background: var(--cc-brand); --sx: 6px; --sy: -6px; animation-delay: 0.05s; }
+.spk3 { left: 30px; bottom: 60px; width: 6px; height: 6px; background: var(--cc-gold); --sx: 6px; --sy: 3px; animation-delay: 0.1s; }
+
+.rider {
+  position: absolute;
+  left: -20px;
+  bottom: 26px;
+  width: 40px;
+  height: 45px;
+  animation: cuRide var(--cc-loop) infinite;
+  will-change: transform, opacity;
+}
+
+.boost {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: cuBoost var(--cc-loop) infinite;
+}
+
+.run {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: cuStride 0.4s infinite;
+  will-change: transform;
+}
+
+.mascot { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* 0–6% pop in · 8–60% climb (eases into the cutoff for tension) · 60–64% burst across
+   64–78% sprint to the end · 78–88% celebrate · 88–94% hop off · 94–100% reset */
+@keyframes cuRide {
+  0%       { transform: translateX(0) scale(0.5); opacity: 0; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  6%, 8%   { transform: translateX(0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  50%      { transform: translateX(118px) scale(1); animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); }
+  60%      { transform: translateX(140px) scale(1); animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  64%      { transform: translateX(160px) scale(1); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  78%, 88% { transform: translateX(196px) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  94%      { transform: translateX(206px) scale(0.6); opacity: 0; }
+  100%     { transform: translateX(0) scale(0.5); opacity: 0; }
+}
+
+@keyframes cuFill {
+  0%, 8%   { transform: scaleX(0); opacity: 1; animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  50%      { transform: scaleX(0.59); animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); }
+  60%      { transform: scaleX(0.7); animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  64%      { transform: scaleX(0.8); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  78%, 88% { transform: scaleX(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  94%      { transform: scaleX(1); opacity: 0; }
+  100%     { transform: scaleX(0); opacity: 0; }
+}
+
+@keyframes cuWin {
+  0%, 60%  { opacity: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  66%, 88% { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes cuSheen {
+  0%   { transform: translateX(-40px); }
+  100% { transform: translateX(210px); }
+}
+
+/* jump over the line at the crossing, then a little victory hop at the finish */
+@keyframes cuBoost {
+  0%, 57%  { transform: translateY(0) rotate(0deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  61%      { transform: translateY(-18px) rotate(-8deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  65%      { transform: translateY(0) rotate(0deg); }
+  79%      { transform: translateY(0) rotate(0deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  82%      { transform: translateY(-12px) rotate(6deg); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  85%, 100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* a real stride: contact squash → push-off stretch → airborne → reach for the ground */
+@keyframes cuStride {
+  0%   { transform: translateY(0) rotate(6deg) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  14%  { transform: translateY(-2px) rotate(7deg) scale(0.94, 1.07); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  50%  { transform: translateY(-9px) rotate(5deg) scale(1, 1); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  88%  { transform: translateY(-1px) rotate(6deg) scale(0.97, 1.03); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  100% { transform: translateY(0) rotate(6deg) scale(1.1, 0.9); }
+}
+
+@keyframes cuLine {
+  0%, 59%  { border-color: var(--cc-slate); transform: scaleY(1); }
+  61%      { border-color: var(--cc-success); transform: scaleY(1.08); }
+  64%, 90% { border-color: var(--cc-success); transform: scaleY(1); }
+  96%, 100% { border-color: var(--cc-slate); transform: scaleY(1); }
+}
+
+@keyframes cuBurst {
+  0%, 59.9% { transform: scale(0.4); opacity: 0; }
+  60%       { transform: scale(0.4); opacity: 0.9; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  70%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes cuTagA {
+  0%, 58%  { transform: translateX(-50%) translateY(0); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  61%      { transform: translateX(-50%) translateY(-6px); opacity: 0; }
+  94%      { transform: translateX(-50%) translateY(4px); opacity: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100%     { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes cuTagB {
+  0%, 60%  { transform: translateX(-50%) scale(0); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  64%      { transform: translateX(-50%) scale(1.15); }
+  67%, 86% { transform: translateX(-50%) scale(1); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  91%, 100% { transform: translateX(-50%) scale(0); }
+}
+
+@keyframes cuSpark {
+  0%, 61%  { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  65%      { transform: translate(0, 0) scale(1.2) rotate(45deg); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  76%      { transform: translate(var(--sx), var(--sy)) scale(0.2) rotate(110deg); opacity: 0; }
+  100%     { transform: scale(0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rider { animation: none; transform: translateX(170px); }
+  .boost, .run, .spk, .tagA, .line, .sheen, .burst { animation: none; }
+  .burst { opacity: 0; }
+  .fill { animation: none; transform: scaleX(0.85); }
+  .fillWin { animation: none; transform: scaleX(0.85); opacity: 1; }
+  .tagA { opacity: 0; }
+  .tagB { animation: none; transform: translateX(-50%) scale(1); }
+  .line { border-color: var(--cc-success); }
+  .run { transform: rotate(6deg); }
+}

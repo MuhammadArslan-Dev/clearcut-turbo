@@ -6,6 +6,7 @@ import HeaderBlock from "../shared/text-render/HeaderBlock";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import FAQAccordion, { AccordionItem } from "../shared/FAQAccordion";
+import RichFaqText from "../shared/RichFaqText";
 import { Exam } from "@/types/page";
 import { useScrollOnUserAction } from "@/hooks/useScrollOnUserAction";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
@@ -421,8 +422,8 @@ export default function FAQsSection({
   const items: AccordionItem[] = useCms
     ? (cmsCategories.find((c) => c.key === activeTab)?.questions ?? []).map((faq, index) => ({
         id: `${activeTab}-${index}`,
-        title: faq.question,
-        content: faq.answer,
+        title: <RichFaqText html={faq.questionHtml} text={faq.question} inline />,
+        content: <RichFaqText html={faq.answerHtml} text={faq.answer} />,
       }))
     : (t.faqs[activeTab as FAQKey] || []).map((faq, index) => ({
         id: `${activeTab}-${index}`,

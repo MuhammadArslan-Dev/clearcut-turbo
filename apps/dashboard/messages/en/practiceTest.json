@@ -71,5 +71,9 @@
     "view": "View",
     "hide": "Hide",
     "retake": "Retake Practice Test"
+  },
+  "motion": {
+    "badge": "Practice test",
+    "submitted": "Practice test submitted"
   }
 }

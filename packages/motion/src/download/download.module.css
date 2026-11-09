@@ -1,0 +1,177 @@
+/* PDF download — card + morphing button.
+   idle → preparing (lines print, ring spins) → downloading (arrow drops into the file, ring + bottom bar fill)
+   → done (green check pops & draws, border glow, sparks) · error (shake, Retry).
+   All action states share one fixed 112×44 cell and crossfade, so the row never reflows. */
+
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1.5px solid #e3eaf2;
+  border-radius: 18px;
+  background: #fff;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card.done { border-color: var(--cc-success); animation: dGlow 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.card.error { border-color: var(--cc-danger); animation: dShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+.text { display: grid; gap: 2px; min-width: 0; }
+.title { display: -webkit-box; overflow: hidden; font-size: 15px; font-weight: 700; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.meta { font-size: 12.5px; color: var(--cc-slate); font-variant-numeric: tabular-nums; animation: dMeta 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.done .meta { color: #067a46; }
+.error .meta { color: #b42318; }
+
+.action { display: grid; width: 112px; height: 44px; }
+.layer {
+  grid-area: 1 / 1;
+  place-self: center end;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.show { opacity: 1; pointer-events: auto; transform: none; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cc-brand);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--cc-brand-dark);
+  cursor: pointer;
+}
+.pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--cc-brand-dark); }
+.pill:focus-visible, .ringBtn:focus-visible, .morph:focus-visible { outline: 3px solid var(--cc-brand); outline-offset: 2px; }
+.arrow { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.pill:hover .arrow { animation: dNudge 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pillOpen { background: var(--cc-success-soft); color: #067a46; box-shadow: 0 3px 0 #b5e8cd; }
+.pillRetry { background: var(--cc-danger); box-shadow: 0 3px 0 #b42318; }
+
+.ringBtn { position: relative; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: #fff; cursor: pointer; }
+.ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.indeterminate { animation: dSpin 0.9s linear infinite; }
+.ringTrack { fill: none; stroke: #e3eaf2; stroke-width: 4; }
+.ringArc { fill: none; stroke: var(--cc-brand); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; transition: stroke-dashoffset 0.25s linear; }
+.stop { position: absolute; left: 16px; top: 16px; width: 12px; height: 12px; border-radius: 3px; background: var(--cc-brand-dark); }
+
+.bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+.bar i { display: block; height: 100%; background: var(--cc-brand); transform-origin: 0 50%; transition: transform 0.25s linear, background-color 0.3s; }
+.done .bar i { background: var(--cc-success); }
+
+/* ---------- file icon ---------- */
+.file { position: relative; width: 48px; height: 60px; }
+.file > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.page { fill: #fff; stroke: #cfdbe7; stroke-width: 2; }
+.fold { fill: none; stroke: #cfdbe7; stroke-width: 2; stroke-linejoin: round; }
+.ln { fill: #dde6ef; transform-box: fill-box; transform-origin: 0 50%; }
+.preparing .ln { animation: dPrint 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+.preparing .ln:nth-of-type(2) { animation-delay: 0.15s; }
+.preparing .ln:nth-of-type(3) { animation-delay: 0.3s; }
+.badge { position: absolute; left: -5px; bottom: 9px; padding: 2px 5px; border-radius: 4px; background: #e5484d; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
+.drop {
+  position: absolute;
+  left: 13px;
+  top: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--cc-brand);
+  opacity: 0;
+}
+.drop svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.downloading .drop { animation: dDrop 0.9s cubic-bezier(0.55, 0, 0.75, 0.3) infinite; }
+.ok {
+  position: absolute;
+  right: -7px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--cc-success);
+  transform: scale(0);
+}
+.ok svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.done .ok { animation: dPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.done .ok svg { animation: dDraw 0.35s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards; }
+
+.sparks { position: absolute; left: 50px; top: 8px; width: 0; height: 0; }
+.sparks i { opacity: 0; animation: dSpark 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sparks i:nth-child(1) { left: -8px; top: -2px; background: var(--cc-gold); --sx: -6px; --sy: -6px; }
+.sparks i:nth-child(2) { left: 6px; top: -8px; width: 10px; height: 10px; background: var(--cc-success); --sx: 4px; --sy: -8px; animation-delay: 0.05s; }
+.sparks i:nth-child(3) { left: 12px; top: 10px; width: 6px; height: 6px; background: var(--cc-brand); --sx: 8px; --sy: 2px; animation-delay: 0.1s; }
+
+/* ---------- morph button ---------- */
+.morph {
+  position: relative;
+  display: inline-flex;
+  min-width: 200px;
+  height: 48px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cc-brand);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--cc-brand-dark);
+  cursor: pointer;
+  transition: background-color 0.3s, box-shadow 0.3s, transform 0.12s;
+}
+.morph:active { transform: translateY(2px); }
+.morph.preparing, .morph.downloading { background: #1a72cc; box-shadow: 0 4px 0 #0b4f94; }
+.morph.done { background: var(--cc-success); box-shadow: 0 4px 0 #0a8a4f; }
+.morph.error { background: var(--cc-danger); box-shadow: 0 4px 0 #b42318; animation: dShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.morphFill { position: absolute; inset: 0; background: var(--cc-brand); transform-origin: 0 50%; transition: transform 0.25s linear; }
+.morph.done .morphFill { opacity: 0; transition: opacity 0.3s; }
+.morphLabel { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 0 22px; font-variant-numeric: tabular-nums; white-space: nowrap; animation: dMeta 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.morph:hover.idle .arrow { animation: dNudge 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.morphCheck { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: dDraw 0.35s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards; }
+.dotSpin { width: 16px; height: 16px; border: 2.5px solid rgb(255 255 255 / 0.4); border-top-color: #fff; border-radius: 50%; animation: dSpin2 0.8s linear infinite; }
+
+/* ---------- keyframes ---------- */
+@keyframes dGlow { 0% { box-shadow: 0 0 0 0 rgb(18 183 106 / 0.45); } 100% { box-shadow: 0 0 0 12px rgb(18 183 106 / 0); } }
+@keyframes dShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes dMeta { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes dNudge { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(3px); } }
+@keyframes dSpin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+@keyframes dSpin2 { to { transform: rotate(360deg); } }
+@keyframes dPrint { 0% { transform: scaleX(0); } 45%, 80% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0.4; } }
+@keyframes dDrop {
+  0%   { opacity: 0; transform: translateY(-10px) scale(0.8); }
+  35%  { opacity: 1; transform: translateY(2px) scale(1); }
+  100% { opacity: 0; transform: translateY(18px) scale(0.7); }
+}
+@keyframes dPop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes dDraw { to { stroke-dashoffset: 0; } }
+@keyframes dSpark {
+  0%   { opacity: 0; transform: scale(0) rotate(0deg); }
+  30%  { opacity: 1; transform: scale(1.2) rotate(45deg); }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.2) rotate(110deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.done, .card.error, .meta, .preparing .ln, .downloading .drop, .done .ok, .sparks i, .morph.error, .morphLabel, .pill:hover .arrow { animation: none !important; }
+  .done .ok { transform: scale(1); }
+  .done .ok svg, .morphCheck { animation: none; stroke-dashoffset: 0; }
+  .indeterminate, .dotSpin { animation-duration: 2.4s; }
+  .layer { transition: opacity 0.15s; transform: none; }
+}

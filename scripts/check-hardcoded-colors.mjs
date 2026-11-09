@@ -54,6 +54,9 @@ const EXCEPTIONS = [
   // next/og's ImageResponse renders via Satori, which has no var() support —
   // these files must use literal colours, there's no token-based alternative.
   [/opengraph-image|twitter-image/i, "next/og image generation"],
+  // @clearcut/motion is client-approved animation artwork (Nibbu, loaders, confetti, score rings):
+  // its palette is part of the approved design and must not be re-toned. Phase 79.
+  [/^packages\/motion\//, "approved motion artwork"],
 ];
 
 function walk(dir, out = []) {

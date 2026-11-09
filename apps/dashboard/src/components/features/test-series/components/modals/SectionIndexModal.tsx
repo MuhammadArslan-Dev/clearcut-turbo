@@ -76,7 +76,7 @@ export default function SectionIndexModal() {
             </div>
           </div>
 
-          <div className="max-h-[75vh] md:max-h-[80vh] px-3 py-3 md:px-5 md:py-5 md:pt-3 overflow-y-auto">
+          <div className="max-h-[75dvh] md:max-h-[80dvh] px-3 py-3 md:px-5 md:py-5 md:pt-3 overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {indexSections.map((section, sectionIndex) => (
                 <SectionHeaderCard

@@ -102,7 +102,7 @@ export default function PreviousModal() {
           maxWidth="md:max-w-[720px]"
           onClose={handleClose}
         >
-          <div className=" h-full flex flex-col max-h-[90vh] overflow-y-auto justify-between">
+          <div className=" h-full flex flex-col max-h-[90dvh] overflow-y-auto justify-between">
             {/* Header */}
             <Header
               courseName={course?.exam?.short_name!}

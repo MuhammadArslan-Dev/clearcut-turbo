@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar";
 export default function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
-    <div className="flex h-screen overflow-y-hidden"> {/* or remove overflow-* entirely */}
+    <div className="flex h-dvh overflow-y-hidden"> {/* or remove overflow-* entirely */}
 
       {/* Sidebar */}
       <Sidebar />

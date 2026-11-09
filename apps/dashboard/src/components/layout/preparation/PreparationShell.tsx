@@ -32,7 +32,16 @@ import dynamic from "next/dynamic";
 // every preparation pageload whether or not the user ever opens them.
 const ChapterIndexModal = dynamic(() => import("@/components/features/preparation/components/modal/ChapterIndex"), { ssr: false });
 const MiniTestModal = dynamic(() => import("@/components/features/preparation/components/modal/MiniTest"), { ssr: false });
-const MiniTestResultModal = dynamic(() => import("@/components/features/preparation/components/modal/MiniTestResult"), { ssr: false });
+// Topic Test result screen. true = @clearcut/motion TestResult (MiniTestResultMotion); false = the previous
+// design (MiniTestResult, kept untouched as a backup). Flip this one flag to switch.
+const USE_MOTION_RESULT = true;
+const MiniTestResultModal = dynamic(
+  () =>
+    USE_MOTION_RESULT
+      ? import("@/components/features/preparation/components/modal/MiniTestResultMotion")
+      : import("@/components/features/preparation/components/modal/MiniTestResult"),
+  { ssr: false },
+);
 const PreparationGuideModal = dynamic(() => import("@/components/features/preparation/components/modal/GuideLine"), { ssr: false });
 const PreviousModal = dynamic(() => import("@/components/features/preparation/components/modal/PreviousModal"), { ssr: false });
 const ChangePaperModal = dynamic(() => import("@/components/features/preparation/components/modal/ChangePaperModal"), { ssr: false });

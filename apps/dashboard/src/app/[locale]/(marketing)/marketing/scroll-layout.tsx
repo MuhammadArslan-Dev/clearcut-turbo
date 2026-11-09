@@ -14,7 +14,7 @@ export default function Page() {
   const heroBlobY = useTransform(scrollYProgress, [0, 0.4], [0, 120]);
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-50">
+    <div className="relative min-h-dvh bg-slate-950 text-slate-50">
       {/* Scroll progress bar at the top */}
       <motion.div
         className="fixed left-0 top-0 z-40 h-1 origin-left bg-gradient-to-r from-sky-500 via-cyan-400 to-indigo-400"
@@ -22,7 +22,7 @@ export default function Page() {
       />
 
       {/* Hero section */}
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      <section className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4">
         {/* background blobs */}
         <motion.div
           className="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full bg-sky-500/40 blur-3xl"

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function Page() {
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-hidden">
+    <div className="relative min-h-dvh flex items-center justify-center bg-slate-950 overflow-hidden">
       <AnimatedBackground />
       <AnimatedProfileCard />
     </div>

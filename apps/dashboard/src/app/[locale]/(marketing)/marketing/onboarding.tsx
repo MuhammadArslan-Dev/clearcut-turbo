@@ -31,7 +31,7 @@ export default function Page() {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 flex items-center justify-center px-4">
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 flex items-center justify-center px-4">
       <AnimatedBackground />
 
       <motion.div

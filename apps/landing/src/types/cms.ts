@@ -127,9 +127,25 @@ export type AlternativeDoc = AlternativeSummary & {
 };
 
 // Mirrors src/globals/Faq.ts in the CMS repo.
+// `question` / `answer` are ALWAYS plain text (search, deep-link slugs and
+// JSON-LD read them). `questionHtml` / `answerHtml` are set only when an editor
+// formatted the text in the CMS (bold, blue, links); without them the plain text
+// is rendered exactly as before. `getFaq()` normalises the raw CMS shape.
 export type FaqQuestion = {
   question: string;
   answer: string;
+  questionHtml?: string;
+  answerHtml?: string;
+};
+
+/** Raw CMS row: plain legacy fields may be empty once an editor uses the rich ones. */
+export type FaqQuestionRaw = {
+  question?: string | null;
+  answer?: string | null;
+  questionText?: string | null;
+  answerText?: string | null;
+  questionHtml?: string | null;
+  answerHtml?: string | null;
 };
 
 export type FaqCategory = {
@@ -140,6 +156,10 @@ export type FaqCategory = {
 
 export type FaqDoc = {
   categories: FaqCategory[];
+};
+
+export type FaqDocRaw = {
+  categories?: { key: string; label: string; questions?: FaqQuestionRaw[] | null }[] | null;
 };
 
 export type MarketingProof = {

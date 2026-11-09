@@ -1,0 +1,155 @@
+/* Scoped port of gallery/page.css: everything lives under .motionPreview (native CSS nesting) so it
+   cannot leak into the host app. Dark-mode rules from the original gallery are intentionally dropped. */
+@keyframes mpIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes mpBobble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.motionPreview {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --ink: #192839;
+  --muted: #566c82;
+  --line: #dde6ef;
+  --brand: #0083ff;
+  --brand-ink: #005cb8;
+  --brand-soft: #e8f2fb;
+  --font: "Noto Sans", "Noto Sans Devanagari", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  box-sizing: border-box;
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5;
+  padding: 28px 16px 56px;
+  & *, & *::before, & *::after { box-sizing: border-box; }
+code { font-family: var(--mono); font-size: 0.86em; padding: 1px 6px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-ink); }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 18px; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+.top h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.top p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs a {
+  padding: 10px 16px; font-weight: 600; font-size: 15px; color: var(--muted); text-decoration: none; white-space: nowrap;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: color 0.2s, border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tabs a:hover { color: var(--ink); }
+.tabs a[aria-current="page"] { color: var(--brand-ink); border-bottom-color: var(--brand); }
+.tabs a:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; border-radius: 6px; }
+
+.panel { display: grid; gap: 18px; animation: mpIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.panelHead { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+.panelHead h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.panelHead p { margin: 4px 0 0; color: var(--muted); max-width: 64ch; }
+
+.compareBar { display: flex; }
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.loaderCard { margin: 0; display: grid; grid-template-rows: auto 1fr; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); overflow: hidden; min-width: 0; }
+.loaderCard figcaption { display: grid; gap: 2px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.loaderCard b { font-size: 14px; }
+.loaderCard span { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.loaderHost { background: #fff; color: #192839; }
+.loaderHost > div { min-height: 230px; padding: 20px 8px; }
+.loaderHost p { font-size: 14.5px; white-space: nowrap; }
+
+.designs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.design {
+  font: inherit; text-align: left; cursor: pointer; display: grid; gap: 2px; min-width: 0;
+  padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+}
+.design:active { transform: scale(0.98); }
+.design b { font-size: 14px; font-weight: 600; }
+.design span { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.design:hover { border-color: var(--brand); }
+.design[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
+.design[aria-pressed="true"] b { color: var(--brand-ink); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 28px; align-items: start; }
+@media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.controls { display: grid; gap: 16px; min-width: 0; }
+.group { display: grid; gap: 6px; }
+.group > span { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); width: fit-content; max-width: 100%; }
+.seg button { font: inherit; font-size: 13.5px; font-weight: 600; border: 0; background: none; color: var(--muted); padding: 6px 14px; border-radius: 50px; cursor: pointer; transition: background-color 0.2s, color 0.2s; }
+.seg button[aria-pressed="true"] { background: var(--brand); color: #fff; }
+.switch { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; cursor: pointer; width: fit-content; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch i { width: 36px; height: 21px; border-radius: 21px; background: var(--line); position: relative; transition: background 0.2s; }
+.switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 1px 2px rgb(0 0 0 / 0.2); }
+.switch input:checked + i { background: var(--brand); }
+.switch input:checked + i::after { transform: translateX(15px); }
+.replay { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 50px; padding: 9px 18px; width: fit-content; border: 1.5px solid var(--brand); color: var(--brand-ink); background: transparent; }
+.seg button:focus-visible, .replay:focus-visible, .design:focus-visible, .switch input:focus-visible + i { outline: 2px solid var(--brand); outline-offset: 2px; }
+.note { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 46ch; }
+
+/* The phone mimics the ClearCutoff app (light-only), so it keeps a fixed white surface.
+   transform keeps the components' position:fixed overlays inside the frame. */
+.phone {
+  position: relative; width: 100%; max-width: 390px; height: 740px; margin: 0 auto; overflow: hidden;
+  transform: translateZ(0); border-radius: 28px; border: 8px solid #1d2a3a; background: #ffffff; color: #192839;
+  box-shadow: 0 24px 50px -28px rgb(25 40 57 / 0.55);
+}
+.mock { padding: 22px 20px; display: grid; gap: 10px; }
+.mockLogo { font-weight: 700; color: #2b7eff; }
+.mockLogo span { color: #40566d; }
+.mock h3 { margin: 10px 0 0; font-size: 18px; }
+.mock p { margin: 0; font-size: 13px; color: #566c82; }
+.mockCard { height: 110px; border-radius: 12px; border: 1px solid #edf2f7; }
+.inlineHost { position: absolute; left: 16px; right: 16px; top: 150px; border-radius: 16px; border: 1px solid #e3eaf2; background: #fff; }
+.compactHost { position: absolute; inset: 0; background: #fff; display: grid; place-content: center; justify-items: center; gap: 18px; padding: 24px; }
+.compactHost .pill { display: inline-flex; align-items: center; justify-content: center; min-width: 210px; padding: 12px 22px; border-radius: 50px; background: #0083ff; color: #fff; font-weight: 600; font-size: 15px; box-shadow: 0 4px 0 #005cb8; }
+.compactHost .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid #edf2f7; border-radius: 10px; font-size: 14px; color: #40566d; min-width: 270px; }
+
+.poses { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.pose { margin: 0; display: grid; gap: 12px; padding: 22px 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); text-align: center; min-width: 0; }
+.poseArt { width: 96px; height: 108px; margin: 10px auto 0; animation: mpBobble 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite; transform-origin: 50% 100%; }
+.poseArt svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pose:nth-child(2) .poseArt { animation-delay: -0.5s; }
+.pose:nth-child(3) .poseArt { animation-delay: -1s; }
+.pose:nth-child(4) .poseArt { animation-delay: -1.5s; }
+.pose:nth-child(5) .poseArt { animation-delay: -2s; }
+.pose figcaption { display: grid; gap: 4px; justify-items: center; }
+.pose b { font-size: 15px; }
+.pose span { font-size: 13px; color: var(--muted); }
+.pose code { font-size: 11.5px; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel, .poseArt { animation: none; }
+}
+
+/* ---------- mock app screens inside the phone ---------- */
+.app { position: absolute; inset: 0; overflow-y: auto; padding: 16px 16px 24px; background: #fff; color: #192839; }
+.appIn > * { animation: mpIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.appIn > :nth-child(2) { animation-delay: 0.05s; }
+.appIn > :nth-child(3) { animation-delay: 0.1s; }
+.appIn > :nth-child(4) { animation-delay: 0.15s; }
+.appIn > :nth-child(5) { animation-delay: 0.2s; }
+.appBar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #e8f2fb; color: #005cb8; font-weight: 700; }
+.app h3 { margin: 6px 0 2px; font-size: 20px; font-weight: 800; text-wrap: balance; }
+.appSub { margin: 0 0 12px; font-size: 13px; color: #566c82; }
+.appCard { display: grid; gap: 2px; min-height: 70px; margin-top: 12px; padding: 14px; border: 1px solid #e3eaf2; border-radius: 14px; background: #fff; }
+.appCard b { font-size: 15px; }
+.appCard span { font-size: 13px; color: #566c82; }
+.appCard.hero { background: linear-gradient(135deg, #0083ff, #005cb8); border: 0; color: #fff; }
+.appCard.hero span { color: rgb(255 255 255 / 0.85); }
+.appCard.tall { min-height: 160px; }
+.appCard.subj { min-height: 0; }
+.appRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.appRow .appCard { min-height: 90px; }
+.pickGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pick {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 12px; border: 2px solid #e3eaf2; border-radius: 14px;
+  background: #fff; box-shadow: 0 3px 0 #e3eaf2; color: #192839; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.12s;
+}
+.pick:active { transform: translateY(2px); }
+.pick i { flex: 0 0 20px; width: 20px; height: 20px; border: 2px solid #b7c7d8; border-radius: 6px; transition: background-color 0.2s, border-color 0.2s; }
+.pick[aria-pressed="true"] { border-color: #0083ff; background: #f0f7ff; box-shadow: 0 3px 0 #9ccbff; }
+.pick[aria-pressed="true"] i { border-color: #0083ff; background: #0083ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.2 8.3l2.5 2.4 5-5.2' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.pick:focus-visible, .appCta:focus-visible { outline: 3px solid #0083ff; outline-offset: 2px; }
+.appCta {
+  width: 100%; min-height: 50px; margin-top: 22px; border: 0; border-radius: 50px; background: #0083ff; box-shadow: 0 4px 0 #005cb8;
+  color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.appCta:disabled { background: #e3eaf2; box-shadow: 0 4px 0 #cfdbe7; color: #8597aa; cursor: not-allowed; }
+.pdfList { display: grid; gap: 12px; }
+.resultHost { position: absolute; inset: 0; overflow-y: auto; padding: 20px 16px; background: #fff; }
+
+}

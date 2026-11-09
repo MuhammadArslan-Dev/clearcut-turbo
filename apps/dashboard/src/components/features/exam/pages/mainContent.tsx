@@ -32,6 +32,11 @@ import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import QuestionsDock, { type QuestionDockItem } from "@/components/features/attempt-ui/QuestionsDock";
 import type { AttemptQuestion } from "../types/exam";
 import { trackTestAbandoned, trackTestSubmitted } from "@/lib/analytics/testFunnel";
+import { useTranslations } from "next-intl";
+import { NibNote } from "@clearcut/motion/test/mini-test";
+import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
+import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
+import { useExamSubmitStore } from "../store/useExamSubmitStore";
 
 // ===============================
 // SLIDE ANIMATION
@@ -65,6 +70,11 @@ export default function MainContent({ examId }: { examId: string }) {
 
   const router = useRouter();
   const goToReport = useExamFinishNavigation();
+  const tMotion = useTranslations("modals.examMotion");
+  const motionLang = useMotionLang();
+  const submitPhase = useExamSubmitStore((s) => s.phase);
+  const submitDone = useExamSubmitStore((s) => s.done);
+  const submitTotal = useExamSubmitStore((s) => s.total);
 
   useSingleTab(examId);
   const { isLoading } = useGetExam({ examId });
@@ -140,6 +150,13 @@ export default function MainContent({ examId }: { examId: string }) {
 
   const handleAutoExpire = useCallback(async () => {
     if (!exam) return;
+    // Same "checking your answers" animation as a manual End Test; begin() also refuses a second submit when the
+    // learner already tapped End Test.
+    const stats = useExamStore.getState().getStats();
+    const started = useExamSubmitStore
+      .getState()
+      .begin({ courseCode: exam.course?.group_code, examId: exam.uuid, type: exam.type }, stats.total);
+    if (!started) return;
     // Same reasoning as ExamEndConfirmationSheet's endExam(): prefer the
     // type end-exam's own response reports for this exam over exam?.type
     // from the store, which is the authoritative source rather than
@@ -155,8 +172,32 @@ export default function MainContent({ examId }: { examId: string }) {
     } catch (error) {
       console.error(error);
     }
-    goToReport(exam.course?.group_code, exam.uuid, examType);
-  }, [exam, goToReport, language]);
+    useExamSubmitStore.getState().settle(examType);
+  }, [exam, language]);
+
+  // The animation ends -> open the report (what the End Test sheet / timer expiry used to do straight away).
+  const onSubmitAnimationEnd = useCallback(() => {
+    const target = useExamSubmitStore.getState().target;
+    if (!target) return;
+    goToReport(target.courseCode, target.examId, target.type);
+  }, [goToReport]);
+
+  // Leaving the exam page (report opened, back, refresh) clears the hand-off so the next exam can submit.
+  useEffect(() => () => useExamSubmitStore.getState().reset(), []);
+
+  const examKind = exam?.type === "chapter" ? "chapter" : exam?.type === "sectional" ? "sectional" : "full";
+  const submitOverlay = (
+    <SubmitOverlay
+      key="submit-overlay"
+      open={submitPhase === "running"}
+      type={examKind === "chapter" ? "topic" : "full"}
+      total={submitTotal}
+      done={submitDone}
+      lang={motionLang}
+      note={tMotion(`${examKind}Submitted`)}
+      onFinish={onSubmitAnimationEnd}
+    />
+  );
 
   // The exam countdown + server heartbeat now live in <ExamTimerWatcher />
   // (rendered first in both return paths below). Its `remaining` state ticks
@@ -348,6 +389,7 @@ export default function MainContent({ examId }: { examId: string }) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (useExamSubmitStore.getState().phase === "running") return;
       if (e.key === "Enter") handleSaveAndNext();
       if (e.key === "ArrowLeft") goPrev();
       if (e.key === "ArrowRight") goNext();
@@ -372,6 +414,7 @@ export default function MainContent({ examId }: { examId: string }) {
       <>
         {examTimer}
         <ExamSkeleton />
+        {submitOverlay}
       </>
     );
   }
@@ -406,6 +449,7 @@ export default function MainContent({ examId }: { examId: string }) {
   return (
     <>
     {examTimer}
+    {submitOverlay}
     <div className="flex h-full flex-col gap-3 py-3 lg:p-3 lg:pl-3">
       {/* Question card — mobile: full width, flush against the screen edges
           (no side padding on the wrapper, square corners); desktop: the
@@ -501,6 +545,15 @@ export default function MainContent({ examId }: { examId: string }) {
                   );
                 })}
               </div>
+
+              {/* Neutral Nibbu note (graded test: the right answer stays hidden until submit). */}
+              {draftAnswer != null && (
+                <NibNote
+                  key={`${ctx.sectionIndex}-${ctx.questionIndex}-${draftAnswer}-${question.user_option === draftAnswer}`}
+                  title={tMotion(question.user_option === draftAnswer ? "savedTitle" : "notedTitle")}
+                  detail={tMotion(question.user_option === draftAnswer ? "savedBody" : "notedBody")}
+                />
+              )}
 
               <InfoStrip>Select the best answer from the options above. Tap the selected option again to clear it.</InfoStrip>
             </motion.div>

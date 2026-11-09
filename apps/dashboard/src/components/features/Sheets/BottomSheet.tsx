@@ -49,7 +49,7 @@ export function BottomSheet({
           exit="exit"
           transition={{ duration: 0.35, ease: "easeInOut" }}
         >
-          <div className="bg-white rounded-t-[12px] shadow-xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-t-[12px] shadow-xl w-full max-h-[90dvh] overflow-hidden">
             {isHeader && (
               <header
                 className={clsx(
@@ -73,7 +73,7 @@ export function BottomSheet({
               </header>
             )}
 
-            <div className="overflow-y-auto no-scrollbar max-h-[90vh]">
+            <div className="overflow-y-auto no-scrollbar max-h-[90dvh]">
               {children}
             </div>
           </div>

@@ -20,7 +20,7 @@ const initialTasks: Task[] = [
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+    <div className="min-h-dvh bg-slate-950 flex items-center justify-center px-4">
       <DraggableTaskList />
     </div>
   );

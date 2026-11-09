@@ -1,0 +1,107 @@
+/* V3 Notebook — ink draws via stroke-dashoffset (pathLength=100), Nibbu's tip tracks the ink.
+   Paper is 184x120; ruled every 22px; the rider's tip starts at (36, 31). */
+
+.scene { position: relative; width: 184px; height: 98px; }
+
+.paper {
+  position: absolute;
+  inset: 0 0 4px 0;
+  border: 1px solid var(--cc-line);
+  border-radius: 12px;
+  background-color: #fff;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 21px, #e3edf7 21px 22px);
+  background-position: 0 12px;
+  box-shadow: 0 10px 24px -14px rgb(25 40 57 / 0.35);
+}
+
+.margin { position: absolute; top: 0; bottom: 0; left: 26px; border-left: 1.5px solid #ffc9d4; }
+
+.ink { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.stroke {
+  fill: none;
+  stroke: var(--cc-brand-dark);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+.l1 { animation: nbL1 var(--cc-loop) infinite; }
+.l2 { animation: nbL2 var(--cc-loop) infinite; }
+.tick { stroke: var(--cc-success); stroke-width: 3.2; transform-box: fill-box; transform-origin: 30% 80%; animation: nbTick var(--cc-loop) infinite; }
+
+.rider {
+  position: absolute;
+  left: 21px; /* tip (bottom-centre of a 30px box) lands on x=36 */
+  top: -2px;  /* tip lands on y=31 */
+  width: 30px;
+  height: 34px;
+  animation: nbRide var(--cc-loop) infinite;
+}
+
+.pen {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: nbJig 0.24s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+  will-change: transform;
+}
+
+.mascot { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* 8–36% line 1 · 36–44% hop to line 2 · 44–66% line 2 · 70–80% tick
+   80–88% happy hop · 88–100% fade and reset */
+@keyframes nbRide {
+  0%       { transform: translate(0, 0) scale(0.6); opacity: 0; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  5%, 8%   { transform: translate(0, 0) scale(1); opacity: 1; animation-timing-function: linear; }
+  36%      { transform: translate(110px, 0); animation-timing-function: ease-out; }
+  39%      { transform: translate(56px, -10px); animation-timing-function: ease-in; }
+  43%, 44% { transform: translate(0, 22px); animation-timing-function: linear; }
+  66%      { transform: translate(80px, 22px); animation-timing-function: ease-in-out; }
+  71%      { transform: translate(96px, 24px); animation-timing-function: linear; }
+  75%      { transform: translate(103px, 31px); animation-timing-function: linear; }
+  80%      { transform: translate(117px, 15px); animation-timing-function: ease-out; }
+  84%      { transform: translate(117px, 4px); animation-timing-function: ease-in; }
+  88%      { transform: translate(117px, 15px) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  93%      { transform: translate(117px, 11px) scale(0.7); opacity: 0; }
+  100%     { transform: translate(0, 0) scale(0.6); opacity: 0; }
+}
+
+@keyframes nbL1 {
+  0%, 7.9% { stroke-dashoffset: 100; opacity: 0; }
+  8%       { stroke-dashoffset: 100; opacity: 1; animation-timing-function: linear; }
+  36%, 88% { stroke-dashoffset: 0; opacity: 1; transform: translateY(0); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  94%      { stroke-dashoffset: 0; opacity: 0; transform: translateY(-3px); }
+  100%     { stroke-dashoffset: 100; opacity: 0; transform: translateY(0); }
+}
+
+@keyframes nbL2 {
+  0%, 43.9% { stroke-dashoffset: 100; opacity: 0; }
+  44%      { stroke-dashoffset: 100; opacity: 1; animation-timing-function: linear; }
+  66%, 88% { stroke-dashoffset: 0; opacity: 1; transform: translateY(0); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  94%      { stroke-dashoffset: 0; opacity: 0; transform: translateY(-3px); }
+  100%     { stroke-dashoffset: 100; opacity: 0; transform: translateY(0); }
+}
+
+@keyframes nbTick {
+  0%, 70.9% { stroke-dashoffset: 100; opacity: 0; transform: scale(1); }
+  71%      { stroke-dashoffset: 100; opacity: 1; transform: scale(1); animation-timing-function: linear; }
+  80%      { stroke-dashoffset: 0; opacity: 1; transform: scale(1); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  83%      { stroke-dashoffset: 0; opacity: 1; transform: scale(1.2); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  86%, 88% { stroke-dashoffset: 0; opacity: 1; transform: scale(1); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  94%      { stroke-dashoffset: 0; opacity: 0; transform: translateY(-3px); }
+  100%     { stroke-dashoffset: 100; opacity: 0; transform: translateY(0); }
+}
+
+/* writing: a gentle wrist rock, not a shake */
+@keyframes nbJig {
+  from { transform: rotate(21deg) translateY(0); }
+  to   { transform: rotate(26deg) translateY(-0.7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .l1, .l2, .tick { animation: none; stroke-dashoffset: 0; opacity: 1; transform: none; }
+  .rider { animation: none; transform: translate(117px, 15px); }
+  .pen { animation: none; transform: rotate(22deg); }
+}

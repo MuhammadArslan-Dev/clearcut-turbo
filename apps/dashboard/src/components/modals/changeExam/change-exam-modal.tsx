@@ -60,7 +60,7 @@ export default function ChangeExamModal() {
       maxWidth="max-w-[650px] !rounded-t-lg w-full"
       isHeader={false}
       isOpen={isOpen}
-      maxHeight="max-h-[70vh]"
+      maxHeight="max-h-[70dvh]"
       onClose={() => closeModal("change-exam")}
     >
       <div className="bg-gray-100 flex flex-col">

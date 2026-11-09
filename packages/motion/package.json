@@ -1,0 +1,29 @@
+{
+  "name": "@clearcut/motion",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./core": "./src/core/index.ts",
+    "./nibbu": "./src/nibbu/index.ts",
+    "./loader": "./src/loader/index.ts",
+    "./onboarding": "./src/onboarding/index.ts",
+    "./enrollment": "./src/enrollment/index.ts",
+    "./test/mini-test": "./src/test/mini-test/index.ts",
+    "./test/flow": "./src/test/flow/index.ts",
+    "./download": "./src/download/index.ts",
+    "./preview": "./src/preview/MotionPreview.tsx",
+    "./preview/samples": "./src/preview/samples.ts"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

@@ -53,7 +53,7 @@ function ResumeBar({
 
   const courseContent = () => {
     return (
-      <div className="flex flex-1 items-center justify-between gap-1 md:gap-4">
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-1 md:gap-4">
         {/* Lesson info */}
         <div className="flex items-center gap-1 md:gap-4 min-w-0">
           {/* Desktop image */}
@@ -103,8 +103,10 @@ function ResumeBar({
           </div>
         </div>
 
-        {/* Time (Desktop) */}
-        <div className="hidden xl:flex  items-center gap-1 whitespace-nowrap">
+        {/* Time (Desktop) — shown by the bar's own width (container query), not
+            the viewport: the bar is capped at 1152px, so a wide viewport gives
+            it no extra room and the timer used to push Resume out of view. */}
+        <div className="hidden @[1040px]:flex shrink-0 items-center gap-1 whitespace-nowrap">
           <FireIcon variant="outline" />
 
           <span className="body-small text-surface-gray-muted">
@@ -117,7 +119,7 @@ function ResumeBar({
         </div>
 
         {/* Resume Button */}
-        <div className="md:w-[160px] w-[120px] md:max-w-none max-w-[120px] -mb-8 md:mb-0">
+        <div className="md:w-[160px] w-[120px] md:max-w-none max-w-[120px] -mb-8 md:mb-0 shrink-0">
           <Button
             variant="outlined"
             fullWidth
@@ -155,12 +157,12 @@ function ResumeBar({
   };
 
   return (
-    <div className="hidden md:flex md:px-3 pb-3 bg-transparent items-center justify-center">
-      <div className="bg-white border-2 border-brand w-full rounded-lg px-2 md:px-4 py-2 md:py-3 md:h-[72px] max-w-[1152px]">
+    <div className="hidden md:flex md:px-3 pb-3 bg-transparent items-center justify-center w-full min-w-0">
+      <div className="@container bg-white border-2 border-brand w-full rounded-lg px-2 md:px-4 py-2 md:py-3 md:min-h-[72px] max-w-[1152px]">
         <div className="flex flex-col md:flex-row md:items-center md:gap-4 h-full">
           {/* ---------------- Left: Current Exam (Desktop only) ---------------- */}
-          <div className="hidden md:flex items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-2">
-            <span className="body-large text-surface-gray-subtle truncate">
+          <div className="hidden md:flex min-w-0 shrink items-center gap-3 bg-[var(--color-primary-subtle)] rounded-md px-4 py-2">
+            <span className="min-w-0 body-large text-surface-gray-subtle truncate">
               {highlightTextUtil(
                 t("resumeBar.currentExam", { exam: examName }),
                 [examName],
@@ -179,7 +181,7 @@ function ResumeBar({
           </div>
 
           {/* Divider */}
-          <div className="hidden md:block w-[2px] h-full bg-[#90a5bb]" />
+          <div className="hidden md:block w-[2px] self-stretch shrink-0 bg-[#90a5bb]" />
 
           {/* ---------------- Center Content ---------------- */}
           {courseContent()}

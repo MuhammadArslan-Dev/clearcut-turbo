@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/icons";
 import Text from "@clearcut/ui/text";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
-import { useExamFinishNavigation } from "@/components/features/exam/hooks/useExamFinishNavigation";
+import { useExamSubmitStore } from "../../store/useExamSubmitStore";
 import { useExamStore } from "../../store/useExamStore";
 import { apiFetch } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
@@ -34,7 +34,6 @@ export default function ExamEndConfirmationSheet() {
   const { isOpen, closeModal, stack } = useExamModalStore();
   const isMobile = useIsMobile();
   const t = useTranslations("modals.examSubmission");
-  const goToReport = useExamFinishNavigation();
 
   const active = stack[stack.length - 1];
   const { exam, language, getStats } = useExamStore();
@@ -48,17 +47,19 @@ export default function ExamEndConfirmationSheet() {
   }, [closeModal]);
 
   const endExam = useCallback(async () => {
+    // The "checking your answers" animation (mainContent.tsx) plays while the request below is in flight, then
+    // opens the report. begin() refuses when the timer expiry is already submitting.
+    const started = useExamSubmitStore
+      .getState()
+      .begin({ courseCode: exam?.course?.group_code, examId: exam?.uuid, type: exam?.type }, getStats().total);
     handleClose();
+    if (!started) return;
 
-    // Reads the type from end-exam's own response, not exam?.type from the
-    // store: useGetExam only populates the store once its query for THIS
-    // examId resolves, and "End Test" is reachable from the very first
-    // paint (it's in the always-mounted layout Topbar, not gated behind
-    // MainContent's isLoading). Ending a test quickly — heavier
-    // sectional/full-length papers take longer to load than a 10-question
-    // chapter test, widening this window — could read the PREVIOUS exam's
-    // leftover type, sending testType (and therefore which tab/section
-    // list renders) to the wrong place after redirect.
+    // Reads the type from end-exam's own response, not exam?.type from the store: useGetExam only populates the
+    // store once its query for THIS examId resolves, and "End Test" is reachable from the very first paint (it's
+    // in the always-mounted layout Topbar, not gated behind MainContent's isLoading). Ending a test quickly could
+    // read the PREVIOUS exam's leftover type, sending testType (and therefore which tab/section list renders) to
+    // the wrong place after redirect.
     let examType: string | null = exam?.type ?? null;
     try {
       const res = await endExamApi({ examId: exam?.uuid! });
@@ -67,8 +68,8 @@ export default function ExamEndConfirmationSheet() {
     } catch (error) {
       console.error("End exam failed:", error);
     }
-    goToReport(exam?.course?.group_code, exam?.uuid, examType);
-  }, [handleClose, goToReport, exam]);
+    useExamSubmitStore.getState().settle(examType);
+  }, [handleClose, exam, language, getStats]);
 
   return (
     <AnimatePresence>
@@ -78,7 +79,7 @@ export default function ExamEndConfirmationSheet() {
         maxWidth="md:max-w-[420px]"
         onClose={() => handleClose()}
       >
-        <div className="bg-white min-h-[20vh] max-h-[90vh] flex flex-col justify-between">
+        <div className="bg-white min-h-[20dvh] max-h-[90dvh] flex flex-col justify-between">
           {/* Header */}
           <ModalHeader
             title={t("title")}
