@@ -2,9 +2,9 @@
 
 **Tickets:** [CC-169](https://clear-cutoff.atlassian.net/browse/CC-169), [CC-168](https://clear-cutoff.atlassian.net/browse/CC-168)
 **Repos:** BE, CM (apps/dashboard)
-**Branch:** `feature/phase-75-payment-recovery` in worktrees `D:\clearcutoff-projects\clearcut-master-p75` and `C:\laragon\www\clearcutoff-backend-p75`, both from `origin/main`. Not committed, not pushed.
+**Branch:** `feature/phase-75-payment-recovery` in worktrees `D:\clearcutoff-projects\clearcut-master-p75` and `C:\laragon\www\clearcutoff-backend-p75`, both from `origin/main`. Main work merged (`f5727fb`, BE `1a23e97`); the `$exposure` event below is not committed yet.
 **Created / start date:** 2026-11-02
-**Status:** In Review — built and tested locally, not committed. Flag off. Waiting on commit approval, D4 (client) and the real phone test.
+**Status:** In Testing — on main with the experiment OFF. Amplitude experiment [`autopay_fallback`](https://app.amplitude.com/experiment/clear-cutoff/673721/config/1589014) created 2026-11-02: variants `on` / `holdout`, 90/10 (ticket's split, D4 still open), 100% of users once started, bucketed by user id, deployment `testing_price_99`. Primary metric `jdt5ticx` (any successful payment), guardrail `75ob1bv4` (successful autopay). **To turn on:** Start the experiment in Amplitude; to stop, turn it off there. No deploy needed either way. Off = no sheet, no exposure, no close on dismiss (frontend gate; user decided 2026-11-02: frontend + Amplitude only, no backend change). NOT behind the flag, because it lives in the backend already deployed (`1a23e97`): the scheduled `payments:close-stale-attempts` marks abandoned `initiated` rows from 2026-11-02 on as `cancelled` after 30 min. The student sees nothing and a late payment still activates; only Grafana's `initiated` / `cancelled` counts change. Also ungated and harmless: the remembered autopay attempt in localStorage, one cached flag lookup, one pricing read.
 
 ---
 

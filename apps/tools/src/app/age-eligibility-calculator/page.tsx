@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import PageJsonLd from "@/components/PageJsonLd";
-import Link from "next/link";
+import Link from "@/components/NoPrefetchLink";
 import Text from "@clearcut/ui/text";
 import SiteHeader from "@/components/SiteHeader";
 import ToolsFooter from "@/components/SiteFooter";

@@ -22,6 +22,10 @@ const config: NextConfig = {
   // every internal link/asset URL to match, so the fronting Worker can
   // forward requests through unchanged with no path rewriting needed.
   basePath: "/tools",
+  // JS/CSS load straight from the Pages project so they do not
+  // pass through the Worker and count against the 100k/day free limit. Unset =
+  // same origin through the Worker, which also works. See TOOLS_DEPLOY.md.
+  assetPrefix: process.env.TOOLS_ASSET_PREFIX || undefined,
   trailingSlash: false,
 
   // Dev-only: `next build` errors if `output: "export"` and `rewrites` are

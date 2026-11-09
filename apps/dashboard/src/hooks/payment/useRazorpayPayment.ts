@@ -30,6 +30,7 @@ import {
   readAttempt,
   saveAttempt,
 } from "@/lib/payment/paymentAttempt";
+import { getAutopayFallbackArm } from "@/lib/payment/autopayFallback";
 import { useLocale } from "next-intl";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import { useAuth } from "@/providers/AuthProvider";
@@ -121,6 +122,22 @@ export function useRazorpayPayment({
   // after a re-render, so two quick taps created two orders (CC-60).
   const inFlightRef = React.useRef(false);
   const { user: authUser } = useAuth();
+
+  // Closing an attempt when the checkout is dismissed (CC-169) belongs to the
+  // Amplitude experiment autopay_fallback. Not in it, or no answer yet: nothing
+  // is closed. Never awaited, so the pay tap doesn't wait for Amplitude.
+  const inRecoveryExperiment = React.useRef(false);
+  const authUuid = authUser?.uuid;
+  React.useEffect(() => {
+    if (!authUuid) return;
+    let active = true;
+    void getAutopayFallbackArm(authUuid).then((arm) => {
+      if (active) inRecoveryExperiment.current = arm !== null;
+    });
+    return () => {
+      active = false;
+    };
+  }, [authUuid]);
 
   // The guard and `loading` stay on for the WHOLE checkout — until the popup
   // is closed, the payment fails, or verification has finished — not just
@@ -461,7 +478,7 @@ export function useRazorpayPayment({
             outcomeReported = true;
             // The saved attempt stays: a UPI payment started before closing
             // can still complete, and the return check then finds it.
-            void closeAttempt(order.transaction_id).catch(() => {});
+            if (inRecoveryExperiment.current) void closeAttempt(order.transaction_id).catch(() => {});
 
             trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",

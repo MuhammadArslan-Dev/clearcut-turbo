@@ -8,6 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import { trackEvent } from "@/lib/analytics/browser";
 import { inAppBrowserKind } from "@/lib/analytics/paymentFunnel";
 import {
+  AUTOPAY_FALLBACK_FLAG_KEY,
   AUTOPAY_FALLBACK_SOURCE,
   clearAutopayAttempt,
   getAutopayFallbackArm,
@@ -89,6 +90,9 @@ export function useAutopayFallback({
       offeredRef.current = true;
       triggerRef.current = trigger;
       clearAutopayAttempt();
+      // Experiment analysis counts a student from this event, so both arms enter
+      // at the moment of the offer, not on every visit to the payment page.
+      trackEvent("$exposure", { flag_key: AUTOPAY_FALLBACK_FLAG_KEY, variant: value });
       trackEvent("Autopay Fallback Shown", { ...eventProps(trigger), arm: value, displayed: value === "on" });
       if (value === "on") setOpen(true);
     },
@@ -136,7 +140,8 @@ export function useAutopayFallback({
     price,
     type: ONE_TIME_PLAN,
     orderSource: AUTOPAY_FALLBACK_SOURCE,
-    returnCheck,
+    // Flag off: this hook instance stays silent, as if it weren't on the page.
+    returnCheck: returnCheck && arm !== null,
     onClose: () => {},
     onSuccess: () => {
       setLeaving(true);

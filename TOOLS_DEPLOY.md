@@ -38,9 +38,11 @@ Run from the repo root:
 
 ```sh
 cd apps/tools
-NODE_ENV=production NEXT_PUBLIC_LARAVEL_MAIN_BACKEND=https://apptest.clearcutoff.in/api TOOLS_API_URL=https://tools-api.clearcutoff.in/api/v1 pnpm build
+TOOLS_ASSET_PREFIX=https://clearcut-tools.pages.dev NODE_ENV=production NEXT_PUBLIC_LARAVEL_MAIN_BACKEND=https://apptest.clearcutoff.in/api TOOLS_API_URL=https://tools-api.clearcutoff.in/api/v1 pnpm build
 npx wrangler pages deploy out --project-name=clearcut-tools --branch=main --commit-message="<what changed>"
 ```
+
+`TOOLS_ASSET_PREFIX` loads JS/CSS straight from the Pages project, so they don't pass through the Worker and count against the Workers free limit (100k requests a day for the whole account, shared with `/go`). Forgetting it is safe but costly: the site still works, and every asset goes back through the Worker. New internal links use `components/NoPrefetchLink.tsx`, because default prefetch cost 13-54 extra Worker requests per page view.
 
 `pnpm build` first deletes `.next/cache/fetch-cache` (`scripts/clear-fetch-cache.mjs`). Without that, a build reuses old API responses: production ran on 2026-10-05 data until 2026-10-22 (no exam logos, 4 exams missing). Don't run `next build` directly for a deploy.
 

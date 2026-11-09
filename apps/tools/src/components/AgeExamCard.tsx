@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/NoPrefetchLink";
 import Text from "@clearcut/ui/text";
 import type { AgeEligibilityExam } from "@/lib/ageEligibility";
 import type { Locale } from "@/lib/dictionary";

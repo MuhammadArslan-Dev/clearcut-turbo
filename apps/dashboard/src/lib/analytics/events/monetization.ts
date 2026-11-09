@@ -20,7 +20,9 @@ export type MonetizationEventName =
   // One-time fallback after an autopay attempt didn't go through (CC-168).
   | 'Autopay Fallback Shown'
   | 'Autopay Fallback Tapped'
-  | 'Autopay Fallback Dismissed';
+  | 'Autopay Fallback Dismissed'
+  // Amplitude Experiment's own exposure event (name is fixed by Amplitude).
+  | '$exposure';
 
 
 export interface MonetizationEventPayloads {
@@ -109,6 +111,11 @@ export interface MonetizationEventPayloads {
     // link = the "Continue free learning" link; back = browser back / swipe back.
     trigger?: 'link' | 'back';
   } & PayContext;
+
+  '$exposure': {
+    flag_key: string;
+    variant: string;
+  };
 
   // CC-168. Shown also fires for the holdout arm (displayed: false), at the
   // moment it would have seen the sheet, so both arms have a starting point.
