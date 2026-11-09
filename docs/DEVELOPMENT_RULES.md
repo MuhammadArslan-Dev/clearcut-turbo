@@ -14,7 +14,7 @@ Related docs: root `CLAUDE.md` (monorepo/architecture details), backend `CLAUDE.
 3. **Reuse.** Check the component catalog (section 3). Use it as-is → else extend it (new prop/variant) → else create a new reusable component that follows the design system.
 4. **Compare any provided design/screenshot with the existing design system** and adapt the design to existing components/tokens. Do not copy the mock pixel-for-pixel with new colours, radii or fonts.
 5. **Implement** following sections 2–7.
-6. **Verify** (section 8) — tsc, eslint, `check:colors`, and a real screenshot for UI work.
+6. **Verify** (section 8) — tsc, eslint, `check:colors`, and a real screenshot for UI work. Then the **break-it pass** (section 8.1): try to break your own change the way the client would, before saying done.
 7. **Update this file** if a new pattern/component/gotcha was introduced.
 
 Hard "don'ts":
@@ -161,7 +161,7 @@ Backend: Laravel 12 at `C:\laragon\www\clearcutoff-main-backend`, API at `http:/
 - **Migrations:** new migration per change, reversible `down()`, never edit an already-run migration. Run locally, verify.
 - **Data:** DB timezone +05:30. Daily-test questions come from `question_new` (`QuestionNew` + `QuestionTrans`).
 - **Style:** Laravel Pint (`vendor/bin/pint --dirty`). Heavy work → queued jobs. Errors → Sentry.
-- **Tests/fixtures:** create temporary users/tokens/rows for manual verification and **delete them afterwards**. Prefer `tinker --execute` (interactive tinker hangs).
+- **Tests/fixtures:** create temporary users/tokens/rows for manual verification on the **local** DB only, and remove what you created in shared tables. The Playwright fixture user and its `pw-` token stay in place (the user keeps using that session) unless asked to delete them; say in the report what was left behind. Never write test rows to a remote/shared DB. Prefer `tinker --execute` (interactive tinker hangs).
 - Frontend + backend contract changes must ship together; update TS types in `lib/api/*` when a response shape changes.
 
 ---
@@ -191,6 +191,33 @@ pnpm turbo run build --filter=dashboard   # when routes/config/i18n changed
 - For a retry/refetch control, assert the **request count** in the browser — a click test alone passes while nothing is sent (see §2.2).
 - A checkbox/radio/select must not change its row's size when toggled — measure the bounding box before and after.
 
+### 8.1 Break-it pass — think like the client (every feature, bug fix and code change)
+
+The team's tickets come from evidence (Clarity dead/rage taps, Sentry, Amplitude, SQL) and end in a measurable "Done when". A screen that looks right and survives one happy-path click is **not done**. Before reporting, try to break your own change from the angles below (only the rows that apply), and put the result — including what you did NOT verify — in the phase file's §8.
+
+**Baseline first.** Measure the symptom on the OLD code (CLS, request count, dead taps, the failing request) before changing it, so "after" means something; record both numbers. (CC-175 shipped without an old-code CLS baseline.)
+
+| Angle | Probe | Passes when |
+|---|---|---|
+| Dead taps | At 390px tap every CTA in its empty / disabled / loading state; `document.elementFromPoint` at the tap spot (an overlay on top?); grep new `cursor-pointer` without a handler | Something visible happens (hint, navigation) — never nothing |
+| Retry / refresh | Hang the request, then fail it, then click Retry | Exactly **+1 request**; a late old response cannot overwrite a newer state (§2.2) |
+| Double tap | Tap twice fast; tap immediately after a transition / animation | Exactly 1 POST / navigation; the second tap is not eaten by a stale closure (§10) |
+| Network failure | Dropped request, 500, 4xx, 403, malformed JSON, hung 40 s, failing twice in a row | Message + retry + a way out; a 4xx is never auto-retried; a network blip is a breadcrumb, a real failure goes to Sentry |
+| Layout | CLS via `PerformanceObserver` at 390px (4x CPU for speed work) on a free port; toggling a control must not resize its row; a hint, error or message that appears must not move the control under the finger (measure the button's `top` before/after the tap — CC-90's first version pushed Continue 26px down) | Before/after numbers recorded; CLS < 0.1; the control stays put |
+| Language / device | en + hi + mr; 390px + desktop; FB/IG user agent and Slow 4G where the flow is hit from ads | No hard-coded English, no overflow, no dependence on a popup the in-app browser blocks |
+| Numbers / data | Compare the screen with the DB for a real user; boundary and empty values: 0, 1, max, null, soft-deleted rows | Totals reconcile; no `NaN`, placeholder or stale value |
+| Analytics / tracking | Capture the outgoing events with the ingestion hosts blocked; reuse existing events (§2.5); unload events in a fresh browser context | Right name, once per attempt, right properties, conversion tracking untouched |
+| Backend / API | A second user's token → 404; invalid, missing and oversized input; duplicate request or webhook (idempotency); two requests at once; migration up AND down; for performance work the response JSON before/after must be identical | No data change, no 500, no leak of another user's data |
+| Regression | What else shares this component, endpoint, store or shared package? Open those screens | Callers of a shared piece render unchanged (§5: additive only) |
+| SEO / links | Internal links stay `Link` / `<a href>`; the content is still in the server HTML | No click-handler-only navigation |
+| Feedback channel | The message you rely on actually renders (toast container mounted? error boundary?) | The user can see it. Example: no `ToastContainer` is mounted, so the existing `toast.*` calls show nothing |
+
+**Test the test.** A probe that finds nothing must first be shown able to find something (positive control). Check the HTTP status of every probe: a 429 rate limit or a 503 once produced a false "none found". Separate local-environment drift (missing column, no Redis, a `.test` host answering 503 in the browser) from product bugs, and say which it was. A raw `tsc` count includes phantom `.next/types` errors — compare per file, before vs after. `window.resize` does not change the viewport in the Chrome tool: render the page in a same-origin `<iframe>` of the target width. Files here may be CRLF: edit with a script that normalises line endings, never by a shell heredoc with quotes (§9).
+
+**Report honestly.** "Done" never rests on one passing test, a green build, a Jira status or someone else's "done" — check the code or the data. List `Not verified:` explicitly (real Android phone, FB/IG in-app browser, Clarity or Sentry numbers after deploy, Marathi, Sentry events that were off locally) and ask the user for what only they can check. When something needs a decision, stop that item and document the options (phases README rules 2–5).
+
+**Keep this list alive.** When a user correction, a Sentry issue or a review finds a defect class or a missed check, add a row or sentence here (no new document), add a changelog line in §11, and if it is a user preference, a memory feedback note.
+
 ---
 
 ## 9. Environment Gotchas (Windows)
@@ -203,7 +230,7 @@ pnpm turbo run build --filter=dashboard   # when routes/config/i18n changed
 - **Dev-only code must not be statically imported in a layout.** `process.env.NODE_ENV === "development" && <X />` stops rendering but still ships the import (`agentation` cost every user 90 KB gzip). Use the module-level `DevAgentation` wrapper (landing, tools, dashboard, blog).
 - A folder of pure components behind a barrel (`ui/icons`) needs `"sideEffects": false` in a package.json beside it, or every module in the barrel ships to every page.
 - **Mini Test availability has ONE source:** `GET /v2/mini-test/count` (the topic's own questions, scoped to the enrolled course's exam) via `useMiniTestAvailability(topicId, courseId)`. The bottom bars, chapter header and the sidebar's `has_mini_test` (backend `PreparationService`, same exam scope) must all use it; never gate the button on a `limit=1` probe or an unscoped `withCount('questions')`. While the count loads the button's slot is reserved (invisible), 0/error hides it.
-- Test tokens for local browser checks: mint with `php artisan tinker` (`createToken('pw-…')`) on the **local** backend only, pass as `?token=`, and delete every `pw-%` token afterwards.
+- Test tokens for local browser checks: mint with `php artisan tinker` (`createToken('pw-…')`) on the **local** backend only and pass it as `?token=` (or set `auth_token` in localStorage + cookie). Keep the fixture user's `pw-` token for the user's session, list it in the report, and delete it only when asked.
 - Git Bash `/tmp` ≠ Windows temp; use the scratchpad dir for temp files.
 
 ---
@@ -296,6 +323,7 @@ pnpm turbo run build --filter=dashboard   # when routes/config/i18n changed
 - **CMS rich text on the landing (phase 76, 2026-11-04).** A Payload richText field is exposed to the frontend as HTML through a virtual `lexicalHTMLField` (`*_html`, `storeInDB: false`), never by shipping Lexical to the browser. For FAQ the CMS also returns `questionText` / `answerText` (always plain) so search, slugs and JSON-LD never see HTML, and the old plain fields are kept (additive migration, no data rewrite). Landing renders it with `components/shared/RichFaqText.tsx` (`unwrapRichHtml` strips Payload's `payload-richtext` container and empty attributes) inside `.faq-rich` (`globals.css`): blue text and links use `--color-brand-accessible`, never `--color-brand`. `getFaq()` → `normalizeFaq()` falls back to the old fields so CMS and landing can deploy in either order. Blue text in Lexical = `TextStateFeature` key `color: blue` + a custom `text` converter (the default HTML converter ignores text state). Open issue: `slugify` in `FaqPageContent.tsx` strips Devanagari, so Hindi FAQ ids collide.
 
 ## 11. Changelog of this file
+- 2026-11-09 — §8.1 Break-it pass (client-style testing methodology, phase 93); fixtures/`pw-` tokens are kept for the user's session (§6, §9).
 - 2026-11-06 — Daily/Practice Test motion (phase 80): see section 10.
 - 2026-11-06 — Exam tests motion (phase 81): see section 10.
 - 2026-11-04 — FAQ rich text (phase 76): CMS richText → HTML pattern + `RichFaqText`, see section 10.
