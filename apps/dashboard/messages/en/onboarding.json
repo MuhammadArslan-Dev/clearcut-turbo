@@ -18,7 +18,9 @@
     "levels_steps": {
       "select_level_for": "Select Level for {subject}",
       "description": "(Your subjects depend on this choice)"
-    }
+    },
+    "search": "Search subject",
+    "noResults": "No subject found"
   },
   "continue": "Continue",
   "pickOption": "Select an option first"

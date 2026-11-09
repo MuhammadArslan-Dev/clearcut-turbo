@@ -12,6 +12,8 @@ import type { StepProps } from "@/types/onboarding/onboarding";
 import { trackEvent } from "@/lib/analytics/browser";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import type { AppLocale } from "@/types/components/language";
+import { useAuth } from "@/providers/AuthProvider";
+import { isOnboardingLevelStepEnabled } from "@/lib/experiments/onboardingLevelFlag";
 
 // Only the step-transition (index > 0) needs framer-motion — the very first
 // screen (LanguageStep) never renders through this wrapper at all (see the
@@ -31,6 +33,8 @@ const MotionDiv = dynamic(() => import("framer-motion").then((m) => ({ default: 
 // etc.) have no reason to be in the bundle that has to be parsed before that
 // first screen paints. It only actually renders once the user taps Continue.
 const ExamStep = dynamic(() => import("./steps/ExamStep")) as React.FC<StepProps>;
+// Step 3 (CC-81, flag `onboarding_level_step`): only loaded for students who get it.
+const LevelChoiceStep = dynamic(() => import("./steps/LevelChoiceStep")) as React.FC<StepProps>;
 
 const STEPS: OnboardingStep[] = [
     {
@@ -47,14 +51,16 @@ const STEPS: OnboardingStep[] = [
         description: "You can update this later",
         Component: ExamStep
     },
-    // {
-    //     id: "level",
-    //     title: "Select Subjects",
-    //     highlightText: "Subjects",
-    //     description: "You can update this later",
-    //     Component: LevelStep
-    // },
 ];
+
+// Added after the exam step when the flag is on (CC-81, phase 86).
+const LEVEL_STEP: OnboardingStep = {
+    id: "level",
+    title: "Select Subjects",
+    highlightText: "Subjects",
+    description: "You can update this later",
+    Component: LevelChoiceStep,
+};
 
 export default function OnboardingWizard() {
     const {
@@ -68,6 +74,20 @@ export default function OnboardingWizard() {
 
     const searchParams = useSearchParams();
     const { switchLanguage } = useLanguageSwitch();
+
+    // Amplitude flag `onboarding_level_step`: OFF / unconfirmed -> two steps, exactly as before. Asked while the
+    // student is still on the language step, so the answer is normally there by the time they pick an exam.
+    const { user: authUser, loading: authLoading } = useAuth();
+    const [levelStepOn, setLevelStepOn] = useState(false);
+    useEffect(() => {
+        if (authLoading) return;
+        let cancelled = false;
+        isOnboardingLevelStepEnabled(authUser?.uuid)
+            .then((on) => { if (!cancelled) setLevelStepOn(on); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [authLoading, authUser?.uuid]);
+    const steps = levelStepOn ? [...STEPS, LEVEL_STEP] : STEPS;
 
     // The exam landing page (e.g. HTET) that sent the user into signup
     // already knows both the exam and the locale the user was reading in —
@@ -148,7 +168,7 @@ export default function OnboardingWizard() {
     const hasAppliedLandingContext = appliedLandingContextRef.current;
 
     const safeIndex =
-        hasAppliedLandingContext && stepIndex >= 0 && stepIndex < STEPS.length
+        hasAppliedLandingContext && stepIndex >= 0 && stepIndex < steps.length
             ? stepIndex
             : 0;
 
@@ -162,16 +182,16 @@ export default function OnboardingWizard() {
             ? { ...data, language: landingLang as AppLocale }
             : data;
 
-    const step = STEPS[safeIndex];
+    const step = steps[safeIndex];
     const isFirst = safeIndex === 0;
-    const isLast = safeIndex === STEPS.length - 1;
+    const isLast = safeIndex === steps.length - 1;
 
     const goNext = () => {
         if (isLast) {
             handleFinish();
         } else {
             setDirection(1);      // → swipe left→right
-            nextStep(STEPS.length - 1);
+            nextStep(steps.length - 1);
         }
         
         // reset();
@@ -215,7 +235,7 @@ export default function OnboardingWizard() {
                 <StepComponent
                     data={effectiveData}
                     currentStep={safeIndex}
-                    steps={STEPS}
+                    steps={steps}
                     updateData={updateData}
                     goNext={goNext}
                     goBack={goBack}
@@ -237,7 +257,7 @@ export default function OnboardingWizard() {
                         <StepComponent
                             data={effectiveData}
                             currentStep={safeIndex}
-                            steps={STEPS}
+                            steps={steps}
                             updateData={updateData}
                             goNext={goNext}
                             goBack={goBack}

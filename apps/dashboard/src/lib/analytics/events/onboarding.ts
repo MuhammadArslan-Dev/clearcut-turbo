@@ -20,6 +20,9 @@ export interface OnboardingEventPayloads {
     step_name: string;
     app_language_choice?: string;
     exam_choice?: string;
+    // level_selection step (CC-81): the path the student picked, paper first.
+    selected_navigation_ids?: number[];
+    selected_navigation_names?: string[];
   };
 
   'Onboarding Step Reversed': {

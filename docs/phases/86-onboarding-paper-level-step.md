@@ -2,9 +2,9 @@
 
 **Tickets:** CC-81 (Medium, queue 10)
 **Repos:** CM (`apps/dashboard`), BE only if the `selectedexam` contract needs it (decision below)
-**Branch:** `feature/onboarding-level-step` — created from `main`, docs only so far
+**Branch:** `feature/onboarding-level-step` — committed locally, not pushed
 **Created / start date:** 2026-11-09
-**Status:** Blocked – Decision — backend contract READ (2026-11-09): "all subjects by default" is not possible; the user must choose how to shorten the flow (see §5)
+**Status:** In Progress — option A built behind flag `onboarding_level_step` (default OFF) and browser-tested; open points listed in §5/§8
 
 > Start only after phase 85 and the money phases (87, 88). Nothing implemented.
 
@@ -34,11 +34,21 @@ Today: `features/onboarding/OnboardingWizard.tsx` has two steps (`LanguageStep`,
   - So **"select all subjects by default" cannot be built as written**: sending every leaf would create 6–21 enrolment rows per student (different course data, access, counts, analytics) and a root-only stage gives nothing. What CAN be moved is the same choice (paper → combination/subject) into onboarding.
   - `POST /v2/enrollment/create` (unchanged) creates the row (status `trial`, dates, `active_level`) with `stage_id` null for multi-leaf exams; `selectedexam` then updates that row in place — exactly what the existing modal does today. **No backend change is needed** if onboarding calls `create` and then `selectedexam` with the chosen path; if the second call fails the student is still enrolled and sees today's "विषय जोड़ें".
 
+- 2026-11-09 — **built (option A), flag `onboarding_level_step`, default OFF = today's flow:**
+  - `lib/onboarding/levelChoice.ts` (pure rules: leaf count, `needsLevelChoice` = more than one leaf, single paper auto-picked (CC-111), changing an earlier choice drops later ones, a group per depth, case-insensitive filter that keeps the selected option) + 7 Vitest tests.
+  - `lib/experiments/onboardingLevelFlag.ts` — Amplitude flag, ON only for variant `on`, never throws, 1.5 s timeout.
+  - `OnboardingWizard.tsx` — asks the flag while the student is on the language step; flag on => a third step (`LevelChoiceStep`, loaded dynamically), flag off/unconfirmed => the two steps exactly as before.
+  - `ExamStep.tsx` — flag on: levels are prefetched when an exam is picked; Continue goes to step 3 only if the exam has more than one leaf, otherwise (or if the levels did not load) it enrols right there as before.
+  - `LevelChoiceStep.tsx` — paper (skipped when there is one) then each further group (combination, subject); a search box for any group with more than 8 options ("Search subject" / hi / mr, "No subject found"); Start stays enabled but looks not-ready until a leaf is picked and says why on tap (CC-90 pattern, hint floats above the button); then `enrollment/create` (unchanged) and `selectedexam` with the picked path (exactly what the "add subjects" modal saves) and `/preparation/{group_code}?subject_selected=1`; if the `practice_test` flag is on and the test is not done, `offerPracticeTest` is recorded first so Preparation asks Take/Skip as it does after the modal; completion animation (phase 84) reused; synchronous in-flight guard.
+  - Analytics: existing `Onboarding Step Completed` (`step_name: level_selection`, plus `selected_navigation_ids/names`) and existing `Onboarding Completed`; no new event names. i18n: two keys appended to `Onboarding.subject` in en/hi/mr.
+  - Backend: no change.
+
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
-| 2026-11-09 | 🛑 **How do we shorten the flow, given "all subjects" does not exist?** Options: **(A) Move the whole existing choice into onboarding** (paper → combination/subject, same UI as the "add subject" modal, auto-skip a step with one option), then `create` + `selectedexam`, land on `/preparation/{group_code}?subject_selected=1` — saves the "विषय जोड़ें" tap, the modal, "Start Learning"; no backend change; choices unchanged. **(B)** Move only the paper — saves little, subject modal still follows. **(C)** Send every leaf (rejected: 6–21 rows, changes what a student owns). **(D)** Pre-select a default leaf, e.g. the most chosen one (silent wrong content for many; needs a business decision and data from the user). Recommendation: **(A)**, behind an Amplitude flag. | open |
-| 2026-11-09 | 🛑 If (A): where does the subject choice sit for HTET Level 3 (21 subjects) — a plain list on the onboarding card, or a searchable list? (UI/UX choice for the user.) | open |
+| 2026-11-09 | ✅ ANSWERED by the user: **option A**, with a **searchable list** for long subject lists. (Original question follows.) 🛑 **How do we shorten the flow, given "all subjects" does not exist?** Options: **(A) Move the whole existing choice into onboarding** (paper → combination/subject, same UI as the "add subject" modal, auto-skip a step with one option), then `create` + `selectedexam`, land on `/preparation/{group_code}?subject_selected=1` — saves the "विषय जोड़ें" tap, the modal, "Start Learning"; no backend change; choices unchanged. **(B)** Move only the paper — saves little, subject modal still follows. **(C)** Send every leaf (rejected: 6–21 rows, changes what a student owns). **(D)** Pre-select a default leaf, e.g. the most chosen one (silent wrong content for many; needs a business decision and data from the user). Recommendation: **(A)**, behind an Amplitude flag. | open |
+| 2026-11-09 | ✅ If (A): HTET Level 3 (21 subjects) — **searchable list** | user (answered) |
+| 2026-11-09 | 🛑 Turn the flag on: create `onboarding_level_step` in Amplitude (variant `on`), roll out gradually, watch onboarding completion (> 90%) and onboarding → content same day. | open |
 
 ## 6. Blockers / risks
 - HTET vs CTET have different tree depths; language and `exam_content_language` handling differ (see `EditCourseModal`).
@@ -49,8 +59,16 @@ Today: `features/onboarding/OnboardingWizard.tsx` has two steps (`LanguageStep`,
 None expected. Possibly one backend change (see §5).
 
 ## 8. Tests and verification
-- [ ] tsc / eslint / `check:colors`; Playwright (mocked levels for a 1-root and a 3-root exam, en/hi/mr, back button)
+- [x] tsc 93 = clean `main` 93; eslint touched files 0 errors (wizard/ExamStep warnings unchanged); `check:colors` passes; all dashboard Vitest 26 passed (7 new).
+- [x] **Browser test (Chrome, local dashboard + local backend for the real exams/levels; the two POSTs `enrollment/create` and `selectedexam` and the flag were stubbed in the page, so no enrolment was written):**
+  - flag ON, CTET: indicator shows 3 steps; step 3 asks the paper; Start tapped with nothing picked → "Select an option first" shown without moving the button; Paper 2 → "Language subject" group → "Optional subject" group → Start turns blue only when complete; payload `selections` = `[52,56,60]` (Paper 2 → English and Hindi → Maths and Science), then `/preparation/{group}?subject_selected=1`; Paper 1 → combo is the leaf (`[51,53]`).
+  - **Bug found and fixed:** a double/triple click on Start sent `create=2, saved=2` (state guard is async); a synchronous ref guard was added; re-test: triple click → `create=1, saved=1`. (The same async-state guard exists in the older `ExamStep` enrol path: not changed here.)
+  - `selectedexam` 500: error "Something went wrong. Please try again." shown, selection kept, button active; retry → +1 `create` and +1 `selectedexam` (2,2), then success.
+  - HTET Level 3 (21 subjects): search box shown; "phy" → Physical Education, Physics, Geography; "zzzq" → "No subject found".
+  - flag OFF: "2/2" steps, Continue enrols in ExamStep (`{"exam_id":3}` only, `selectedexam` not called) and goes to `/dashboard?user_type=new` — unchanged.
+  - Hindi at 390 px, UP PGT (one paper): paper question skipped, subject list in Hindi with Hindi search placeholder and Start bar at the bottom.
+- [ ] **Not verified:** Marathi visually, back button from step 3 and re-entering with a different exam, an exam whose levels fail to load (should fall through to plain enrolment: reasoned, not run), practice-test flag ON path with a real backend, the Preparation page for a freshly enrolled real user (the group code was stubbed), the real backend write (`create` then `selectedexam` on a fresh user), the completion animation over the Preparation page, desktop layout beyond one screenshot, real phone, Amplitude events (disabled locally), and the effect on onboarding completion (needs the rollout).
 - [ ] After deploy (user): onboarding completion > 90%, onboarding → content same day rises (Amplitude)
 
 ## 9. Next steps
-After the 🛑 answer (recommended A): implement behind a flag on branch `feature/onboarding-level-step`: new `LevelStep` in `OnboardingWizard` (levels prefetched in `ExamStep` via `prefetchLevels`, reuse the modal's selection UI), `create` then `selectedexam`, then redirect; analytics `step_name: "level_selection"` on the existing `Onboarding Step Completed`; test 1-root and multi-root exams, en/hi/mr, 390 px, back button, failing second call.
+Before any rollout: run `create` + `selectedexam` once against a fresh local user (not the shared fixture) and open the resulting Preparation page; check the back button; then the user creates the Amplitude flag and rolls out gradually. No merge/deploy without approval.
