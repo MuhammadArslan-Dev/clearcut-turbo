@@ -18,7 +18,9 @@
     "levels_steps": {
       "select_level_for": "{subject} के लिए स्तर चुनें",
       "description": "(आपके विषय इसी चयन पर डिपेंड करेंगे)"
-    }
+    },
+    "search": "विषय खोजें",
+    "noResults": "कोई विषय नहीं मिला"
   },
   "continue": "आगे बढ़ें",
   "pickOption": "पहले एक विकल्प चुनें"

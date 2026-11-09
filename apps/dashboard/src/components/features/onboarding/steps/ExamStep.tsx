@@ -22,6 +22,10 @@ import MainButton from "@/components/ui/button/main-button";
 import { useOnboardingCelebrationStore } from "@/store/onboarding/useOnboardingCelebrationStore";
 import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
+import { useQueryClient } from "@tanstack/react-query";
+import { LEVELS_QUERY_KEY, prefetchLevels } from "@/hooks/onboarding/useLevels";
+import type { Level } from "@/lib/api/onboarding";
+import { needsLevelChoice } from "@/lib/onboarding/levelChoice";
 
 // Completion animation after enrolling (phase 84). Set NEXT_PUBLIC_LEGACY_ONBOARDING=true (and rebuild) to go back to the
 // plain redirect; nothing else needs to change.
@@ -33,9 +37,13 @@ export default function ExamStep({
   steps,
   currentStep,
   updateData,
+  goNext,
   goBack,
 }: StepProps) {
   const t = useTranslations("");
+  const queryClient = useQueryClient();
+  // The wizard adds a "level" step when flag `onboarding_level_step` is on (CC-81). Without it: enrol here, as before.
+  const levelStepOn = steps.some((s) => s.id === "level");
 
   const router = useRouter();
 
@@ -136,6 +144,11 @@ export default function ExamStep({
 
   const isLoading = loading && !error;
 
+  // Flag on: warm the paper/subject list as soon as an exam is picked, so the next step opens without a wait.
+  useEffect(() => {
+    if (levelStepOn && data.exam?.id) void prefetchLevels(queryClient, data.exam.id);
+  }, [levelStepOn, data.exam?.id, queryClient]);
+
   const { buttonPhase } = useButtonArrowAnimation({
     data: !!data.exam || null,
   });
@@ -146,6 +159,23 @@ export default function ExamStep({
 
     setIsSubmitting(true);
     setEnrollError(null);
+
+    // CC-81: an exam with a real choice (more than one leaf) goes on to the paper/subject step, which enrols.
+    // Anything unclear (levels did not load) falls through to the plain enrolment below.
+    if (levelStepOn) {
+      await prefetchLevels(queryClient, data.exam.id);
+      const levels = queryClient.getQueryData<Level[]>(LEVELS_QUERY_KEY(data.exam.id));
+      if (levels && needsLevelChoice(levels)) {
+        trackEvent("Onboarding Step Completed", {
+          step_number: 2,
+          step_name: "exam_selection",
+          exam_choice: data.exam.short_name,
+        });
+        setIsSubmitting(false);
+        goNext();
+        return;
+      }
+    }
 
     // The completion animation starts NOW (the learner sees their tap was taken) while the enrolment request runs; it can't
     // finish before the request succeeds, and a failure removes it again (see `fail` below).
@@ -205,7 +235,7 @@ export default function ExamStep({
     } finally {
       setIsSubmitting(false);
     }
-  }, [data, isSubmitting, router]);
+  }, [data, isSubmitting, router, levelStepOn, queryClient, goNext]);
 
   return (
     <MainContainer maxWidth={"max-w-[850px]"} padding="md:pt-20">
