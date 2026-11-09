@@ -74,7 +74,9 @@ import {
   DailyTestResult,
   DailyTestResultQuestion,
 } from "@/lib/api/dailyTests";
-import { isApiError } from "@/lib/api/api-error";
+import { isApiError, isNetworkFailure } from "@/lib/api/api-error";
+import { logger } from "@/lib/sentry/sentry-logger";
+import { Link } from "@/i18n/navigation";
 import {
   saveDailyTestState,
   loadDailyTestState,
@@ -143,6 +145,8 @@ export default function DailyTestAttemptPage() {
   const { result: cachedResult, isError: resultError } = useDailyTestResult(courseId, testId, completedAttemptId);
 
   const [state, setState] = useState<ViewState>({ phase: "loading" });
+  // Bumped by the "Try again" button on the load-failed screen to run the start effect once more.
+  const [loadTick, setLoadTick] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [visited, setVisited] = useState<Set<number>>(new Set());
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
@@ -168,8 +172,25 @@ export default function DailyTestAttemptPage() {
     // fails, fall through to start(), which also returns a completed result.
     if (historyLoading) return;
     if (completedAttemptId != null && !resultError) return;
-    startDailyTest(courseId, testId, { retake })
+    // A response that arrives after this run was replaced (Retry tapped, deps changed, unmount) must not
+    // overwrite the newer state.
+    let cancelled = false;
+    // One automatic retry for a network failure or a 5xx, never for a 4xx. Safe because the backend's
+    // start resumes the in-progress attempt instead of creating a second one.
+    const startWithRetry = async () => {
+      try {
+        return await startDailyTest(courseId, testId, { retake });
+      } catch (err) {
+        const retryable = isNetworkFailure(err) || (isApiError(err) && err.status >= 500);
+        if (!retryable) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (cancelled) throw err;
+        return await startDailyTest(courseId, testId, { retake });
+      }
+    };
+    startWithRetry()
       .then((res) => {
+        if (cancelled) return;
         const data = res.data;
         if (data.status === "completed") {
           setState({ phase: "result", result: data });
@@ -221,13 +242,25 @@ export default function DailyTestAttemptPage() {
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         if (isApiError(err) && err.status === 403) {
           setState({ phase: "locked" });
         } else {
+          // Report every load failure (CC-177) with the test, so "Failed to load test" can be counted in Sentry.
+          // A dropped connection is expected on mobile networks: breadcrumb only, like the rest of the app.
+          const options = {
+            tags: { module: "daily-test-attempt" },
+            extra: { courseId, testId, retake, ...(isApiError(err) ? err.toContext() : {}) },
+          };
+          if (isNetworkFailure(err)) logger.breadcrumb("Daily test failed to load (network)", options);
+          else logger.error(err, options);
           setState({ phase: "error", message: "loadFailed" });
         }
       });
-  }, [courseId, testId, historyLoading, completedAttemptId, resultError, retake]);
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, testId, historyLoading, completedAttemptId, resultError, retake, loadTick]);
 
   const questions = state.phase === "attempting" ? state.questions : [];
   const currentQuestion = questions[currentIndex] ?? null;
@@ -515,8 +548,29 @@ export default function DailyTestAttemptPage() {
 
   if (state.phase === "error") {
     return (
-      <div className="max-w-2xl mx-auto p-4 text-center py-12">
+      <div className="max-w-2xl mx-auto p-4 text-center py-12 flex flex-col items-center gap-4">
         <p className="body-medium text-red-500">{t(`attempt.${state.message}`)}</p>
+        {/* A failed submit is not retried from here (it would need the answers again): only a failed load. */}
+        {state.message === "loadFailed" && (
+          <>
+            <Button
+              onClick={() => {
+                setState({ phase: "loading" });
+                setLoadTick((n) => n + 1);
+              }}
+            >
+              {t("attempt.retry")}
+            </Button>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard" className="body-medium text-brand underline">
+                {t("attempt.goDashboard")}
+              </Link>
+              <Button variant="plain" onClick={() => flow.goUp(`/daily-tests/${courseId}`)}>
+                {t("attempt.backToHistory")}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     );
   }

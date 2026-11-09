@@ -20,5 +20,6 @@
       "description": "(Your subjects depend on this choice)"
     }
   },
-  "continue": "Continue"
+  "continue": "Continue",
+  "pickOption": "Select an option first"
 }

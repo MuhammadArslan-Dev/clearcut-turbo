@@ -1,5 +1,7 @@
 # Phase 27 — CC-71 + CC-59: one order per attempt, and payments that survive the Facebook/Instagram app browser
 
+> **Update 2026-11-09:** CC-49 (stuck `authorized`) is continued in [phase 91](91-money-path-and-sentry-triage.md): Razorpay (read-only) shows no payment in `authorized` for 10 Sep–9 Nov; auto-capture + `payment.authorized` capture work.
+
 **Status:** Built + verified locally (2026-10-23) — BE `phase-27-payment-reliability` (a522311), CM `phase-27-payment-reliability`. Not merged. Real FB/IG phone test still needed.
 **Jira:** [CC-71](https://clear-cutoff.atlassian.net/browse/CC-71), [CC-59](https://clear-cutoff.atlassian.net/browse/CC-59) (context: [CC-49](https://clear-cutoff.atlassian.net/browse/CC-49) "Authorize" status)
 **Repos:** BE (orders, webhooks, status endpoint), CM `apps/dashboard` (payment page)

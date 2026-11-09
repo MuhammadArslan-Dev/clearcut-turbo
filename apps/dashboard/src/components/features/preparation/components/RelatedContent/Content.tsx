@@ -44,6 +44,7 @@ import {
 } from "../../types/topic-content-type";
 import { useMainVideoProgressTrackerStore } from "../../store/useMainVideoProgressTracker";
 import { usePreviousQuestions } from "../../hooks/usePreviousQuestions";
+import { usePdfViewer } from "@/components/features/downloadable-content/components/PdfViewerModal";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -166,9 +167,7 @@ export async function downloadFromBackend(
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    // Kept alive (not revoked) so the caller can offer a "View Notes" button
-    // that opens the same PDF without re-downloading it. Caller is
-    // responsible for revoking it once it's no longer needed.
+    // The caller revokes it (View no longer uses this blob: it opens the note's own link).
     return blobUrl;
   } catch (e) {
     if (intervalId) clearInterval(intervalId);
@@ -182,7 +181,11 @@ export async function downloadFromBackend(
 
 export function Notes({ notes }: { notes?: NoteItem[] | null }) {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
-  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  // CC-176: "View notes" opens the note's own link in the shared PDF viewer straight away (a new tab on
+  // phones, a modal on desktop) instead of waiting for a full download first.
+  const { openPdf, viewer: pdfViewer } = usePdfViewer();
+  // Progress is reported once per topic, however many times the notes are opened.
+  const progressMarkedFor = useRef<number | null>(null);
   const queryClient = useQueryClient();
   const {
     selectedTopic,
@@ -194,28 +197,15 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
 
   const t = useTranslations("relatedContent.studyTabs");
 
-  // Switching topic invalidates the previously downloaded blob — drop it so
-  // the button falls back to "Download" instead of opening stale notes.
-  useEffect(() => {
-    setViewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-  }, [selectedTopic?.id]);
-
-  useEffect(() => {
-    return () => {
-      if (viewUrl) URL.revokeObjectURL(viewUrl);
-    };
-  }, [viewUrl]);
-
   const handleDownload = async (note: NoteItem) => {
-    if (!note) return;
+    // The button stays tappable while a download runs (a disabled one swallows the tap); extra taps are ignored.
+    if (!note || downloadProgress !== null) return;
     setDownloadProgress(0);
     try {
       const filename = `${selectedTopic?.name ?? "notes"}.pdf`;
       const blobUrl = await downloadFromBackend(note.id, filename, (p) => setDownloadProgress(p));
-      if (blobUrl) setViewUrl(blobUrl);
+      // The browser has already started saving the file; release the blob a little later.
+      if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
       trackEvent("Notes Downloaded", {
         content_id: "Notes",
         chapter_name: selectedChapter?.name!,
@@ -229,8 +219,19 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     }
   };
 
-  const handleView = () => {
-    if (viewUrl) window.open(viewUrl, "_blank");
+  const handleView = (note: NoteItem) => {
+    if (!note) return;
+    // The React Native app opens notes through its own download route; keep that path as it was.
+    if (!note.link || isReactNativeWebView()) {
+      void handleDownload(note);
+      return;
+    }
+    // Straight from the tap, so the new-tab open on phones is not treated as a popup.
+    openPdf(note.link);
+    if (progressMarkedFor.current !== (selectedTopic?.id ?? null)) {
+      progressMarkedFor.current = selectedTopic?.id ?? null;
+      markVideoWatch();
+    }
   };
 
   const markVideoWatch = async () => {
@@ -383,18 +384,13 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
                     </div>
                   </div>
 
-                  <div className="w-full px-6">
+                  <div className="w-full px-6 flex flex-col gap-2">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <Button
-                        onClick={
-                          viewUrl
-                            ? handleView
-                            : () => handleDownload(filterNotes as NoteItem)
-                        }
-                        disabled={downloadProgress !== null}
+                        onClick={() => handleView(filterNotes as NoteItem)}
                         sx={{
                           padding: "2px 12px",
                           borderRadius: "50px",
@@ -402,49 +398,63 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
                         size="sm"
                         fullWidth
                         variant="outlined"
+                        className="touch-manipulation"
                       >
-                        {downloadProgress !== null ? (
-                          <div className="flex flex-col items-center gap-1 w-full py-0.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-3 h-3 border-2 border-[#0083ff] border-t-transparent rounded-full animate-spin" />
-                              <Text as="p" color="primary-dark" weight="semibold" variant="body-small">
-                                {downloadProgress}%
-                              </Text>
-                            </div>
-                            <div className="w-full bg-blue-100 rounded-full h-1">
-                              <div
-                                className="bg-[#0083ff] h-1 rounded-full transition-all duration-200"
-                                style={{ width: `${downloadProgress}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : viewUrl ? (
-                          <div className="flex gap-1">
-                            <Text
-                              as="p"
-                              color="primary-dark"
-                              weight="semibold"
-                              variant="body-small"
-                            >
-                              {t("notes.buttons.view")}
-                            </Text>
-                            <ArrowIcon variant="right" color="#0083ff" />
-                          </div>
-                        ) : (
-                          <div className="flex gap-1">
-                            <Text
-                              as="p"
-                              color="primary-dark"
-                              weight="semibold"
-                              variant="body-small"
-                            >
-                              {t("notes.buttons.download")}
-                            </Text>
-                            <ArrowIcon variant="download" color="#0083ff" />
-                          </div>
-                        )}
+                        <div className="flex gap-1">
+                          <Text
+                            as="p"
+                            color="primary-dark"
+                            weight="semibold"
+                            variant="body-small"
+                          >
+                            {t("notes.buttons.view")}
+                          </Text>
+                          <ArrowIcon variant="right" color="#0083ff" />
+                        </div>
                       </Button>
                     </motion.div>
+
+                    <Button
+                      onClick={() => handleDownload(filterNotes as NoteItem)}
+                      aria-disabled={downloadProgress !== null}
+                      sx={{
+                        padding: "2px 12px",
+                        borderRadius: "50px",
+                      }}
+                      size="sm"
+                      fullWidth
+                      variant="plain"
+                      className="touch-manipulation"
+                    >
+                      {downloadProgress !== null ? (
+                        <div className="flex flex-col items-center gap-1 w-full py-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 border-2 border-[#0083ff] border-t-transparent rounded-full animate-spin" />
+                            <Text as="p" color="primary-dark" weight="semibold" variant="body-small">
+                              {downloadProgress}%
+                            </Text>
+                          </div>
+                          <div className="w-full bg-blue-100 rounded-full h-1">
+                            <div
+                              className="bg-[#0083ff] h-1 rounded-full transition-all duration-200"
+                              style={{ width: `${downloadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <Text
+                            as="p"
+                            color="primary-dark"
+                            weight="semibold"
+                            variant="body-small"
+                          >
+                            {t("notes.buttons.download")}
+                          </Text>
+                          <ArrowIcon variant="download" color="#0083ff" />
+                        </div>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -507,6 +517,7 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
         </div>
         */}
       </div>
+      {pdfViewer}
     </motion.div>
   );
 }

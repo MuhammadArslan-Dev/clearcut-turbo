@@ -1,5 +1,7 @@
 # Phase 49 — Backend TTFB and slow endpoints
 
+> **Update 2026-11-09:** CC-149 is continued in [phase 90](90-performance-events-gateway-and-slow-apis.md) (per-endpoint findings; safe candidates with identical-JSON proof).
+
 **Tickets:** CC-149 (High)
 **Repos:** BE, CM dashboard (server fetches)
 **Status:** Waiting — needs 3 days of Laravel server spans after the Phase 45 deploy (`SENTRY_TRACES_SAMPLE_RATE=0.1`)

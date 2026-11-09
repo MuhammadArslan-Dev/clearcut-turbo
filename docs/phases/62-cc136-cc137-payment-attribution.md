@@ -1,5 +1,7 @@
 # Phase 62 — CC-136 + CC-137: campaign, exam and transaction id on every payment
 
+> **Update 2026-11-09:** the remaining work (exam on every payment, `transaction_id`, Meta params) is continued in [phase 89](89-payment-exam-data-and-acquisition-source.md) (CC-173). No `transactions.exam_id` column is needed: exam comes from `subscriptions.enrollment_id`/`group_code` → `u_exam_enrollments.exam_id`.
+
 **Status:** Reported done by the user on 2026-10-28; **no code for these was found on this machine** (backend working tree has only the user_states/practice-test changes; no `first_touch`/`last_touch_campaign` column or migration anywhere in the backend; no `transaction_id` on the dashboard's payment analytics). Needs verification against the acceptance criteria below before being trusted.
 **Jira:** [CC-136](https://clear-cutoff.atlassian.net/browse/CC-136) (database), [CC-137](https://clear-cutoff.atlassian.net/browse/CC-137) (Amplitude) — companions; related CC-130/131/132, CC-98
 **Repos:** BE (migration, models, payment/webhook code, backfill command), CM `apps/dashboard` (`lib/analytics` payment events)
