@@ -93,6 +93,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 66 | [Autopay ₹99 offer / A/B test — built, then removed](66-autopay-price-ab-test.md) | — (CC-62 lineage) | CM-dashboard | **Removed** from the dashboard (code identical to before); implementation kept in git history for the Practice Test A/B | Delete the unused Amplitude objects (list in the doc) |
 | 67 | [Standardize prices: ₹99 autopay / ₹139 one-time / ₹699 year](67-pricing-standardization.md) | — | CM-dashboard, CM-landing, Astro `/go` | In review: implemented and verified locally, not pushed | Owner sets production `payment.onetime_1year_price` = 699 (command in the doc); approve push |
 | 75 | [One-time attempts stuck "initiated" + one-time fallback when autopay fails](75-cc168-cc169-payment-recovery.md) | CC-168, CC-169 | BE, CM-dashboard | In Review: built + tested locally, not committed, flag off | Commit approval; D4 (client); Razorpay test-mode cancel; phone test |
+| 76 | [Rich text (bold, blue, links) for FAQ questions and answers](76-faq-rich-text.md) | — | CMS, CM-landing | In Review (built, verified on a DB clone) | User review; CMS backup + deploy CMS then landing; Hindi slug issue is a separate task |
 
 ## Cross-phase dependencies
 
