@@ -26,7 +26,8 @@ export default function Topbar({ plain = false }: { plain?: boolean } = {}) {
 
   /* ================= DERIVED DATA ================= */
 
-  const examTitle = exam?.short_name ? `${exam?.short_name ?? ""} Exam` : "";
+  // Just the exam name ("CTET"), no static " Exam" suffix (user, 2026-11-11).
+  const examTitle = exam?.short_name ?? "";
 
   // Mobile clips the title row 1:1 with how far the user has scrolled the
   // test list (see TestSeriesShell.tsx); desktop always shows it in full.
