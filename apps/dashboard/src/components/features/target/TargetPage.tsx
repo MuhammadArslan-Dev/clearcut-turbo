@@ -208,7 +208,7 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
                   {t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
                 </span>
               </span>
-              {a.action_type === "ONBOARDING_TEST" ? (
+              {a.action_type === "ONBOARDING_TEST" && (m.locked || m.meter === null) ? (
                 <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
                   {t("target.unlocksMeter")}
                 </span>
@@ -232,7 +232,15 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
           loading={going === next.id}
           showIcon={false}
           onClick={() => go(next)}
-          text={`${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: actionTitle(next, t) })} ›`}
+          text={
+            // Long topic names: ellipsis inside the button, the "›" always visible.
+            <span className="flex min-w-0 max-w-full items-center gap-1">
+              <span className="truncate">
+                {t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: actionTitle(next, t) })}
+              </span>
+              <span aria-hidden="true">›</span>
+            </span>
+          }
         />
       ) : (
         <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>
