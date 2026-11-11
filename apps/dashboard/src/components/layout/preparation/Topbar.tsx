@@ -43,7 +43,7 @@ export default function Topbar() {
     <header className="border-slate-200">
       <div className="h-auto bg-white flex flex-col lg:flex-row lg:gap-3 items-center justify-between rounded-md">
         {/* LEFT SECTION */}
-        <div ref={titleRowOuterRef} className="w-full overflow-hidden">
+        <div ref={titleRowOuterRef} className="w-full overflow-hidden bg-[var(--color-brand-dark)] lg:rounded-r-full">
           <div
             ref={titleRowRef}
             className="flex items-center justify-between md:justify-start w-full md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
@@ -55,6 +55,7 @@ export default function Topbar() {
                   variant="soft"
                   color="neutral"
                   size="sm"
+                  className="!bg-white/15 hover:!bg-white/25"
                   sx={{
                     borderRadius: "50px",
                     padding: "8px 8px",
@@ -62,7 +63,7 @@ export default function Topbar() {
                     width: "36px",
                   }}
                 >
-                  <ChevronIcon variant="left" size={16} color="#192839" />
+                  <ChevronIcon variant="left" size={16} color="white" />
                 </Button>
               </Link>
 
@@ -73,6 +74,7 @@ export default function Topbar() {
                   variant="heading-small"
                   weight="semibold"
                   color="gray-normal"
+                  className="!text-white"
                 >
                   {examTitle}
                 </Text>
@@ -81,7 +83,7 @@ export default function Topbar() {
 
             {/* Page Switch Tabs */}
             <div data-tour={PREP_TOUR.pageSwitch}>
-              <PageSwitchTab />
+              <PageSwitchTab tone="onBrand" />
             </div>
           </div>
         </div>
