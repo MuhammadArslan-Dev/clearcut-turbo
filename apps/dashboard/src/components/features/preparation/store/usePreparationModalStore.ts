@@ -60,6 +60,20 @@ const isMobile = () =>
 /* Store                               */
 /* ---------------------------------- */
 
+/**
+ * A sheet opened with history (`open(mode, payload, true)`) pushed a
+ * `{ drawer: true }` entry so the phone's back gesture closes it. When it is
+ * closed any other way (✕, finishing the test) that entry must be popped too —
+ * left behind, it swallowed the next back (topic view's back button did
+ * nothing, phone back needed an extra press). After a back gesture the entry
+ * is already gone (current state has no `drawer`), so nothing is popped twice.
+ */
+function popSheetEntry(wasHolding: boolean, nowEmpty: boolean) {
+  if (!wasHolding || !nowEmpty || typeof window === "undefined") return;
+  const state = window.history.state as Record<string, unknown> | null;
+  if (state?.drawer === true) window.history.back();
+}
+
 export const usePreparationModalStore = create<PreparationModalState>(
   (set) => ({
     stack: [],
@@ -82,7 +96,10 @@ export const usePreparationModalStore = create<PreparationModalState>(
           isHistory && isMobile() && !state.hasHistoryEntry;
 
         if (shouldPushHistory) {
-          window.history.pushState({ drawer: true }, "");
+          // Keep the flow-origin tag (useFlowNavigation's `flowFrom`) on the
+          // sheet's entry too, so the topic view's back still knows its origin.
+          const prev = (window.history.state ?? {}) as Record<string, unknown>;
+          window.history.pushState({ drawer: true, ...("flowFrom" in prev && { flowFrom: prev.flowFrom }) }, "");
         }
 
         return {
@@ -107,6 +124,7 @@ export const usePreparationModalStore = create<PreparationModalState>(
       set((state) => {
         const newStack = state.stack.slice(0, -1);
         const isEmpty = newStack.length === 0;
+        popSheetEntry(state.hasHistoryEntry, isEmpty);
 
         return {
           stack: newStack,
@@ -129,6 +147,7 @@ export const usePreparationModalStore = create<PreparationModalState>(
         newStack.splice(index, 1);
 
         const isEmpty = newStack.length === 0;
+        popSheetEntry(state.hasHistoryEntry, isEmpty);
 
         return {
           stack: newStack,

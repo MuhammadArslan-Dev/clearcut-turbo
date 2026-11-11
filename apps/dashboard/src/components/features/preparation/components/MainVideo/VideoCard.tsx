@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMainVideoProgressTrackerStore } from "../../store/useMainVideoProgressTracker";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
 
@@ -69,6 +70,19 @@ export default function VideoCard({
 }: VideoCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
+  // Mobile: closing the topic view (?topic removed) only slides this pane off
+  // screen — it stays mounted, so the YouTube player kept playing behind the
+  // chapter list. Pause it whenever the topic view closes (same 899px
+  // breakpoint as preparationPage's mobile check).
+  const topicParam = useSearchParams().get("topic");
+  useEffect(() => {
+    if (topicParam !== null || !window.matchMedia("(max-width: 899px)").matches) return;
+    try {
+      playerRef.current?.pauseVideo?.();
+    } catch {
+      /* player not ready yet */
+    }
+  }, [topicParam]);
   const intervalRef = useRef<number | null>(null);
   // Refs, not effect deps: the player must not be rebuilt when a parent
   // re-renders with a new callback identity.
