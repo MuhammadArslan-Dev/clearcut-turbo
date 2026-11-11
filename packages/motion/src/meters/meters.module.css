@@ -105,6 +105,11 @@
 .band { fill: none; stroke-width: 30; stroke-linecap: round; opacity: .16; transition: opacity calc(var(--k, 1) * 400ms) ease; }
 .ptr { transform-box: view-box; transform-origin: 120px 128px; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
 .knob { fill: #fff; stroke-width: 4; transition: stroke calc(var(--k, 1) * 400ms) ease; }
+/* Nibbu on the gauge knob (app option `gaugeRider`): the layer turns with the needle,
+   the nib counter-turns so it stays upright. Origin = gauge centre (120,128) of the
+   0 -6 240 150 viewBox → 50% / 89.33%; the knob top sits at y 19 → 16.67%. */
+.grider { position: absolute; inset: 0; pointer-events: none; transform-origin: 50% 89.33%; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
+.gnib { position: absolute; left: 50%; bottom: 83.33%; width: 11%; transform-origin: 50% 100%; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
 .ctick { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
 .clab { font-size: 10px; font-weight: 800; fill: var(--ink); }
 .gnum { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; line-height: 1; }

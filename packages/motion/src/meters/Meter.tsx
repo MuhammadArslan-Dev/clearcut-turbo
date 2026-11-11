@@ -85,6 +85,8 @@ export interface MeterProps {
   fluid?: boolean;
   /** don't render the floating "❄ Cooling" chip (the app shows cooling in its own pill). */
   hideCoolChip?: boolean;
+  /** gauge variant: Nibbu rides the needle knob (the bar always has its rider). */
+  gaugeRider?: boolean;
 }
 
 const LOCK_SVG = (
@@ -99,7 +101,7 @@ const LOCK_SVG = (
 let deltaSeq = 0;
 
 export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
-  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className, hidePill = false, caption, cutoffLabel, pill: pillProp, coolLabel, fluid = false, hideCoolChip = false },
+  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className, hidePill = false, caption, cutoffLabel, pill: pillProp, coolLabel, fluid = false, hideCoolChip = false, gaugeRider = false },
   ref,
 ) {
   const k = useMeterK();
@@ -306,6 +308,19 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
               )}
             </span>
           </div>
+          {gaugeRider && !locked && (
+            // Same rotation as the needle (.ptr: origin = gauge centre 120,128 in the
+            // 0 -6 240 150 viewBox), counter-rotated so Nibbu stays upright on the knob.
+            <div
+              className={styles.grider}
+              style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}
+              aria-hidden="true"
+            >
+              <div className={styles.gnib} style={{ transform: `translateX(-50%) rotate(${90 - (v / max) * 180}deg)` }}>
+                <Nib mood={riderPose(zone)[0]} accessory={riderPose(zone)[1]} key={`g-${riderPose(zone).join("-")}`} />
+              </div>
+            </div>
+          )}
           {lockEl}
         </div>
         {!hidePill && (

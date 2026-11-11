@@ -112,6 +112,7 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
         <Meter
           ref={ref}
           fluid
+          gaugeRider
           variant="gauge"
           lang={locale === "hi" ? "hi" : "en"}
           scale={{ max: m.max_marks, cutoff: pass }}

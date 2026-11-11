@@ -161,6 +161,7 @@ function MeterInfoBody({
             >
               <Meter
                 variant={variant}
+                gaugeRider={variant === "gauge"}
                 size="sm"
                 fluid
                 lang={locale === "hi" ? "hi" : "en"}
