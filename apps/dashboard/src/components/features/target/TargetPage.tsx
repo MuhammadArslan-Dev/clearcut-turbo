@@ -107,9 +107,11 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
       style={cooling ? { background: "linear-gradient(180deg, var(--color-background-gray-subtle), white)" } : undefined}
       aria-label={t("myCourses.meterInfo.title")}
     >
-      <div className="flex justify-center">
+      {/* Studio gauge, scaled to the card like the reference (≈ 300px). */}
+      <div className="mx-auto w-full max-w-[300px]">
         <Meter
           ref={ref}
+          fluid
           variant="gauge"
           lang={locale === "hi" ? "hi" : "en"}
           scale={{ max: m.max_marks, cutoff: pass }}
