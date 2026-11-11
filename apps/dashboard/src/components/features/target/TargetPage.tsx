@@ -74,7 +74,7 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
     <section className={clsx(CARD, "flex items-center gap-3")} aria-label={t("myCourses.cutoffMeter")}>
       {/* Cooling: studio desaturation on the gauge, without its own chip (the pill says it). */}
       <div
-        className="w-[118px] shrink-0 transition-[filter] duration-[1400ms]"
+        className="w-[140px] shrink-0 transition-[filter] duration-[1400ms]"
         style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
       >
         <Meter
@@ -209,11 +209,11 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
                 </span>
               </span>
               {a.action_type === "ONBOARDING_TEST" ? (
-                <span className="shrink-0 rounded-full px-2 py-1 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
+                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
                   {t("target.unlocksMeter")}
                 </span>
               ) : a.expected_gain ? (
-                <span className="shrink-0 rounded-full px-2 py-1 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
+                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
                   {t("target.gain", { marks: a.expected_gain })}
                 </span>
               ) : null}
@@ -224,7 +224,7 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
 
       {next ? (
         <MainButton
-          className="mt-3"
+          className="mt-3 min-h-[50px]"
           fullWidth
           size="lg"
           rounded="14px"
