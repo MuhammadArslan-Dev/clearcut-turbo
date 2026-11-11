@@ -18,9 +18,13 @@ interface MiniTestState {
 
   isFinished: boolean;
 
+  /** Server attempt (Progress Tracker v2 server scoring); null on the legacy flow. */
+  attemptId: string | null;
+
   /* ----------------------------- ACTIONS ----------------------------- */
 
   setQuestions: (q: QuestionNew[], locale?: string) => void;
+  setAttemptId: (id: string | null) => void;
   setLocale: (locale: string) => void;
 
   selectOption: (questionIndex: number, optionKey: number) => void;
@@ -52,7 +56,11 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
 
   isFinished: false,
 
+  attemptId: null,
+
   /* ----------------------------- SETTERS ----------------------------- */
+
+  setAttemptId: (attemptId) => set({ attemptId }),
 
   setQuestions: (q, locale = "en") =>
     set({
@@ -120,6 +128,7 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
       answers: {},
       checked: {},
       isFinished: false,
+      attemptId: null,
     }),
 
   /* ----------------------------- RESULT ----------------------------- */

@@ -48,6 +48,11 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { logger } from "@/lib/sentry/sentry-logger";
 import { isNetworkFailure } from "@/lib/api/api-error";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
+import { submitMiniTestAttempt } from "@/lib/dashboard/progressV2";
+import {
+  invalidateProgressQueries,
+  useProgressCapabilities,
+} from "../../hooks/useProgressCapabilities";
 
 /* -------------------------------------------------------------------------- */
 /*                                  MAIN                                      */
@@ -70,9 +75,13 @@ export default function MiniTest() {
     markTopicFieldDone,
   } = usePreparationStore();
 
+  const { caps, ready: capsReady } = useProgressCapabilities();
+  const serverScoring = caps.mini_test_server_scoring;
   const { loading, error, refetchData } = useMiniTestQuestions(
     isOpen ? selectedTopic?.id : undefined,
     course?.group_code!,
+    serverScoring,
+    capsReady,
   );
   const sections = selectedPaperId
     ? (sectionsByPaperId[selectedPaperId] ?? [])
@@ -111,7 +120,15 @@ export default function MiniTest() {
     setLocale(toContentLocale(courseLanguageToLocale(course?.language)));
   }, [courseData]);
 
+  const openReportedRef = React.useRef(false);
   useEffect(() => {
+    // Wait for the backend capabilities (cached after the first load). On the
+    // Progress Tracker v2 path nothing is reported on OPEN — the server
+    // attempt records it and "done" is the submitted attempt (decision D1).
+    if (!capsReady || openReportedRef.current) return;
+    openReportedRef.current = true;
+    if (serverScoring) return;
+
     // These are fire-and-forget progress pings. If the backend is down or slow
     // the rejected promise used to go unhandled and take the whole page down,
     // so every call swallows its own failure — the test itself keeps working.
@@ -172,7 +189,46 @@ export default function MiniTest() {
     });
 
     markTopicFieldDone(Number(selectedTopic?.id), "miniTestDone");
-  }, []);
+  }, [capsReady, serverScoring]);
+
+  // Progress Tracker v2: the server scores and stores the attempt. Fire and
+  // forget — the result screen never waits for it; submit is idempotent, so a
+  // retry can never count twice.
+  const attemptId = useMiniTestStore((s) => s.attemptId);
+  const submittedRef = React.useRef<string | null>(null);
+  const submitServerAttempt = () => {
+    if (!serverScoring || !attemptId || submittedRef.current === attemptId) return;
+    submittedRef.current = attemptId;
+    const byQuestionId: Record<number, number | null> = {};
+    questions.forEach((q, i) => {
+      byQuestionId[q.id] = answers[i] ?? null;
+    });
+    const topicId = Number(selectedTopic?.id);
+    submitMiniTestAttempt(attemptId, byQuestionId, locale)
+      .then(() => {
+        markTopicFieldDone(topicId, "miniTestDone");
+        trackEvent("Topic Status Changed", {
+          topic_name: selectedTopic?.name ?? "",
+          new_status: "miniTestDone",
+          change_source: "manual_user_action",
+        });
+        invalidateProgressQueries(queryClient);
+      })
+      .catch((err) => {
+        submittedRef.current = null; // allow a retry from the result screen
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("submitMiniTestAttempt hit a network blip", {
+            tags: { type: "background_sync", module: "mini-test" },
+            extra: { action: "submitMiniTestAttempt", topicId },
+          });
+          return;
+        }
+        logger.error(err, {
+          tags: { type: "background_sync", module: "mini-test" },
+          extra: { action: "submitMiniTestAttempt", topicId },
+        });
+      });
+  };
 
   const language = toContentLocale(courseLanguageToLocale(course?.language));
 
@@ -265,6 +321,7 @@ export default function MiniTest() {
               onCheck={() => checkAnswer(currentIndex)}
               onNext={next}
               onResult={() => {
+                submitServerAttempt();
                 closeModal("mini-test");
                 open("mini-test-result", {}, false);
               }}

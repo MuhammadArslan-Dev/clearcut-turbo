@@ -54,16 +54,28 @@ interface VideoCardProps {
   url: string;
   showPlayButton?: boolean;
   onClick?: () => void;
+  /** Sampled with the existing 500 ms tick while playing (seconds). Optional. */
+  onProgress?: (position: number, duration: number) => void;
+  /** Player reached the end. Optional. */
+  onEnded?: (duration: number) => void;
 }
 
 export default function VideoCard({
   url,
   showPlayButton = true,
   onClick,
+  onProgress,
+  onEnded,
 }: VideoCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const intervalRef = useRef<number | null>(null);
+  // Refs, not effect deps: the player must not be rebuilt when a parent
+  // re-renders with a new callback identity.
+  const onProgressRef = useRef(onProgress);
+  const onEndedRef = useRef(onEnded);
+  onProgressRef.current = onProgress;
+  onEndedRef.current = onEnded;
 
   const pendingPlayRef = useRef(false);
 
@@ -126,10 +138,10 @@ export default function VideoCard({
 
               if (!intervalRef.current) {
                 intervalRef.current = window.setInterval(() => {
-                  setProgress(
-                    playerRef.current?.getCurrentTime() ?? 0,
-                    playerRef.current?.getDuration() ?? 0,
-                  );
+                  const position = playerRef.current?.getCurrentTime() ?? 0;
+                  const duration = playerRef.current?.getDuration() ?? 0;
+                  setProgress(position, duration);
+                  onProgressRef.current?.(position, duration);
                 }, 500);
               }
             }
@@ -143,6 +155,11 @@ export default function VideoCard({
               state === (window as any).YT.PlayerState.ENDED
             ) {
               setIsPlaying(false);
+            }
+
+            // YT.PlayerState.ENDED === 0 (YouTube IFrame API constant).
+            if (state === 0) {
+              onEndedRef.current?.(playerRef.current?.getDuration() ?? 0);
             }
           },
         },

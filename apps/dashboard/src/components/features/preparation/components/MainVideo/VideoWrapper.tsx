@@ -17,6 +17,11 @@ import useMainVideoPlayer from "../../hooks/useMainVideoPlayer";
 import { useVideoPlayerStore } from "../../store/useVideoPlayerStore";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 import { TOUR_LOADING } from "@/components/features/tour/tourTargets";
+import { newClientEventId, reportTopicActivity } from "@/lib/dashboard/progressV2";
+import {
+  invalidateProgressQueries,
+  useProgressCapabilities,
+} from "../../hooks/useProgressCapabilities";
 
 export default function VideoWrapper() {
   const queryClient = useQueryClient();
@@ -52,18 +57,116 @@ export default function VideoWrapper() {
     videos[0] ??
     null;
   const { video, setVideo } = useVideoPlayerStore();
+  const { caps } = useProgressCapabilities();
 
   React.useEffect(() => {
     if (!mainVideo) return;
     setVideo(mainVideo);
   }, [mainVideo]);
-  
+
+  /* ---------------- Progress Tracker v2 (backend capability) ----------------
+   * "Watched" = >= 80% played or the ended event (decision D2), confirmed by
+   * the server — never the Start click. Progress is sampled from the player's
+   * existing 500 ms tick and sent at most every 30 s, plus once when the
+   * threshold is crossed and once on end. */
+  const sentAtRef = React.useRef(0);
+  const sentPositionRef = React.useRef(0);
+  const completedRef = React.useRef(false);
+  React.useEffect(() => {
+    sentAtRef.current = 0;
+    sentPositionRef.current = 0;
+    completedRef.current = false;
+  }, [selectedTopic?.id]);
+
+  const reportVideo = (
+    activity: "video_started" | "video_progress" | "video_completed",
+    position?: number,
+    duration?: number,
+  ) => {
+    if (!selectedTopic || !course?.group_code) return;
+    const topicId = Number(selectedTopic.id);
+    const watchedDelta =
+      position !== undefined
+        ? Math.max(0, Math.min(600, Math.round(position - sentPositionRef.current)))
+        : undefined;
+    if (position !== undefined) sentPositionRef.current = position;
+    reportTopicActivity({
+      course_id: course.group_code,
+      topic_id: topicId,
+      activity,
+      position: position !== undefined ? Math.round(position) : undefined,
+      duration: duration !== undefined ? Math.round(duration) : undefined,
+      watched_delta: watchedDelta,
+      client_event_id: activity === "video_progress" ? undefined : newClientEventId(),
+    })
+      .then((r) => {
+        if (r.video_completed && !completedRef.current) {
+          completedRef.current = true;
+          markTopicFieldDone(topicId, "videoWatched");
+          trackEvent("Topic Status Changed", {
+            topic_name: selectedTopic.name,
+            new_status: "videoWatched",
+            change_source: "manual_user_action",
+          });
+        }
+        if (r.status_changed || r.video_completed) invalidateProgressQueries(queryClient);
+      })
+      .catch((err) => {
+        if (isNetworkFailure(err)) {
+          logger.breadcrumb("reportTopicActivity hit a network blip", {
+            tags: { type: "background_sync", module: "main-video" },
+            extra: { action: activity, topicId },
+          });
+          return;
+        }
+        logger.error(err, {
+          tags: { type: "background_sync", module: "main-video" },
+          extra: { action: activity, topicId },
+        });
+      });
+  };
+
+  const thresholdSentRef = React.useRef(false);
+  React.useEffect(() => {
+    thresholdSentRef.current = false;
+  }, [selectedTopic?.id]);
+
+  const onVideoProgress = (position: number, duration: number) => {
+    if (!caps.topic_activity || completedRef.current || duration <= 0) return;
+    // Crossing the threshold is sent exactly once (the 500 ms tick would
+    // otherwise resend until the response lands); otherwise every 30 s.
+    const crossed = position >= caps.video_complete_ratio * duration && !thresholdSentRef.current;
+    // The player's tick keeps running while paused — only send real progress.
+    const due = Date.now() - sentAtRef.current >= 30_000 && position > sentPositionRef.current + 1;
+    if (!crossed && !due) return;
+    if (crossed) thresholdSentRef.current = true;
+    sentAtRef.current = Date.now();
+    reportVideo("video_progress", position, duration);
+  };
+
+  const onVideoEnded = (duration: number) => {
+    if (!caps.topic_activity || completedRef.current) return;
+    reportVideo("video_completed", duration, duration);
+  };
 
   /**
    * 🎯 Mark video watched
    */
   const markVideoWatch = async () => {
     if (!selectedTopic || !mainVideo) return;
+
+    if (caps.topic_activity) {
+      // v2: the click only means "started"; the server records it and the
+      // Today Goals interaction itself (no second client call).
+      reportVideo("video_started");
+      trackEvent("Video Started", {
+        content_id: mainVideo.id.toString(),
+        chapter_name: selectedChapter?.name ?? "",
+        topic_name: selectedTopic.name,
+        video_duration_seconds: 3041,
+      });
+      return;
+    }
 
     // Fire-and-forget progress pings — video playback must keep working even
     // if the backend is down or slow for these.
@@ -161,7 +264,12 @@ export default function VideoWrapper() {
   return (
     <div className="w-full flex justify-center">
       <div className="max-w-3xl w-full">
-        <VideoCard onClick={markVideoWatch} url={mainVideo?.video_link ?? ""} />
+        <VideoCard
+          onClick={markVideoWatch}
+          onProgress={onVideoProgress}
+          onEnded={onVideoEnded}
+          url={mainVideo?.video_link ?? ""}
+        />
         <VideoHeader data={mainVideo} />
         {/* <VideoProgress /> */}
       </div>

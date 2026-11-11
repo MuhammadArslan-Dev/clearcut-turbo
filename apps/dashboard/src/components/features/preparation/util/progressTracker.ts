@@ -60,5 +60,11 @@ export function getChapterProgress(
 export function isTopicCompleted(topic?: TopicProgress) {
   if (!topic) return false;
 
+  // Progress Tracker v2: the server status already applies the per-topic
+  // rule (only the activities a topic has; parents from their sub-topics).
+  // On the legacy source "completed" means exactly the three flags below, so
+  // this is unchanged there.
+  if (topic.status === "completed") return true;
+
   return topic.videoWatched && topic.notesTaken && topic.miniTestDone;
 }
