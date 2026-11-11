@@ -25,6 +25,7 @@ Legend:
 | D9 | ✅ **New local copy `clearcut_pt`** (dump of the local `clearcut`, created 2026-11-11) for every migration, backfill and E2E run. No prod or remote DB is touched | User | 2026-11-11 |
 | D8 | ✅ Started on the user's "start the work" go-ahead: PT-0 branch `fix/pt0-security-hotfixes` (R1, R4, R6). R2, R3 and R5 stay open until their callers are known (D10) | User go-ahead | 2026-11-11 |
 | D6 | ✅ (technical) Mini-test attempts go in a **new `topic_test_attempts` table** cloned from `daily_test_attempts`. This avoids an `ALTER` of the enum on the live `exam_attempts` table | Developer, lowest-risk option | 2026-11-11 |
+| D17 | ✅ **Visible changes accepted** (tests total = real mini-tests only, old "opened" flags not counted, video tick at 80%/end, Today Goals counts completed videos, older duplicate open attempts expired). Live code + migrations done 2026-11-11 (BE `159e5a6`, CM `7f9164e`) | User | 2026-11-11 |
 
 ## 2. Open decisions (🛑)
 
