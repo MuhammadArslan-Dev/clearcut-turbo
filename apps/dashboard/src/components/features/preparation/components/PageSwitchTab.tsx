@@ -20,11 +20,15 @@ interface PageSwitchTabProps {
   // same animated element — one of them visibly loses its content/sizing.
   // Callers rendering a second copy must pass a distinct id.
   layoutScopeId?: string;
+  /** "onBrand": white-on-blue look for the blue Target header (full width, white active pill). */
+  tone?: "default" | "onBrand";
 }
 
 export default React.memo(function PageSwitchTab({
   layoutScopeId = "page-change-tab",
+  tone = "default",
 }: PageSwitchTabProps) {
+  const onBrand = tone === "onBrand";
   const pathname = usePathname();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -97,13 +101,18 @@ export default React.memo(function PageSwitchTab({
       value={tab}
       tabFontSize="body-medium md:body-large"
       onChange={(id) => onTabChange(id as PageTab)}
-      activeTextColor="text-white whitespace-nowrap md:px-10"
-      inactiveTextColor="text-surface-gray-normal !min-w-[75px] whitespace-nowrap md:px-10"
-      tabFontWeight="!font-semibold"
-      activeTabFontWeight="!font-semibold"
-      containerBg="bg-white"
-      className="!h-9 border border-[var(--border-gray-normal)] !p-[2px]"
-      activeTabBg="bg-brand"
+      activeTextColor={onBrand ? "text-brand whitespace-nowrap flex-1" : "text-white whitespace-nowrap md:px-10"}
+      inactiveTextColor={
+        onBrand
+          ? "text-white whitespace-nowrap flex-1"
+          : "text-surface-gray-normal !min-w-[75px] whitespace-nowrap md:px-10"
+      }
+      tabFontWeight={onBrand ? "!font-bold" : "!font-semibold"}
+      activeTabFontWeight={onBrand ? "!font-bold" : "!font-semibold"}
+      containerBg={onBrand ? "bg-white/15" : "bg-white"}
+      className={onBrand ? "!h-11 w-full !p-1 !rounded-xl" : "!h-9 border border-[var(--border-gray-normal)] !p-[2px]"}
+      activeTabBg={onBrand ? "bg-white" : "bg-brand"}
+      {...(onBrand && { tabRadius: "rounded-lg", containerRadius: "rounded-xl" })}
     />
   );
 });
