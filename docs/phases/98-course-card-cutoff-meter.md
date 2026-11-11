@@ -136,3 +136,33 @@ Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the s
 
 ## 9. Next steps
 Wait for the user on D1–D4, then implement §3 in order.
+
+## 9. Follow-ups (2026-11-11, same branch)
+
+- **All 9 Cutoff Meter Studio states** ("sab kro"):
+  - BE `CutoffMeterService::presentation()` adds `zone` (incl. `safe_zone`, pass + 10), `early`, display-only `cooling` and `display_meter`/`display_gap` to the summary.
+  - Cooling: after 3 idle days, −(days − 1), max −5; the stored meter is never changed. Off: `CUTOFF_METER_COOLING_ENABLED=false`. **Client to confirm** (the spec says the meter changes only on answers).
+  - Card:
+    - Early estimate / Cooling pill (❄)
+    - Safe Zone ★
+    - ± change chip, plus a wobble when the score drops
+    - Desaturated bar while cooling
+    - Final-week 🔥 chip (≤ 7 days)
+- **Header (user page feedback):**
+  - Status pill back on the card's top edge, in the old style. "Trial Ended" is still a button.
+  - Title on one line with an ellipsis.
+  - Edit sits at the right of the title.
+- **Bar:**
+  - Nibbu (`@clearcut/motion/meters/nib`) rides the fill end, posed per state as in the studio table. Hidden when locked.
+  - A white knob with a zone-colour ring sits at the fill end.
+  - Both use the fill's spring.
+- **Verified (Playwright, 390 en/hi/mr + 1440):**
+  - Every state matches its fixture.
+  - Nib and knob x-diff is 0 px.
+  - Nothing is clipped at 12.7 % or 78 % fill.
+  - No page overflow.
+- **Not verified:**
+  - The slide-on-load frame for the nib and knob, and the cooling bob (position checked only).
+  - The drop wobble.
+  - The trial-ended pill (no fixture has it).
+  - Real devices.

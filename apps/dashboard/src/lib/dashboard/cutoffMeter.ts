@@ -14,6 +14,17 @@ export interface CutoffMeterSummary {
   change: number | null;
   model_version: string;
   computed_at: string | null;
+  // Display state (phase 98) — computed on the server, never stored.
+  zone: "needs_work" | "almost_there" | "clear_zone" | "safe_zone" | null;
+  /** Few answers yet (confidence low) → pill reads "Early estimate". */
+  early: boolean;
+  idle_days: number | null;
+  last_answer_at: string | null;
+  /** Display-only decay while idle (studio "Cooling down"); the next test restores it. */
+  cooling: { active: boolean; decay: number };
+  /** Meter after cooling — what the card shows. */
+  display_meter: number | null;
+  display_gap: number | null;
 }
 
 /**

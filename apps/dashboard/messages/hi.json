@@ -262,11 +262,17 @@
     "meterGap": "क्लियर ज़ोन से {marks} अंक दूर",
     "meterAbove": "पास मार्क से +{marks} ऊपर",
     "meterUnlock": "अनलॉक करने के लिए {count} सवाल हल करें",
+    "meterCooled": "{marks} अंक ठंडा हुआ · एक टेस्ट से वापस",
+    "meterChange": "पिछले टेस्ट से {change}",
+    "examFinalWeek": "{days, plural, =0 {परीक्षा आज} one {परीक्षा # दिन में} other {परीक्षा # दिन में}}",
     "meterZone": {
         "needsWork": "मेहनत ज़रूरी",
         "almostThere": "बस थोड़ा और",
         "clearZone": "क्लियर ज़ोन",
-        "locked": "लॉक है"
+        "locked": "लॉक है",
+      "safeZone": "सेफ़ ज़ोन",
+      "earlyEstimate": "शुरुआती अनुमान",
+      "cooling": "ठंडा पड़ रहा"
     }
   },
   "resumeBar": {

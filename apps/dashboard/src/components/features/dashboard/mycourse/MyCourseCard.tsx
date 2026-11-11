@@ -16,66 +16,142 @@ import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import Skeleton from "@clearcut/ui/skeleton";
 import { useCountUp } from "@clearcut/motion/core";
+import { motion, useReducedMotion } from "framer-motion";
+import { Nib } from "@clearcut/motion/meters/nib";
 
 /**
- * Zone styles from design tokens only (decision D4: the spec's 3 colours →
- * 3 names). `fill` is the bar colour, `pill` the zone chip.
+ * Zone styles, design tokens only. The spec's 3 colours plus the studio's
+ * Safe Zone (pass + 10, user "sab kro" 2026-11-11). `fill` = bar colour.
  */
 const ZONES = {
-  red: { key: "needsWork", fill: "var(--color-danger-subtle)", pill: "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]" },
-  yellow: { key: "almostThere", fill: "var(--color-warning-muted)", pill: "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]" },
-  green: { key: "clearZone", fill: "var(--color-success)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
+  needs_work: { key: "needsWork", fill: "var(--color-danger-subtle)", pill: "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]" },
+  almost_there: { key: "almostThere", fill: "var(--color-warning-muted)", pill: "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]" },
+  clear_zone: { key: "clearZone", fill: "var(--color-success)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
+  safe_zone: { key: "safeZone", fill: "var(--color-success-strong)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
 } as const;
+const SOFT_BLUE_PILL = "bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]";
 
-/** Meter panel: "82 / 150", zone pill, bar with the pass-mark tick, gap text (phase 98). */
-function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
+/**
+ * Meter panel (phase 98) — every Cutoff Meter Studio state:
+ * Locked · Early estimate · Needs work · Almost there · Clear Zone · Safe Zone ·
+ * Score dropped / went up (delta chip + wobble) · Cooling down (display-only
+ * decay, desaturated bar, ❄). "Final week" lives in the card header.
+ */
+type NibPose = { mood: "happy" | "determined" | "wow" | "sleepy"; accessory: "none" | "cap" | "headband" | "zzz" | "star" };
+
+/** Nibbu's pose per state, exactly as Cutoff Meter Studio's state table. */
+function nibPose(meter: CutoffMeterSummary, change: number, cooling: boolean, finalWeek: boolean): NibPose {
+  if (cooling) return { mood: "sleepy", accessory: "zzz" };
+  if (change < 0) return { mood: "determined", accessory: "headband" }; // Score dropped
+  if (meter.early) return { mood: "wow", accessory: "none" }; // Early estimate
+  if (finalWeek) return { mood: "determined", accessory: "none" };
+  switch (meter.zone) {
+    case "needs_work":
+      return { mood: "determined", accessory: "headband" };
+    case "almost_there":
+      return { mood: "determined", accessory: "none" };
+    case "clear_zone":
+      return { mood: "happy", accessory: "cap" };
+    case "safe_zone":
+      return { mood: "happy", accessory: "star" };
+    default:
+      return { mood: "happy", accessory: "none" };
+  }
+}
+
+function CutoffMeterPanel({ meter, daysToExam }: { meter: CutoffMeterSummary; daysToExam?: number | null }) {
   const t = useTranslations("myCourses");
-  const zone = meter.colour ? ZONES[meter.colour] : null;
+  const reduce = useReducedMotion();
   const locked = meter.locked || meter.meter === null;
-  const value = meter.meter ?? 0;
-  const gap = meter.gap ?? 0;
+  const cooling = !locked && meter.cooling?.active;
+  const value = meter.display_meter ?? meter.meter ?? 0;
+  const gap = meter.display_gap ?? meter.gap ?? 0;
+  const zone = meter.zone ? ZONES[meter.zone] : null;
   const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
+  // A change since the last test; hidden while cooling (that has its own message).
+  const change = !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
   // Design: the number counts up with the bar (same 1150 ms, 250 ms delay).
   const shown = useCountUp(locked ? 0 : Math.round(value), { duration: 1150, delay: 250 });
+  const pose = nibPose(meter, change, !!cooling, daysToExam != null && daysToExam <= 7);
+
+  const pill = locked
+    ? { cls: "bg-[var(--color-surface-gray-muted)]/15 text-surface-gray-muted", text: t("meterZone.locked") }
+    : cooling
+      ? { cls: SOFT_BLUE_PILL, text: `❄ ${t("meterZone.cooling")}` }
+      : meter.early
+        ? { cls: SOFT_BLUE_PILL, text: t("meterZone.earlyEstimate") }
+        : { cls: zone?.pill ?? "", text: t(`meterZone.${zone?.key ?? "needsWork"}`) + (meter.zone === "safe_zone" ? " ★" : "") };
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5">
+    <motion.div
+      className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5"
+      // Score dropped: one gentle wobble once the needle has settled (studio, 600 ms).
+      animate={change < 0 && !reduce ? { x: [0, -5, 4, -2, 1, 0] } : undefined}
+      transition={{ duration: 0.6, delay: 1.3, ease: "easeInOut" }}
+    >
       <div className="flex items-start justify-between gap-2">
-        <p className="leading-none text-surface-gray-normal">
-          <span className="heading-2xxlarge !font-bold tabular-nums">{locked ? "?" : shown}</span>
-          <span className="body-medium !font-semibold text-surface-gray-muted"> / {meter.max_marks}</span>
-        </p>
-        <span
-          className={clsx(
-            "shrink-0 rounded-full px-3 py-1 body-small !font-semibold",
-            locked ? "bg-[var(--color-surface-gray-muted)]/15 text-surface-gray-muted" : zone?.pill,
+        <div className="flex items-center gap-2">
+          <p className="leading-none text-surface-gray-normal">
+            <span className="heading-2xxlarge !font-bold tabular-nums">{locked ? "?" : shown}</span>
+            <span className="body-medium !font-semibold text-surface-gray-muted"> / {meter.max_marks}</span>
+          </p>
+          {change !== 0 && (
+            <motion.span
+              aria-label={t("meterChange", { change: change > 0 ? `+${change}` : `−${Math.abs(change)}` })}
+              className={clsx(
+                "rounded-full px-2 py-0.5 body-small !font-bold",
+                change > 0
+                  ? "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]"
+                  : "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]",
+              )}
+              initial={reduce ? false : { opacity: 0, scale: 0.7, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.9, type: "spring", stiffness: 420, damping: 18 }}
+            >
+              {change > 0 ? `+${change}` : `−${Math.abs(change)}`}
+            </motion.span>
           )}
-        >
-          {locked ? t("meterZone.locked") : t(`meterZone.${zone?.key ?? "needsWork"}`)}
-        </span>
+        </div>
+        <span className={clsx("shrink-0 rounded-full px-3 py-1 body-small !font-semibold", pill.cls)}>{pill.text}</span>
       </div>
-      <ProgressBar
-        showLabel={false}
-        completed={locked ? 0 : value}
-        total={meter.max_marks}
-        marker={meter.pass_mark}
-        height={8}
-        color={zone?.fill ?? "var(--color-surface-gray-muted)"}
-        backgroundColor="var(--color-border-gray-subtle)"
-        ariaLabel={t("cutoffMeter")}
-        animate
-      />
+      {/* Cooling: colours drain (studio: grayscale .8, 1.4 s). */}
+      {/* pt: room for Nibbu riding the end of the fill (studio bar meter). */}
+      <div
+        className="pt-7 transition-[filter] duration-[1400ms]"
+        style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
+      >
+        <ProgressBar
+          showLabel={false}
+          completed={locked ? 0 : value}
+          total={meter.max_marks}
+          marker={meter.pass_mark}
+          height={8}
+          color={zone?.fill ?? "var(--color-surface-gray-muted)"}
+          backgroundColor="var(--color-border-gray-subtle)"
+          ariaLabel={t("cutoffMeter")}
+          animate
+          knob={!locked}
+          rider={
+            // Locked: no rider (studio hides it). Re-keyed so a pose change replays pop / cap drop.
+            locked ? undefined : (
+              <Nib key={`${pose.mood}-${pose.accessory}`} mood={pose.mood} accessory={pose.accessory} pop bob={!!cooling} />
+            )
+          }
+        />
+      </div>
       <div className="flex items-center justify-between gap-2">
         <span className="body-small !font-medium text-surface-gray-muted">{t("cutoffMeter")}</span>
         <span className="body-small !font-semibold text-surface-gray-normal text-right">
           {locked
             ? t("meterUnlock", { count: toUnlock })
-            : gap > 0
-              ? t("meterGap", { marks: Math.ceil(gap) })
-              : t("meterAbove", { marks: Math.round(-gap) })}
+            : cooling
+              ? t("meterCooled", { marks: Math.round(meter.cooling.decay) })
+              : gap > 0
+                ? t("meterGap", { marks: Math.ceil(gap) })
+                : t("meterAbove", { marks: Math.round(-gap) })}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -180,16 +256,8 @@ export default function MyCourseCard({
     color: false,
     trialDaysLeft: trialDaysLeft(trialStartedAt),
   });
-  // Plan pill (screenshot: "✓ Full plan" on a soft green chip). Other statuses
-  // keep their existing labels, on soft token chips.
+  // Status pill label: "✓ Full plan" for a paid course, else the existing labels.
   const planLabel = badge === "active" ? `✓ ${t("myCourses.planFull")}` : label;
-  const planPill =
-    badge === "active"
-      ? "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]"
-      : badge === "trial_end" || badge === "expired"
-        ? "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]"
-        : "bg-[var(--color-primary-bg-soft)] text-brand";
-
   const examPrice = useMemo(() => JSON.parse(price ?? "{}") ?? 0, [price]);
 
   // Same price for every exam, from the same source of truth as
@@ -223,8 +291,26 @@ export default function MyCourseCard({
       className={clsx("!max-w-full md:!max-w-[400px]", cardClasses)}
     >
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">
-        {/* ── Header (phase 98): logo · "{exam} {level}" · days to exam · plan pill ── */}
-        <div className="flex items-start gap-3">
+        {/* Status pill straddles the card's top edge, as before phase 98 (user
+            feedback 2026-11-11). "Trial Ended" stays a button (44px tap area). */}
+        {statusClick ? (
+          <button
+            type="button"
+            onClick={statusClick}
+            className="absolute z-[1000] -top-[20.5px] right-5 cursor-pointer py-2.5"
+          >
+            <span className="flex items-center rounded-full text-center px-4 h-6 body-small !font-semibold bg-brand text-white">
+              {planLabel}
+            </span>
+          </button>
+        ) : (
+          <div className="absolute flex z-[1000] items-center -top-[10.5px] right-5 rounded-full text-center px-4 h-6 body-small !font-semibold bg-brand text-white">
+            {planLabel}
+          </div>
+        )}
+
+        {/* ── Header (phase 98): logo · "{exam} {level}" · days to exam ── */}
+        <div className="flex items-center gap-3">
           <div className="w-[48px] h-[48px] shrink-0 rounded-xl overflow-hidden">
             {logo ? (
               <Image
@@ -241,31 +327,29 @@ export default function MyCourseCard({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h5 className="heading-large !font-semibold text-surface-gray-normal break-words">
+            {/* One line, never wraps (user feedback); a very long name ends in "…". */}
+            <h5
+              className="heading-large !font-semibold text-surface-gray-normal whitespace-nowrap overflow-hidden text-ellipsis"
+              title={levelName && examShortName ? `${examShortName} ${levelName}` : (courseName ?? undefined)}
+            >
               {levelName && examShortName ? `${examShortName} ${levelName}` : courseName}
             </h5>
-            {daysToExam != null && (
-              <p className="mt-0.5 body-small !font-medium text-surface-gray-muted flex items-center gap-1">
-                <span aria-hidden="true">📅</span>
-                {t("myCourses.daysToExam", { days: daysToExam })}
-              </p>
-            )}
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            {statusClick ? (
-              // "Trial Ended" was tapped ~230 times expecting to renew: the pill
-              // stays a button (44px tap area via padding, look unchanged).
-              <button type="button" onClick={statusClick} className="cursor-pointer -my-2.5 py-2.5">
-                <span className={clsx("flex items-center rounded-full px-3 h-6 body-small !font-semibold", planPill)}>
-                  {planLabel}
+            {daysToExam != null &&
+              (daysToExam <= 7 ? (
+                // Final week (studio): the exam chip turns orange with 🔥.
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 body-small !font-semibold bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]">
+                  <span aria-hidden="true">🔥</span>
+                  {t("myCourses.examFinalWeek", { days: daysToExam })}
                 </span>
-              </button>
-            ) : (
-              <span className={clsx("flex items-center rounded-full px-3 h-6 body-small !font-semibold", planPill)}>
-                {planLabel}
-              </span>
-            )}
-            {editClick && (
+              ) : (
+                <p className="mt-0.5 body-small !font-medium text-surface-gray-muted flex items-center gap-1">
+                  <span aria-hidden="true">📅</span>
+                  {t("myCourses.daysToExam", { days: daysToExam })}
+                </p>
+              ))}
+          </div>
+          {editClick && (
+            <div className="shrink-0">
               <Button
                 onClick={() => editClick?.()}
                 size="sm"
@@ -276,15 +360,15 @@ export default function MyCourseCard({
               >
                 {t("actions.edit")}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
         {meterLoading ? (
           <CutoffMeterPanelSkeleton />
         ) : meter ? (
-          <CutoffMeterPanel meter={meter} />
+          <CutoffMeterPanel meter={meter} daysToExam={daysToExam} />
         ) : null}
 
         <div className={clsx("flex flex-col gap-2", (meter || meterLoading) && "hidden")}>

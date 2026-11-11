@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePrefersReducedMotion } from "@clearcut/motion/core";
 
 type ProgressBarProps = {
@@ -26,6 +26,18 @@ type ProgressBarProps = {
   animate?: boolean;
   animateMs?: number;
   animateDelayMs?: number;
+  /**
+   * Optional element riding the end of the fill (only with `marker`), e.g. the
+   * Nibbu mascot on the Cutoff Meter bar. It moves with the fill's spring and
+   * is clamped so it never pokes out of the track. Width = `riderSize`.
+   */
+  rider?: ReactNode;
+  riderSize?: number;
+  /**
+   * White knob at the end of the fill with a `color` ring (studio gauge
+   * knob), moving with the same spring. Only with `marker`.
+   */
+  knob?: boolean;
 };
 
 export default function ProgressBar({
@@ -41,6 +53,9 @@ export default function ProgressBar({
   animate = false,
   animateMs = 1150,
   animateDelayMs = 250,
+  rider,
+  riderSize = 28,
+  knob = false,
 }: ProgressBarProps) {
   const percentage =
     total > 0 ? Math.min((completed / total) * 100, 100) : 0;
@@ -86,6 +101,40 @@ export default function ProgressBar({
             }}
           />
         </div>
+        {knob && (
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 rounded-full bg-white shadow-[var(--shadow-control)] pointer-events-none"
+            style={{
+              width: height + 8,
+              height: height + 8,
+              marginLeft: -(height + 8) / 2,
+              marginTop: -(height + 8) / 2,
+              border: `3px solid ${color}`,
+              left: `clamp(${(height + 8) / 2}px, ${grown ? percentage : 0}%, calc(100% - ${(height + 8) / 2}px))`,
+              transition:
+                animate && !reduced
+                  ? `left ${animateMs}ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 400ms ease-out`
+                  : undefined,
+            }}
+          />
+        )}
+        {rider && (
+          <span
+            aria-hidden="true"
+            className="absolute pointer-events-none"
+            style={{
+              bottom: height + 1,
+              width: riderSize,
+              marginLeft: -riderSize / 2,
+              left: `clamp(${riderSize / 2}px, ${grown ? percentage : 0}%, calc(100% - ${riderSize / 2}px))`,
+              transition:
+                animate && !reduced ? `left ${animateMs}ms cubic-bezier(0.34, 1.56, 0.64, 1)` : undefined,
+            }}
+          >
+            {rider}
+          </span>
+        )}
         {/* Tick sits outside the clipped track so it can extend above/below it. */}
         <span
           aria-hidden="true"

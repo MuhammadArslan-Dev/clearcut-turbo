@@ -262,11 +262,17 @@
     "meterGap": "{marks, plural, one {# mark} other {# marks}} to Clear Zone",
     "meterAbove": "+{marks} above pass mark",
     "meterUnlock": "Answer {count, plural, one {# question} other {# questions}} to unlock",
+    "meterCooled": "Cooled by {marks} · one test restores it",
+    "meterChange": "{change} since last test",
+    "examFinalWeek": "{days, plural, =0 {Exam today} one {Exam in # day} other {Exam in # days}}",
     "meterZone": {
         "needsWork": "Needs work",
         "almostThere": "Almost there",
         "clearZone": "Clear Zone",
-        "locked": "Locked"
+        "locked": "Locked",
+      "safeZone": "Safe Zone",
+      "earlyEstimate": "Early estimate",
+      "cooling": "Cooling down"
     }
   },
   "resumeBar": {
