@@ -22,6 +22,11 @@ import { motion } from "framer-motion";
 import { usePreparationStore } from "../../store/usePreparationDataStore";
 import { updateLearningProgress } from "@/lib/dashboard/userInteractions";
 import { createLearningInteraction } from "@/lib/dashboard/todayGoals";
+import { newClientEventId, reportTopicActivity } from "@/lib/dashboard/progressV2";
+import {
+  invalidateProgressQueries,
+  useProgressCapabilities,
+} from "../../hooks/useProgressCapabilities";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toLower } from "@clearcut/utils/text-format";
@@ -196,6 +201,7 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
   } = usePreparationStore();
 
   const t = useTranslations("relatedContent.studyTabs");
+  const { caps } = useProgressCapabilities();
 
   const handleDownload = async (note: NoteItem) => {
     // The button stays tappable while a download runs (a disabled one swallows the tap); extra taps are ignored.
@@ -211,7 +217,7 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
         chapter_name: selectedChapter?.name!,
         topic_name: selectedTopic?.name!,
       });
-      markVideoWatch();
+      markVideoWatch("notes_downloaded");
     } catch {
       toast.error("Failed to download notes. Please try again.");
     } finally {
@@ -230,11 +236,47 @@ export function Notes({ notes }: { notes?: NoteItem[] | null }) {
     openPdf(note.link);
     if (progressMarkedFor.current !== (selectedTopic?.id ?? null)) {
       progressMarkedFor.current = selectedTopic?.id ?? null;
-      markVideoWatch();
+      markVideoWatch("notes_viewed");
     }
   };
 
-  const markVideoWatch = async () => {
+  // (Despite the name this reports NOTES progress — kept to avoid churn.)
+  const markVideoWatch = async (activity: "notes_viewed" | "notes_downloaded" = "notes_viewed") => {
+    if (caps.topic_activity && selectedTopic && course?.group_code) {
+      // Progress Tracker v2: one server call (it also writes the Today Goals
+      // interaction); view and download are recorded separately.
+      const topicId = Number(selectedTopic.id);
+      reportTopicActivity({
+        course_id: course.group_code,
+        topic_id: topicId,
+        activity,
+        client_event_id: newClientEventId(),
+      })
+        .then((r) => {
+          if (r.status_changed || r.notes_done) invalidateProgressQueries(queryClient);
+        })
+        .catch((err) => {
+          if (isNetworkFailure(err)) {
+            logger.breadcrumb("reportTopicActivity hit a network blip", {
+              tags: { type: "background_sync", module: "related-content-notes" },
+              extra: { action: activity, topicId },
+            });
+            return;
+          }
+          logger.error(err, {
+            tags: { type: "background_sync", module: "related-content-notes" },
+            extra: { action: activity, topicId },
+          });
+        });
+      trackEvent("Topic Status Changed", {
+        topic_name: selectedTopic.name!,
+        new_status: "notesTaken",
+        change_source: "manual_user_action",
+      });
+      markTopicFieldDone(topicId, "notesTaken");
+      return;
+    }
+
     // Fire-and-forget progress pings — the notes view itself must keep
     // working even if the backend is down or slow for these.
     updateLearningProgress({

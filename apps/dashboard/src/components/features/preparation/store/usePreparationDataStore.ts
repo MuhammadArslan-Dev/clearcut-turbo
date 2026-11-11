@@ -602,8 +602,14 @@ export const usePreparationStore = create<PreparationState>((set) => ({
 
   markTopicFieldDone: (topicId, field) => {
     set((state) => {
-      const topic = state.progressByTopicId[topicId];
-      if (!topic) return state;
+      // A topic opened from the sidebar has no entry yet — create one, or the
+      // tick only appeared after the next refetch.
+      const topic: TopicProgress = state.progressByTopicId[topicId] ?? {
+        videoWatched: false,
+        notesTaken: false,
+        miniTestDone: false,
+        status: "in_progress",
+      };
 
       const updated = { ...topic, [field]: true };
 
