@@ -48,12 +48,24 @@ export function tr(o: Text | null | undefined, lang: Lang): string {
 }
 
 /** need < cutoff−15 ≤ almost < cutoff ≤ clear < cutoff+10 ≤ safe. null = locked. */
+/**
+ * The studio's zone widths (15 below the cutoff = "almost", 10 above = "clear")
+ * are for a 150-mark paper. Other papers (every exam is supported) get the same
+ * share of their max: 425 marks → 42.5 / 28.3. For max 150 nothing changes.
+ * Mirrors the backend's CutoffMeterService::scaled().
+ */
+export function zoneWidths(scale: MeterScale = DEFAULT_SCALE): { almost: number; clear: number } {
+  const k = scale.max > 0 ? scale.max / 150 : 1;
+  return { almost: 15 * k, clear: 10 * k };
+}
+
 export function zoneOf(v: number | null | undefined, scale: MeterScale = DEFAULT_SCALE): ZoneKey {
   const cut = scale.cutoff;
+  const w = zoneWidths(scale);
   if (v == null) return "locked";
-  if (v < cut - 15) return "need";
+  if (v < cut - w.almost) return "need";
   if (v < cut) return "almost";
-  if (v < cut + 10) return "clear";
+  if (v < cut + w.clear) return "clear";
   return "safe";
 }
 
@@ -61,11 +73,13 @@ export type Segment = [from: number, to: number, zone: Exclude<ZoneKey, "locked"
 
 export function segments(scale: MeterScale = DEFAULT_SCALE): Segment[] {
   const { max, cutoff } = scale;
+  const w = zoneWidths(scale);
+  const c = (n: number) => Math.min(Math.max(n, 0), max);
   return [
-    [0, cutoff - 15, "need"],
-    [cutoff - 15, cutoff, "almost"],
-    [cutoff, cutoff + 10, "clear"],
-    [cutoff + 10, max, "safe"],
+    [0, c(cutoff - w.almost), "need"],
+    [c(cutoff - w.almost), c(cutoff), "almost"],
+    [c(cutoff), c(cutoff + w.clear), "clear"],
+    [c(cutoff + w.clear), max, "safe"],
   ];
 }
 

@@ -5,7 +5,8 @@ import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
-import { EARLY_ESTIMATE, ZONES, type ZoneKey } from "@clearcut/motion/meters/zones";
+import { ZONES } from "@clearcut/motion/meters/zones";
+import { meterPill } from "@/lib/dashboard/meterPill";
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -26,20 +27,7 @@ import {
  * (`@clearcut/motion/meters`); text is ours (en / hi / mr).
  */
 
-const STUDIO_ZONE: Record<NonNullable<CutoffMeterDetail["zone"]>, ZoneKey> = {
-  needs_work: "need",
-  almost_there: "almost",
-  clear_zone: "clear",
-  safe_zone: "safe",
-};
-const ZONE_KEY: Record<NonNullable<CutoffMeterDetail["zone"]>, string> = {
-  needs_work: "needsWork",
-  almost_there: "almostThere",
-  clear_zone: "clearZone",
-  safe_zone: "safeZone",
-};
-
-const CARD = "rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-4";
+const CARD = "rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white p-4";
 
 /** Where a plan row leads (existing routes only). */
 function actionHref(a: CutoffMeterAction, courseId: string): string {
@@ -80,25 +68,13 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
     return () => clearTimeout(id);
   }, [change]);
 
-  const pill = locked
-    ? { bg: ZONES.locked.s, ink: ZONES.locked.ink, text: t("myCourses.meterZone.locked") }
-    : cooling
-      ? { bg: EARLY_ESTIMATE.s, ink: EARLY_ESTIMATE.ink, text: `❄ ${t("myCourses.meterZone.cooling")}` }
-      : m.early
-        ? { bg: EARLY_ESTIMATE.s, ink: EARLY_ESTIMATE.ink, text: t("myCourses.meterZone.earlyEstimate") }
-        : m.zone
-          ? {
-              bg: ZONES[STUDIO_ZONE[m.zone]].s,
-              ink: ZONES[STUDIO_ZONE[m.zone]].ink,
-              text: t(`myCourses.meterZone.${ZONE_KEY[m.zone]}`) + (m.zone === "safe_zone" ? " ★" : ""),
-            }
-          : null;
+  const pill = meterPill(m, (k) => t(`myCourses.${k}`));
 
   return (
     <section className={clsx(CARD, "flex items-center gap-3")} aria-label={t("myCourses.cutoffMeter")}>
       {/* Cooling: studio desaturation on the gauge, without its own chip (the pill says it). */}
       <div
-        className="w-[150px] shrink-0 sm:w-[170px] transition-[filter] duration-[1400ms]"
+        className="w-[118px] shrink-0 transition-[filter] duration-[1400ms]"
         style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
       >
         <Meter
@@ -111,20 +87,22 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
           value={locked ? undefined : value}
           band={m.band ?? 0}
           hidePill
+          hideCoolChip
+          fluid
           caption={t("target.meterCaption", { max: m.max_marks })}
           cutoffLabel={String(pass)}
         />
       </div>
       <div className="min-w-0 flex-1 space-y-1.5">
-        {pill && (
+        {(
           <span
-            className="inline-flex rounded-full px-2.5 py-0.5 body-small !font-semibold"
-            style={{ background: pill.bg, color: pill.ink }}
+            className="inline-flex rounded-full px-3 py-1.5 text-[12px] font-extrabold leading-none"
+            style={{ background: pill.background, color: pill.color }}
           >
             {pill.text}
           </span>
         )}
-        <p className="heading-medium !font-bold text-surface-gray-normal">
+        <p className="text-[16px] leading-[22px] font-bold text-surface-gray-normal">
           {locked
             ? t("myCourses.meterUnlock", { count: toUnlock })
             : cooling
@@ -179,7 +157,7 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
     <section className={CARD}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="heading-large !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
+          <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
           <p className="body-small !font-medium text-surface-gray-muted">{t("target.pickedBy")}</p>
         </div>
         <span className="shrink-0 rounded-full px-2.5 py-0.5 body-small !font-bold tabular-nums bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
@@ -191,9 +169,9 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
           showLabel={false}
           completed={done}
           total={plan.length}
-          height={4}
+          height={3}
           color="var(--color-brand)"
-          backgroundColor="var(--color-border-gray-subtle)"
+          backgroundColor="var(--color-background-gray-subtle)"
         />
       </div>
 
@@ -209,10 +187,10 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
               <span
                 aria-hidden="true"
                 className={clsx(
-                  "grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-white body-small !font-bold",
+                  "grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-2 text-white body-small !font-bold",
                   a.completed
                     ? "border-[var(--color-success)] bg-[var(--color-success)]"
-                    : "border-[var(--color-surface-gray-muted)]",
+                    : "border-[var(--color-border-gray-subtle)]",
                 )}
               >
                 {a.completed ? "✓" : ""}
@@ -220,7 +198,7 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
               <span className="min-w-0 flex-1">
                 <span
                   className={clsx(
-                    "block truncate heading-small !font-semibold",
+                    "block truncate heading-small !font-bold leading-6",
                     a.completed ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
                   )}
                 >
@@ -231,11 +209,11 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
                 </span>
               </span>
               {a.action_type === "ONBOARDING_TEST" ? (
-                <span className="shrink-0 rounded-full px-2 py-0.5 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
+                <span className="shrink-0 rounded-full px-2 py-1 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
                   {t("target.unlocksMeter")}
                 </span>
               ) : a.expected_gain ? (
-                <span className="shrink-0 rounded-full px-2 py-0.5 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
+                <span className="shrink-0 rounded-full px-2 py-1 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
                   {t("target.gain", { marks: a.expected_gain })}
                 </span>
               ) : null}
@@ -249,6 +227,8 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
           className="mt-3"
           fullWidth
           size="lg"
+          rounded="14px"
+          pY="py-[15px]"
           loading={going === next.id}
           showIcon={false}
           onClick={() => go(next)}
@@ -277,20 +257,20 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
 
   return (
     <section className={CARD}>
-      <h2 className="heading-large !font-bold text-surface-gray-normal">{t("target.marksFrom")}</h2>
+      <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.marksFrom")}</h2>
       {locked || !rows.length ? (
         <p className="mt-2 body-medium text-surface-gray-muted">{t("target.breakdownLocked")}</p>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-3 space-y-2.5">
           {rows.map((s) => {
             const pct = Math.min(Math.max(s.section_marks / s.total_marks, 0), 1);
             const c = pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
             return (
-              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_32%_3rem] items-center gap-3">
-                <span className="line-clamp-2 leading-tight body-medium !font-medium text-surface-gray-normal" title={s.name}>
+              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_46%_3rem] items-center gap-3">
+                <span className="line-clamp-2 leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
                   {s.name}
                 </span>
-                <span className="h-2 overflow-hidden rounded-full bg-[var(--color-border-gray-subtle)]">
+                <span className="h-2 overflow-hidden rounded-full bg-[var(--color-background-gray-subtle)]">
                   <i
                     className="block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-[900ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]"
                     style={{ width: grown ? `${pct * 100}%` : 0, background: c }}

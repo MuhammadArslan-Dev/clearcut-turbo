@@ -75,8 +75,16 @@ export interface MeterProps {
   hidePill?: boolean;
   /** replace "predicted marks / max" under the number (e.g. a translated "of 150 predicted"), */
   caption?: string;
-  /** replace the "Cutoff 90" label at the gauge tick (e.g. a translated / shortened one). */
+  /** replace the "Cutoff 90" label at the gauge / bar tick (e.g. a translated / shortened one). */
   cutoffLabel?: string;
+  /** replace the zone pill (text + colours), e.g. translated or an app-specific state. */
+  pill?: { text: string; background: string; color: string };
+  /** replace the "❄ Cooling" chip text. */
+  coolLabel?: string;
+  /** full width of the parent instead of the studio's fixed width (bar 300px, gauge 270/170px). */
+  fluid?: boolean;
+  /** don't render the floating "❄ Cooling" chip (the app shows cooling in its own pill). */
+  hideCoolChip?: boolean;
 }
 
 const LOCK_SVG = (
@@ -91,7 +99,7 @@ const LOCK_SVG = (
 let deltaSeq = 0;
 
 export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
-  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className, hidePill = false, caption, cutoffLabel },
+  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className, hidePill = false, caption, cutoffLabel, pill: pillProp, coolLabel, fluid = false, hideCoolChip = false },
   ref,
 ) {
   const k = useMeterK();
@@ -231,7 +239,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   /* ---------- derived view ---------- */
   const zoneObj = ZONES[zone];
   const early = zone !== "locked" && band >= EARLY_BAND;
-  const pill = {
+  const pill = pillProp ?? {
     text: early ? tr(EARLY_ESTIMATE.lab, lang) : tr(zoneObj.lab, lang),
     background: early ? EARLY_ESTIMATE.s : zoneObj.s,
     color: early ? EARLY_ESTIMATE.ink : zoneObj.ink,
@@ -242,7 +250,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   const hi = Math.min(max - 0.01, v + band);
   const segs = segments(scale);
   const cutLabel = cutoffLabel ?? `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
-  const coolText = `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
+  const coolText = coolLabel ?? `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
   const lockEl = (locked || lockBreaking) && <span className={[styles.lock, lockBreaking && styles.break].filter(Boolean).join(" ")}>{LOCK_SVG}</span>;
 
   const rootCls = [styles.scope, styles.meter, locked && styles.locked, cooling && styles.cooling, className]
@@ -256,7 +264,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
     const tL = pt(cutoff, R + 26, max).split(" ");
     body = (
       <>
-        <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")}>
+        <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
           <svg viewBox="0 -6 240 150">
             <path
               className={styles.band}
@@ -312,7 +320,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   } else {
     const [mood, acc] = riderPose(zone);
     body = (
-      <div className={[styles.barm, size === "sm" && styles.sm].filter(Boolean).join(" ")}>
+      <div className={[styles.barm, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
         <div className={styles.bartop}>
           <div className={styles.num}>
             <b>{numText}</b>
@@ -360,7 +368,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   return (
     <div ref={rootRef} className={rootCls} style={{ "--k": k } as CSSProperties}>
       {body}
-      <span className={styles.coolchip} aria-hidden={!cooling}>{coolText}</span>
+      {!hideCoolChip && <span className={styles.coolchip} aria-hidden={!cooling}>{coolText}</span>}
       {deltas.map(({ id, d, tiny }) => (
         <span key={id} className={[styles.delta, d >= 0 ? styles.up : styles.dn, tiny && styles.tiny].filter(Boolean).join(" ")}>
           {d >= 0 ? "+" : "−"}

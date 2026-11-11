@@ -107,6 +107,17 @@ The Preparation page has two tabs, **Course** and **Test Series**. Add a third o
     - Skeleton and retry.
     - Redirects to the Course tab when the meter is off or the course is not the user's.
   - i18n: `target.*` and `common.target`, en/hi/mr.
+- **Every exam (client, 2026-11-11).** No exam allowlist ever existed; three 150-mark assumptions were removed:
+  - The zone band (15) and safe margin (10) scale with the paper max, in the BE `CutoffMeterService::scaled()` and the FE `zoneWidths()`.
+  - The `exams.metadata.cutoff` "90+ / 150" is scaled to the level's max (UP PGT 425 → 255).
+  - `tests_count` backs "based on N tests". BE `0c28718`.
+- **Pixel pass vs references** (`target-tab.png` + the card bar reference):
+  - The card meter now *is* the studio `Meter variant="bar"` (fluid). The hand-built `CutoffMeterBar` was removed.
+  - A centred gap line and a "Range ±N · based on N tests" line sit under it.
+  - New `Meter` props: `pill` / `coolLabel` / `fluid` / `hideCoolChip`.
+  - The studio rider moved from top −30 to −33 so the nib tip stands on the track.
+  - Target tab sizes follow the Playwright measurements: gauge 118px, 20px card radius, 18px titles, a 3px pale progress line, 26px circles, a 14px-radius CTA, and a 46% marks bar.
+  - The shared `lib/dashboard/meterPill.ts` gives the card and the tab the same studio-coloured pills.
 - **User follow-ups (2026-11-11):**
   - On mobile, the Course / Test Series / Target switch sits on its own line under the course name (both topbars).
   - The bottom Index button is icon-only (list icon, with the aria-label kept) on Course and Test Series.

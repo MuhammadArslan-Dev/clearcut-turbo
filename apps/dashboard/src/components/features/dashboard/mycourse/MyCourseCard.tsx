@@ -9,151 +9,63 @@ import { getCourseStatus } from "@/lib/status/getCourseStatus";
 import { trialDaysLeft } from "@/lib/status/trialDaysLeft";
 import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import clsx from "clsx";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { meterPill } from "@/lib/dashboard/meterPill";
+import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
-import { useCountUp } from "@clearcut/motion/core";
-import { motion, useReducedMotion } from "framer-motion";
-import { Nib } from "@clearcut/motion/meters/nib";
-import type { ZoneKey } from "@clearcut/motion/meters/zones";
-import { CutoffMeterBar } from "./CutoffMeterBar";
 
 /**
- * Zone styles, design tokens only. The spec's 3 colours plus the studio's
- * Safe Zone (pass + 10, user "sab kro" 2026-11-11). `fill` = bar colour.
+ * Meter panel (phase 98/99) = Cutoff Meter Studio's bar meter itself
+ * (`Meter variant="bar"` from @clearcut/motion): "58 / 150", zone pill, the
+ * zone-tinted track with confidence band, fill, pass tick + "Cutoff 90", Nibbu
+ * riding the fill, "0 … 150" scale, ❄ cooling, lock, Δ chip + wobble. Below
+ * it, centred, the gap line and "Range ±N · based on N tests" (reference).
+ * Text is ours (en / hi / mr); everything else is the studio's artwork.
  */
-const ZONES = {
-  needs_work: { key: "needsWork", fill: "var(--color-danger-subtle)", pill: "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]" },
-  almost_there: { key: "almostThere", fill: "var(--color-warning-muted)", pill: "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]" },
-  clear_zone: { key: "clearZone", fill: "var(--color-success)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
-  safe_zone: { key: "safeZone", fill: "var(--color-success-strong)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
-} as const;
-const SOFT_BLUE_PILL = "bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]";
-
-/**
- * Meter panel (phase 98) — every Cutoff Meter Studio state:
- * Locked · Early estimate · Needs work · Almost there · Clear Zone · Safe Zone ·
- * Score dropped / went up (delta chip + wobble) · Cooling down (display-only
- * decay, desaturated bar, ❄). "Final week" lives in the card header.
- */
-const STUDIO_ZONE: Record<NonNullable<CutoffMeterSummary["zone"]>, ZoneKey> = {
-  needs_work: "need",
-  almost_there: "almost",
-  clear_zone: "clear",
-  safe_zone: "safe",
-};
-
-/** Confidence band (± marks) per state, as the studio's state table: wide while early, tight when settled. */
-function meterBand(meter: CutoffMeterSummary, change: number, cooling: boolean): number {
-  if (meter.early) return 15;
-  if (cooling) return 7;
-  if (change < 0) return 6;
-  return meter.confidence === "high" ? 4 : 6;
-}
-
-type NibPose = { mood: "happy" | "determined" | "wow" | "sleepy"; accessory: "none" | "cap" | "headband" | "zzz" | "star" };
-
-/** Nibbu's pose per state, exactly as Cutoff Meter Studio's state table. */
-function nibPose(meter: CutoffMeterSummary, change: number, cooling: boolean, finalWeek: boolean): NibPose {
-  if (cooling) return { mood: "sleepy", accessory: "zzz" };
-  if (change < 0) return { mood: "determined", accessory: "headband" }; // Score dropped
-  if (meter.early) return { mood: "wow", accessory: "none" }; // Early estimate
-  if (finalWeek) return { mood: "determined", accessory: "none" };
-  switch (meter.zone) {
-    case "needs_work":
-      return { mood: "determined", accessory: "headband" };
-    case "almost_there":
-      return { mood: "determined", accessory: "none" };
-    case "clear_zone":
-      return { mood: "happy", accessory: "cap" };
-    case "safe_zone":
-      return { mood: "happy", accessory: "star" };
-    default:
-      return { mood: "happy", accessory: "none" };
-  }
-}
-
-function CutoffMeterPanel({ meter, daysToExam }: { meter: CutoffMeterSummary; daysToExam?: number | null }) {
+function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
   const t = useTranslations("myCourses");
-  const reduce = useReducedMotion();
+  const locale = useLocale();
+  const ref = useRef<MeterHandle>(null);
   const locked = meter.locked || meter.meter === null;
-  const cooling = !locked && meter.cooling?.active;
-  const value = meter.display_meter ?? meter.meter ?? 0;
+  const cooling = !locked && !!meter.cooling?.active;
+  const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
   const gap = meter.display_gap ?? meter.gap ?? 0;
-  const zone = meter.zone ? ZONES[meter.zone] : null;
+  const pass = Math.round(meter.pass_mark);
   const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
-  // A change since the last test; hidden while cooling (that has its own message).
   const change = !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
-  // Design: the number counts up with the bar (same 1150 ms, 250 ms delay).
-  const shown = useCountUp(locked ? 0 : Math.round(value), { duration: 1150, delay: 250 });
-  const pose = nibPose(meter, change, !!cooling, daysToExam != null && daysToExam <= 7);
 
-  const pill = locked
-    ? { cls: "bg-[var(--color-surface-gray-muted)]/15 text-surface-gray-muted", text: t("meterZone.locked") }
-    : cooling
-      ? { cls: SOFT_BLUE_PILL, text: `❄ ${t("meterZone.cooling")}` }
-      : meter.early
-        ? { cls: SOFT_BLUE_PILL, text: t("meterZone.earlyEstimate") }
-        : { cls: zone?.pill ?? "", text: t(`meterZone.${zone?.key ?? "needsWork"}`) + (meter.zone === "safe_zone" ? " ★" : "") };
+  // Studio "Score dropped / went up": Δ chip (+ wobble on a drop) once the fill has settled.
+  useEffect(() => {
+    if (!change) return;
+    const id = setTimeout(() => {
+      ref.current?.delta(change);
+      if (change < 0) ref.current?.wobble();
+    }, 1400);
+    return () => clearTimeout(id);
+  }, [change]);
 
   return (
-    <motion.div
-      className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5"
-      // Score dropped: one gentle wobble once the needle has settled (studio, 600 ms).
-      animate={change < 0 && !reduce ? { x: [0, -5, 4, -2, 1, 0] } : undefined}
-      transition={{ duration: 0.6, delay: 1.3, ease: "easeInOut" }}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <p className="leading-none text-surface-gray-normal">
-            <span className="heading-2xxlarge !font-bold tabular-nums">{locked ? "?" : shown}</span>
-            <span className="body-medium !font-semibold text-surface-gray-muted"> / {meter.max_marks}</span>
-          </p>
-          {change !== 0 && (
-            <motion.span
-              aria-label={t("meterChange", { change: change > 0 ? `+${change}` : `−${Math.abs(change)}` })}
-              className={clsx(
-                "rounded-full px-2 py-0.5 body-small !font-bold",
-                change > 0
-                  ? "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]"
-                  : "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]",
-              )}
-              initial={reduce ? false : { opacity: 0, scale: 0.7, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.9, type: "spring", stiffness: 420, damping: 18 }}
-            >
-              {change > 0 ? `+${change}` : `−${Math.abs(change)}`}
-            </motion.span>
-          )}
-        </div>
-        <span className={clsx("shrink-0 rounded-full px-3 py-1 body-small !font-semibold", pill.cls)}>{pill.text}</span>
-      </div>
-      {/* Cooling: colours drain (studio: grayscale .8, 1.4 s). */}
-      {/* pt: room for Nibbu riding 30px above the fill's end (studio bar meter). */}
-      <div
-        className="pt-8 pb-2 transition-[filter] duration-[1400ms]"
-        style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
-      >
-        <CutoffMeterBar
-          value={value}
-          max={meter.max_marks}
-          pass={meter.pass_mark}
-          band={meterBand(meter, change, !!cooling)}
-          zone={meter.zone ? STUDIO_ZONE[meter.zone] : "need"}
-          locked={locked}
-          ariaLabel={t("cutoffMeter")}
-          rider={
-            // Re-keyed so a pose change replays the studio pop / cap drop.
-            <Nib key={`${pose.mood}-${pose.accessory}`} mood={pose.mood} accessory={pose.accessory} pop bob={!!cooling} />
-          }
-        />
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="body-small !font-medium text-surface-gray-muted">{t("cutoffMeter")}</span>
-        <span className="body-small !font-semibold text-surface-gray-normal text-right">
+    <div className="flex flex-col gap-2">
+      <Meter
+        ref={ref}
+        variant="bar"
+        fluid
+        lang={locale === "hi" ? "hi" : "en"}
+        scale={{ max: meter.max_marks, cutoff: pass }}
+        locked={locked}
+        value={locked ? undefined : value}
+        band={meter.band ?? 0}
+        cooling={cooling}
+        pill={meterPill(meter, t)}
+        cutoffLabel={t("meterCutoff", { pass })}
+        hideCoolChip
+      />
+      <div className="text-center">
+        <p className="heading-medium !font-bold text-surface-gray-normal">
           {locked
             ? t("meterUnlock", { count: toUnlock })
             : cooling
@@ -161,23 +73,34 @@ function CutoffMeterPanel({ meter, daysToExam }: { meter: CutoffMeterSummary; da
               : gap > 0
                 ? t("meterGap", { marks: Math.ceil(gap) })
                 : t("meterAbove", { marks: Math.round(-gap) })}
-        </span>
+        </p>
+        {!locked && !!meter.band && (
+          <p className="text-[13px] leading-[18px] text-surface-gray-muted">
+            {meter.tests_count
+              ? t("meterRangeTests", { band: meter.band, tests: meter.tests_count })
+              : t("meterRange", { band: meter.band })}
+          </p>
+        )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function CutoffMeterPanelSkeleton() {
+  // Same footprint as the studio bar meter + the two centred lines below it.
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5" aria-hidden="true">
-      <div className="flex items-start justify-between">
-        <Skeleton variant="text" width={90} height={36} />
+    <div className="flex flex-col gap-2" aria-hidden="true">
+      <div className="flex items-end justify-between">
+        <Skeleton variant="text" width={110} height={40} />
         <Skeleton variant="rectangular" width={96} height={24} borderRadius={999} />
       </div>
-      <Skeleton variant="rectangular" height={8} borderRadius={999} />
-      <div className="flex justify-between">
-        <Skeleton variant="text" width={80} />
-        <Skeleton variant="text" width={120} />
+      <div className="pt-6">
+        <Skeleton variant="rectangular" height={18} borderRadius={999} />
+      </div>
+      <Skeleton variant="text" width="100%" height={12} />
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton variant="text" width={200} height={20} />
+        <Skeleton variant="text" width={160} />
       </div>
     </div>
   );
@@ -342,9 +265,9 @@ export default function MyCourseCard({
             {/* One line, never wraps (user feedback); a very long name ends in "…". */}
             <h5
               className="heading-large !font-semibold text-surface-gray-normal whitespace-nowrap overflow-hidden text-ellipsis"
-              title={levelName && examShortName ? `${examShortName} ${levelName}` : (courseName ?? undefined)}
+              title={levelName && examShortName && levelName.trim().toLowerCase() !== examShortName.trim().toLowerCase() ? `${examShortName} ${levelName}` : (examShortName ?? courseName ?? undefined)}
             >
-              {levelName && examShortName ? `${examShortName} ${levelName}` : courseName}
+              {levelName && examShortName && levelName.trim().toLowerCase() !== examShortName.trim().toLowerCase() ? `${examShortName} ${levelName}` : (examShortName ?? courseName)}
             </h5>
             {daysToExam != null &&
               (daysToExam <= 7 ? (
@@ -380,7 +303,7 @@ export default function MyCourseCard({
         {meterLoading ? (
           <CutoffMeterPanelSkeleton />
         ) : meter ? (
-          <CutoffMeterPanel meter={meter} daysToExam={daysToExam} />
+          <CutoffMeterPanel meter={meter} />
         ) : null}
 
         <div className={clsx("flex flex-col gap-2", (meter || meterLoading) && "hidden")}>

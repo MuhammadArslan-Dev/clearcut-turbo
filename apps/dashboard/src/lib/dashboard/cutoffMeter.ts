@@ -27,6 +27,8 @@ export interface CutoffMeterSummary {
   display_gap: number | null;
   /** "Range ±N" (phase 99; from confidence). */
   band?: number | null;
+  /** distinct tests behind the counted answers ("based on N tests"). */
+  tests_count?: number;
 }
 
 /**

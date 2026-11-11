@@ -149,7 +149,7 @@
 .bandb { position: absolute; top: -5px; bottom: -5px; border-radius: 99px; opacity: .16; transition: left calc(var(--k, 1) * 600ms), width calc(var(--k, 1) * 600ms); }
 .cmark { position: absolute; top: -8px; bottom: -8px; width: 3px; border-radius: 2px; background: var(--ink); }
 .cmark span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 800; white-space: nowrap; margin-top: 3px; }
-.rider { position: absolute; top: -30px; width: 28px; margin-left: -14px; left: 0; transition: left calc(var(--k, 1) * 1150ms) var(--spring); }
+.rider { position: absolute; top: -33px; width: 28px; margin-left: -14px; left: 0; transition: left calc(var(--k, 1) * 1150ms) var(--spring); }
 .scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 6px; font-weight: 600; }
 .scale span:nth-child(2) { visibility: hidden; }
 .meter.locked .fillb, .meter.locked .rider, .meter.locked .bandb { opacity: 0; }
