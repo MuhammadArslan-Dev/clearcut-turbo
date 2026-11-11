@@ -45,7 +45,7 @@ export default function Topbar() {
         <div ref={titleRowOuterRef} className="w-full overflow-hidden">
           <div
             ref={titleRowRef}
-            className="flex flex-wrap md:flex-nowrap items-center justify-between md:justify-start w-full gap-y-2 md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
+            className="flex items-center justify-between md:justify-start w-full md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
           >
             <div className="flex gap-3 md:gap-10 items-center">
               {/* Back Button */}
@@ -78,8 +78,8 @@ export default function Topbar() {
               </div>
             </div>
 
-            {/* Page Switch Tabs — mobile: on its own line under the course name (user, 2026-11-11) */}
-            <div className="w-full md:w-auto pl-12 md:pl-0" data-tour={PREP_TOUR.pageSwitch}>
+            {/* Page Switch Tabs */}
+            <div data-tour={PREP_TOUR.pageSwitch}>
               <PageSwitchTab />
             </div>
           </div>

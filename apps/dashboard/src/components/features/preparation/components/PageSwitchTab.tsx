@@ -77,6 +77,10 @@ export default React.memo(function PageSwitchTab({
       layoutScopeId={layoutScopeId}
       scrollable
       items={[
+        // Target first (user, 2026-11-11), only while the Cutoff Meter is on.
+        ...(showTarget
+          ? [{ id: "target", label: t("target"), href: `/target/${courseId}`, match: "target" }]
+          : []),
         {
           id: "course",
           label: t("course"),
@@ -85,13 +89,10 @@ export default React.memo(function PageSwitchTab({
         },
         {
           id: "test-series",
-          label: t("testSeries"),
+          label: t("tests"),
           href: `/test-series/${courseId}`,
           match: "test-series",
         },
-        ...(showTarget
-          ? [{ id: "target", label: t("target"), href: `/target/${courseId}`, match: "target" }]
-          : []),
       ]}
       value={tab}
       tabFontSize="body-medium md:body-large"
