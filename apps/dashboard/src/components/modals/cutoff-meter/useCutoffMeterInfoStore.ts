@@ -10,8 +10,12 @@ import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
  */
 export const useCutoffMeterInfoStore = create<{
   meter: CutoffMeterSummary | null;
-  setMeter: (m: CutoffMeterSummary) => void;
+  /** How the sheet draws the student's meter: like where it was opened from
+   * (course card = bar, Target tab = gauge). */
+  variant: "bar" | "gauge";
+  setMeter: (m: CutoffMeterSummary, variant?: "bar" | "gauge") => void;
 }>((set) => ({
   meter: null,
-  setMeter: (meter) => set({ meter }),
+  variant: "bar",
+  setMeter: (meter, variant = "bar") => set({ meter, variant }),
 }));

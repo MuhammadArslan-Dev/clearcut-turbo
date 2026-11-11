@@ -78,7 +78,7 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const openModal = useModalStore((st) => st.open);
   const setInfoMeter = useCutoffMeterInfoStore((st) => st.setMeter);
   const openInfo = () => {
-    setInfoMeter(m);
+    setInfoMeter(m, "gauge");
     openModal("cutoff-meter-info");
   };
 

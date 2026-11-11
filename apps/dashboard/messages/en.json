@@ -267,6 +267,7 @@
     "meterInfo": {
       "title": "How your Cutoff Meter works",
       "close": "Close",
+      "gaugeCaption": "predicted marks / {max}",
       "howTitle": "How it's calculated",
       "youSummary": "Right now you're predicted {value} of {max}. The cutoff is {pass}.",
       "youLocked": "Answer {count, plural, one {# more question} other {# more questions}} and your meter unlocks. Cutoff for this exam: {pass} of {max}.",
