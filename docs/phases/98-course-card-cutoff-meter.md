@@ -4,7 +4,7 @@
 **Repos:** CM (apps/dashboard) · BE (one small batch endpoint)
 **Branches:** CM `feature/course-card-meter`, BE `feature/cutoff-meter-batch`. Neither is merged.
 **Created / start date:** 2026-11-11
-**Status:** Not Started. Plan is waiting for the user's review.
+**Status:** In Progress. Plan approved and D1–D4 answered (2026-11-11).
 
 ## 1. Problem / objective
 Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the screenshot. Everything shown must be real data:
@@ -70,6 +70,10 @@ Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the s
 | Date | Question | Answer (who) |
 |---|---|---|
 | 2026-11-11 | Change MyCourseCard (previously frozen)? | Yes, top part only; buttons unchanged (user) |
+| 2026-11-11 | D1 meter off in prod | Keep today's Chapters / Tests bars as fallback; switch to the meter panel automatically when the API answers (user) |
+| 2026-11-11 | D2 bars once the meter is live | Remove them; fallback only (user) |
+| 2026-11-11 | D3 past / "Upcoming" exam date | Hide the days-to-exam line (user) |
+| 2026-11-11 | D4 zone names | 3 names: Needs work / Almost there / Clear Zone (user) |
 
 ## 6. Blockers / risks — 🛑 needs the user before implementation
 - 🛑 **D1: The meter is OFF in production** (`CUTOFF_METER_ENABLED=false`, migration not run, no backfill). Until it is turned on, the card has no real meter number. What should it show meanwhile?
