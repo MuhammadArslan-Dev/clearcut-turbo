@@ -8,8 +8,9 @@ import { TestFlowDemo } from "../test/flow/examples/TestFlowDemo";
 import { NibMascot, type NibAccessory, type NibMood } from "../nibbu";
 import type { Outcome, TestType } from "../test/flow/types";
 import { OnboardingPanel, EnrollPanel, MiniTestPanel, PdfPanel } from "./screens";
+import { MetersStudio } from "../meters";
 
-export type Tab = "loaders" | "onboarding" | "enrollment" | "mini-test" | "pdf" | "test-flow" | "nibbu";
+export type Tab = "loaders" | "onboarding" | "enrollment" | "mini-test" | "pdf" | "test-flow" | "meters" | "nibbu";
 type Lang = "en" | "hi";
 const TABS: [Tab, string][] = [
   ["loaders", "Loaders"],
@@ -18,6 +19,7 @@ const TABS: [Tab, string][] = [
   ["mini-test", "Mini test"],
   ["pdf", "PDF download"],
   ["test-flow", "Test results"],
+  ["meters", "Cutoff Meter"],
   ["nibbu", "Nibbu"],
 ];
 
@@ -205,6 +207,8 @@ const POSES: [NibMood, NibAccessory, string, string][] = [
   ["determined", "none", "Determined", "Full-mock intro"],
   ["determined", "headband", "Keep going", "Close / below cutoff"],
   ["happy", "cap", "Cleared", "Cutoff cleared"],
+  ["happy", "star", "Safe Zone", "Cutoff Meter: well above cutoff"],
+  ["sleepy", "zzz", "Cooling", "Cutoff Meter: 3+ idle days"],
 ];
 
 function NibbuPanel() {
@@ -308,6 +312,11 @@ export function MotionPreview({ slots }: { slots?: Partial<Record<Tab, ReactNode
       ) : <MiniTestPanel />)}
       {tab === "pdf" && <PdfPanel />}
       {tab === "test-flow" && <TestFlowPanel />}
+      {tab === "meters" && (
+        <section className="panel" aria-label="Cutoff Meter">
+          <MetersStudio />
+        </section>
+      )}
       {tab === "nibbu" && <NibbuPanel />}
     </div>
     </div>

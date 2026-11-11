@@ -14,6 +14,7 @@
     "./test/mini-test": "./src/test/mini-test/index.ts",
     "./test/flow": "./src/test/flow/index.ts",
     "./download": "./src/download/index.ts",
+    "./meters": "./src/meters/index.ts",
     "./preview": "./src/preview/MotionPreview.tsx",
     "./preview/samples": "./src/preview/samples.ts"
   },
