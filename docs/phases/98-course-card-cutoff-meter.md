@@ -152,10 +152,13 @@ Wait for the user on D1–D4, then implement §3 in order.
   - Status pill back on the card's top edge, in the old style. "Trial Ended" is still a button.
   - Title on one line with an ellipsis.
   - Edit sits at the right of the title.
-- **Bar:**
-  - Nibbu (`@clearcut/motion/meters/nib`) rides the fill end, posed per state as in the studio table. Hidden when locked.
-  - A white knob with a zone-colour ring sits at the fill end.
-  - Both use the fill's spring.
+- **Bar (`CutoffMeterBar`, studio bar meter 1:1):**
+  - 18px track, tinted by zone (need / almost / clear / safe vs the pass mark)
+  - Confidence band around the score (opacity .16, ±5px; ±15 marks when early → ±4 when settled)
+  - Zone fill and a dark 3px pass tick (±8px)
+  - Nibbu (`@clearcut/motion/meters/nib`) riding 30px above the fill end, posed per state as in the studio table. Hidden when locked.
+  - Colours from `@clearcut/motion/meters/zones` (approved artwork)
+  - `ProgressBar` is back to its original code
 - **Verified (Playwright, 390 en/hi/mr + 1440):**
   - Every state matches its fixture.
   - Nib and knob x-diff is 0 px.

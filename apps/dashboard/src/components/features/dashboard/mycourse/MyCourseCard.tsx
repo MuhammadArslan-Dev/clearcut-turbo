@@ -18,6 +18,8 @@ import Skeleton from "@clearcut/ui/skeleton";
 import { useCountUp } from "@clearcut/motion/core";
 import { motion, useReducedMotion } from "framer-motion";
 import { Nib } from "@clearcut/motion/meters/nib";
+import type { ZoneKey } from "@clearcut/motion/meters/zones";
+import { CutoffMeterBar } from "./CutoffMeterBar";
 
 /**
  * Zone styles, design tokens only. The spec's 3 colours plus the studio's
@@ -37,6 +39,21 @@ const SOFT_BLUE_PILL = "bg-[var(--color-primary-bg-soft)] text-[var(--color-bran
  * Score dropped / went up (delta chip + wobble) · Cooling down (display-only
  * decay, desaturated bar, ❄). "Final week" lives in the card header.
  */
+const STUDIO_ZONE: Record<NonNullable<CutoffMeterSummary["zone"]>, ZoneKey> = {
+  needs_work: "need",
+  almost_there: "almost",
+  clear_zone: "clear",
+  safe_zone: "safe",
+};
+
+/** Confidence band (± marks) per state, as the studio's state table: wide while early, tight when settled. */
+function meterBand(meter: CutoffMeterSummary, change: number, cooling: boolean): number {
+  if (meter.early) return 15;
+  if (cooling) return 7;
+  if (change < 0) return 6;
+  return meter.confidence === "high" ? 4 : 6;
+}
+
 type NibPose = { mood: "happy" | "determined" | "wow" | "sleepy"; accessory: "none" | "cap" | "headband" | "zzz" | "star" };
 
 /** Nibbu's pose per state, exactly as Cutoff Meter Studio's state table. */
@@ -115,27 +132,22 @@ function CutoffMeterPanel({ meter, daysToExam }: { meter: CutoffMeterSummary; da
         <span className={clsx("shrink-0 rounded-full px-3 py-1 body-small !font-semibold", pill.cls)}>{pill.text}</span>
       </div>
       {/* Cooling: colours drain (studio: grayscale .8, 1.4 s). */}
-      {/* pt: room for Nibbu riding the end of the fill (studio bar meter). */}
+      {/* pt: room for Nibbu riding 30px above the fill's end (studio bar meter). */}
       <div
-        className="pt-7 transition-[filter] duration-[1400ms]"
+        className="pt-8 pb-2 transition-[filter] duration-[1400ms]"
         style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
       >
-        <ProgressBar
-          showLabel={false}
-          completed={locked ? 0 : value}
-          total={meter.max_marks}
-          marker={meter.pass_mark}
-          height={8}
-          color={zone?.fill ?? "var(--color-surface-gray-muted)"}
-          backgroundColor="var(--color-border-gray-subtle)"
+        <CutoffMeterBar
+          value={value}
+          max={meter.max_marks}
+          pass={meter.pass_mark}
+          band={meterBand(meter, change, !!cooling)}
+          zone={meter.zone ? STUDIO_ZONE[meter.zone] : "need"}
+          locked={locked}
           ariaLabel={t("cutoffMeter")}
-          animate
-          knob={!locked}
           rider={
-            // Locked: no rider (studio hides it). Re-keyed so a pose change replays pop / cap drop.
-            locked ? undefined : (
-              <Nib key={`${pose.mood}-${pose.accessory}`} mood={pose.mood} accessory={pose.accessory} pop bob={!!cooling} />
-            )
+            // Re-keyed so a pose change replays the studio pop / cap drop.
+            <Nib key={`${pose.mood}-${pose.accessory}`} mood={pose.mood} accessory={pose.accessory} pop bob={!!cooling} />
           }
         />
       </div>

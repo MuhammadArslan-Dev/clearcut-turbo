@@ -16,6 +16,7 @@
     "./download": "./src/download/index.ts",
     "./meters": "./src/meters/index.ts",
     "./meters/nib": "./src/meters/Nib.tsx",
+    "./meters/zones": "./src/meters/zones.ts",
     "./preview": "./src/preview/MotionPreview.tsx",
     "./preview/samples": "./src/preview/samples.ts"
   },
