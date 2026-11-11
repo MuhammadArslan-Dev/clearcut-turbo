@@ -258,7 +258,19 @@ declare const messages: {
     "buyFullCourse": "Buy Full Course",
     "renewCourse": "Renew plan",
     "priceNote": "₹{price} only • Subscription per month",
-    "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only"
+    "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only",
+    "planFull": "Full plan",
+    "daysToExam": "{days, plural, =0 {Exam today} one {# day to exam} other {# days to exam}}",
+    "cutoffMeter": "Cutoff Meter",
+    "meterGap": "{marks, plural, one {# mark} other {# marks}} to Clear Zone",
+    "meterAbove": "+{marks} above pass mark",
+    "meterUnlock": "Answer {count, plural, one {# question} other {# questions}} to unlock",
+    "meterZone": {
+        "needsWork": "Needs work",
+        "almostThere": "Almost there",
+        "clearZone": "Clear Zone",
+        "locked": "Locked"
+    }
   },
   "resumeBar": {
     "currentExam": "Current Exam: {exam}",

@@ -34,6 +34,7 @@ export function invalidateProgressQueries(queryClient: QueryClient) {
   for (const key of [
     ["learning-progress-by-topic"],
     ["courses-progress-summary"],
+    ["courses-cutoff-meter"],
     ["today-goals"],
     ["resume-state"],
   ]) {

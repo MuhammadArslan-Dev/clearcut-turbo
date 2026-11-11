@@ -255,7 +255,19 @@
     "buyFullCourse": "पूर्ण कोर्स खरेदी करा",
     "renewCourse": "प्लॅन रिन्यू करा",
     "priceNote": "₹{price}/महिना • सबस्क्रिप्शन प्लॅन",
-    "trialLimit": "मोफत ट्रायल फक्त {days, plural, one {# दिवस} other {# दिवस}} साठी"
+    "trialLimit": "मोफत ट्रायल फक्त {days, plural, one {# दिवस} other {# दिवस}} साठी",
+    "planFull": "फुल प्लॅन",
+    "daysToExam": "{days, plural, =0 {परीक्षा आज} one {परीक्षेला # दिवस} other {परीक्षेला # दिवस}}",
+    "cutoffMeter": "कटऑफ मीटर",
+    "meterGap": "क्लियर झोनपासून {marks} गुण दूर",
+    "meterAbove": "पास गुणांपेक्षा +{marks} जास्त",
+    "meterUnlock": "अनलॉक करण्यासाठी {count} प्रश्न सोडवा",
+    "meterZone": {
+        "needsWork": "मेहनत आवश्यक",
+        "almostThere": "थोडंच बाकी",
+        "clearZone": "क्लियर झोन",
+        "locked": "लॉक आहे"
+    }
   },
   "resumeBar": {
     "currentExam": "सध्याची परीक्षा: {exam}",

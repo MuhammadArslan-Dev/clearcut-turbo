@@ -27,6 +27,10 @@ import { Button } from "@clearcut/ui/button";
 import { usePaywallsStore } from "../../PayWalls/usePaywallsStore";
 import { useCoursesProgressSummary } from "@/hooks/course/useCourseProgressSummary";
 import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
+import { useCoursesCutoffMeter } from "@/hooks/course/useCoursesCutoffMeter";
+import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
+import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { daysToExam, levelName } from "@/lib/dashboard/courseCardMeta";
 import { prefetchLevels } from "@/hooks/onboarding/useLevels";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
@@ -67,6 +71,8 @@ const MainPaywall = dynamic(() => import("../../PayWalls/MainPaywall"), {
 function CourseSlideCard({
   exam,
   progress,
+  meter,
+  meterLoading,
   onContinue,
   onEdit,
   onUnlock,
@@ -76,6 +82,9 @@ function CourseSlideCard({
   // Passed in from MyCoursesWrapTwo's single batched query — this card used
   // to run its own per-course request (N+1, Sentry CLEARCUTOFF-NEXTJS-APP-56).
   progress?: CourseProgressSummary;
+  /** Cutoff Meter (phase 98); undefined = unavailable → legacy bars. */
+  meter?: CutoffMeterSummary;
+  meterLoading?: boolean;
   onContinue: () => void;
   onEdit: () => void;
   onUnlock?: () => void;
@@ -91,6 +100,10 @@ function CourseSlideCard({
       examShortName={exam.exam?.short_name}
       courseName={`${exam.exam?.short_name} Exam`}
       logo={exam.exam?.logo_url}
+      levelName={levelName(exam.metadata)}
+      daysToExam={daysToExam(exam.exam?.metadata)}
+      meter={meter}
+      meterLoading={meterLoading}
       maxWidth="400px"
       topics={{
         completed: progress?.chapters_completed ?? 0,
@@ -224,6 +237,17 @@ export default function MyCoursesWrapTwo({
     ? progressByCourse?.[activeCourse.group_code]
     : undefined;
 
+  // Cutoff Meter (phase 98): ONE request for every card, and none at all while
+  // the backend has the meter off — the cards then keep the legacy bars (D1).
+  const { caps } = useProgressCapabilities();
+  const meterOn = caps.cutoff_meter;
+  const { data: meterByCourse, isLoading: meterLoading } = useCoursesCutoffMeter(
+    orderedCourses.map((course) => course?.group_code),
+    meterOn,
+  );
+  const meterFor = (groupCode?: string | number | null) =>
+    meterOn && groupCode ? meterByCourse?.[String(groupCode)] : undefined;
+
   // ✅ Shared card props (no duplication)
   const cardProps = {
     bgColor: "bg-[#0053A2] !important",
@@ -232,6 +256,10 @@ export default function MyCoursesWrapTwo({
     examShortName: exam?.short_name,
     courseName: `${exam?.short_name} Exam`,
     logo: exam?.logo_url,
+    levelName: levelName(activeExam?.metadata),
+    daysToExam: daysToExam(exam?.metadata),
+    meter: meterFor(activeExam?.group_code),
+    meterLoading: meterOn && meterLoading,
 
     topics: {
       completed: progressSummary?.chapters_completed ?? 0,
@@ -322,6 +350,8 @@ export default function MyCoursesWrapTwo({
                   <CourseSlideCard
                     exam={exam}
                     progress={exam.group_code ? progressByCourse?.[exam.group_code] : undefined}
+                    meter={meterFor(exam.group_code)}
+                    meterLoading={meterOn && meterLoading}
                     onContinue={() => {
                       if (exam.stage_id) {
                         (async () => {

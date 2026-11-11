@@ -14,12 +14,15 @@ export interface ProgressCapabilities {
   topic_activity: boolean;
   mini_test_server_scoring: boolean;
   video_complete_ratio: number;
+  /** Cutoff Meter on (phase 97/98): My Courses card shows the meter panel. */
+  cutoff_meter: boolean;
 }
 
 export const LEGACY_CAPABILITIES: ProgressCapabilities = {
   topic_activity: false,
   mini_test_server_scoring: false,
   video_complete_ratio: 0.8,
+  cutoff_meter: false,
 };
 
 export async function getProgressCapabilities(): Promise<ProgressCapabilities> {

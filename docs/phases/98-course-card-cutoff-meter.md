@@ -4,7 +4,7 @@
 **Repos:** CM (apps/dashboard) · BE (one small batch endpoint)
 **Branches:** CM `feature/course-card-meter`, BE `feature/cutoff-meter-batch`. Neither is merged.
 **Created / start date:** 2026-11-11
-**Status:** In Progress. Plan approved and D1–D4 answered (2026-11-11).
+**Status:** In Review. Built and verified locally (2026-11-11); not merged.
 
 ## 1. Problem / objective
 Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the screenshot. Everything shown must be real data:
@@ -55,12 +55,19 @@ Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the s
   - The motion gallery's animated meter (phase 96). This card uses a static bar with a simple fill transition, as in the screenshot.
 
 ## 3. Implementation plan
-- [ ] BE: batch endpoint + test (ownership 404, flag off 404, ≤ 20 courses, shape)
-- [ ] CM: `lib/dashboard/cutoffMeter.ts` (typed fetch) + `hooks/course/useCoursesCutoffMeter.ts` (one React Query key for the carousel, staleTime 5 min, invalidated where `courses-progress-summary` is)
-- [ ] CM: `ProgressBar` gets optional `marker` / `fillClassName` (default render byte-identical; check all callers)
-- [ ] CM: `MyCourseCard` header + meter panel. `MyCoursesWrapTwo` / `CourseSlideCard` pass the new props (level name, exam date, meter). Buttons block untouched.
-- [ ] CM: i18n en / hi / mr; tokens if needed
-- [ ] Update DEVELOPMENT_RULES §3.2 note on `MyCourseCard`
+- [x] BE `feature/cutoff-meter-batch`:
+  - `GET /v2/cutoff-meter?courses[]=` (≤ 20, own courses only, 404 when off)
+  - `capabilities.cutoff_meter`
+  - my-courses now returns enrollment `metadata` (level name)
+  - enrollments whose level belongs to another exam are skipped (bad fixture data showed CTET's meter on HPTET / MAHATET / UGC)
+- [x] CM:
+  - `lib/dashboard/cutoffMeter.ts`
+  - `hooks/course/useCoursesCutoffMeter.ts` (one request; none while the capability is off)
+  - `lib/dashboard/courseCardMeta.ts` (`levelName`, `daysToExam` in IST, hidden when past)
+- [x] CM: `ProgressBar` gains optional `marker` and `animate` (the design's spring, `cubic-bezier(.34,1.56,.64,1)` 1150 ms after 250 ms; reduced motion = instant). Without `marker` the DOM is identical.
+- [x] CM: `MyCourseCard` header and `CutoffMeterPanel` (+ skeleton, locked state, count-up via `@clearcut/motion/core` `useCountUp`). `MyCoursesWrapTwo` passes level, days and meter. Buttons block untouched.
+- [x] CM: i18n en / hi / mr (10 keys each, appended). Only existing tokens; no new colours.
+- [x] DEVELOPMENT_RULES §0 / §3.2 updated
 - [ ] Verify: tsc / eslint / check:colors / build. Screenshots at 390 + 1440 in en / hi / mr for all zones + locked + loading + meter-off + trial / expired badges. Request count = 1 meter request per page load. Numbers vs DB (`meter_history`)
 
 ## 4. Progress / completed changes
@@ -97,14 +104,35 @@ Redesign the **top part** of the My Courses card (`MyCourseCard`) to match the s
 - CM: maybe new soft colour tokens in `packages/design-tokens/tokens.css`.
 
 ## 8. Tests and verification
-- [ ] Baseline screenshots of the current card (390 / 1440, en / hi / mr, trial / active / expired)
+- [x] Copy DB `clearcut_pt` with the meter on. Fixture user 19392:
+  - HTET L1: 82 / 150, yellow "Almost there", "8 marks to Clear Zone", 41 days to exam. Matches the reference.
+  - UTET 117 / 150 green; CTET 93 / 180 green (180 = content data issue); REET 47 / 150 red; others locked.
+- [x] Playwright (Sonnet):
+  - 1440 + 390 en, 390 hi + mr: layout matches the reference
+  - no horizontal overflow
+  - titles wrap beside the pill
+  - **1 meter request** for 10 cards, 1 capabilities request, no per-card call
+  - Continue still navigates; no console errors from the card
+  - Bar animates (mid 75 → final 82, fill overshoots then settles)
+  - Screenshots: scratchpad `phase98/`
+- [x] tsc: 111 errors with and without this change (the count depends on the dev-server-generated types). Lint: same counts before and after (10). `check:colors`: no new colours.
+- [x] Backend: `CutoffMeterTest` 9/9 + flags-off suite
 - [ ] Break-it pass:
   - long exam / level names at 390 px
   - meter API slow or failing → no layout shift, no dead taps
   - trial-ended pill still opens payment
   - request count
   - numbers vs DB
-- [ ] **Not verified:** (fill in)
+- [ ] **Not verified:**
+  - production (meter is off there, so the cards keep the legacy bars until it is enabled)
+  - dark mode
+  - real-device swipe
+  - the animation replaying on swipe-back
+  - hi / mr screenshots after the animation was added (taken before; the layout is unchanged)
+  - retry or failing-network for the meter request (falls back to the bars)
+- Data findings:
+  - UP PGT and UP TGT have no pass mark, so the generic `exams.metadata.cutoff` "90+ / 150" is used against max 425 / 500 (content)
+  - CTET section sums are 180
 
 ## 9. Next steps
 Wait for the user on D1–D4, then implement §3 in order.

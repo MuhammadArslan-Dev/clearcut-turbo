@@ -13,6 +13,87 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import React, { useMemo } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
+import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import Skeleton from "@clearcut/ui/skeleton";
+import { useCountUp } from "@clearcut/motion/core";
+
+/**
+ * Zone styles from design tokens only (decision D4: the spec's 3 colours →
+ * 3 names). `fill` is the bar colour, `pill` the zone chip.
+ */
+const ZONES = {
+  red: { key: "needsWork", fill: "var(--color-danger-subtle)", pill: "bg-[var(--color-danger-bg-soft)] text-[var(--color-danger-strong)]" },
+  yellow: { key: "almostThere", fill: "var(--color-warning-muted)", pill: "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]" },
+  green: { key: "clearZone", fill: "var(--color-success)", pill: "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]" },
+} as const;
+
+/** Meter panel: "82 / 150", zone pill, bar with the pass-mark tick, gap text (phase 98). */
+function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
+  const t = useTranslations("myCourses");
+  const zone = meter.colour ? ZONES[meter.colour] : null;
+  const locked = meter.locked || meter.meter === null;
+  const value = meter.meter ?? 0;
+  const gap = meter.gap ?? 0;
+  const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
+  // Design: the number counts up with the bar (same 1150 ms, 250 ms delay).
+  const shown = useCountUp(locked ? 0 : Math.round(value), { duration: 1150, delay: 250 });
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="leading-none text-surface-gray-normal">
+          <span className="heading-2xxlarge !font-bold tabular-nums">{locked ? "?" : shown}</span>
+          <span className="body-medium !font-semibold text-surface-gray-muted"> / {meter.max_marks}</span>
+        </p>
+        <span
+          className={clsx(
+            "shrink-0 rounded-full px-3 py-1 body-small !font-semibold",
+            locked ? "bg-[var(--color-surface-gray-muted)]/15 text-surface-gray-muted" : zone?.pill,
+          )}
+        >
+          {locked ? t("meterZone.locked") : t(`meterZone.${zone?.key ?? "needsWork"}`)}
+        </span>
+      </div>
+      <ProgressBar
+        showLabel={false}
+        completed={locked ? 0 : value}
+        total={meter.max_marks}
+        marker={meter.pass_mark}
+        height={8}
+        color={zone?.fill ?? "var(--color-surface-gray-muted)"}
+        backgroundColor="var(--color-border-gray-subtle)"
+        ariaLabel={t("cutoffMeter")}
+        animate
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span className="body-small !font-medium text-surface-gray-muted">{t("cutoffMeter")}</span>
+        <span className="body-small !font-semibold text-surface-gray-normal text-right">
+          {locked
+            ? t("meterUnlock", { count: toUnlock })
+            : gap > 0
+              ? t("meterGap", { marks: Math.ceil(gap) })
+              : t("meterAbove", { marks: Math.round(-gap) })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CutoffMeterPanelSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-[var(--color-background-gray-subtle)] px-3 pt-3 pb-2.5" aria-hidden="true">
+      <div className="flex items-start justify-between">
+        <Skeleton variant="text" width={90} height={36} />
+        <Skeleton variant="rectangular" width={96} height={24} borderRadius={999} />
+      </div>
+      <Skeleton variant="rectangular" height={8} borderRadius={999} />
+      <div className="flex justify-between">
+        <Skeleton variant="text" width={80} />
+        <Skeleton variant="text" width={120} />
+      </div>
+    </div>
+  );
+}
 
 export interface MyCOurseCardProps {
   price?: string | React.ReactNode | null;
@@ -52,6 +133,19 @@ export interface MyCOurseCardProps {
   needsSubjects?: boolean;
   unlockClick?: () => void;
   editClick?: () => void;
+
+  // ── Cutoff Meter header (phase 98) ────────────────────────────────────────
+  /** Paper / level the student picked ("Level 1 (PRT)"); title becomes "{exam} {level}". */
+  levelName?: string | null;
+  /** Days to the exam; null/undefined hides the line (past, missing or "Upcoming" date). */
+  daysToExam?: number | null;
+  /**
+   * Cutoff Meter for this course. `undefined` = meter not available (feature
+   * off / not loaded) → the legacy Chapters / Tests bars render instead (D1).
+   */
+  meter?: CutoffMeterSummary | null;
+  /** Meter is on and its request is in flight → panel skeleton (no layout shift). */
+  meterLoading?: boolean;
 }
 
 export default function MyCourseCard({
@@ -73,15 +167,28 @@ export default function MyCourseCard({
   editClick,
   maxWidth = "400px",
   cardClasses,
+  levelName,
+  daysToExam,
+  meter,
+  meterLoading = false,
 }: MyCOurseCardProps) {
   const t = useTranslations();
   const [continueLoading, setContinueLoading] = React.useState(false);
   const [unlockLoading, setUnlockLoading] = React.useState(false);
 
-  const { label, color } = getCourseStatus(badge as CourseStatus, t, {
+  const { label } = getCourseStatus(badge as CourseStatus, t, {
     color: false,
     trialDaysLeft: trialDaysLeft(trialStartedAt),
   });
+  // Plan pill (screenshot: "✓ Full plan" on a soft green chip). Other statuses
+  // keep their existing labels, on soft token chips.
+  const planLabel = badge === "active" ? `✓ ${t("myCourses.planFull")}` : label;
+  const planPill =
+    badge === "active"
+      ? "bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]"
+      : badge === "trial_end" || badge === "expired"
+        ? "bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]"
+        : "bg-[var(--color-primary-bg-soft)] text-brand";
 
   const examPrice = useMemo(() => JSON.parse(price ?? "{}") ?? 0, [price]);
 
@@ -116,70 +223,71 @@ export default function MyCourseCard({
       className={clsx("!max-w-full md:!max-w-[400px]", cardClasses)}
     >
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">
-        {statusClick ? (
-          // "Trial Ended" was tapped ~230 times expecting to renew; same pill,
-          // now a button. Padding/negative margin give it a 44px tap area
-          // without changing how it looks.
-          <button
-            type="button"
-            onClick={statusClick}
-            className="absolute z-[1000] -top-[20.5px] right-5 cursor-pointer py-2.5"
-          >
-            <span
-              className={clsx(
-                "flex items-center rounded-full text-center px-4 h-6 body-small !font-semibold ",
-                color ? color : "bg-brand text-white",
-              )}
-            >
-              {label}
-            </span>
-          </button>
-        ) : (
-          <div
-            className={clsx(
-              "absolute flex z-[1000] items-center -top-[10.5px] right-5 rounded-full text-center px-4 h-6 body-small !font-semibold ",
-              color ? color : "bg-brand text-white",
-            )}
-          >
-            {label}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between ">
-          <div className="flex items-center gap-3">
-            <div className="w-[48px] h-[48px] rounded-full overflow-hidden">
+        {/* ── Header (phase 98): logo · "{exam} {level}" · days to exam · plan pill ── */}
+        <div className="flex items-start gap-3">
+          <div className="w-[48px] h-[48px] shrink-0 rounded-xl overflow-hidden">
+            {logo ? (
               <Image
-                src={
-                  logo ||
-                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYAyuu-blwzsEjTj92dldM2I2UvueiguRwA&s"
-                }
+                src={logo}
                 alt=""
                 width={48}
                 height={48}
-                className="w-[48px] h-[48px] object-cover rounded-full"
+                className="w-[48px] h-[48px] object-cover rounded-xl"
               />
-            </div>
-            <div>
-              <h5 className="heading-large !font-semibold text-surface-gray-normal">
-                {courseName}
-              </h5>
-            </div>
+            ) : (
+              <div className="w-full h-full grid place-items-center bg-[var(--color-success-strong)] text-white heading-large !font-bold">
+                {(examShortName ?? courseName ?? "?").trim().charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
-          {editClick && (
-            <Button
-              onClick={() => editClick?.()}
-              size="sm"
-              color="gray"
-              variant="soft"
-              rounded="50px"
-              rightIcon={<SettingGearIcon color="#000" size={12} />}
-            >
-              {t("actions.edit")}
-            </Button>
-          )}
+          <div className="min-w-0 flex-1">
+            <h5 className="heading-large !font-semibold text-surface-gray-normal break-words">
+              {levelName && examShortName ? `${examShortName} ${levelName}` : courseName}
+            </h5>
+            {daysToExam != null && (
+              <p className="mt-0.5 body-small !font-medium text-surface-gray-muted flex items-center gap-1">
+                <span aria-hidden="true">📅</span>
+                {t("myCourses.daysToExam", { days: daysToExam })}
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {statusClick ? (
+              // "Trial Ended" was tapped ~230 times expecting to renew: the pill
+              // stays a button (44px tap area via padding, look unchanged).
+              <button type="button" onClick={statusClick} className="cursor-pointer -my-2.5 py-2.5">
+                <span className={clsx("flex items-center rounded-full px-3 h-6 body-small !font-semibold", planPill)}>
+                  {planLabel}
+                </span>
+              </button>
+            ) : (
+              <span className={clsx("flex items-center rounded-full px-3 h-6 body-small !font-semibold", planPill)}>
+                {planLabel}
+              </span>
+            )}
+            {editClick && (
+              <Button
+                onClick={() => editClick?.()}
+                size="sm"
+                color="gray"
+                variant="soft"
+                rounded="50px"
+                rightIcon={<SettingGearIcon color="#000" size={12} />}
+              >
+                {t("actions.edit")}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
+        {meterLoading ? (
+          <CutoffMeterPanelSkeleton />
+        ) : meter ? (
+          <CutoffMeterPanel meter={meter} />
+        ) : null}
+
+        <div className={clsx("flex flex-col gap-2", (meter || meterLoading) && "hidden")}>
           {topics && (
             <div className="flex flex-col gap-1 px-1">
               <div className="flex justify-between text-surface-gray-muted">
