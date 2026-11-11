@@ -8,6 +8,13 @@ import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import { ZONES, zoneOf } from "@clearcut/motion/meters/zones";
 import { Sparkline } from "@clearcut/motion/meters/sparkline";
 import { meterPill } from "@/lib/dashboard/meterPill";
+import dynamic from "next/dynamic";
+import { useModalStore } from "@/store/modal/useModalStore";
+import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
+
+const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
+  ssr: false,
+});
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -67,6 +74,13 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const change = !locked && !cooling && m.change ? Math.round(m.change) : 0;
   const trend = m.trend ?? [];
   const zone = locked ? "locked" : zoneOf(value, { max: m.max_marks, cutoff: pass });
+  // Tap the card → "How your Cutoff Meter works" (same page-level modal as the course card).
+  const openModal = useModalStore((st) => st.open);
+  const setInfoMeter = useCutoffMeterInfoStore((st) => st.setMeter);
+  const openInfo = () => {
+    setInfoMeter(m);
+    openModal("cutoff-meter-info");
+  };
 
   // Score dropped / went up: the studio's delta chip (+ wobble on a drop) once the needle has settled.
   useEffect(() => {
@@ -80,9 +94,18 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
 
   return (
     <section
-      className={clsx(CARD, "px-4 pt-4 pb-3.5")}
+      role="button"
+      tabIndex={0}
+      onClick={openInfo}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openInfo();
+        }
+      }}
+      className={clsx(CARD, "cursor-pointer px-4 pt-4 pb-3.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]")}
       style={cooling ? { background: "linear-gradient(180deg, var(--color-background-gray-subtle), white)" } : undefined}
-      aria-label={t("myCourses.cutoffMeter")}
+      aria-label={t("myCourses.meterInfo.title")}
     >
       <div className="flex justify-center">
         <Meter
@@ -341,8 +364,13 @@ export default function TargetPage({ courseId }: { courseId: string }) {
     if ((ready && !caps.cutoff_meter) || notFound) router.replace(`/preparation/${courseId}`);
   }, [ready, caps.cutoff_meter, notFound, courseId, router]);
 
+  const { isOpen, stack } = useModalStore();
+  const activeModal = stack[stack.length - 1];
+
   return (
     <div className="mx-auto w-full max-w-[560px] space-y-3 px-4 py-4">
+      {/* Page-level modal, same pattern as LearnPage / the profile page. */}
+      {isOpen && activeModal === "cutoff-meter-info" && <CutoffMeterInfoModal />}
       {!data && (isLoading || !ready || notFound) ? (
         <TargetSkeleton />
       ) : isError || !data ? (
