@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
 import React, { useEffect, useMemo, useRef, useCallback } from "react";
 
@@ -52,6 +53,7 @@ import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 import { Skeleton } from "@/components/ui/skeleton";
 import Text from "@clearcut/ui/text";
 import { ListIcon } from "@/components/ui/icons";
+import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { setResumeState } from "@/lib/dashboard/userInteractions";
 import CDivider from "@/components/ui/CDivider";
 import { trackEvent } from "@/lib/analytics/browser";
@@ -80,6 +82,8 @@ export default function Sidebar() {
   const t = useTranslations();
   const flow = useFlowNavigation();
   const isMobile = useIsMobile();
+  // Bottom switch more than half revealed → Index button shows only its icon.
+  const indexCompact = useTopbarVisibilityStore((st) => st.progress > 0.5);
   const [expandedTopics, setExpandedTopics] = React.useState<
     Record<number, boolean>
   >({});
@@ -373,16 +377,43 @@ export default function Sidebar() {
                 fixed-duration animation. */}
             <BottomPageSwitchReveal />
 
-            <button
+            <motion.button
               type="button"
               onClick={() => open("chapter-index")}
               aria-label={t("common.index")}
-              title={t("common.index")}
-              // Icon only (user, 2026-11-11): the text label is the aria-label now.
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
+              // "Index" text while the bottom Target / Course / Tests switch is hidden;
+              // once it slides in (scroll), the button shrinks to the list icon (user, 2026-11-11).
+              initial={false}
+              animate={{ width: indexCompact ? 36 : 115 }}
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              className="h-9 shrink-0 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer bg-[#243547] text-white"
             >
-              <ListIcon variant="lines" size={18} color="currentColor" aria-hidden="true" />
-            </button>
+              <AnimatePresence mode="popLayout" initial={false}>
+                {indexCompact ? (
+                  <motion.span
+                    key="icon"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex"
+                  >
+                    <ListIcon variant="lines" size={18} color="currentColor" aria-hidden="true" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="text"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="whitespace-nowrap heading-small !font-semibold text-white"
+                  >
+                    {t("common.index")}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </div>
           <PaywallFloatingWidget />
         </div>

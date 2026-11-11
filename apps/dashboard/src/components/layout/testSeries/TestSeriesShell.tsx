@@ -1,5 +1,6 @@
 // src/components/layout/DashboardShell.tsx
 "use client";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -14,6 +15,7 @@ import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useTestListDataStore } from "@/components/features/test-series/store/useTestListDataStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
 import { ListIcon } from "@/components/ui/icons";
+import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 
@@ -74,6 +76,8 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
   // directly, so scrolling never re-renders this shell.
   const mainRef = useRef<HTMLElement | null>(null);
   const isMobile = useIsMobile();
+  // Bottom switch more than half revealed → Index button shows only its icon.
+  const indexCompact = useTopbarVisibilityStore((st) => st.progress > 0.5);
   useTopbarScrollHide(mainRef, isMobile, TOPBAR_MAX_HIDE_OFFSET);
 
   const activeModal = useMemo(
@@ -121,16 +125,43 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
           <BottomPageSwitchReveal />
 
           {!!indexSections?.length && (
-            <button
+            <motion.button
               type="button"
               onClick={() => open("section-index")}
               aria-label={t("common.index")}
-              title={t("common.index")}
-              // Icon only (user, 2026-11-11): the text label is the aria-label now.
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
+              // "Index" text while the bottom Target / Course / Tests switch is hidden;
+              // once it slides in (scroll), the button shrinks to the list icon (user, 2026-11-11).
+              initial={false}
+              animate={{ width: indexCompact ? 36 : 115 }}
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              className="h-9 shrink-0 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer bg-[#243547] text-white"
             >
-              <ListIcon variant="lines" size={18} color="currentColor" aria-hidden="true" />
-            </button>
+              <AnimatePresence mode="popLayout" initial={false}>
+                {indexCompact ? (
+                  <motion.span
+                    key="icon"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex"
+                  >
+                    <ListIcon variant="lines" size={18} color="currentColor" aria-hidden="true" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="text"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="whitespace-nowrap heading-small !font-semibold text-white"
+                  >
+                    {t("common.index")}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           )}
         </div>
         <PaywallFloatingWidget />
