@@ -19,6 +19,29 @@ const QUERY_KEY = (topicId?: string | number, serverScoring = false) => [
 
 type MiniTestData = { questions: QuestionNew[]; attemptId: string | null };
 
+/*
+ * One server attempt per open. The reset effect below removes the cached query
+ * on mount (and React StrictMode re-runs effects in dev), which makes
+ * react-query start the queryFn a second time while the first request is
+ * still in flight — E2E saw two POST /mini-test/start per open (two attempts,
+ * one orphaned). Concurrent calls for the same course+topic share one request.
+ */
+const pendingStarts = new Map<string, Promise<MiniTestData>>();
+function startOnce(courseId: string, topicId: number): Promise<MiniTestData> {
+  const key = `${courseId}:${topicId}`;
+  const existing = pendingStarts.get(key);
+  if (existing) return existing;
+  const p = sentryApiClient(
+    async () => await startMiniTestAttempt(courseId, topicId, 5),
+    { endpoint: "/progress/mini-test/start", module: "preparation-page" },
+  ).then((res) => ({ questions: res.questions, attemptId: res.attempt_id }));
+  pendingStarts.set(key, p);
+  // Keep it shared for the settle window of one open, then forget it so a
+  // later "Restart" gets a fresh attempt.
+  p.finally(() => setTimeout(() => pendingStarts.delete(key), 1500)).catch(() => {});
+  return p;
+}
+
 /**
  * @param serverScoring Progress Tracker v2: start a server attempt (it returns
  *   the same question shape) so the submit can be scored and stored.
@@ -61,11 +84,7 @@ export function useMiniTestQuestions(
 
     queryFn: async () => {
       if (serverScoring) {
-        const res = await sentryApiClient(
-          async () => await startMiniTestAttempt(courseId as string, topicId as number, 5),
-          { endpoint: "/progress/mini-test/start", module: "preparation-page" },
-        );
-        return { questions: res.questions, attemptId: res.attempt_id };
+        return startOnce(courseId as string, topicId as number);
       }
 
       const res = await sentryApiClient(
