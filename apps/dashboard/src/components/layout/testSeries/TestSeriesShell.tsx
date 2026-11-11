@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useTestListDataStore } from "@/components/features/test-series/store/useTestListDataStore";
 import PaywallFloatingWidget from "@/components/features/PayWalls/PaywallFloatingWidget";
-import Text from "@clearcut/ui/text";
+import { ListIcon } from "@/components/ui/icons";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 
@@ -124,11 +124,12 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => open("section-index")}
-              className="w-[115px] h-9 shrink-0 px-2 flex gap-2 items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
+              aria-label={t("common.index")}
+              title={t("common.index")}
+              // Icon only (user, 2026-11-11): the text label is the aria-label now.
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-sm cursor-pointer bg-[#243547] text-white"
             >
-              <Text className="text-white" variant="heading-small" weight="semibold">
-                {t("common.index")}
-              </Text>
+              <ListIcon variant="lines" size={18} color="currentColor" aria-hidden="true" />
             </button>
           )}
         </div>

@@ -143,3 +143,4 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 
 - 2026-11-09: added phases 85–92 (Arslan's Jira backlog after Rohit's re-ordering: small UI batch, onboarding level step, stuck subscriptions, UPI waiting screen, payment exam + source data, performance, money/Sentry triage, guest-mode design). Old docs 27/44/47/49/62/70 point to them.
 - 2026-11-09: added phase 93 (client-style testing methodology; DEVELOPMENT_RULES §8.1, CLAUDE.md pointer, template checklist).
+- 2026-11-11: added phase 99 (Preparation "Target" tab: Cutoff Meter gauge, today's plan, marks per subject; flag-gated).

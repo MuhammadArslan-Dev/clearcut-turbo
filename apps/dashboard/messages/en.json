@@ -118,6 +118,7 @@
     "course": "Course",
     "courses": "Courses",
     "testSeries": "Test Series",
+    "target": "Target",
     "mark": "Mark",
     "marks": "Marks",
     "question": "Question",
@@ -445,5 +446,29 @@
     "title": "Taking longer than usual",
     "body": "Your internet seems slow. Wait a little more, or try again.",
     "retry": "Try again"
+  },
+  "target": {
+    "meterCaption": "of {max} predicted",
+    "range": "Range ±{band} · Cutoff {pass}",
+    "cutoffOnly": "Cutoff {pass}",
+    "todayPlan": "Today’s plan",
+    "pickedBy": "Picked by your Cutoff Meter",
+    "start": "Start: {title}",
+    "keepGoing": "Keep going: {title}",
+    "allDone": "All done for today ✓",
+    "unlocksMeter": "Unlocks meter",
+    "gain": "+{marks} marks",
+    "meta": "{type} · {min} min",
+    "types": {
+      "ONBOARDING_TEST": "5-question test",
+      "TOPIC_TEST": "Quick check",
+      "LEARN": "Learn",
+      "SECTIONAL_TEST": "Sectional test",
+      "FULL_LENGTH_TEST": "Full-length test"
+    },
+    "marksFrom": "Where your marks come from",
+    "breakdownLocked": "Subject-wise marks unlock after your first test.",
+    "error": "Couldn’t load your Cutoff Meter.",
+    "retry": "Retry"
   }
 }

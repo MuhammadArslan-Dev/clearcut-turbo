@@ -7,6 +7,9 @@ import { trackEvent } from "@/lib/analytics/browser";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useAllowPrefetch } from "@/hooks/useAllowPrefetch";
+import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
+
+type PageTab = "course" | "test-series" | "target";
 
 interface PageSwitchTabProps {
   // Two copies of this component can be mounted at once — Topbar's own and
@@ -31,13 +34,18 @@ export default React.memo(function PageSwitchTab({
   const allowPrefetch = useAllowPrefetch();
 
   // ✅ Keep IDs SIMPLE and STATIC
-  const [tab, setTab] = useState<"course" | "test-series" | null>(null);
+  const [tab, setTab] = useState<PageTab | null>(null);
+  // Target tab (phase 99): only while the Cutoff Meter is on; off = the bar is unchanged.
+  const { caps } = useProgressCapabilities();
+  const showTarget = caps.cutoff_meter;
 
   // 🔹 Sync active tab FROM URL (single source of truth)
   useEffect(() => {
     if (!courseId) return;
 
-    if (pathname.startsWith(`/test-series/${courseId}`)) {
+    if (pathname.startsWith(`/target/${courseId}`)) {
+      setTab("target");
+    } else if (pathname.startsWith(`/test-series/${courseId}`)) {
       setTab("test-series");
     } else if (pathname.startsWith(`/preparation/${courseId}`)) {
       setTab("course");
@@ -45,13 +53,19 @@ export default React.memo(function PageSwitchTab({
   }, [pathname, courseId]);
 
   // 🔹 Only for analytics (navigation handled by link href)
-  const onTabChange = (nextTab: "course" | "test-series") => {
+  const onTabChange = (nextTab: PageTab) => {
+    const from = tab;
     setTab(nextTab);
 
     if (nextTab === "test-series") {
       trackEvent("Learning Path Switched", {
-        from_path: "course",
+        from_path: from === "target" ? "target" : "course",
         to_path: "tests",
+      });
+    } else if (nextTab === "target") {
+      trackEvent("Learning Path Switched", {
+        from_path: from === "test-series" ? "tests" : "course",
+        to_path: "target",
       });
     }
   };
@@ -75,10 +89,13 @@ export default React.memo(function PageSwitchTab({
           href: `/test-series/${courseId}`,
           match: "test-series",
         },
+        ...(showTarget
+          ? [{ id: "target", label: t("target"), href: `/target/${courseId}`, match: "target" }]
+          : []),
       ]}
       value={tab}
       tabFontSize="body-medium md:body-large"
-      onChange={(id) => onTabChange(id as "course" | "test-series")}
+      onChange={(id) => onTabChange(id as PageTab)}
       activeTextColor="text-white whitespace-nowrap md:px-10"
       inactiveTextColor="text-surface-gray-normal !min-w-[75px] whitespace-nowrap md:px-10"
       tabFontWeight="!font-semibold"

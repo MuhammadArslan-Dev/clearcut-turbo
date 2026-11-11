@@ -19,7 +19,8 @@ import { Link } from "@/i18n/navigation";
    TOPBAR COMPONENT
 ========================================================= */
 
-export default function Topbar() {
+/** `plain` (Target tab, phase 99): back + title + tabs only, no paper/test switches. */
+export default function Topbar({ plain = false }: { plain?: boolean } = {}) {
   const { exam } = useGetCurrentCourseStore();
   const isMobile = useIsMobile();
 
@@ -44,7 +45,7 @@ export default function Topbar() {
         <div ref={titleRowOuterRef} className="w-full overflow-hidden">
           <div
             ref={titleRowRef}
-            className="flex items-center justify-between md:justify-start w-full md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
+            className="flex flex-wrap md:flex-nowrap items-center justify-between md:justify-start w-full gap-y-2 md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"
           >
             <div className="flex gap-3 md:gap-10 items-center">
               {/* Back Button */}
@@ -77,14 +78,15 @@ export default function Topbar() {
               </div>
             </div>
 
-            {/* Page Switch Tabs */}
-            <div>
+            {/* Page Switch Tabs — mobile: on its own line under the course name (user, 2026-11-11) */}
+            <div className="w-full md:w-auto pl-12 md:pl-0">
               <PageSwitchTab />
             </div>
           </div>
         </div>
 
         {/* RIGHT SECTION */}
+        {!plain && (
         <div className="md:flex justify-end items-center max-w-[770px] w-full lg:min-w-[450px] lg:rounded-l-full overflow-hidden">
           {/* Paper Switch (mobile only) */}
           <div className="flex md:hidden justify-start px-3">
@@ -94,6 +96,7 @@ export default function Topbar() {
           {/* Tests Switch */}
           <TestsSwitch />
         </div>
+        )}
       </div>
     </header>
   );

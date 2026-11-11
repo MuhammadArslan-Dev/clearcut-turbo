@@ -71,6 +71,12 @@ export interface MeterProps {
   band?: number;
   cooling?: boolean;
   className?: string;
+  /** App overrides (all optional; the studio leaves them unset): hide the zone pill under the gauge, */
+  hidePill?: boolean;
+  /** replace "predicted marks / max" under the number (e.g. a translated "of 150 predicted"), */
+  caption?: string;
+  /** replace the "Cutoff 90" label at the gauge tick (e.g. a translated / shortened one). */
+  cutoffLabel?: string;
 }
 
 const LOCK_SVG = (
@@ -85,7 +91,7 @@ const LOCK_SVG = (
 let deltaSeq = 0;
 
 export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
-  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className },
+  { variant = "gauge", size = "lg", lang = "en", scale = DEFAULT_SCALE, locked: lockedProp = false, value, band: bandProp, cooling: coolingProp = false, className, hidePill = false, caption, cutoffLabel },
   ref,
 ) {
   const k = useMeterK();
@@ -235,7 +241,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
   const segs = segments(scale);
-  const cutLabel = `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
+  const cutLabel = cutoffLabel ?? `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
   const coolText = `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
   const lockEl = (locked || lockBreaking) && <span className={[styles.lock, lockBreaking && styles.break].filter(Boolean).join(" ")}>{LOCK_SVG}</span>;
 
@@ -284,17 +290,23 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           <div className={styles.gnum}>
             <b>{numText}</b>
             <span>
-              {tr({ en: "predicted marks / ", hi: "अनुमानित अंक / " }, lang)}
-              {max}
+              {caption ?? (
+                <>
+                  {tr({ en: "predicted marks / ", hi: "अनुमानित अंक / " }, lang)}
+                  {max}
+                </>
+              )}
             </span>
           </div>
           {lockEl}
         </div>
-        <div className={styles.zwrap}>
-          <span className={styles.zpill} style={{ background: pill.background, color: pill.color }}>
-            {pill.text}
-          </span>
-        </div>
+        {!hidePill && (
+          <div className={styles.zwrap}>
+            <span className={styles.zpill} style={{ background: pill.background, color: pill.color }}>
+              {pill.text}
+            </span>
+          </div>
+        )}
       </>
     );
   } else {
@@ -348,7 +360,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   return (
     <div ref={rootRef} className={rootCls} style={{ "--k": k } as CSSProperties}>
       {body}
-      <span className={styles.coolchip}>{coolText}</span>
+      <span className={styles.coolchip} aria-hidden={!cooling}>{coolText}</span>
       {deltas.map(({ id, d, tiny }) => (
         <span key={id} className={[styles.delta, d >= 0 ? styles.up : styles.dn, tiny && styles.tiny].filter(Boolean).join(" ")}>
           {d >= 0 ? "+" : "−"}

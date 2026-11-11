@@ -35,6 +35,7 @@ export function invalidateProgressQueries(queryClient: QueryClient) {
     ["learning-progress-by-topic"],
     ["courses-progress-summary"],
     ["courses-cutoff-meter"],
+    ["cutoff-meter"],
     ["today-goals"],
     ["resume-state"],
   ]) {

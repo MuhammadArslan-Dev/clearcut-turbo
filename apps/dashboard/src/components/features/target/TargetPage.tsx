@@ -1,0 +1,354 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import clsx from "clsx";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
+import { EARLY_ESTIMATE, ZONES, type ZoneKey } from "@clearcut/motion/meters/zones";
+import Skeleton from "@clearcut/ui/skeleton";
+import MainButton from "@/components/ui/button/main-button";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
+import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
+import { useCutoffMeter } from "@/hooks/course/useCutoffMeter";
+import { isApiError } from "@/lib/api/api-error";
+import {
+  markCutoffMeterActionClicked,
+  type CutoffMeterAction,
+  type CutoffMeterDetail,
+} from "@/lib/dashboard/cutoffMeter";
+
+/**
+ * Preparation → Target tab (phase 99): Cutoff Meter gauge, today's plan and
+ * predicted marks per subject, from ONE `GET /v2/cutoff-meter/{course}`.
+ * Gauge + zone colours are the approved Cutoff Meter Studio artwork
+ * (`@clearcut/motion/meters`); text is ours (en / hi / mr).
+ */
+
+const STUDIO_ZONE: Record<NonNullable<CutoffMeterDetail["zone"]>, ZoneKey> = {
+  needs_work: "need",
+  almost_there: "almost",
+  clear_zone: "clear",
+  safe_zone: "safe",
+};
+const ZONE_KEY: Record<NonNullable<CutoffMeterDetail["zone"]>, string> = {
+  needs_work: "needsWork",
+  almost_there: "almostThere",
+  clear_zone: "clearZone",
+  safe_zone: "safeZone",
+};
+
+const CARD = "rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-4";
+
+/** Where a plan row leads (existing routes only). */
+function actionHref(a: CutoffMeterAction, courseId: string): string {
+  if (a.action_type === "SECTIONAL_TEST" || a.action_type === "FULL_LENGTH_TEST") return `/test-series/${courseId}`;
+  if ((a.action_type === "TOPIC_TEST" || a.action_type === "LEARN") && a.topic_id) {
+    const q = new URLSearchParams();
+    if (a.chapter_id) q.set("chapter", String(a.chapter_id));
+    q.set("topic", String(a.topic_id));
+    return `/preparation/${courseId}?${q.toString()}`;
+  }
+  return `/preparation/${courseId}`;
+}
+
+/* ───────────────────────── Meter card ───────────────────────── */
+
+function MeterCard({ m }: { m: CutoffMeterDetail }) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const ref = useRef<MeterHandle>(null);
+  const locked = m.locked || m.meter === null;
+  const cooling = !locked && !!m.cooling?.active;
+  const value = Math.round(m.display_meter ?? m.meter ?? 0);
+  const gap = m.display_gap ?? m.gap ?? 0;
+  const pass = Math.round(m.pass_mark);
+  const needed = Number(m.plan?.[0]?.params?.answers_needed ?? m.actions?.[0]?.params?.answers_needed);
+  const toUnlock = Number.isFinite(m.unlock_answers)
+    ? Math.max(m.unlock_answers - m.counted_answers, 1)
+    : Number.isFinite(needed) ? needed : 5;
+  const change = !locked && !cooling && m.change ? Math.round(m.change) : 0;
+
+  // Score dropped / went up: the studio's delta chip (+ wobble on a drop) once the needle has settled.
+  useEffect(() => {
+    if (!change) return;
+    const id = setTimeout(() => {
+      ref.current?.delta(change);
+      if (change < 0) ref.current?.wobble();
+    }, 1400);
+    return () => clearTimeout(id);
+  }, [change]);
+
+  const pill = locked
+    ? { bg: ZONES.locked.s, ink: ZONES.locked.ink, text: t("myCourses.meterZone.locked") }
+    : cooling
+      ? { bg: EARLY_ESTIMATE.s, ink: EARLY_ESTIMATE.ink, text: `❄ ${t("myCourses.meterZone.cooling")}` }
+      : m.early
+        ? { bg: EARLY_ESTIMATE.s, ink: EARLY_ESTIMATE.ink, text: t("myCourses.meterZone.earlyEstimate") }
+        : m.zone
+          ? {
+              bg: ZONES[STUDIO_ZONE[m.zone]].s,
+              ink: ZONES[STUDIO_ZONE[m.zone]].ink,
+              text: t(`myCourses.meterZone.${ZONE_KEY[m.zone]}`) + (m.zone === "safe_zone" ? " ★" : ""),
+            }
+          : null;
+
+  return (
+    <section className={clsx(CARD, "flex items-center gap-3")} aria-label={t("myCourses.cutoffMeter")}>
+      {/* Cooling: studio desaturation on the gauge, without its own chip (the pill says it). */}
+      <div
+        className="w-[150px] shrink-0 sm:w-[170px] transition-[filter] duration-[1400ms]"
+        style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
+      >
+        <Meter
+          ref={ref}
+          variant="gauge"
+          size="sm"
+          lang={locale === "hi" ? "hi" : "en"}
+          scale={{ max: m.max_marks, cutoff: pass }}
+          locked={locked}
+          value={locked ? undefined : value}
+          band={m.band ?? 0}
+          hidePill
+          caption={t("target.meterCaption", { max: m.max_marks })}
+          cutoffLabel={String(pass)}
+        />
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        {pill && (
+          <span
+            className="inline-flex rounded-full px-2.5 py-0.5 body-small !font-semibold"
+            style={{ background: pill.bg, color: pill.ink }}
+          >
+            {pill.text}
+          </span>
+        )}
+        <p className="heading-medium !font-bold text-surface-gray-normal">
+          {locked
+            ? t("myCourses.meterUnlock", { count: toUnlock })
+            : cooling
+              ? t("myCourses.meterCooled", { marks: Math.round(m.cooling.decay) })
+              : gap > 0
+                ? t("myCourses.meterGap", { marks: Math.ceil(gap) })
+                : t("myCourses.meterAbove", { marks: Math.round(-gap) })}
+        </p>
+        <p className="body-small !font-medium text-surface-gray-muted">
+          {locked || !m.band ? t("target.cutoffOnly", { pass }) : t("target.range", { band: m.band, pass })}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Today's plan ───────────────────────── */
+
+/**
+ * Row title = the topic / section name (DB content). The backend title is
+ * "{name} · Topic test" in English; keep only the name, the type is in the meta line.
+ */
+function actionTitle(a: CutoffMeterAction, t: ReturnType<typeof useTranslations>): string {
+  const p = a.params ?? {};
+  if (a.action_type === "TOPIC_TEST" || a.action_type === "LEARN" || a.action_type === "SECTIONAL_TEST") {
+    const name = p.topic ?? (a.title ? a.title.split(" · ")[0] : "") ?? p.section;
+    if (name && String(name).trim()) return String(name).trim();
+    if (p.section) return String(p.section);
+  }
+  return t(`target.types.${a.action_type}`);
+}
+
+function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) {
+  const t = useTranslations();
+  const router = useRouter();
+  const plan = m.plan?.length ? m.plan : m.actions;
+  const done = plan.filter((a) => a.completed).length;
+  // Next: the first open row of today's plan, else the newest generated action.
+  const next = plan.find((a) => !a.completed) ?? m.actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
+  const [going, setGoing] = useState<string | null>(null);
+
+  const go = (a: CutoffMeterAction) => {
+    if (going) return; // double tap
+    setGoing(a.id);
+    markCutoffMeterActionClicked(a.id).catch(() => {});
+    router.push(actionHref(a, courseId));
+  };
+
+  if (!plan.length) return null;
+
+  return (
+    <section className={CARD}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="heading-large !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
+          <p className="body-small !font-medium text-surface-gray-muted">{t("target.pickedBy")}</p>
+        </div>
+        <span className="shrink-0 rounded-full px-2.5 py-0.5 body-small !font-bold tabular-nums bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
+          {done}/{plan.length}
+        </span>
+      </div>
+      <div className="mt-3">
+        <ProgressBar
+          showLabel={false}
+          completed={done}
+          total={plan.length}
+          height={4}
+          color="var(--color-brand)"
+          backgroundColor="var(--color-border-gray-subtle)"
+        />
+      </div>
+
+      <ul className="mt-1 divide-y divide-[var(--color-border-gray-subtle)]">
+        {plan.map((a) => (
+          <li key={a.id}>
+            <button
+              type="button"
+              onClick={() => go(a)}
+              disabled={!!going}
+              className="flex w-full items-center gap-3 py-3 text-left cursor-pointer disabled:cursor-default"
+            >
+              <span
+                aria-hidden="true"
+                className={clsx(
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-white body-small !font-bold",
+                  a.completed
+                    ? "border-[var(--color-success)] bg-[var(--color-success)]"
+                    : "border-[var(--color-surface-gray-muted)]",
+                )}
+              >
+                {a.completed ? "✓" : ""}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={clsx(
+                    "block truncate heading-small !font-semibold",
+                    a.completed ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
+                  )}
+                >
+                  {actionTitle(a, t)}
+                </span>
+                <span className="block body-small !font-medium text-surface-gray-muted">
+                  {t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
+                </span>
+              </span>
+              {a.action_type === "ONBOARDING_TEST" ? (
+                <span className="shrink-0 rounded-full px-2 py-0.5 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
+                  {t("target.unlocksMeter")}
+                </span>
+              ) : a.expected_gain ? (
+                <span className="shrink-0 rounded-full px-2 py-0.5 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
+                  {t("target.gain", { marks: a.expected_gain })}
+                </span>
+              ) : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {next ? (
+        <MainButton
+          className="mt-3"
+          fullWidth
+          size="lg"
+          loading={going === next.id}
+          showIcon={false}
+          onClick={() => go(next)}
+          text={`${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: actionTitle(next, t) })} ›`}
+        />
+      ) : (
+        <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>
+      )}
+    </section>
+  );
+}
+
+/* ───────────────────────── Marks breakdown ───────────────────────── */
+
+function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
+  const t = useTranslations();
+  const locked = m.locked || m.meter === null;
+  const [grown, setGrown] = useState(false);
+  useEffect(() => {
+    // Studio: subject bars grow in after the needle (≈ 1.1 s).
+    const id = setTimeout(() => setGrown(true), 1100);
+    return () => clearTimeout(id);
+  }, []);
+
+  const rows = useMemo(() => (m.sections ?? []).filter((s) => s.total_marks > 0), [m.sections]);
+
+  return (
+    <section className={CARD}>
+      <h2 className="heading-large !font-bold text-surface-gray-normal">{t("target.marksFrom")}</h2>
+      {locked || !rows.length ? (
+        <p className="mt-2 body-medium text-surface-gray-muted">{t("target.breakdownLocked")}</p>
+      ) : (
+        <ul className="mt-3 space-y-3">
+          {rows.map((s) => {
+            const pct = Math.min(Math.max(s.section_marks / s.total_marks, 0), 1);
+            const c = pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
+            return (
+              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_32%_3rem] items-center gap-3">
+                <span className="line-clamp-2 leading-tight body-medium !font-medium text-surface-gray-normal" title={s.name}>
+                  {s.name}
+                </span>
+                <span className="h-2 overflow-hidden rounded-full bg-[var(--color-border-gray-subtle)]">
+                  <i
+                    className="block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-[900ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    style={{ width: grown ? `${pct * 100}%` : 0, background: c }}
+                  />
+                </span>
+                <b className="text-right body-medium !font-bold tabular-nums text-surface-gray-normal">
+                  {Math.round(s.section_marks)}/{s.total_marks}
+                </b>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ───────────────────────── Page ───────────────────────── */
+
+function TargetSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden="true">
+      <Skeleton variant="rectangular" height={150} borderRadius={16} />
+      <Skeleton variant="rectangular" height={300} borderRadius={16} />
+      <Skeleton variant="rectangular" height={180} borderRadius={16} />
+    </div>
+  );
+}
+
+export default function TargetPage({ courseId }: { courseId: string }) {
+  const t = useTranslations();
+  const router = useRouter();
+  useGetCurrentCourse({ courseId }); // topbar title
+  const { caps, ready } = useProgressCapabilities();
+  const { data, isLoading, isError, error, refetch, isFetching } = useCutoffMeter(courseId, caps.cutoff_meter);
+
+  // Meter off, or not this user's course → back to the Course tab.
+  const notFound = isError && isApiError(error) && error.status === 404;
+  useEffect(() => {
+    if ((ready && !caps.cutoff_meter) || notFound) router.replace(`/preparation/${courseId}`);
+  }, [ready, caps.cutoff_meter, notFound, courseId, router]);
+
+  return (
+    <div className="mx-auto w-full max-w-[560px] space-y-3 px-4 py-4">
+      {!data && (isLoading || !ready || notFound) ? (
+        <TargetSkeleton />
+      ) : isError || !data ? (
+        <div className={clsx(CARD, "text-center")}>
+          <p className="body-medium text-surface-gray-normal">{t("target.error")}</p>
+          <MainButton className="mx-auto mt-3 max-w-[200px]" loading={isFetching} onClick={() => refetch()} text={t("target.retry")} />
+        </div>
+      ) : (
+        <>
+          <MeterCard m={data} />
+          <TodayPlan m={data} courseId={courseId} />
+          <MarksBreakdown m={data} />
+        </>
+      )}
+    </div>
+  );
+}
