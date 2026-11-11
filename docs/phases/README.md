@@ -133,6 +133,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 92 | [Guest mode A/B test — DESIGN ONLY](92-guest-mode-ab-test-design.md) | CC-179 | BE, CM | Blocked – Decision (no code this round) | User: OTP triggers, exam, guest model; CC-84 verified first |
 | 93 | [Client-style testing methodology (the break-it pass)](93-client-style-testing-methodology.md) | — | CM docs | Completed (docs only) | User: Co-Authored-By trailer rule, optional backend CLAUDE.md pointer, optional i18n parity script |
 | 94 | [Progress Tracker — plan (PT-0…PT-13)](../Progress%20Tracker/README.md) | — | BE, CM-dashboard | Blocked – Decision (docs only, no code) | User: approve plan; D1–D17 in `docs/Progress Tracker/DECISIONS.md` |
+| 97 | [Cutoff Meter v1 — backend + DB](97-cutoff-meter-backend.md) | Confluence PM 29360129 | BE | In Progress | 🛑 MIN_TIME 3 vs 5 s, category, chapter tests counted; content: section marks, HPTET pass mark, exam dates |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).
