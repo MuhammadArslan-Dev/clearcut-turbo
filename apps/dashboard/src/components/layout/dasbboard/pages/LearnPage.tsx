@@ -27,10 +27,14 @@ import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 // (Sentry: 51% of pageload span time), and every component kept out of the
 // main bundle is less JS the browser has to fetch/parse/execute before the
 // page is interactive.
+import { useModalStore } from "@/store/modal/useModalStore";
 const ChangeExamModal = dynamic(() => import("@/components/modals/changeExam/change-exam-modal"), {
   ssr: false,
 });
 const ContactUsModal = dynamic(() => import("@/components/modals/contact-us/ContactUsModal"), {
+  ssr: false,
+});
+const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
   ssr: false,
 });
 
@@ -44,6 +48,9 @@ export default function LearnPage() {
     isFetching,
   } = useMyActiveCourses();
   const { close } = useCourseStore();
+  // Page-level modals (same pattern as the profile page's Language / Help).
+  const { isOpen, stack } = useModalStore();
+  const activeModal = stack[stack.length - 1];
 
   const router = useRouter();
 
@@ -187,6 +194,7 @@ export default function LearnPage() {
           <ResumeBarWrap />
         </div>
         <ContactUsModal />
+        {isOpen && activeModal === "cutoff-meter-info" && <CutoffMeterInfoModal />}
 
         {/* <Footer /> */}
       </div>

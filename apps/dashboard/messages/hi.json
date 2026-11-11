@@ -267,6 +267,7 @@
     "meterInfo": {
       "title": "आपका कटऑफ़ मीटर कैसे काम करता है",
       "close": "बंद करें",
+      "howTitle": "यह कैसे निकाला जाता है",
       "youSummary": "अभी आपके अनुमानित अंक {value} / {max} हैं। कटऑफ़ {pass} है।",
       "youLocked": "{count} और सवाल हल करें, मीटर अनलॉक हो जाएगा। इस परीक्षा का कटऑफ़: {pass} / {max}।",
       "s1Title": "हम आपके जवाब पढ़ते हैं",
@@ -478,6 +479,10 @@
   },
   "target": {
     "meterCaption": "{max} में से अनुमानित",
+    "predictedCaption": "अनुमानित अंक / {max}",
+    "last5Weeks": "पिछले 5 हफ़्ते",
+    "accuracyTarget": "सटीकता लक्ष्य",
+    "accuracyValue": "असली स्कोर के ±5%",
     "range": "दायरा ±{band} · कटऑफ़ {pass}",
     "cutoffOnly": "कटऑफ़ {pass}",
     "todayPlan": "आज का प्लान",

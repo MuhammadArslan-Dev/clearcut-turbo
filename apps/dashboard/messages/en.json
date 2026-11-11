@@ -267,6 +267,7 @@
     "meterInfo": {
       "title": "How your Cutoff Meter works",
       "close": "Close",
+      "howTitle": "How it's calculated",
       "youSummary": "Right now you're predicted {value} of {max}. The cutoff is {pass}.",
       "youLocked": "Answer {count, plural, one {# more question} other {# more questions}} and your meter unlocks. Cutoff for this exam: {pass} of {max}.",
       "s1Title": "We read your answers",
@@ -478,6 +479,10 @@
   },
   "target": {
     "meterCaption": "of {max} predicted",
+    "predictedCaption": "predicted marks / {max}",
+    "last5Weeks": "Last 5 weeks",
+    "accuracyTarget": "Accuracy target",
+    "accuracyValue": "±5% of real score",
     "range": "Range ±{band} · Cutoff {pass}",
     "cutoffOnly": "Cutoff {pass}",
     "todayPlan": "Today’s plan",

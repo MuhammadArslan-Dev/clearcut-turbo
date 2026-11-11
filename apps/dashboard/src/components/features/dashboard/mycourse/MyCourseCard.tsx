@@ -11,11 +11,12 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
-import MeterInfoSheet from "./MeterInfoSheet";
+import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
+import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
 
@@ -50,7 +51,12 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
     return () => clearTimeout(id);
   }, [change]);
 
-  const [infoOpen, setInfoOpen] = useState(false);
+  const openModal = useModalStore((s) => s.open);
+  const setInfoMeter = useCutoffMeterInfoStore((s) => s.setMeter);
+  const openInfo = () => {
+    setInfoMeter(meter);
+    openModal("cutoff-meter-info");
+  };
 
   return (
     <>
@@ -59,11 +65,11 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
         role="button"
         tabIndex={0}
         aria-label={t("meterInfo.title")}
-        onClick={() => setInfoOpen(true)}
+        onClick={() => openInfo()}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            setInfoOpen(true);
+            openInfo();
           }
         }}
         className="flex cursor-pointer flex-col gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
@@ -104,11 +110,6 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
           )}
         </div>
       </div>
-      <MeterInfoSheet
-        meter={meter}
-        open={infoOpen}
-        onClose={() => setInfoOpen(false)}
-      />
     </>
   );
 }

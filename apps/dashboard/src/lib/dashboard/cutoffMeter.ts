@@ -89,6 +89,8 @@ export interface CutoffMeterDetail extends CutoffMeterSummary {
   /** Today's first list (IST), so done rows stay ticked. Empty before today's first generation. */
   plan: CutoffMeterAction[];
   band: number | null;
+  /** last saved meter per IST week, oldest first ("Last 5 weeks"). */
+  trend?: number[];
 }
 
 export async function getCutoffMeter(courseId: string | number): Promise<CutoffMeterDetail> {

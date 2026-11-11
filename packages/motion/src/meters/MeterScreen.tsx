@@ -6,25 +6,12 @@ import { Nib } from "./Nib";
 import { useFx } from "./effects";
 import { SMAX, SUBJ, type MeterAction, type MeterState } from "./data";
 import styles from "./meters.module.css";
-import { DEFAULT_SCALE, ZONES, gapText, tr, zoneOf, type Lang, type MeterScale, type MeterVariant, type ZoneKey } from "./zones";
+import { DEFAULT_SCALE, ZONES, gapText, tr, zoneOf, type Lang, type MeterScale, type MeterVariant } from "./zones";
 
 /** 5-point trend sparkline in the zone colour. */
-export function Sparkline({ trend, zone }: { trend: number[]; zone: ZoneKey }) {
-  if (!trend || trend.length < 2) return null;
-  const w = 70;
-  const h = 22;
-  const mn = Math.min(...trend) - 2;
-  const mx = Math.max(...trend) + 2;
-  const pts = trend.map((v, i) => `${((i / (trend.length - 1)) * w).toFixed(1)},${(h - ((v - mn) / (mx - mn)) * h).toFixed(1)}`);
-  const last = pts[pts.length - 1].split(",");
-  const c = ZONES[zone].c;
-  return (
-    <svg width={w} height={h} viewBox={`-2 -2 ${w + 4} ${h + 4}`} aria-hidden="true">
-      <polyline points={pts.join(" ")} fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={last[0]} cy={last[1]} r="3" fill={c} />
-    </svg>
-  );
-}
+import { Sparkline } from "./Sparkline";
+
+export { Sparkline };
 
 function Action({ a, i, k, lang }: { a: MeterAction; i: number; k: number; lang: Lang }) {
   return (

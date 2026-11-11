@@ -267,6 +267,7 @@
     "meterInfo": {
       "title": "तुमचा कटऑफ मीटर कसा काम करतो",
       "close": "बंद करा",
+      "howTitle": "हे कसे काढले जाते",
       "youSummary": "सध्या तुमचे अंदाजित गुण {value} / {max} आहेत. कटऑफ {pass} आहे.",
       "youLocked": "आणखी {count} प्रश्न सोडवा, मीटर अनलॉक होईल. या परीक्षेचा कटऑफ: {pass} / {max}.",
       "s1Title": "आम्ही तुमची उत्तरे वाचतो",
@@ -478,6 +479,10 @@
   },
   "target": {
     "meterCaption": "{max} पैकी अंदाजित",
+    "predictedCaption": "अंदाजित गुण / {max}",
+    "last5Weeks": "मागील 5 आठवडे",
+    "accuracyTarget": "अचूकतेचे लक्ष्य",
+    "accuracyValue": "खऱ्या गुणांच्या ±5%",
     "range": "श्रेणी ±{band} · कटऑफ {pass}",
     "cutoffOnly": "कटऑफ {pass}",
     "todayPlan": "आजचा प्लॅन",

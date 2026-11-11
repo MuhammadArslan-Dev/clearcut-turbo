@@ -18,6 +18,7 @@
     "./meters/nib": "./src/meters/Nib.tsx",
     "./meters/zones": "./src/meters/zones.ts",
     "./meters/meter": "./src/meters/Meter.tsx",
+    "./meters/sparkline": "./src/meters/Sparkline.tsx",
     "./preview": "./src/preview/MotionPreview.tsx",
     "./preview/samples": "./src/preview/samples.ts"
   },

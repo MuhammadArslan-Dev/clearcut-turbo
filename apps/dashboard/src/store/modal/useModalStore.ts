@@ -10,7 +10,8 @@ export type Mode =
   | "mini-test-result"
   | "account-delete"
   | "account-delete-confirm"
-  | "preparation-guide";
+  | "preparation-guide"
+  | "cutoff-meter-info";
 
 export interface State {
   stack: Mode[]; // 👈 modal stack

@@ -5,7 +5,8 @@ import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
-import { ZONES } from "@clearcut/motion/meters/zones";
+import { ZONES, zoneOf } from "@clearcut/motion/meters/zones";
+import { Sparkline } from "@clearcut/motion/meters/sparkline";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
@@ -43,8 +44,15 @@ function actionHref(a: CutoffMeterAction, courseId: string): string {
 
 /* ───────────────────────── Meter card ───────────────────────── */
 
+/**
+ * The studio's Meter Screen gauge card, 1:1 (reference 2026-11-11): big gauge
+ * with "Cutoff N" at the tick, number + "predicted marks / max", the zone pill
+ * under it, the gap line, "Range ±N · based on N tests", and a dashed row with
+ * the "Last 5 weeks" sparkline (from meter_history).
+ */
 function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const t = useTranslations();
+  const tc = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
   const locked = m.locked || m.meter === null;
@@ -57,6 +65,8 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
     ? Math.max(m.unlock_answers - m.counted_answers, 1)
     : Number.isFinite(needed) ? needed : 5;
   const change = !locked && !cooling && m.change ? Math.round(m.change) : 0;
+  const trend = m.trend ?? [];
+  const zone = locked ? "locked" : zoneOf(value, { max: m.max_marks, cutoff: pass });
 
   // Score dropped / went up: the studio's delta chip (+ wobble on a drop) once the needle has settled.
   useEffect(() => {
@@ -68,52 +78,64 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
     return () => clearTimeout(id);
   }, [change]);
 
-  const pill = meterPill(m, (k) => t(`myCourses.${k}`));
-
   return (
-    <section className={clsx(CARD, "flex items-center gap-3")} aria-label={t("myCourses.cutoffMeter")}>
-      {/* Cooling: studio desaturation on the gauge, without its own chip (the pill says it). */}
-      <div
-        className="w-[140px] shrink-0 transition-[filter] duration-[1400ms]"
-        style={{ filter: cooling ? "grayscale(0.8) brightness(1.05)" : undefined }}
-      >
+    <section
+      className={clsx(CARD, "px-4 pt-4 pb-3.5")}
+      style={cooling ? { background: "linear-gradient(180deg, var(--color-background-gray-subtle), white)" } : undefined}
+      aria-label={t("myCourses.cutoffMeter")}
+    >
+      <div className="flex justify-center">
         <Meter
           ref={ref}
           variant="gauge"
-          size="sm"
           lang={locale === "hi" ? "hi" : "en"}
           scale={{ max: m.max_marks, cutoff: pass }}
           locked={locked}
           value={locked ? undefined : value}
           band={m.band ?? 0}
-          hidePill
+          cooling={cooling}
           hideCoolChip
-          fluid
-          caption={t("target.meterCaption", { max: m.max_marks })}
-          cutoffLabel={String(pass)}
+          pill={meterPill(m, (k) => tc(k))}
+          caption={t("target.predictedCaption", { max: m.max_marks })}
+          cutoffLabel={tc("meterCutoff", { pass })}
         />
       </div>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        {(
-          <span
-            className="inline-flex rounded-full px-3 py-1.5 text-[12px] font-extrabold leading-none"
-            style={{ background: pill.background, color: pill.color }}
-          >
-            {pill.text}
-          </span>
-        )}
-        <p className="text-[16px] leading-[22px] font-bold text-surface-gray-normal">
+      <div className="mt-2.5 text-center">
+        <p className="text-[17px] leading-6 font-bold text-surface-gray-normal">
           {locked
-            ? t("myCourses.meterUnlock", { count: toUnlock })
+            ? tc("meterUnlock", { count: toUnlock })
             : cooling
-              ? t("myCourses.meterCooled", { marks: Math.round(m.cooling.decay) })
+              ? tc("meterCooled", { marks: Math.round(m.cooling.decay) })
               : gap > 0
-                ? t("myCourses.meterGap", { marks: Math.ceil(gap) })
-                : t("myCourses.meterAbove", { marks: Math.round(-gap) })}
+                ? tc("meterGap", { marks: Math.ceil(gap) })
+                : tc("meterAbove", { marks: Math.round(-gap) })}
         </p>
-        <p className="body-small !font-medium text-surface-gray-muted">
-          {locked || !m.band ? t("target.cutoffOnly", { pass }) : t("target.range", { band: m.band, pass })}
-        </p>
+        {!locked && !!m.band && (
+          <p className="mt-0.5 text-[14px] leading-5 text-surface-gray-muted">
+            {m.tests_count
+              ? tc("meterRangeTests", { band: m.band, tests: m.tests_count })
+              : tc("meterRange", { band: m.band })}
+          </p>
+        )}
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-dashed border-[var(--color-border-gray-subtle)] pt-3 text-[13px] text-surface-gray-muted">
+        {trend.length > 1 ? (
+          <>
+            <span>{t("target.last5Weeks")}</span>
+            <span className="flex items-center gap-1.5">
+              <Sparkline trend={trend} zone={zone} />
+              <b className="tabular-nums text-surface-gray-normal">
+                {trend[trend.length - 1] - trend[0] >= 0 ? "+" : "−"}
+                {Math.abs(trend[trend.length - 1] - trend[0])}
+              </b>
+            </span>
+          </>
+        ) : (
+          <>
+            <span>{t("target.accuracyTarget")}</span>
+            <b className="text-surface-gray-normal">{t("target.accuracyValue")}</b>
+          </>
+        )}
       </div>
     </section>
   );
@@ -133,6 +155,10 @@ function actionTitle(a: CutoffMeterAction, t: ReturnType<typeof useTranslations>
     if (p.section) return String(p.section);
   }
   return t(`target.types.${a.action_type}`);
+}
+
+function shorten(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
 function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) {
@@ -232,15 +258,9 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
           loading={going === next.id}
           showIcon={false}
           onClick={() => go(next)}
-          text={
-            // Long topic names: ellipsis inside the button, the "›" always visible.
-            <span className="flex min-w-0 max-w-full items-center gap-1">
-              <span className="truncate">
-                {t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: actionTitle(next, t) })}
-              </span>
-              <span aria-hidden="true">›</span>
-            </span>
-          }
+          // MainButton centres its text without shrinking it, so a long topic name is
+          // shortened here (≈ 26 chars fit a 390px screen); the "›" always shows.
+          text={`${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: shorten(actionTitle(next, t), 26) })} ›`}
         />
       ) : (
         <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>
