@@ -103,3 +103,22 @@ Each step is a separate deploy and a separate approval. Do not combine them.
 - `MyCourseCard` / `MyCoursesWrapTwo` are untouched (client-approved).
 - The RN app (WebView) needs no release; it renders the dashboard.
 - V1 endpoints keep their current (broken or legacy) behaviour until PT-13. They are not removed silently.
+
+## 9. Server move checklist (new server, restore, or a fresh container)
+
+Everything that matters is either in **git** (code, migrations) or in the **database** (all Progress Tracker tables, the index, cleanup results, snapshots). A DB dump/restore carries all of it. Only these three things live on the server and must be set again by hand:
+
+1. **Env flags** (Coolify → backend env). Copy them from the old server exactly. Missing flags are safe: everything falls back to legacy behaviour, nothing breaks. If they were missing for a while, run `php artisan progress:backfill` after setting them; it is idempotent and fills the gap.
+   ```
+   PROGRESS_WRITE_MODE=dual|new      PROGRESS_READ_SOURCE=legacy|new   PROGRESS_READ_ALLOWLIST=…
+   PROGRESS_ROLLUPS_ENABLED=true     MINI_TEST_SERVER_SCORING=true     SYLLABUS_INDEX_AUTO_REBUILD=true
+   ```
+2. **Laravel scheduler** (`php artisan schedule:work`, or cron `* * * * * php artisan schedule:run`). Without it, the index is still repaired on demand when a student opens a topic it doesn't have yet (one exam rebuild, at most every 5 minutes per exam), but `syllabus:check` and the nightly `progress:reconcile` do not run. Trial expiry and the other existing schedules also stop.
+3. **Queue worker** (`php artisan queue:work`). Without it, rollups for the user's *other* exams and post-sync recounts wait in the `jobs` table. They run when the worker starts.
+
+**After any move, run:**
+```
+php artisan migrate:status | grep -i pending     # only expected migrations pending
+php artisan progress:doctor                      # FAIL rows say exactly what is missing and how to fix it
+```
+`progress:doctor` is read-only. It checks migrations, flag combinations, index (empty / stale / guarded builds), scheduler heartbeat (written by `syllabus:check` every 10 minutes), queue backlog / failed jobs, and backfill presence.
