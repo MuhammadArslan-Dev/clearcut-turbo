@@ -92,7 +92,7 @@ function CourseSlideCard({
 }) {
   return (
     <MyCourseCard
-      cardClasses="!rounded-2xl !md:rounded-xl"
+      cardClasses="!rounded-2xl !md:rounded-xl h-full flex flex-col"
       bgColor="bg-[#0053A2]"
       price={exam.exam.price}
       badge={exam.status}
@@ -345,7 +345,9 @@ export default function MyCoursesWrapTwo({
               </SwiperSlide>
             )}
             {orderedCourses.map((exam, index) => (
-              <SwiperSlide key={exam?.id ?? index}>
+              // !h-auto + !self-stretch (the swiper wrapper centres items): slides stretch to the tallest one, so every card in the
+              // carousel has the same height and it doesn't jump on swipe (phase 98).
+              <SwiperSlide key={exam?.id ?? index} className="!h-auto !self-stretch">
                 {exam && (
                   <CourseSlideCard
                     exam={exam}

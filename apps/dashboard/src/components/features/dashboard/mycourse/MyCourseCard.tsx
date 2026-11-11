@@ -302,7 +302,7 @@ export default function MyCourseCard({
       // shared Card is global and must not change for one call site.
       className={clsx("!max-w-full md:!max-w-[400px]", cardClasses)}
     >
-      <div className="flex flex-col gap-3 px-4 pt-4 pb-2 relative">
+      <div className="flex flex-1 flex-col gap-3 px-4 pt-4 pb-2 relative">
         {/* Status pill straddles the card's top edge, as before phase 98 (user
             feedback 2026-11-11). "Trial Ended" stays a button (44px tap area). */}
         {statusClick ? (
@@ -349,7 +349,7 @@ export default function MyCourseCard({
             {daysToExam != null &&
               (daysToExam <= 7 ? (
                 // Final week (studio): the exam chip turns orange with 🔥.
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 body-small !font-semibold bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]">
+                <span className="mt-0.5 inline-flex items-center gap-1 rounded-full px-2 body-small !font-semibold bg-[var(--color-warning-bg-soft)] text-[var(--color-warning-strong)]">
                   <span aria-hidden="true">🔥</span>
                   {t("myCourses.examFinalWeek", { days: daysToExam })}
                 </span>
@@ -439,7 +439,8 @@ export default function MyCourseCard({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 py-1">
+        {/* mt-auto: in an equal-height carousel slide the buttons sit at the bottom. */}
+        <div className="mt-auto flex flex-col gap-3 py-1">
           {continueClick && (
             <div>
               <MainButton
