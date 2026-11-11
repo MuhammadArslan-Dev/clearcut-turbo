@@ -1,7 +1,7 @@
 import styles from "./NibMascot.module.css";
 
-export type NibMood = "happy" | "determined" | "wow";
-export type NibAccessory = "none" | "cap" | "headband";
+export type NibMood = "happy" | "determined" | "wow" | "sleepy";
+export type NibAccessory = "none" | "cap" | "headband" | "zzz" | "star";
 
 /**
  * "Nibbu" — ClearCutoff's pen-nib mascot, derived from the logo mark.
@@ -10,22 +10,31 @@ export type NibAccessory = "none" | "cap" | "headband";
  *
  * mood:      happy (default) · determined (eyebrows, set mouth) · wow (open mouth)
  * accessory: cap (graduation cap — cleared cutoff) · headband (keep-fighting mode)
+ *
+ * Cutoff Meter additions (phase 96, additive — the moods/accessories above render unchanged):
+ * mood:      sleepy (closed eyes, flat mouth — meter "cooling")
+ * accessory: zzz (sleep letters — cooling) · star (gold star — Safe Zone)
+ * frame:     "tall" uses the meter studio box (0 -9 66 81) with room above the head;
+ *            "default" keeps the original 0 0 64 72 box.
  */
 export function NibMascot({
   className,
   mood = "happy",
   accessory = "none",
   look = "none",
+  frame = "default",
 }: {
   className?: string;
   mood?: NibMood;
   accessory?: NibAccessory;
   /** scan = eyes sweep top→bottom (reading an answer sheet), 1.2s loop */
   look?: "none" | "scan";
+  /** "tall" = viewBox 0 -9 66 81 (Cutoff Meter studio); default unchanged */
+  frame?: "default" | "tall";
 }) {
   const cls = [className, look === "scan" && styles.lookScan].filter(Boolean).join(" ");
   return (
-    <svg className={cls || undefined} viewBox="0 0 64 72" aria-hidden="true" focusable="false">
+    <svg className={cls || undefined} viewBox={frame === "tall" ? "0 -9 66 81" : "0 0 64 72"} aria-hidden="true" focusable="false">
       {/* nib body */}
       <path
         className={styles.nibBody}
@@ -44,7 +53,12 @@ export function NibMascot({
       {/* cheeks */}
       <ellipse className={styles.nibCheek} cx="18.5" cy="34" rx="3.4" ry="2.2" />
       <ellipse className={styles.nibCheek} cx="45.5" cy="34" rx="3.4" ry="2.2" />
-      {/* eyes (blink as a group) */}
+      {/* eyes (blink as a group); sleepy draws closed lids instead */}
+      {mood === "sleepy" ? (
+        <g>
+          <path className={styles.nibSmile} d="M19 26q5 3 10 0M35 26q5 3 10 0" fill="none" strokeWidth="2.2" strokeLinecap="round" />
+        </g>
+      ) : (
       <g className={styles.nibEyes}>
         <ellipse className={styles.nibSclera} cx="24" cy="25.5" rx="5.6" ry="6.6" />
         <ellipse className={styles.nibSclera} cx="40" cy="25.5" rx="5.6" ry="6.6" />
@@ -55,6 +69,7 @@ export function NibMascot({
           <circle className={styles.nibGlint} cx="42.6" cy="25.2" r="1.05" />
         </g>
       </g>
+      )}
 
       {mood === "determined" && (
         <>
@@ -65,6 +80,9 @@ export function NibMascot({
       {mood === "wow" && <ellipse className={styles.nibMouth} cx="32" cy="37" rx="3.2" ry="3.6" />}
       {mood === "happy" && (
         <path className={styles.nibSmile} d="M27.2 35.2q4.8 4.4 9.6 0" fill="none" strokeWidth="2.1" strokeLinecap="round" />
+      )}
+      {mood === "sleepy" && (
+        <path className={styles.nibSmile} d="M27.5 37q4.5-1.6 9 0" fill="none" strokeWidth="2.1" strokeLinecap="round" />
       )}
 
       {accessory === "headband" && (
@@ -80,6 +98,15 @@ export function NibMascot({
           <path className={styles.nibTassel} d="M32 1 49 5.5v9" fill="none" strokeWidth="1.6" strokeLinecap="round" />
           <circle className={styles.nibTasselEnd} cx="49" cy="15.5" r="2.2" />
         </g>
+      )}
+      {accessory === "zzz" && (
+        <g className={styles.nibZzz}>
+          <text x="50" y="10" fontSize="11" fontWeight="800">z</text>
+          <text x="57" y="2" fontSize="8" fontWeight="800">z</text>
+        </g>
+      )}
+      {accessory === "star" && (
+        <path className={styles.nibStar} d="M52 0l2.4 5 5.4.6-4 3.7 1.1 5.3L52 12l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z" />
       )}
     </svg>
   );

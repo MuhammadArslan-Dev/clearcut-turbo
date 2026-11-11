@@ -18,6 +18,9 @@
 .nibCapTop  { fill: var(--cc-ink, #192839); }
 .nibTassel  { stroke: var(--cc-gold, #ffc542); }
 .nibTasselEnd { fill: var(--cc-gold, #ffc542); }
+/* Cutoff Meter additions (phase 96) */
+.nibZzz    { fill: #3b6ea5; }
+.nibStar   { fill: var(--cc-gold, #ffc542); }
 
 .nibEyes {
   transform-box: fill-box;

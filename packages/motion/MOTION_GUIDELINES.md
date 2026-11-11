@@ -4,7 +4,7 @@ Use these for every new screen so the product feels like one system.
 
 ## 1. Character
 
-Nibbu is approved. **Do not change its shape, face, colours or proportions.** Express state with the existing `mood` (`happy`, `determined`, `wow`) and `accessory` (`cap`, `headband`) props and with motion, never by redrawing.
+Nibbu is approved. **Do not change its shape, face, colours or proportions.** Express state with the existing `mood` (`happy`, `determined`, `wow`, `sleepy`) and `accessory` (`cap`, `headband`, `zzz`, `star`) props and with motion, never by redrawing. `sleepy`, `zzz` and `star` come from the approved Cutoff Meter design (phase 96); `frame="tall"` gives the meter's taller box (room above the head).
 
 | Moment | Nibbu |
 |---|---|
@@ -13,6 +13,8 @@ Nibbu is approved. **Do not change its shape, face, colours or proportions.** Ex
 | Surprise / reveal (Go!, stamp) | `wow` |
 | Below or close to cutoff | `determined` + `headband`, steady nod, no sad faces |
 | Cleared / success | `happy` + `cap`, double jump |
+| Well above cutoff (Cutoff Meter Safe Zone) | `happy` + `star`, star pops on |
+| Inactive / cooling (Cutoff Meter, 3+ idle days) | `sleepy` + `zzz`, colours drain; back to `happy` on the next test |
 
 ## 2. Easing tokens
 
