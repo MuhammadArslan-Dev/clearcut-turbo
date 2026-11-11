@@ -193,7 +193,7 @@ export default function PreparationShell({
       .then((res) => {
         if (!res.claimed || urlCourseRef.current !== courseCode) return;
         setGuideShownThisSession();
-        open("preparation-guide", {}, false);
+        open("preparation-guide", {}, true);
       })
       .catch((err) => {
         if (isApiError(err) && err.isNetworkError) return;

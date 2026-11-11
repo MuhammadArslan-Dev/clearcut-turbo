@@ -88,7 +88,7 @@ export default function Content({
   if (tab === "notes") return <Notes notes={notes} />;
   if (tab === "bonus-videos") return <BonusVideo videos={bonusVideos} />;
   if (tab === "trends")
-    return <Trends trend={trend} onClick={() => open("previous-modal")} />;
+    return <Trends trend={trend} onClick={() => open("previous-modal", {}, true)} />;
   if (tab === "concepts") return <Concepts concepts={concepts} />;
 
   return null;

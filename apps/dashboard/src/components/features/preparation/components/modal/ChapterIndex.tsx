@@ -57,11 +57,9 @@ export default function ChapterIndex() {
           titleClass="heading-medium !font-semibold"
           maxWidth="md:max-w-[700px]"
           isOpen={isOpen}
-          onClose={() => {
-            window.history.pushState({ overlay: true }, "");
-
-            closeModal("chapter-index");
-          }}
+          // Opened with history (Sidebar): the store pops its entry on close, so
+          // no extra pushState here (it added a stray entry on every backdrop close).
+          onClose={() => closeModal("chapter-index")}
         >
           <div className="flex flex-col">
             <div className="flex justify-between sticky top-0 bg-white px-4 py-3">

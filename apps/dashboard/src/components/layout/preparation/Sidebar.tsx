@@ -379,7 +379,7 @@ export default function Sidebar() {
 
             <motion.button
               type="button"
-              onClick={() => open("chapter-index")}
+              onClick={() => open("chapter-index", {}, true)}
               aria-label={t("common.index")}
               // "Index" text while the bottom Target / Course / Tests switch is hidden;
               // once it slides in (scroll), the button shrinks to the list icon (user, 2026-11-11).
@@ -427,7 +427,7 @@ export default function Sidebar() {
               chapter index, same as the Index button. */}
           <button
             type="button"
-            onClick={() => open("chapter-index")}
+            onClick={() => open("chapter-index", {}, true)}
             className="px-3 lg:px-0 flex justify-center w-full cursor-pointer"
           >
             <Card borderRadius="8px" width={"315px"} padding={0}>
