@@ -11,10 +11,11 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
+import MeterInfoSheet from "./MeterInfoSheet";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
 
@@ -36,7 +37,8 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
   const gap = meter.display_gap ?? meter.gap ?? 0;
   const pass = Math.round(meter.pass_mark);
   const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
-  const change = !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
+  const change =
+    !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
 
   // Studio "Score dropped / went up": Δ chip (+ wobble on a drop) once the fill has settled.
   useEffect(() => {
@@ -48,41 +50,66 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
     return () => clearTimeout(id);
   }, [change]);
 
+  const [infoOpen, setInfoOpen] = useState(false);
+
   return (
-    <div className="flex flex-col gap-2">
-      <Meter
-        ref={ref}
-        variant="bar"
-        fluid
-        lang={locale === "hi" ? "hi" : "en"}
-        scale={{ max: meter.max_marks, cutoff: pass }}
-        locked={locked}
-        value={locked ? undefined : value}
-        band={meter.band ?? 0}
-        cooling={cooling}
-        pill={meterPill(meter, t)}
-        cutoffLabel={t("meterCutoff", { pass })}
-        hideCoolChip
-      />
-      <div className="text-center">
-        <p className="heading-medium !font-bold text-surface-gray-normal">
-          {locked
-            ? t("meterUnlock", { count: toUnlock })
-            : cooling
-              ? t("meterCooled", { marks: Math.round(meter.cooling.decay) })
-              : gap > 0
-                ? t("meterGap", { marks: Math.ceil(gap) })
-                : t("meterAbove", { marks: Math.round(-gap) })}
-        </p>
-        {!locked && !!meter.band && (
-          <p className="text-[13px] leading-[18px] text-surface-gray-muted">
-            {meter.tests_count
-              ? t("meterRangeTests", { band: meter.band, tests: meter.tests_count })
-              : t("meterRange", { band: meter.band })}
+    <>
+      {/* Tap the meter → "how is this calculated" (bottom sheet on mobile, modal on desktop). */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={t("meterInfo.title")}
+        onClick={() => setInfoOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setInfoOpen(true);
+          }
+        }}
+        className="flex cursor-pointer flex-col gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+      >
+        <Meter
+          ref={ref}
+          variant="bar"
+          fluid
+          lang={locale === "hi" ? "hi" : "en"}
+          scale={{ max: meter.max_marks, cutoff: pass }}
+          locked={locked}
+          value={locked ? undefined : value}
+          band={meter.band ?? 0}
+          cooling={cooling}
+          pill={meterPill(meter, t)}
+          cutoffLabel={t("meterCutoff", { pass })}
+          hideCoolChip
+        />
+        <div className="text-center">
+          <p className="heading-medium !font-bold text-surface-gray-normal">
+            {locked
+              ? t("meterUnlock", { count: toUnlock })
+              : cooling
+                ? t("meterCooled", { marks: Math.round(meter.cooling.decay) })
+                : gap > 0
+                  ? t("meterGap", { marks: Math.ceil(gap) })
+                  : t("meterAbove", { marks: Math.round(-gap) })}
           </p>
-        )}
+          {!locked && !!meter.band && (
+            <p className="text-[13px] leading-[18px] text-surface-gray-muted">
+              {meter.tests_count
+                ? t("meterRangeTests", {
+                    band: meter.band,
+                    tests: meter.tests_count,
+                  })
+                : t("meterRange", { band: meter.band })}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+      <MeterInfoSheet
+        meter={meter}
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      />
+    </>
   );
 }
 
@@ -92,7 +119,12 @@ function CutoffMeterPanelSkeleton() {
     <div className="flex flex-col gap-2" aria-hidden="true">
       <div className="flex items-end justify-between">
         <Skeleton variant="text" width={110} height={40} />
-        <Skeleton variant="rectangular" width={96} height={24} borderRadius={999} />
+        <Skeleton
+          variant="rectangular"
+          width={96}
+          height={24}
+          borderRadius={999}
+        />
       </div>
       <div className="pt-6">
         <Skeleton variant="rectangular" height={18} borderRadius={999} />
@@ -257,7 +289,10 @@ export default function MyCourseCard({
               />
             ) : (
               <div className="w-full h-full grid place-items-center bg-[var(--color-success-strong)] text-white heading-large !font-bold">
-                {(examShortName ?? courseName ?? "?").trim().charAt(0).toUpperCase()}
+                {(examShortName ?? courseName ?? "?")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
             )}
           </div>
@@ -265,9 +300,21 @@ export default function MyCourseCard({
             {/* One line, never wraps (user feedback); a very long name ends in "…". */}
             <h5
               className="heading-large !font-semibold text-surface-gray-normal whitespace-nowrap overflow-hidden text-ellipsis"
-              title={levelName && examShortName && levelName.trim().toLowerCase() !== examShortName.trim().toLowerCase() ? `${examShortName} ${levelName}` : (examShortName ?? courseName ?? undefined)}
+              title={
+                levelName &&
+                examShortName &&
+                levelName.trim().toLowerCase() !==
+                  examShortName.trim().toLowerCase()
+                  ? `${examShortName} ${levelName}`
+                  : (examShortName ?? courseName ?? undefined)
+              }
             >
-              {levelName && examShortName && levelName.trim().toLowerCase() !== examShortName.trim().toLowerCase() ? `${examShortName} ${levelName}` : (examShortName ?? courseName)}
+              {levelName &&
+              examShortName &&
+              levelName.trim().toLowerCase() !==
+                examShortName.trim().toLowerCase()
+                ? `${examShortName} ${levelName}`
+                : (examShortName ?? courseName)}
             </h5>
             {daysToExam != null &&
               (daysToExam <= 7 ? (
@@ -306,7 +353,12 @@ export default function MyCourseCard({
           <CutoffMeterPanel meter={meter} />
         ) : null}
 
-        <div className={clsx("flex flex-col gap-2", (meter || meterLoading) && "hidden")}>
+        <div
+          className={clsx(
+            "flex flex-col gap-2",
+            (meter || meterLoading) && "hidden",
+          )}
+        >
           {topics && (
             <div className="flex flex-col gap-1 px-1">
               <div className="flex justify-between text-surface-gray-muted">
@@ -393,7 +445,11 @@ export default function MyCourseCard({
                 fullWidth
                 loading={unlockLoading}
                 color="success"
-                text={badge === "expired" ? t("myCourses.renewCourse") : t("myCourses.buyFullCourse")}
+                text={
+                  badge === "expired"
+                    ? t("myCourses.renewCourse")
+                    : t("myCourses.buyFullCourse")
+                }
                 rightIcon={<ChevronIcon size={20} />}
                 onClick={() => {
                   setUnlockLoading(true);

@@ -345,9 +345,9 @@ export default function MyCoursesWrapTwo({
               </SwiperSlide>
             )}
             {orderedCourses.map((exam, index) => (
-              // !h-auto + !self-stretch (the swiper wrapper centres items): slides stretch to the tallest one, so every card in the
-              // carousel has the same height and it doesn't jump on swipe (phase 98).
-              <SwiperSlide key={exam?.id ?? index} className="!h-auto !self-stretch">
+              // !h-auto + !self-start (the swiper wrapper centres items): every card starts at the same top, at its own height —
+              // stretching to the tallest left paid cards (fewer buttons) half empty (user, 2026-11-11). Same top = the meter does not jump on swipe.
+              <SwiperSlide key={exam?.id ?? index} className="!h-auto !self-start">
                 {exam && (
                   <CourseSlideCard
                     exam={exam}
