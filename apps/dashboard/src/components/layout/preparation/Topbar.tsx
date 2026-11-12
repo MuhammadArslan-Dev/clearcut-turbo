@@ -43,7 +43,7 @@ export default function Topbar() {
     <header className="border-slate-200">
       <div className="h-auto bg-white flex flex-col lg:flex-row lg:gap-3 items-center justify-between rounded-md">
         {/* LEFT SECTION */}
-        <div ref={titleRowOuterRef} className="w-full overflow-hidden bg-[var(--color-brand-dark)] lg:rounded-r-full">
+        <div ref={titleRowOuterRef} className="w-full lg:w-auto lg:shrink-0 lg:pr-3 overflow-hidden bg-[var(--color-brand-dark)] lg:rounded-r-full">
           <div
             ref={titleRowRef}
             className="flex items-center justify-between md:justify-start w-full md:gap-10 px-3 py-2 lg:p-0 lg:pl-3"

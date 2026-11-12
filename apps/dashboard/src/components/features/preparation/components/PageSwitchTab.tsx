@@ -101,7 +101,7 @@ export default React.memo(function PageSwitchTab({
       value={tab}
       tabFontSize="body-medium md:body-large"
       onChange={(id) => onTabChange(id as PageTab)}
-      activeTextColor={onBrand ? "text-brand whitespace-nowrap md:px-10" : "text-white whitespace-nowrap md:px-10"}
+      activeTextColor={onBrand ? "text-[var(--color-brand-dark)] whitespace-nowrap md:px-10" : "text-white whitespace-nowrap md:px-10"}
       inactiveTextColor={
         onBrand
           ? "text-white !min-w-[75px] whitespace-nowrap md:px-10"
