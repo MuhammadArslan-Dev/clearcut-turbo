@@ -56,6 +56,28 @@ export function trackColour(range: Exclude<ZoneKey, "locked">, active: ZoneKey):
   return reached ? ZONES[range].c : ZONES[range].t;
 }
 
+/**
+ * How much of the range [from, to] the score has filled, 0–1. The track shows
+ * each range's light shade; its full colour covers only this share — up to the
+ * score, never beyond it (user, 2026-11-12: "bar ka color utna hi fill kro jitni bar hoti ha").
+ */
+export function fillShare(from: number, to: number, score: number | null | undefined): number {
+  if (score == null || to <= from) return 0;
+  return Math.min(1, Math.max(0, (score - from) / (to - from)));
+}
+
+/**
+ * CSS timing for one range's fill so the colour runs 0 → score continuously
+ * across ranges (each range starts when the previous one is full). `totalMs`
+ * is the meter's fill duration.
+ */
+export function fillTiming(from: number, to: number, score: number, totalMs: number): { delay: number; duration: number } {
+  if (score <= 0) return { delay: 0, duration: totalMs };
+  const end = Math.min(to, score);
+  if (end <= from) return { delay: 0, duration: totalMs * 0.25 };
+  return { delay: (from / score) * totalMs, duration: ((end - from) / score) * totalMs };
+}
+
 /** Pill shown while the range is still wide (band ≥ 12). */
 export const EARLY_ESTIMATE = { s: "#e8f2fb", ink: "#005cb8", lab: { en: "Early estimate", hi: "शुरुआती अनुमान" } };
 export const EARLY_BAND = 12;

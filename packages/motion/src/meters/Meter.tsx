@@ -16,7 +16,8 @@ import { usePrefersReducedMotion } from "../core";
 import { Nib } from "./Nib";
 import styles from "./meters.module.css";
 import {
-  trackColour,
+  fillShare,
+  fillTiming,
   CY,
   DEFAULT_SCALE,
   EARLY_BAND,
@@ -250,8 +251,14 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
   const segs = segments(scale);
-  // The score's zone (from the real value via zoneOf); drives light vs full range colours.
-  const activeZone: ZoneKey = locked ? "locked" : zone;
+  // Each range: light shade on the track, its full colour only up to the score.
+  const fillMs = 1150 * k;
+  const segFill = (a: number, b: number) => {
+    const share = locked ? 0 : fillShare(a, b, v);
+    const { delay, duration } = fillTiming(a, b, v, fillMs);
+    const easing = v <= b ? "cubic-bezier(.22, 1, .36, 1)" : "linear"; // ease out on the range the score lands in
+    return { share, delay, duration, easing };
+  };
   const cutLabel = cutoffLabel ?? `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
   const coolText = coolLabel ?? `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
   const lockEl = (locked || lockBreaking) && <span className={[styles.lock, lockBreaking && styles.break].filter(Boolean).join(" ")}>{LOCK_SVG}</span>;
@@ -279,17 +286,27 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
                 key={z}
                 className={styles.seg0}
                 d={arc(a + (a ? 0.6 : 0), b - (b < max ? 0.6 : 0.01), R, max)}
-                stroke={trackColour(z, activeZone)}
-                style={{ transition: "stroke .35s ease" }}
+                stroke={ZONES[z].t}
               />
             ))}
-            <path
-              className={styles.fill}
-              d={arc(0, max - 0.01, R, max)}
-              pathLength={100}
-              strokeDasharray="100 200"
-              style={{ strokeDashoffset: 100 - pct, opacity: v > 0 ? 1 : 0, stroke: zoneObj.c }}
-            />
+            {segs.map(([a, b, z]) => {
+              const f = segFill(a, b);
+              return (
+                <path
+                  key={`fill-${z}`}
+                  className={styles.seg0}
+                  d={arc(a + (a ? 0.6 : 0), b - (b < max ? 0.6 : 0.01), R, max)}
+                  pathLength={100}
+                  strokeDasharray="100 200"
+                  stroke={ZONES[z].c}
+                  style={{
+                    strokeDashoffset: 100 - f.share * 100,
+                    opacity: f.share > 0 ? 1 : 0,
+                    transition: `stroke-dashoffset ${f.duration}ms ${f.easing} ${f.delay}ms, opacity .2s ${f.share > 0 ? f.delay : 0}ms`,
+                  }}
+                />
+              );
+            })}
             <line className={styles.ctick} x1={tA[0]} y1={tA[1]} x2={tB[0]} y2={tB[1]} />
             <text className={styles.clab} x={tL[0]} y={+tL[1] - 1} textAnchor="middle">
               {cutLabel}
@@ -335,24 +352,29 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           </span>
         </div>
         <div className={styles.track}>
-          {segs.map(([a, b, z]) => (
-            <i
-              key={z}
-              className={styles.z}
-              style={{
-                left: `${(a / max) * 100}%`,
-                width: `${((b - a) / max) * 100}%`,
-                background: trackColour(z, activeZone),
-                transition: "background-color .35s ease",
-                borderRadius: a === 0 ? "99px 0 0 99px" : b === max ? "0 99px 99px 0" : undefined,
-              }}
-            />
-          ))}
+          {segs.map(([a, b, z]) => {
+            const f = segFill(a, b);
+            const radius = a === 0 ? "99px 0 0 99px" : b === max ? "0 99px 99px 0" : undefined;
+            return (
+              <i
+                key={z}
+                className={styles.z}
+                style={{ left: `${(a / max) * 100}%`, width: `${((b - a) / max) * 100}%`, background: ZONES[z].t, borderRadius: radius, overflow: "hidden" }}
+              >
+                <i
+                  style={{
+                    position: "absolute", left: 0, top: 0, bottom: 0, display: "block",
+                    width: `${f.share * 100}%`, background: ZONES[z].c, borderRadius: radius,
+                    transition: `width ${f.duration}ms ${f.easing} ${f.delay}ms`,
+                  }}
+                />
+              </i>
+            );
+          })}
           <i
             className={styles.bandb}
             style={band ? { left: `${(lo / max) * 100}%`, width: `${((hi - lo) / max) * 100}%`, background: bandZone.c } : { opacity: 0 }}
           />
-          <i className={styles.fillb} style={{ width: `${pct}%`, background: zoneObj.c }} />
           <i className={styles.cmark} style={{ left: `${(cutoff / max) * 100}%` }}>
             <span>{cutLabel}</span>
           </i>
