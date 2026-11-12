@@ -31,8 +31,12 @@ export function useProgressCapabilities(): { caps: ProgressCapabilities; ready: 
  * backend has already recalculated the Cutoff Meter, so the course card and the
  * Target tab must refetch instead of showing the pre-test meter for 5 minutes.
  */
+export const PRACTICE_STATE_KEY = (courseId: string) => ["practice-state", courseId] as const;
+
 export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
-  for (const key of [["courses-cutoff-meter"], ["cutoff-meter"]]) {
+  // "practice-state": the Target page's "can the Practice Test still be taken" (a
+  // submit may have just completed it).
+  for (const key of [["courses-cutoff-meter"], ["cutoff-meter"], ["practice-state"]]) {
     queryClient.invalidateQueries({ queryKey: key });
   }
 }
