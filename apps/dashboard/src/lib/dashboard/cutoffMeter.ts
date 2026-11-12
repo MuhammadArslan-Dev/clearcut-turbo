@@ -100,6 +100,26 @@ export async function getCutoffMeter(courseId: string | number): Promise<CutoffM
   return res.data;
 }
 
+/**
+ * A topic test that ran on the legacy browser flow (the server attempt could not
+ * start): send its answers so the Cutoff Meter counts them too — every test type
+ * feeds the meter. The server decides right/wrong; `attemptRef` (one per open)
+ * makes a retry idempotent.
+ */
+export async function sendLegacyTopicAnswers(payload: {
+  course_id: string;
+  topic_id: number;
+  attempt_ref: string;
+  answers: Record<number, number | null>;
+  locale?: string;
+}): Promise<void> {
+  await apiFetch(`/v2/cutoff-meter/topic-answers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 /** Fire-and-forget: the student tapped a plan row / the Start CTA (`nba_log.clicked_at`). */
 export async function markCutoffMeterActionClicked(actionId: string): Promise<void> {
   await apiFetch(`/v2/cutoff-meter/actions/${encodeURIComponent(actionId)}/click`, { method: "POST" });
