@@ -62,6 +62,18 @@
 - Not verified: the Meta Events Manager side (a test code is needed before this ships: check `content_category` / `content_ids` are accepted and that Purchase optimisation does not shift), the cookie on the real domains and in FB/IG in-app browsers, consent wording (the cookie holds no personal id, but a privacy-policy line may be wanted), a real payment end to end, and the effect of `unknown` on Grafana panels that still look for `meta_lead`/`organic` (outside the repos).
 - Merge note: `useRazorpayPayment.ts` is also changed on `feature/upi-waiting-screen` (phase 88); the two edits are in neighbouring lines and will need a small manual merge.
 
+## 4c. CC-171 rule v2 (2026-11-12, user: "171 kar do, kam break na ho, new branch, live nahi") — branches `feature/cc-171-acquisition-source` (BE + CM), NOT merged
+Everything sits behind **`ATTRIBUTION_RULE_V2`** (`config('services.attribution.rule_v2')`, default **false** → phase-70 rules byte-for-byte).
+- **BE `AttributionService`:** `sourceV2()` in the ticket's order — paid (click id or paid `utm_medium`) · referral (a `u_referrals` row for the user, a server fact; the verify flow saves it before attribution) · organic (known referrer / landing page / page) · unknown (nothing captured). A landing OTP without evidence is now organic, never paid. `acquisitionChannel()` → one of meta_ads, google_ads, organic_search, tools, academy, blog, whatsapp, referral, direct, unknown (own app first, so "Google → tools" = tools; another website / unmapped utm_source = unknown). `click_id_types` = WHICH click ids were present (names only). `utm_id` accepted.
+- At the **first verification only**: `users.source` (only an untouched '', organic or unknown value is replaced; `meta_lead` kept and gets channel `meta_ads`), new **`users.acquisition_channel`**, and **`users.metadata.acquisition`** (source, channel, campaign, campaign_id, utm, referrer, landing_page, page, app, click id names, at; written once). No payload + referral code → referral/referral; no payload + nothing → stays `unknown`.
+- **Amplitude:** `$setOnce` `acquisition_source` / `acquisition_channel` / `acquisition_campaign` on the existing identify / Login calls (no new event).
+- **CC-136 campaign on transactions:** new nullable **`transactions.acquisition`** JSON (source, channel, campaign, campaign_id, last_touch_campaign(_id)) filled at creation from the user. Separate column on purpose: `transactions.metadata` is sometimes a double-encoded string that the payment code double-decodes. With the flag OFF the INSERT is unchanged (the attribute is not even set).
+- Migration `2026_11_12_200000_add_acquisition_columns_to_users_and_transactions` (reversible). `.env.example` documents the flag.
+- **CM:** `packages/auth/src/attribution.ts` also sends `utm_id`; cookie test for the `utm_id` round trip.
+- **Decisions (user, 2026-11-12):** click id VALUES are still not stored (names only); **no backfill** for now.
+- **Not done (outside the repos / later):** Grafana panels (still look for `meta_lead`); RN app + dashboard send no attribution payload → their new signups stay `unknown` unless a referral code was used; history backfill.
+- **Tests** (throwaway DB `clearcut_cc171_test`, all migrations; the local `clearcut` DB lacks `users.verification_method` — env drift, so the OTP-verify tests 500 there on clean main too): `AttributionRuleV2Test` 10 new (ticket's 4 test cases, referral with/without payload, unknown, meta_lead, click id value never stored, transaction campaign, flag OFF = old) + `AttributionTest` 21 → **31 passed**; flag-OFF `AttributionTest` 21/21 on branch = 21/21 on main. Payment/subscription/Razorpay/Meta suites: 35 failed / 61 passed on main, 35 failed (identical list: PaymentReconcile/Recovery/Safety, pre-existing) / 65 passed on branch. `first-touch-cookie.test.ts` 8 passed; `packages/auth` tsc 0. Pint clean.
+
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
@@ -71,7 +83,9 @@
 | 2026-11-09 | Meta Purchase `content_category` / `content_ids` built (4b); still to be checked with an Events Manager test code before it is merged | user: "do what you recommend" |
 | 2026-11-09 | `users.source` default `unknown` built for new users (4b) | user: "do what you recommend" |
 | 2026-11-09 | First-touch cookie built, first-party, 30 days (4b); privacy-policy wording is the user's call | user: "do what you recommend" |
-| 2026-11-09 | 🛑 **Any backfill** (`purchase_id`/exam, `users.source` from Amplitude): approve each dry-run list before applying. | open |
+| 2026-11-09 | 🛑 **Any backfill** (`purchase_id`/exam, `users.source` from Amplitude): approve each dry-run list before applying. | 2026-11-12 user: "abhi backfill nahi" |
+| 2026-11-12 | Store raw fbclid/gclid values (ticket) or presence only? | user: "abi esa choro" → presence only (names) |
+| 2026-11-12 | CC-171 rule v2 behind `ATTRIBUTION_RULE_V2` (default off), separate `transactions.acquisition` column | Claude (user: "kam break na ho") |
 
 ## 6. Blockers / risks
 - Risk: medium. `users.source` is read by analytics, Grafana and Meta lead flows. Meta param changes may change optimisation.
