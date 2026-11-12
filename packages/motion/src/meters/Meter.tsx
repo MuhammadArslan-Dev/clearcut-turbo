@@ -16,6 +16,7 @@ import { usePrefersReducedMotion } from "../core";
 import { Nib } from "./Nib";
 import styles from "./meters.module.css";
 import {
+  trackColour,
   CY,
   DEFAULT_SCALE,
   EARLY_BAND,
@@ -249,6 +250,8 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
   const segs = segments(scale);
+  // The score's zone (from the real value via zoneOf); drives light vs full range colours.
+  const activeZone: ZoneKey = locked ? "locked" : zone;
   const cutLabel = cutoffLabel ?? `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
   const coolText = coolLabel ?? `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
   const lockEl = (locked || lockBreaking) && <span className={[styles.lock, lockBreaking && styles.break].filter(Boolean).join(" ")}>{LOCK_SVG}</span>;
@@ -276,7 +279,8 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
                 key={z}
                 className={styles.seg0}
                 d={arc(a + (a ? 0.6 : 0), b - (b < max ? 0.6 : 0.01), R, max)}
-                stroke={ZONES[z].s}
+                stroke={trackColour(z, activeZone)}
+                style={{ transition: "stroke .35s ease" }}
               />
             ))}
             <path
@@ -338,7 +342,8 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
               style={{
                 left: `${(a / max) * 100}%`,
                 width: `${((b - a) / max) * 100}%`,
-                background: ZONES[z].s,
+                background: trackColour(z, activeZone),
+                transition: "background-color .35s ease",
                 borderRadius: a === 0 ? "99px 0 0 99px" : b === max ? "0 99px 99px 0" : undefined,
               }}
             />

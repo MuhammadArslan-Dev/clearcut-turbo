@@ -11,6 +11,7 @@ import { Nib } from "@clearcut/motion/meters/nib";
 import {
   ZONES,
   riderPose,
+  trackColour,
   zoneOf,
   zoneWidths,
 } from "@clearcut/motion/meters/zones";
@@ -266,7 +267,8 @@ function MeterInfoBody({
                   key={z.k}
                   style={{
                     flexGrow: Math.max(z.to - z.from, 0.001),
-                    background: ZONES[z.k].c,
+                    // Same rule as the meter: full colour once the score reached this range, light before.
+                    background: trackColour(z.k, locked ? "locked" : zoneOf(value, scale)),
                   }}
                 />
               ))}
