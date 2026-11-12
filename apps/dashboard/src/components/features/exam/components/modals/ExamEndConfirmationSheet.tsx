@@ -19,6 +19,8 @@ import { useExamStore } from "../../store/useExamStore";
 import { apiFetch } from "@/lib/api/client";
 import { useTranslations } from "next-intl";
 import { trackTestSubmitted } from "@/lib/analytics/testFunnel";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 
 const endExamApi = async ({ examId }: { examId: string }) => {
   return apiFetch<{ data: { exam: { type: string | null }; result?: Record<string, number> | null } }>(
@@ -34,6 +36,7 @@ export default function ExamEndConfirmationSheet() {
   const { isOpen, closeModal, stack } = useExamModalStore();
   const isMobile = useIsMobile();
   const t = useTranslations("modals.examSubmission");
+  const queryClient = useQueryClient();
 
   const active = stack[stack.length - 1];
   const { exam, language, getStats } = useExamStore();
@@ -65,11 +68,12 @@ export default function ExamEndConfirmationSheet() {
       const res = await endExamApi({ examId: exam?.uuid! });
       examType = res.data.exam.type;
       trackTestSubmitted(exam, res, "manual", language);
+      invalidateCutoffMeterQueries(queryClient);
     } catch (error) {
       console.error("End exam failed:", error);
     }
     useExamSubmitStore.getState().settle(examType);
-  }, [handleClose, exam, language, getStats]);
+  }, [handleClose, exam, language, getStats, queryClient]);
 
   return (
     <AnimatePresence>
