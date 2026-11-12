@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import MyCourseCard from "./MyCourseCard";
@@ -215,6 +216,9 @@ export default function MyCoursesWrapTwo({
   const orderedCourses = activeExam
     ? [activeExam, ...courses.filter((course) => course?.id !== activeExam.id)]
     : courses;
+  // Mobile Buy widget: the course on screen, only when it can be bought / renewed.
+  const buyCourse = (orderedCourses[slideIndex] ?? null) as ExamEnrollmentWithExam | null;
+  const buyClick = buyCourse ? unlockFor(buyCourse) : undefined;
 
   // Warm the "New Exam Enrollment" modal's data ahead of the click. That
   // modal (and EditCourseModal) are next/dynamic-loaded on this page on
@@ -455,17 +459,32 @@ export default function MyCoursesWrapTwo({
 
       {/* 📱 MOBILE: the shown course's Buy block as its own widget, right above
           Today's Daily Test (it is hidden inside the carousel card on mobile). */}
-      {orderedCourses[slideIndex] && (
-        <div className="md:hidden px-2">
-          <CourseSlideCard
-            exam={orderedCourses[slideIndex] as ExamEnrollmentWithExam}
-            part="buy"
-            onContinue={() => {}}
-            onEdit={() => {}}
-            onUnlock={unlockFor(orderedCourses[slideIndex] as ExamEnrollmentWithExam)}
-          />
-        </div>
-      )}
+      {/* Slides in / out smoothly (height + fade) as you swipe between trial and
+          paid courses, so Today's Daily Test below glides instead of jumping.
+          !mt-0 + inner pt-3: the section's space-y gap is inside the animated
+          height, so nothing jumps at the start or end. */}
+      <AnimatePresence initial={false}>
+        {buyCourse && buyClick && (
+          <motion.div
+            key="mobile-buy-widget"
+            className="md:hidden overflow-hidden !mt-0"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="px-2 pt-3">
+              <CourseSlideCard
+                exam={buyCourse}
+                part="buy"
+                onContinue={() => {}}
+                onEdit={() => {}}
+                onUnlock={buyClick}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Global modal */}
       <PaymentFailedWarningModal />
