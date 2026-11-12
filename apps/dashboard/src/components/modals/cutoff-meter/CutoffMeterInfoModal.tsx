@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -7,14 +8,7 @@ import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { CrossIcon } from "@/components/ui/icons";
 import { Meter } from "@clearcut/motion/meters/meter";
-import { Nib } from "@clearcut/motion/meters/nib";
-import {
-  ZONES,
-  fillShare,
-  riderPose,
-  zoneOf,
-  zoneWidths,
-} from "@clearcut/motion/meters/zones";
+import { ZONES, zoneWidths } from "@clearcut/motion/meters/zones";
 import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useModalStore } from "@/store/modal/useModalStore";
@@ -26,10 +20,11 @@ import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
  * LearnPage renders it while `active === "cutoff-meter-info"`, the card only
  * calls `open("cutoff-meter-info")`. Mobile = bottom sheet, desktop = modal.
  *
- * Layout in the Cutoff Meter Studio style: the student's own mini meter, three
- * "how it's calculated" tiles, the range, a zone strip with this exam's own
- * numbers, and the cooling tip. Every number is the student's / this exam's;
- * the rules mirror the backend (CutoffMeterService, config/cutoff_meter.php).
+ * Layout from the approved "Cutoff Meter Progress Modal" design: header with the
+ * shield, the student's own meter (unchanged), four zone cards with this exam's
+ * own numbers, "How it works" in three numbered cards and the "Keep attempting"
+ * card. Illustrations are the design's own artwork, extracted as WebP into
+ * `public/images/cutoff-meter/`. Every number is the student's / this exam's.
  */
 export default function CutoffMeterInfoModal() {
   const { closeModal } = useModalStore();
@@ -47,8 +42,22 @@ export default function CutoffMeterInfoModal() {
   );
 }
 
-const TILE =
-  "rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-3";
+const IMG = "/images/cutoff-meter";
+
+/** The four zone cards: this exam's own ranges, the design's icons. */
+const ZONE_ICON = {
+  need: { src: `${IMG}/zone-needs.webp`, w: 41, h: 41 },
+  almost: { src: `${IMG}/zone-almost.webp`, w: 38, h: 31 },
+  clear: { src: `${IMG}/zone-good.webp`, w: 40, h: 41 },
+  safe: { src: `${IMG}/zone-target.webp`, w: 43, h: 41 },
+} as const;
+
+/** The three "How it works" steps. */
+const STEPS = [
+  { n: 1, key: "r1", src: `${IMG}/step-target.webp` },
+  { n: 2, key: "r2", src: `${IMG}/step-chart.webp` },
+  { n: 3, key: "r3", src: `${IMG}/step-trophy.webp` },
+] as const;
 
 function MeterInfoBody({
   meter,
@@ -73,53 +82,14 @@ function MeterInfoBody({
   const w = zoneWidths(scale);
   const almostFrom = Math.max(0, Math.round(pass - w.almost));
   const safeFrom = Math.min(max, Math.round(pass + w.clear));
-  const [mood, accessory] = riderPose(locked ? "locked" : zoneOf(value, scale));
-  const band = meter.band ?? 15;
 
-  // Zone strip: widths are this exam's own ranges.
-  const strip = [
-    {
-      k: "need",
-      from: 0,
-      to: almostFrom,
-      name: t("zoneNeed"),
-      rule: t("ruleBelow", { marks: almostFrom }),
-    },
-    {
-      k: "almost",
-      from: almostFrom,
-      to: pass,
-      name: t("zoneAlmost"),
-      rule: t("ruleBetween", { from: almostFrom, to: pass }),
-    },
-    {
-      k: "clear",
-      from: pass,
-      to: safeFrom,
-      name: t("zoneClear"),
-      rule: t("ruleBetween", { from: pass, to: safeFrom }),
-    },
-    {
-      k: "safe",
-      from: safeFrom,
-      to: max,
-      name: t("zoneSafe"),
-      rule: t("ruleAbove", { marks: safeFrom }),
-    },
+  // Zone cards: this exam's own ranges, in the design's compact form ("< 60", "60 – 89", "120+").
+  const zones = [
+    { k: "need", name: t("zoneNeed"), rule: `< ${almostFrom}` },
+    { k: "almost", name: t("zoneAlmost"), rule: `${almostFrom} – ${pass}` },
+    { k: "clear", name: t("zoneClear"), rule: `${pass} – ${safeFrom}` },
+    { k: "safe", name: t("zoneSafe"), rule: `${safeFrom}+` },
   ] as const;
-
-  const tiles = [
-    {
-      icon: "📝",
-      title: t("s1Title"),
-      body: t("s1Body", {
-        answers: meter.counted_answers,
-        tests: meter.tests_count ?? 0,
-      }),
-    },
-    { icon: "🧮", title: t("s2Title"), body: t("s2Body", { max }) },
-    { icon: "🎯", title: t("s3Title"), body: t("s3Body", { pass, max }) },
-  ];
 
   return (
     <Container
@@ -137,24 +107,29 @@ function MeterInfoBody({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-          <div className="w-9 shrink-0" aria-hidden="true">
-            <Nib mood={mood} accessory={accessory} bob />
-          </div>
-          <h2 className="flex-1 heading-medium !font-bold text-surface-gray-normal">
+          <Image
+            src={`${IMG}/shield.webp`}
+            alt=""
+            width={67}
+            height={74}
+            aria-hidden="true"
+            className="h-[34px] w-auto shrink-0"
+          />
+          <h2 className="flex-1 text-[17px] leading-6 font-extrabold text-[var(--color-primary-stronger)] md:text-[19px]">
             {t("title")}
           </h2>
           <button
             type="button"
             aria-label={t("close")}
             onClick={onClose}
-            className="shrink-0 cursor-pointer rounded-full p-1.5 hover:bg-[var(--color-background-gray-subtle)]"
+            className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--color-border-gray-subtle)] bg-white shadow-sm hover:bg-[var(--color-background-gray-subtle)]"
           >
             <CrossIcon />
           </button>
         </div>
 
         <div className="space-y-4 overflow-y-auto px-4 pb-6">
-          {/* 1. The student's own meter */}
+          {/* 1. The student's own meter (unchanged) */}
           <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
             {/* Same shape as where it was opened: bar (course card) or gauge (Target tab). */}
             <div
@@ -190,134 +165,105 @@ function MeterInfoBody({
             </p>
           </section>
 
-          {/* 2. How it's calculated */}
-          <section>
-            <h3 className="mb-2 heading-small !font-bold text-surface-gray-normal">
-              {t("howTitle")}
-            </h3>
-            <ol className="space-y-2">
-              {tiles.map((s, i) => (
-                <li key={i} className={`${TILE} flex gap-3`}>
-                  <span
-                    aria-hidden="true"
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-primary-bg-soft)] text-[18px]"
-                  >
-                    {s.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="heading-small !font-bold text-surface-gray-normal">
-                      {s.title}
-                    </p>
-                    <p className="mt-0.5 body-small text-surface-gray-muted">
-                      {s.body}
+          {/* 2. Zones — this exam's own numbers */}
+          <ul className="grid grid-cols-4 gap-1.5" aria-label={t("zonesTitle")}>
+            {zones.map((z) => {
+              const icon = ZONE_ICON[z.k];
+              return (
+                <li
+                  key={z.k}
+                  className="min-w-0 rounded-2xl px-1.5 py-2.5 md:px-2.5"
+                  style={{ background: ZONES[z.k].s }}
+                >
+                  <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                    <Image
+                      src={icon.src}
+                      alt=""
+                      width={icon.w}
+                      height={icon.h}
+                      aria-hidden="true"
+                      className="h-4 w-auto shrink-0 md:h-5"
+                    />
+                    <p
+                      className="text-[10px] leading-[13px] font-extrabold md:text-xs"
+                      style={{ color: ZONES[z.k].ink }}
+                    >
+                      {z.name}
                     </p>
                   </div>
+                  <p className="mt-1.5 text-[13px] leading-4 font-medium text-surface-gray-normal md:text-sm">
+                    {z.rule}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* 3. How it works */}
+          <section className="-mx-4 border-t border-[var(--color-border-gray-subtle)] px-4 pt-4">
+            <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-[var(--color-primary-stronger)]">
+              <Image
+                src={`${IMG}/layers.webp`}
+                alt=""
+                width={48}
+                height={51}
+                aria-hidden="true"
+                className="h-[22px] w-auto shrink-0"
+              />
+              {t("howWorks")}
+            </h3>
+            <ol className="space-y-2.5">
+              {STEPS.map((s) => (
+                <li
+                  key={s.n}
+                  className="flex items-center gap-3 rounded-[20px] border border-[var(--color-primary-bg-soft)] bg-white py-2.5 pr-3 pl-2.5 shadow-sm"
+                >
+                  <Image
+                    src={s.src}
+                    alt=""
+                    width={108}
+                    height={106}
+                    aria-hidden="true"
+                    className="h-11 w-11 shrink-0 md:h-12 md:w-12"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] leading-5 font-extrabold text-[var(--color-primary-stronger)]">
+                      {t(`${s.key}Title`)}
+                    </p>
+                    <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-muted md:text-sm">
+                      {t(`${s.key}Body`)}
+                    </p>
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[14px] font-bold text-[var(--color-brand)]"
+                  >
+                    {s.n}
+                  </span>
                 </li>
               ))}
             </ol>
           </section>
 
-          {/* 3. Range */}
-          <section className={TILE}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="heading-small !font-bold text-surface-gray-normal">
-                {t("s4Title", { band })}
-              </p>
-              <div
-                className="flex items-center gap-1 body-small !font-bold"
-                aria-hidden="true"
-              >
-                {[15, 6, 4].map((b, i) => (
-                  <span key={b} className="flex items-center gap-1">
-                    {i > 0 && (
-                      <span className="text-surface-gray-muted">→</span>
-                    )}
-                    <span
-                      className={
-                        b === band
-                          ? "rounded-full bg-[var(--color-primary-bg-soft)] px-2 py-0.5 text-[var(--color-brand-dark)]"
-                          : "px-1 text-surface-gray-muted"
-                      }
-                    >
-                      ±{b}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-            <p className="mt-1 body-small text-surface-gray-muted">
-              {t("s4Body", { band })}
-            </p>
-          </section>
-
-          {/* 4. Zones — this exam's own numbers */}
-          <section>
-            <h3 className="mb-2 heading-small !font-bold text-surface-gray-normal">
-              {t("zonesTitle")}
-            </h3>
-            <div
-              className="flex h-3 overflow-hidden rounded-full"
+          {/* 4. Keep attempting */}
+          <section className="flex items-center gap-3 rounded-[20px] bg-[var(--color-primary-bg-soft)] px-4 py-3.5">
+            <Image
+              src={`${IMG}/bolt.webp`}
+              alt=""
+              width={84}
+              height={114}
               aria-hidden="true"
-            >
-              {strip.map((z) => (
-                <i
-                  key={z.k}
-                  className="relative block overflow-hidden"
-                  style={{
-                    flexGrow: Math.max(z.to - z.from, 0.001),
-                    // Same rule as the meter: light shade, full colour only up to the score.
-                    background: ZONES[z.k].t,
-                  }}
-                >
-                  <i
-                    className="absolute inset-y-0 left-0 block"
-                    style={{
-                      width: `${(locked ? 0 : fillShare(z.from, z.to, value)) * 100}%`,
-                      background: ZONES[z.k].c,
-                    }}
-                  />
-                </i>
-              ))}
-            </div>
-            <ul className="mt-3 grid grid-cols-2 gap-2">
-              {strip.map((z) => (
-                <li
-                  key={z.k}
-                  className="rounded-xl px-3 py-2"
-                  style={{ background: ZONES[z.k].s }}
-                >
-                  <p
-                    className="body-small !font-bold"
-                    style={{ color: ZONES[z.k].ink }}
-                  >
-                    {z.name}
-                  </p>
-                  <p className="body-small text-surface-gray-normal">
-                    {z.rule}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* 5. Updates + cooling */}
-          <section className="flex gap-3 rounded-2xl bg-[var(--color-primary-bg-soft)] p-3">
-            <span aria-hidden="true" className="text-[20px] leading-none">
-              ❄
-            </span>
-            <div>
-              <p className="heading-small !font-bold text-surface-gray-normal">
-                {t("s5Title")}
+              className="h-[52px] w-auto shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-[17px] leading-6 font-extrabold text-[var(--color-brand)]">
+                {t("keepTitle")}
               </p>
-              <p className="mt-0.5 body-small text-surface-gray-muted">
-                {t("s5Body")}
+              <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-normal md:text-sm">
+                {t("keepBody")}
               </p>
             </div>
           </section>
-
-          <p className="text-center body-small text-surface-gray-muted">
-            {t("note")}
-          </p>
         </div>
       </div>
     </Container>
