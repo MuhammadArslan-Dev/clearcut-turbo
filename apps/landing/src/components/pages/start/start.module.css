@@ -1,0 +1,404 @@
+/*
+ * /start Nibbu redesign (phase 101). A port of the user's prototype
+ * (clearcutoff-start-mascot.html), colours from design tokens only.
+ * Layout rules mirror the prototype: phone = one screen tall, keyboard-aware
+ * (`data-kb`), desktop (>=860 x 600) = a card with the mascot panel left.
+ */
+
+.root {
+  --s-ink: var(--color-text-gray-normal);
+  --s-muted: var(--color-text-gray-muted);
+  --s-line: var(--color-border-gray-subtle);
+  --s-blue: var(--color-brand);
+  --s-blue-600: var(--color-brand-hover);
+  --s-blue-700: var(--color-primary-strong);
+  --s-blue-50: var(--color-primary-subtle);
+  --s-red: var(--color-danger);
+  --s-red-50: color-mix(in srgb, var(--color-danger) 5%, white);
+  --s-green: var(--color-success);
+  --s-green-50: var(--color-success-soft);
+  --s-gold: var(--color-gold);
+  --s-radius: 14px;
+  --s-stage-bg: linear-gradient(165deg, var(--color-primary-soft) 0%, var(--color-primary-subtle) 55%, var(--color-background-gray-subtle) 100%);
+
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--vh, 100dvh);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  overscroll-behavior: none;
+  color: var(--s-ink);
+  line-height: 1.4;
+  background: linear-gradient(180deg, var(--color-primary-subtle) 0%, var(--color-background-gray-subtle) 38%, white 60%);
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: max(10px, env(safe-area-inset-top)) 18px max(10px, env(safe-area-inset-bottom));
+}
+.left,
+.right {
+  display: contents;
+}
+.top { order: 1; }
+.stage { order: 2; }
+.panel { order: 3; }
+.beneWrap { order: 4; }
+.legal { order: 5; }
+
+@media (min-width: 860px) and (min-height: 600px) {
+  .root {
+    align-items: center;
+    padding: 16px;
+    background: radial-gradient(1200px 700px at 50% -10%, var(--color-primary-soft) 0%, var(--color-primary-subtle) 45%, var(--color-background-gray-subtle) 100%);
+  }
+  .card {
+    max-width: 1000px;
+    height: min(640px, 100%);
+    flex-direction: row;
+    gap: 44px;
+    background: white;
+    border-radius: 30px;
+    padding: 18px 48px 18px 18px;
+    box-shadow: 0 24px 60px color-mix(in srgb, var(--color-primary-strong) 16%, transparent), 0 2px 6px color-mix(in srgb, var(--s-ink) 6%, transparent);
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    flex: 1.08 1 0;
+    min-width: 0;
+    position: relative;
+    border-radius: 22px;
+    padding: 22px 22px 20px;
+    background: var(--s-stage-bg);
+  }
+  .right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* `.left .stage` so it beats the phones' height rule further down the file:
+     on desktop the stage fills the left panel and is centred in it. */
+  .left .stage {
+    flex: 1 1 0;
+    background: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .decor::before,
+  .decor::after { display: none; }
+  .top { margin-bottom: 30px; }
+  .bene button {
+    background: white;
+    border-color: white;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--color-primary-strong) 12%, transparent);
+    min-height: 78px;
+    font-size: 12.5px;
+  }
+  .beneHead { font-size: 13px; }
+  .perks,
+  .legal { text-align: left; }
+  .legal { margin-top: 16px; }
+  .h1 { font-size: 30px; margin-bottom: 4px; }
+  .sub { margin-bottom: 18px; font-size: 15px; }
+}
+
+/* ---------- top bar ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
+.brand { display: flex; align-items: center; height: 30px; }
+.brand img { height: 26px; width: auto; display: block; }
+.stepper { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--s-muted); white-space: nowrap; }
+.segs { display: flex; gap: 4px; }
+.seg { width: 26px; height: 5px; border-radius: 5px; background: var(--s-line); transition: background 0.3s; }
+.seg[data-state="on"] { background: var(--s-blue); }
+.seg[data-state="ok"] { background: var(--s-green); }
+
+/* ---------- mascot stage ---------- */
+.stage {
+  /* Phones: a share of the screen height, not a fixed size (user, 2026-11-12). */
+  flex: 0 1 calc(var(--vh, 100dvh) * 0.32);
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  margin: 8px 0 12px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 22px;
+  background: var(--s-stage-bg);
+}
+.mascotBtn {
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  /* Smaller than the prototype (user, 2026-11-12: "bahut aankhon mein aa raha hai") */
+  max-height: min(72px, 18vw);
+  flex: none;
+  position: relative;
+  z-index: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 24px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mascotBtn:focus-visible { outline: 3px solid color-mix(in srgb, var(--s-blue) 45%, transparent); outline-offset: 2px; }
+
+/* Nibbu (approved artwork from @clearcut/motion/nibbu) + its ground shadow */
+.mascot { position: relative; width: 100%; height: 100%; display: block; }
+.nib { position: absolute; inset: 0 0 6% 0; width: 100%; height: 94%; overflow: visible; transform-origin: 50% 92%; animation: float 3.2s ease-in-out infinite; }
+.shadow {
+  position: absolute; left: 33%; right: 33%; bottom: 3%; height: 5%;
+  border-radius: 50%; background: var(--s-ink); opacity: 0.14;
+  animation: shadow 3.2s ease-in-out infinite;
+}
+@keyframes float { 50% { transform: translateY(-2%); } }
+@keyframes shadow { 50% { transform: scaleX(0.9); opacity: 0.1; } }
+
+/* No endless jumping (user, 2026-11-12): wave and hop play a couple of times,
+   then Nibbu rests (the gentle float of the base state comes back). */
+.mascot[data-mood="wave"] .nib { animation: wiggle 0.5s ease-in-out 4 alternate, float 3.2s ease-in-out 2s infinite; }
+@keyframes wiggle { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+
+.mascot[data-mood="point"] .nib { animation: hop 0.62s 2, float 3.2s ease-in-out 1.24s infinite; }
+@keyframes hop {
+  0% { transform: translateY(0) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  45% { transform: translateY(-8%) scale(0.95, 1.06); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  100% { transform: translateY(0) scale(1.1, 0.9); }
+}
+.mascot[data-mood="point"] .shadow { animation: hopshadow 0.62s 2, shadow 3.2s ease-in-out 1.24s infinite; }
+@keyframes hopshadow { 45% { transform: scaleX(0.6); opacity: 0.07; } }
+
+.mascot[data-mood="happy"] .nib { animation: jump 0.5s cubic-bezier(0.33, 1, 0.68, 1) 2 alternate; }
+@keyframes jump { to { transform: translateY(-10%) scale(0.95, 1.06); } }
+
+.mascot[data-mood="sad"] .nib { animation: nope 0.4s ease-in-out 2; }
+@keyframes nope { 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+
+.mascot[data-mood="otp"] .nib { animation: lean 1.6s ease-in-out infinite alternate; }
+@keyframes lean { from { transform: rotate(-4deg); } to { transform: rotate(5deg) translateY(-2%); } }
+
+.mascot[data-mood="cheer"] .nib { animation: cheer 1.1s infinite; }
+@keyframes cheer {
+  0%, 100% { transform: translateY(0) scale(1.1, 0.9); }
+  22% { transform: translateY(-13%) scale(0.94, 1.07) rotate(-5deg); }
+  44% { transform: translateY(0) scale(1.12, 0.88); }
+  62% { transform: translateY(-8%) scale(0.97, 1.03) rotate(5deg); }
+  80% { transform: translateY(0) scale(1.06, 0.94); }
+}
+
+.bubble {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  background: white;
+  border: 2px solid var(--s-blue);
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--s-blue) 14%, transparent);
+  transform-origin: 0 50%;
+  animation: bpop 0.32s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+.bubble::before,
+.bubble::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -11px;
+  margin-top: -9px;
+  border: 9px solid transparent;
+  border-left: 0;
+  border-right: 11px solid var(--s-blue);
+}
+.bubble::after { left: -8px; border-right-color: white; }
+.bubble[data-tone="sad"] { border-color: var(--s-red); box-shadow: 0 6px 14px color-mix(in srgb, var(--s-red) 12%, transparent); }
+.bubble[data-tone="sad"]::before { border-right-color: var(--s-red); }
+.bubble[data-tone="happy"] { border-color: var(--s-green); box-shadow: 0 6px 14px color-mix(in srgb, var(--s-green) 14%, transparent); }
+.bubble[data-tone="happy"]::before { border-right-color: var(--s-green); }
+@keyframes bpop { from { transform: scale(0.86); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+.decor { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.decor::before,
+.decor::after { content: ""; position: absolute; border-radius: 50%; background: color-mix(in srgb, white 55%, transparent); }
+.decor::before { width: 190px; height: 190px; right: -60px; top: -70px; }
+.decor::after { width: 130px; height: 130px; left: -40px; bottom: -50px; background: color-mix(in srgb, var(--s-blue) 8%, transparent); }
+.decor svg { position: absolute; opacity: 0.5; animation: bob 4s ease-in-out infinite; }
+.decor svg:nth-child(1) { right: 9%; top: 12%; }
+.decor svg:nth-child(2) { left: 7%; top: 16%; animation-delay: -1.3s; }
+.decor svg:nth-child(3) { right: 12%; bottom: 12%; animation-delay: -2.4s; }
+@keyframes bob { 50% { transform: translateY(-6px) rotate(6deg); } }
+.stage:not([data-col="true"]) .decor svg { display: none; }
+
+/* tall screens + desktop: bubble above, big mascot below */
+.stage[data-col="true"] { flex-direction: column-reverse; justify-content: center; gap: 14px; padding: 14px 16px 8px; }
+/* Nibbu stays small (user, 2026-11-12); only the card height follows the screen. */
+.stage[data-col="true"] .mascotBtn { height: calc(100% - 96px); min-height: 64px; max-height: min(95px, 26vw); }
+@media (min-width: 860px) and (min-height: 600px) {
+  .stage[data-col="true"] .mascotBtn { max-height: 120px; }
+}
+.stage[data-col="true"] .bubble { flex: none; width: auto; max-width: min(330px, 100%); min-height: 0; padding: 11px 16px; font-size: 15.5px; text-align: center; justify-content: center; transform-origin: 50% 100%; }
+.stage[data-col="true"] .bubble::before,
+.stage[data-col="true"] .bubble::after {
+  top: auto; bottom: -11px; left: 50%; margin: 0 0 0 -9px;
+  border-style: solid; border-width: 11px 9px 0 9px;
+  border-color: var(--s-blue) transparent transparent transparent;
+}
+.stage[data-col="true"] .bubble::after { bottom: -8px; border-color: white transparent transparent transparent; }
+.stage[data-col="true"] .bubble[data-tone="sad"]::before { border-color: var(--s-red) transparent transparent transparent; }
+.stage[data-col="true"] .bubble[data-tone="happy"]::before { border-color: var(--s-green) transparent transparent transparent; }
+.stage[data-col="true"] .confetti i { left: 50%; top: 58%; }
+
+.confetti { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.confetti i {
+  position: absolute; top: 20%; left: 18%; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  animation: conf 1.5s ease-out forwards;
+}
+@keyframes conf {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
+}
+
+/* ---------- what you get ---------- */
+.beneWrap { flex: none; margin-top: 12px; position: relative; z-index: 1; }
+.beneHead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 600; color: var(--s-muted); margin-bottom: 6px; }
+.rate { color: var(--s-ink); white-space: nowrap; }
+.rate i { font-style: normal; color: var(--s-gold); }
+.bene { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bene button {
+  width: 100%; min-height: 64px; padding: 8px 4px; border-radius: 12px;
+  border: 1px solid var(--color-primary-soft); background: var(--s-blue-50); color: var(--s-ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font: inherit; font-size: 11.5px; font-weight: 600; line-height: 1.25; text-align: center; cursor: pointer;
+  transition: transform 0.12s, border-color 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.bene button:hover { border-color: var(--s-blue); }
+.bene button:active { transform: scale(0.96); }
+.bene svg { flex: none; }
+
+/* ---------- panels ---------- */
+.panel { flex: none; animation: pin 0.3s ease both; }
+@keyframes pin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.h1 { font-size: clamp(20px, 5.7vw, 26px); line-height: 1.2; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
+.h1 em { font-style: normal; color: var(--s-blue); }
+.sub { margin: 0 0 10px; color: var(--s-muted); font-size: 14px; }
+
+.fieldLabel { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+.flag { width: 21px; height: 14px; border-radius: 2px; flex: none; object-fit: cover; box-shadow: 0 0 0 1px color-mix(in srgb, var(--s-ink) 8%, transparent); }
+
+.phone {
+  display: flex; align-items: center; height: 56px; padding: 0 14px;
+  border: 2px solid var(--s-line); border-radius: var(--s-radius); background: white;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; cursor: text;
+}
+.phone:focus-within { border-color: var(--s-blue); box-shadow: 0 0 0 4px color-mix(in srgb, var(--s-blue) 14%, transparent); }
+.phone[data-state="valid"] { border-color: var(--s-green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--s-green) 12%, transparent); }
+.phone[data-state="invalid"] { border-color: var(--s-red); background: var(--s-red-50); box-shadow: 0 0 0 4px color-mix(in srgb, var(--s-red) 10%, transparent); }
+.phone[data-nudge="true"] { animation: ring 1s ease-in-out infinite; border-color: var(--s-blue); }
+@keyframes ring { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--s-blue) 35%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+.cc { font-weight: 600; font-size: 18px; padding-right: 12px; margin-right: 12px; border-right: 1.5px solid var(--s-line); }
+.phone input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 0; height: 100%;
+  font: inherit; font-size: 20px; font-weight: 600; letter-spacing: 0.06em; color: var(--s-ink);
+}
+.phone input::placeholder { color: var(--color-surface-gray-muted); font-weight: 400; letter-spacing: 0; font-size: 16px; }
+.dots { display: flex; gap: 3px; margin-left: 8px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--s-line); transition: background 0.15s, transform 0.15s; }
+.dots i[data-on="true"] { background: var(--s-blue); transform: scale(1.2); }
+.phone[data-state="valid"] .dots i { background: var(--s-green); }
+.phone[data-state="invalid"] .dots i[data-on="true"] { background: var(--s-red); }
+
+.msg { min-height: 18px; margin: 4px 2px 0; font-size: 12.5px; color: var(--s-muted); }
+.msg[data-kind="error"] { color: var(--s-red); font-weight: 600; }
+.msg[data-kind="ok"] { color: var(--s-green); font-weight: 600; }
+
+.shake { animation: shake 0.4s; }
+@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+/* the existing @clearcut/ui Button, sized and glowing like the prototype */
+.cta { margin-top: 6px; height: 52px !important; font-size: 16.5px !important; box-shadow: 0 6px 16px color-mix(in srgb, var(--s-blue) 28%, transparent); }
+.cta:active { transform: scale(0.985); }
+.cta[data-ready="true"] { animation: glow 1.2s ease-in-out infinite; }
+@keyframes glow { 50% { box-shadow: 0 6px 16px color-mix(in srgb, var(--s-blue) 28%, transparent), 0 0 0 8px color-mix(in srgb, var(--s-blue) 14%, transparent); } }
+.cta[data-dim="true"] { opacity: 0.45; box-shadow: none; }
+
+.linkbtn { background: none; border: 0; padding: 2px; color: var(--s-blue-600); font: inherit; font-weight: 600; cursor: pointer; }
+.linkbtn:disabled { color: var(--s-muted); cursor: default; font-weight: 500; }
+
+.perks { margin: 8px 0 0; font-size: 12px; font-weight: 600; color: var(--s-blue-700); text-align: center; }
+.perks span { white-space: nowrap; }
+.legal { flex: none; margin: 8px 0 0; font-size: 11.5px; color: var(--s-muted); text-align: center; }
+.legal a { color: var(--s-blue-600); }
+
+.sent { margin: 0 0 10px; font-size: 14px; color: var(--s-muted); }
+.sent b { color: var(--s-ink); white-space: nowrap; }
+.resend { margin-top: 10px; font-size: 13.5px; color: var(--s-muted); display: flex; justify-content: space-between; gap: 12px; }
+.count { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--s-ink); }
+
+.done { text-align: center; padding-bottom: 8px; }
+.progress { height: 6px; border-radius: 6px; background: var(--s-line); overflow: hidden; margin: 14px auto 10px; max-width: 260px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--s-green); animation: fill 2.2s linear forwards; }
+@keyframes fill { to { width: 100%; } }
+
+.orRow { display: flex; align-items: center; gap: 12px; padding: 4px 0; color: var(--s-muted); font-size: 12.5px; }
+.orRow::before,
+.orRow::after { content: ""; flex: 1; height: 1px; background: var(--s-line); }
+
+/* ---------- keyboard open: keep field + button on screen ---------- */
+.root[data-kb="true"] .stage { flex: none; height: 76px; min-height: 0; margin: 0; padding: 0; background: none; }
+.root[data-kb="true"] .beneWrap,
+.root[data-kb="true"] .decor { display: none; }
+.root[data-kb="true"] .msg { min-height: 14px; }
+.root[data-kb="true"] .bubble { min-height: 48px; padding: 6px 10px; font-size: 13.5px; }
+.root[data-kb="true"] .top,
+.root[data-kb="true"] .sub,
+.root[data-kb="true"] .perks,
+.root[data-kb="true"] .legal,
+.root[data-kb="true"] .fieldLabel,
+.root[data-kb="true"] .resendHint { display: none; }
+.root[data-kb="true"] .sent { margin-bottom: 6px; }
+.root[data-kb="true"] .h1 { font-size: 18px; margin-bottom: 6px; }
+.root[data-kb="true"] .card { padding-top: 6px; padding-bottom: 6px; }
+
+@media (max-height: 590px) {
+  .sub { display: none; }
+  .perks { margin-top: 6px; }
+  .phone { height: 52px; }
+  .cta { height: 48px !important; }
+  .beneHead { display: none; }
+  .bene button { min-height: 0; padding: 6px 4px; flex-direction: row; gap: 5px; font-size: 11px; }
+  .beneWrap { margin-top: 8px; }
+  .stage { margin: 6px 0 8px; }
+  .fieldLabel { margin-bottom: 4px; }
+  .h1 { margin-bottom: 6px; }
+  .bubble { font-size: 13.5px; padding: 8px 10px; min-height: 48px; }
+}
+
+@media (max-width: 350px) {
+  .dots { display: none; }
+  .phone[data-state="valid"] .dots,
+  .phone:focus-within .dots { display: flex; }
+  .phone input::placeholder { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before,
+  .root *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

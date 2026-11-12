@@ -20,6 +20,7 @@
     "@clearcut/error-reporting": "workspace:*",
     "@clearcut/hooks": "workspace:*",
     "@clearcut/i18n": "workspace:*",
+    "@clearcut/motion": "workspace:*",
     "@clearcut/react-query": "workspace:*",
     "@clearcut/state": "workspace:*",
     "@clearcut/ui": "workspace:*",
