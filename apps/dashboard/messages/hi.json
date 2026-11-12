@@ -501,6 +501,9 @@
     "keepGoing": "आगे बढ़ें: {title}",
     "allDone": "आज का सब पूरा ✓",
     "unlocksMeter": "मीटर अनलॉक",
+    "takeAnyTest": "{n}+ सवालों वाला कोई भी टेस्ट दें",
+    "takeAnyTestHint": "टॉपिक, डेली, चैप्टर, सेक्शनल या फ़ुल टेस्ट — कोई भी आपका मीटर अनलॉक कर देगा",
+    "startATest": "टेस्ट शुरू करें",
     "gain": "+{marks} अंक",
     "meta": "{type} · {min} मिनट",
     "types": {

@@ -18,7 +18,10 @@ const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-me
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
+import { useQuery } from "@tanstack/react-query";
+import { useProgressCapabilities, PRACTICE_STATE_KEY } from "@/components/features/preparation/hooks/useProgressCapabilities";
+import { usePracticeTestEnabled } from "@/lib/experiments/usePracticeTestEnabled";
+import { getCourseState } from "@/lib/api/userState";
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { useCutoffMeter } from "@/hooks/course/useCutoffMeter";
 import { isApiError } from "@/lib/api/api-error";
@@ -38,8 +41,14 @@ import {
 
 const CARD = "rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white p-4";
 
-/** Where a plan row leads (existing routes only). */
-function actionHref(a: CutoffMeterAction, courseId: string): string {
+/**
+ * Where a plan row leads (existing routes only). The "take a test to unlock the
+ * meter" row goes straight to the onboarding Practice Test while it can still be
+ * taken (`practiceReady`); otherwise to Preparation, where any 5+ question test
+ * (topic test, daily test…) unlocks the meter too.
+ */
+function actionHref(a: CutoffMeterAction, courseId: string, practiceReady = true): string {
+  if (a.action_type === "ONBOARDING_TEST") return practiceReady ? `/practice-test/${courseId}` : `/preparation/${courseId}`;
   if (a.action_type === "SECTIONAL_TEST" || a.action_type === "FULL_LENGTH_TEST") return `/test-series/${courseId}`;
   if ((a.action_type === "TOPIC_TEST" || a.action_type === "LEARN") && a.topic_id) {
     const q = new URLSearchParams();
@@ -188,17 +197,42 @@ function shorten(text: string, max: number): string {
 function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) {
   const t = useTranslations();
   const router = useRouter();
-  const plan = m.plan?.length ? m.plan : m.actions;
+  const locked = m.locked || m.meter === null;
+
+  // The onboarding "5-question test" is the plan ONLY while the meter is locked. The
+  // moment it unlocks (any test with 5+ questions) it is dropped here too, whatever the
+  // cached response still says, and the plan is the real NBA list for the student's marks.
+  const keep = (a: CutoffMeterAction) => locked || a.action_type !== "ONBOARDING_TEST";
+  // While the meter is locked the unlock action is NOT done, whatever an older saved row says
+  // (rows written before the per-course fix could be marked completed by another course's test).
+  const open = (a: CutoffMeterAction): CutoffMeterAction =>
+    locked && a.action_type === "ONBOARDING_TEST" && a.completed ? { ...a, completed: false } : a;
+  const actions = (m.actions ?? []).filter(keep).map(open);
+  const plan = (m.plan?.length ? m.plan : m.actions ?? []).filter(keep).map(open);
   const done = plan.filter((a) => a.completed).length;
   // Next: the first open row of today's plan, else the newest generated action.
-  const next = plan.find((a) => !a.completed) ?? m.actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
+  const next = plan.find((a) => !a.completed) ?? actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
   const [going, setGoing] = useState<string | null>(null);
+
+  // Locked → can the Practice Test still be taken? Amplitude flag on, and not completed
+  // (a skipped or never-opened test can be taken any time; a completed one is final).
+  const flag = usePracticeTestEnabled();
+  const practiceState = useQuery({
+    queryKey: PRACTICE_STATE_KEY(courseId),
+    queryFn: () => getCourseState(courseId),
+    enabled: locked,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+  const practiceReady = flag !== false && practiceState.data?.practice_test_status !== "completed";
 
   const go = (a: CutoffMeterAction) => {
     if (going) return; // double tap
     setGoing(a.id);
     markCutoffMeterActionClicked(a.id).catch(() => {});
-    router.push(actionHref(a, courseId));
+    router.push(actionHref(a, courseId, practiceReady));
   };
 
   if (!plan.length) return null;
@@ -252,10 +286,12 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
                     a.completed ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
                   )}
                 >
-                  {actionTitle(a, t)}
+                  {a.action_type === "ONBOARDING_TEST" && !practiceReady ? t("target.takeAnyTest", { n: unlockMinQuestions(m) }) : actionTitle(a, t)}
                 </span>
                 <span className="block body-small !font-medium text-surface-gray-muted">
-                  {t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
+                  {a.action_type === "ONBOARDING_TEST" && !practiceReady
+                    ? t("target.takeAnyTestHint")
+                    : t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
                 </span>
               </span>
               {a.action_type === "ONBOARDING_TEST" && (m.locked || m.meter === null) ? (
@@ -284,7 +320,11 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
           onClick={() => go(next)}
           // MainButton centres its text without shrinking it, so a long topic name is
           // shortened here (≈ 26 chars fit a 390px screen); the "›" always shows.
-          text={`${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: shorten(actionTitle(next, t), 26) })} ›`}
+          text={
+            next.action_type === "ONBOARDING_TEST" && !practiceReady
+              ? `${t("target.startATest")} ›`
+              : `${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: shorten(actionTitle(next, t), 26) })} ›`
+          }
         />
       ) : (
         <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>

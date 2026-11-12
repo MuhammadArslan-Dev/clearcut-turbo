@@ -501,6 +501,9 @@
     "keepGoing": "Keep going: {title}",
     "allDone": "All done for today ✓",
     "unlocksMeter": "Unlocks meter",
+    "takeAnyTest": "Take any test with {n}+ questions",
+    "takeAnyTestHint": "Topic, daily, chapter, sectional or full test — any of them unlocks your meter",
+    "startATest": "Start a test",
     "gain": "+{marks} marks",
     "meta": "{type} · {min} min",
     "types": {
