@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import AutopayFallbackSheet from "@/components/features/payment/AutopayFallbackSheet";
+import UpiWaitingSheet from "@/components/features/payment/UpiWaitingSheet";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
 import { useRouter } from "@/i18n/navigation";
 import { trackEvent } from "@/lib/analytics/browser";
@@ -37,13 +38,18 @@ export function useAutopayFallback({
   returnCheck = true,
   /** Already on the failed page: a failed try stays in the sheet, which can try again. */
   stayOnFailure = false,
+  /** CC-70: the page's own "approve the autopay" wait is running; its own return check holds off. */
+  paused = false,
 }: {
   courseId: string;
   exam?: { id?: number; short_name?: string };
   price: number;
   returnCheck?: boolean;
   stayOnFailure?: boolean;
+  paused?: boolean;
 }) {
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const t = useTranslations("payment.checkout");
   const router = useRouter();
   const locale = useLocale();
@@ -100,6 +106,7 @@ export function useAutopayFallback({
     if (!arm || !courseId) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const check = async () => {
+      if (pausedRef.current) return;
       const attempt = readAutopayAttempt(courseId);
       if (!attempt || document.visibilityState === "hidden") return;
       try {
@@ -130,7 +137,7 @@ export function useAutopayFallback({
 
   const successUrl = `/payment/success?exam_id=${courseId}&course_name=${exam?.short_name}&source=${AUTOPAY_FALLBACK_SOURCE}&price=${price}`;
 
-  const { handlePayment, loading, phase } = useRazorpayPayment({
+  const { handlePayment, loading, phase, upiWaiting } = useRazorpayPayment({
     examId: exam?.id as number,
     examName: exam?.short_name as string,
     price,
@@ -187,6 +194,8 @@ export function useAutopayFallback({
     offer,
     arm,
     sheet: (
+      <>
+      <UpiWaitingSheet {...upiWaiting} />
       <AutopayFallbackSheet
         isOpen={open}
         price={price}
@@ -199,6 +208,7 @@ export function useAutopayFallback({
           setOpen(false);
         }}
       />
+      </>
     ),
   };
 }

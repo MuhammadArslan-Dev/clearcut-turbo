@@ -76,6 +76,8 @@ export interface MonetizationEventPayloads {
     payment_flow: 'new_attempt' | 'retry_attempt' | 'resumed_session';
     final_price: number;
     payment_attempt?: number;
+    // CC-70: the tap came from the "approve in your UPI app" sheet's Try again / other app.
+    retry_from?: 'upi_waiting';
   } & PayContext;
 
   'Payment Outcome': {
@@ -93,7 +95,9 @@ export interface MonetizationEventPayloads {
     exam_name?: string;
     // return_check = the payment page came back (in-app browser killed it
     // during UPI) and the backend confirmed the payment (CC-59).
-    // upi_wait_watch = found paid while the checkout was still open (CC-70).
+    // upi_wait_watch = found paid by the CC-70 watch: while the checkout was
+    // still open, or behind the "approve in your UPI app" sheet after it closed
+    // (one-time and autopay).
     confirmed_via?: 'return_check' | 'upi_wait_watch';
     // Razorpay's own error.code / error.reason on a failed payment (CC-69).
     error_code?: string;
