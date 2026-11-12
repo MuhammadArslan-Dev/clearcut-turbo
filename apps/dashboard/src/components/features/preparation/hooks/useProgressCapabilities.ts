@@ -27,6 +27,17 @@ export function useProgressCapabilities(): { caps: ProgressCapabilities; ready: 
 }
 
 /**
+ * A test was submitted (chapter / sectional / full-length / onboarding): the
+ * backend has already recalculated the Cutoff Meter, so the course card and the
+ * Target tab must refetch instead of showing the pre-test meter for 5 minutes.
+ */
+export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
+  for (const key of [["courses-cutoff-meter"], ["cutoff-meter"]]) {
+    queryClient.invalidateQueries({ queryKey: key });
+  }
+}
+
+/**
  * Server-side progress changed: refetch everything that shows it, so the
  * sidebar, course cards and Today Goals never keep a stale number.
  */

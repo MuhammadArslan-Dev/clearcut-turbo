@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { toast } from "react-toastify";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bookmark, Check, Lightbulb } from "lucide-react";
@@ -303,6 +304,8 @@ export default function PracticeTestPage() {
         reason: "manual",
         language: activeLocale,
       });
+      // The onboarding answers are the first ones the Cutoff Meter counts — refetch it.
+      invalidateCutoffMeterQueries(queryClient);
       // The result opens when the submit animation has played out (see <TestSubmit onFinish> below).
       pendingFinishRef.current = { checks, elapsedMs };
       setSubmitDone(true);
@@ -311,7 +314,7 @@ export default function PracticeTestPage() {
       setSubmitFailed(true);
       setFinishing(false);
     }
-  }, [session, finishing, courseId, readElapsed, analyticsBase, activeLocale]);
+  }, [session, finishing, courseId, readElapsed, analyticsBase, activeLocale, queryClient]);
 
   const onSubmitAnimationEnd = useCallback(() => {
     const pending = pendingFinishRef.current;
