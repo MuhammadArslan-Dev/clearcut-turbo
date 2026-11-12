@@ -235,7 +235,16 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
     router.push(actionHref(a, courseId, practiceReady));
   };
 
-  if (!plan.length) return null;
+  // The section never disappears: with nothing planned (e.g. an exam with no mini-test
+  // content yet, or every action done and not yet regenerated) it says so.
+  if (!plan.length) {
+    return (
+      <section className={CARD}>
+        <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
+        <p className="mt-1 body-medium !font-medium text-surface-gray-muted">{t("target.planEmpty")}</p>
+      </section>
+    );
+  }
 
   return (
     <section className={CARD}>

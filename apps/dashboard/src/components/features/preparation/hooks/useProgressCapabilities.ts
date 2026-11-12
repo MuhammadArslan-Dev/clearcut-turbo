@@ -36,7 +36,16 @@ export const PRACTICE_STATE_KEY = (courseId: string) => ["practice-state", cours
 export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
   // "practice-state": the Target page's "can the Practice Test still be taken" (a
   // submit may have just completed it).
-  for (const key of [["courses-cutoff-meter"], ["cutoff-meter"], ["practice-state"]]) {
+  // "today-goals" / "learning-streak" / "courses-progress-summary": the Learn page's goals,
+  // streak and milestone count the same submit, so they refetch together with the meter.
+  for (const key of [
+    ["courses-cutoff-meter"],
+    ["cutoff-meter"],
+    ["practice-state"],
+    ["today-goals"],
+    ["learning-streak"],
+    ["courses-progress-summary"],
+  ]) {
     queryClient.invalidateQueries({ queryKey: key });
   }
 }
@@ -52,6 +61,7 @@ export function invalidateProgressQueries(queryClient: QueryClient) {
     ["courses-cutoff-meter"],
     ["cutoff-meter"],
     ["today-goals"],
+    ["learning-streak"],
     ["resume-state"],
   ]) {
     queryClient.invalidateQueries({ queryKey: key });

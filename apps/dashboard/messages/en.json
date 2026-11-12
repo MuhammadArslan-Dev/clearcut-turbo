@@ -49,7 +49,8 @@
   },
   "todayGoals": {
     "title": "Today's Goals",
-    "estimatedTime": "Time to complete goals: {min}-{max} min",
+    "doneToday": "{done} of {total} goals done today",
+    "loadFailed": "Could not load your goals",
     "watchVideos": "Watch any {count, plural, one {# video} other {# videos}}",
     "studyNotes": "Download and study {count, plural, one {# note} other {# notes}}",
     "attemptTests": "Attempt any {count, plural, one {# mini-test} other {# mini-tests}}",
@@ -92,9 +93,14 @@
     "title": "Next Milestone",
     "chaptersAway": "{count, plural, one {# chapter} other {# chapters}} away from completing {subject}",
     "count": "{count, plural, one {# chapter} other {# chapters}}",
+    "toPercent": "{count, plural, one {# chapter} other {# chapters}} away from {percent}% of {subject}",
+    "allDone": "You have completed every chapter of {subject}!",
+    "noChapters": "Complete your first chapter of {subject} to start a milestone.",
     "cta": "Complete next milestone"
   },
   "learningStreak": {
+    "activeDays": "{days, plural, one {# active day} other {# active days}} this month",
+    "loadFailed": "Could not load your streak",
     "title": "Learning Streak",
     "minutesToKeepStreak": "{minutes, plural, one {# minute} other {# minutes}} today to keep {streak, plural, one {#-day} other {#-days}} streak",
     "day": "{streak, plural, one {#-day} other {#-days}} streak",
@@ -499,6 +505,7 @@
     "pickedBy": "Picked by your Cutoff Meter",
     "start": "Start: {title}",
     "keepGoing": "Keep going: {title}",
+    "planEmpty": "No activities in today's plan yet. Keep learning and your plan will appear here.",
     "allDone": "All done for today ✓",
     "unlocksMeter": "Unlocks meter",
     "takeAnyTest": "Take any test with {n}+ questions",
