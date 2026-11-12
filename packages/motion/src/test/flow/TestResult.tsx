@@ -43,7 +43,8 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
   const cutoff = data.cutoff ?? 0;
   const pct = Math.max(0, Math.min(100, (data.score / data.maxScore) * 100));
   const cutoffPct = (cutoff / data.maxScore) * 100;
-  const shownScore = useCountUp(data.score, { duration: RING_MS, delay: RING_DELAY });
+  // 2 decimals so a 10.2 / 12.25 score actually lands on its exact value (the default 0 stopped at 10 / 12).
+  const shownScore = useCountUp(data.score, { duration: RING_MS, delay: RING_DELAY, decimals: 2 });
   const shownPct = data.score ? (shownScore / data.score) * pct : 0;
   const attempted = data.correct + data.wrong;
   const accuracy = attempted ? Math.round((data.correct / attempted) * 100) : 0;
