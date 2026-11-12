@@ -92,6 +92,8 @@ export interface DailyTestResultQuestion extends DailyTestQuestion {
   correct_option: number;
   is_correct: boolean;
   explanation: string | null;
+  /** Why the other options are wrong (phase 100). NULL / missing = not shown. */
+  incorrect_explanation?: string | null;
 }
 
 export interface DailyTestResult {

@@ -265,6 +265,10 @@
       "heading": "Answer & Explanation",
       "correctAnswer": "Correct Answer",
       "title": "Explanation",
+      "correctTitle": "Correct Explanation",
+      "incorrectTitle": "Incorrect Explanation",
+      "showIncorrect": "Show Incorrect Explanation",
+      "hideIncorrect": "Hide Incorrect Explanation",
       "show": "Show Correct Answer and Explanation",
       "hide": "Hide Correct Answer and Explanation"
     },

@@ -22,15 +22,11 @@ import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
-import { motion, AnimatePresence } from "framer-motion";
-import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
+import DailyTestReviewRow, { type ReviewStatus } from "@/components/features/daily-tests/DailyTestReviewRow";
 import { TestResult } from "@clearcut/motion/test/flow";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
 import { NibNote } from "@clearcut/motion/test/mini-test";
 import TestStartIntro, { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
-import OptionCard from "@/components/features/exam-report/OptionCard";
-import QuestionText from "@/components/ui/cards/QuestionMaterial/Question/QuestionText";
-import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
 import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import Text from "@clearcut/ui/text";
 import { Button } from "@clearcut/ui/button";
@@ -72,7 +68,6 @@ import {
   submitDailyTest,
   DailyTestQuestion,
   DailyTestResult,
-  DailyTestResultQuestion,
 } from "@/lib/api/dailyTests";
 import { isApiError, isNetworkFailure } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
@@ -1197,126 +1192,6 @@ const LegendItem = ({ label, color }: { label: string; color: string }) => (
 );
 
 type ReviewFilter = "all" | "correct" | "incorrect" | "skipped";
-type ReviewStatus = "correct" | "incorrect" | "skipped";
-
-// Same look and behaviour as the full-length test's Performance Report
-// (exam-report/ExamReportSheet.tsx → QuestionItem): tinted header with the
-// status chip and a round chevron, question + OptionCard grid, and an
-// outlined "Show Correct Answer and Explanation" toggle. Easy/time-spent are
-// omitted — daily tests don't record either.
-function ReviewRow({
-  index,
-  total,
-  q,
-  status,
-}: {
-  index: number;
-  total: number;
-  q: DailyTestResultQuestion;
-  status: ReviewStatus;
-}) {
-  const t = useTranslations("modals.performanceReport");
-  const tCommon = useTranslations("");
-  const [isOpen, setIsOpen] = useState(() => index === 0);
-  const [isExplanation, setIsExplanation] = useState(false);
-
-  const options = (["1", "2", "3", "4"] as const)
-    .map((key) => ({ text: q.options[key] }))
-    .filter((o) => o.text);
-  const isAnswered = q.selected_option != null;
-  const chipTone = {
-    correct: "!bg-[var(--icon-positive-subtle)] !border-[var(--icon-positive-subtle)]",
-    incorrect: "!bg-[var(--icon-negative-normal)] !border-[var(--icon-negative-normal)]",
-    skipped: "!bg-[var(--icon-gray-muted)] !border-[var(--icon-gray-muted)]",
-  }[status];
-
-  return (
-    <div className="flex w-full flex-col justify-between gap-2">
-      <div
-        onClick={() => setIsOpen((v) => !v)}
-        className={`flex cursor-pointer items-center justify-between gap-2 bg-brand/9 px-3 py-2 ${
-          isOpen ? "border-l-4 border-brand" : ""
-        }`}
-      >
-        <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
-          {tCommon("common.questions")} {index + 1}/{total}
-        </Text>
-
-        <div className="flex items-center gap-4">
-          <StatusChip
-            variant="outline"
-            tone="success"
-            className={`body-small !font-semibold !text-white ${chipTone}`}
-            label={t(`legend.${status}`)}
-          />
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200/60">
-            <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25, ease: "easeInOut" }}>
-              <ChevronIcon size={16} variant="down" />
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="flex flex-col gap-3 px-3">
-              <div className="px-3">
-                <QuestionText question={q.question ?? ""} image={q.question_image ?? undefined} />
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                {options.map((opt, i) => (
-                  <OptionCard
-                    key={i}
-                    index={i}
-                    value={opt}
-                    correctOption={q.correct_option - 1}
-                    userOption={q.selected_option != null ? q.selected_option - 1 : null}
-                    isQuestionAnswered={isAnswered}
-                  />
-                ))}
-              </div>
-
-              <AnimatePresence mode="wait" initial={false}>
-                {isExplanation && (
-                  <QuestionExplanation correctOption={q.correct_option} explanation={q.explanation} />
-                )}
-              </AnimatePresence>
-
-              <div className="pb-2">
-                <Button
-                  onClick={() => setIsExplanation((v) => !v)}
-                  sx={{ borderRadius: "50px" }}
-                  fullWidth
-                  variant="outlined"
-                  size="md"
-                >
-                  <div className="flex items-center gap-2">
-                    <p>{isExplanation ? t("explanation.hide") : t("explanation.show")}</p>
-                    <motion.div
-                      animate={{ rotate: isExplanation ? 180 : 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                    >
-                      <ChevronIcon size={16} variant="down" color="var(--color-brand)" />
-                    </motion.div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 // Same lazy-loaded interstitial the preparation/test-series shells mount.
 const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
 
@@ -1548,7 +1423,7 @@ function DailyTestResultView({
             <div className="flex flex-col gap-2">
               {reviewed.map(({ q, status }, index) =>
                 filter === "all" || filter === status ? (
-                  <ReviewRow key={q.question_id} index={index} total={total} q={q} status={status} />
+                  <DailyTestReviewRow key={q.question_id} index={index} total={total} q={q} status={status} />
                 ) : null,
               )}
             </div>
