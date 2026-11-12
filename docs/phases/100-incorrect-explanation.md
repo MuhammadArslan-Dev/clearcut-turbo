@@ -2,7 +2,7 @@
 
 **Tickets:** (new, from user, 2026-11-12)
 **Repos:** BE (now) · CM apps/dashboard (frontend — NOT started, waits for user approval)
-**Branch:** BE `phase-100-incorrect-explanation` — not committed, not pushed
+**Branch:** BE `phase-100-incorrect-explanation` (f7f6251) · CM `phase-100-explanation-ui` (05f9304) — committed + pushed as branches, kept on top of `origin/main`; **NOT merged into / pushed to `main`** (user, 2026-11-12)
 **Created / start date:** 2026-11-12
 **Status:** In Review — backend done + verified on LOCAL DB (UGC NET Paper 2 Political Science); frontend waits for user approval; nothing committed
 
