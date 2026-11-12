@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
+import { ChevronRight } from "lucide-react";
 
 // false in the server render and during hydration, true afterwards.
 const noopSubscribe = () => () => {};
@@ -1121,7 +1122,7 @@ export default function StartAuthForm({
                     fullWidth
                     disabled={loading}
                     loading={loading}
-                    rightIcon={loading ? undefined : <span className={styles.arrow} aria-hidden="true">→</span>}
+                    rightIcon={loading ? undefined : <ChevronRight size={20} strokeWidth={2.5} aria-hidden="true" />}
                     className={styles.cta}
                     data-ready={isValidPhone && !loading ? "true" : undefined}
                   >
@@ -1192,7 +1193,7 @@ export default function StartAuthForm({
                   fullWidth
                   disabled={loading}
                   loading={loading}
-                  rightIcon={loading ? undefined : <span className={styles.arrow} aria-hidden="true">→</span>}
+                  rightIcon={loading ? undefined : <ChevronRight size={20} strokeWidth={2.5} aria-hidden="true" />}
                   className={styles.cta}
                   data-dim={!otpReady && !loading ? "true" : undefined}
                   aria-disabled={!otpReady}
