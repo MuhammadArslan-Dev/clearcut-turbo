@@ -203,8 +203,12 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
   // moment it unlocks (any test with 5+ questions) it is dropped here too, whatever the
   // cached response still says, and the plan is the real NBA list for the student's marks.
   const keep = (a: CutoffMeterAction) => locked || a.action_type !== "ONBOARDING_TEST";
-  const actions = (m.actions ?? []).filter(keep);
-  const plan = (m.plan?.length ? m.plan : m.actions ?? []).filter(keep);
+  // While the meter is locked the unlock action is NOT done, whatever an older saved row says
+  // (rows written before the per-course fix could be marked completed by another course's test).
+  const open = (a: CutoffMeterAction): CutoffMeterAction =>
+    locked && a.action_type === "ONBOARDING_TEST" && a.completed ? { ...a, completed: false } : a;
+  const actions = (m.actions ?? []).filter(keep).map(open);
+  const plan = (m.plan?.length ? m.plan : m.actions ?? []).filter(keep).map(open);
   const done = plan.filter((a) => a.completed).length;
   // Next: the first open row of today's plan, else the newest generated action.
   const next = plan.find((a) => !a.completed) ?? actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
