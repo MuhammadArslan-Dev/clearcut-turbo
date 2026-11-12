@@ -47,7 +47,8 @@ export interface AttributionPayload {
   /** Host only of the first landing's referrer. */
   referrer?: string;
   locale?: "en" | "hi" | "mr";
-  utm?: Partial<Record<"source" | "medium" | "campaign" | "content" | "term", string>>;
+  /** `id` = utm_id, the ad campaign id (CC-136 / CC-171). */
+  utm?: Partial<Record<"source" | "medium" | "campaign" | "content" | "term" | "id", string>>;
   /** Presence only — the click ids themselves are never sent or stored. */
   click_ids?: Partial<Record<"fbclid" | "gclid" | "msclkid" | "ttclid", true>>;
   extra?: Record<string, string | number | boolean>;
@@ -57,7 +58,7 @@ const FIRST_LANDING_KEY = "cc_attr_first_landing";
 const SESSION_KEY = "cc_attr_session";
 const EXTRA_KEY = "cc_attr_extra";
 
-const UTM_KEYS = ["source", "medium", "campaign", "content", "term"] as const;
+const UTM_KEYS = ["source", "medium", "campaign", "content", "term", "id"] as const;
 const CLICK_ID_KEYS = ["fbclid", "gclid", "msclkid", "ttclid"] as const;
 
 let currentApp: AttributionApp | undefined;
