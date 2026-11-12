@@ -14,6 +14,7 @@ import { Button } from "@clearcut/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
+import UpiWaitingSheet from "@/components/features/payment/UpiWaitingSheet";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { DrawerSheet } from "@/components/features/Sheets/DrawerSheet";
 import { useLevels } from "@/hooks/onboarding/useLevels";
@@ -104,7 +105,7 @@ export default function MainPaywall() {
   );
 
   /* ---------------------------------- payment hook ---------------------------------- */
-  const { handlePayment, loading } = useRazorpayPayment({
+  const { handlePayment, loading, upiWaiting } = useRazorpayPayment({
     examId: data?.id!,
     examName: data?.short_name!,
     price: oneYearPrice, // 1year plan price
@@ -129,6 +130,7 @@ export default function MainPaywall() {
 
   /* ---------------------------------- render ---------------------------------- */
   return (
+    <>
     <AnimatePresence>
       {isOpen && mode === "main-paywall" && (
         <Container
@@ -305,5 +307,8 @@ export default function MainPaywall() {
         </Container>
       )}
     </AnimatePresence>
+    {/* CC-70: approve-in-UPI-app wait after the popup closed (flag-gated, closed by default). */}
+    <UpiWaitingSheet {...upiWaiting} />
+    </>
   );
 }

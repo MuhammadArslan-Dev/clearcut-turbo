@@ -33,6 +33,8 @@ export type AutopayAttempt = {
   subscriptionId: number;
   courseId: string;
   at: number;
+  /** CC-70: the "approve the autopay" waiting sheet was closed; don't reopen it for this attempt. */
+  waitClosed?: boolean;
 };
 
 const ATTEMPT_KEY = "cc-autopay-attempt-v1";
@@ -55,6 +57,17 @@ export function readAutopayAttempt(courseId: string, now = Date.now()): AutopayA
     return attempt;
   } catch {
     return null;
+  }
+}
+
+/** CC-70: remember the waiting sheet was closed (same `at`, so the attempt still expires on time). */
+export function markAutopayWaitClosed() {
+  try {
+    const raw = localStorage.getItem(ATTEMPT_KEY);
+    if (!raw) return;
+    localStorage.setItem(ATTEMPT_KEY, JSON.stringify({ ...(JSON.parse(raw) as AutopayAttempt), waitClosed: true }));
+  } catch {
+    // ignore
   }
 }
 

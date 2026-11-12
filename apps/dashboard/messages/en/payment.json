@@ -81,5 +81,18 @@
     "stillActivating": "Your payment was received but the course is not active yet. Please do not pay again. Message us on WhatsApp and we will fix it.",
     "contactSupport": "Get help on WhatsApp",
     "supportMessage": "My payment went through but my {exam} course is not active yet."
+  },
+  "upiWaiting": {
+    "title": "Approve the payment in your UPI app",
+    "titleAutopay": "Approve the autopay in your UPI app",
+    "body": "Open PhonePe, GPay or your UPI app and approve the request. We'll move on as soon as it's done.",
+    "dontClose": "Don't close this page",
+    "slowHint": "Taking longer than usual? Choose an option below.",
+    "tryAgain": "Try again",
+    "otherApp": "Pay with another UPI app or QR",
+    "payOnce": "Pay once without autopay",
+    "gaveUpTitle": "We couldn't confirm your payment yet",
+    "gaveUpBody": "If money was deducted, your course will activate on its own. Please check before paying again.",
+    "close": "Close"
   }
 }

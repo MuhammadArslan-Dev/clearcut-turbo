@@ -99,6 +99,16 @@ describe("startPendingWatch", () => {
     expect(check.mock.calls.length).toBe(calls);
   });
 
+  it("a wait resumed after a reload counts from its real start (startedAt)", async () => {
+    const h = harness();
+    h.advance(PENDING_SLOW_AFTER_MS + 1); // the attempt began 2 min ago
+    const onSlow = vi.fn();
+    const check = vi.fn().mockResolvedValue(false);
+    startPendingWatch({ ...h.opts, check, onSlow, startedAt: 0 });
+    h.tick(); await flush();
+    expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+
   it("the stop function ends it at once", async () => {
     const h = harness();
     const check = vi.fn().mockResolvedValue(false);

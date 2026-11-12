@@ -29,10 +29,13 @@ import {
   isAlreadyPaidError,
   isAutopayActiveError,
   isInAppBrowser,
+  markAttemptWaitClosed,
   readAttempt,
   saveAttempt,
 } from "@/lib/payment/paymentAttempt";
-import { startPendingWatch } from "@/lib/payment/pendingWatch";
+import { PENDING_GIVE_UP_MS, startPendingWatch } from "@/lib/payment/pendingWatch";
+import { useUpiWaiting } from "@/hooks/payment/useUpiWaiting";
+import type { UpiWaitingSheetProps } from "@/components/features/payment/UpiWaitingSheet";
 import { isUpiWaitingWatchEnabled } from "@/lib/experiments/upiWaitingFlag";
 import { useLocale } from "next-intl";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
@@ -125,6 +128,15 @@ export function useRazorpayPayment({
   // after a re-render, so two quick taps created two orders (CC-60).
   const inFlightRef = React.useRef(false);
   const { user: authUser } = useAuth();
+  // CC-70: "approve in your UPI app" sheet after the popup closed with the
+  // payment still pending (flag `upi_waiting_watch`, default OFF = never shown).
+  const upi = useUpiWaiting();
+  // While waiting, this token sits in checkoutsInFlight so the CC-59 return
+  // check (same backend question) never reports the same payment a second time.
+  const waitTokenRef = React.useRef({});
+  // Read by the return check's long-lived listeners (auth may load after mount).
+  const uuidRef = React.useRef(authUser?.uuid);
+  uuidRef.current = authUser?.uuid;
 
   // The guard and `loading` stay on for the WHOLE checkout — until the popup
   // is closed, the payment fails, or verification has finished — not just
@@ -178,6 +190,38 @@ export function useRazorpayPayment({
     latest.current.onSuccess({ price: attempt.price, source: attempt.source });
   };
 
+  const endUpiWait = () => {
+    checkoutsInFlight.delete(waitTokenRef.current);
+    upi.stop();
+  };
+
+  // CC-70: keep asking about this attempt behind the waiting sheet.
+  const beginUpiWait = (attempt: NonNullable<ReturnType<typeof readAttempt>>, startedAt: number) => {
+    checkoutsInFlight.add(waitTokenRef.current);
+    let paidStatus: Awaited<ReturnType<typeof getAttemptStatus>> | null = null;
+    upi.begin({
+      kind: "one_time",
+      startedAt,
+      check: async () => {
+        const status = await getAttemptStatus(attempt.transactionId);
+        if (status.state === "paid") {
+          paidStatus = status;
+          return "paid";
+        }
+        if (status.state === "failed") {
+          clearAttempt();
+          checkoutsInFlight.delete(waitTokenRef.current);
+          return "failed";
+        }
+        return "pending";
+      },
+      onPaid: async () => {
+        checkoutsInFlight.delete(waitTokenRef.current);
+        if (paidStatus) await reportPaidFromAttempt(paidStatus, attempt, "upi_wait_watch");
+      },
+    });
+  };
+
   // CC-59: the page came back (reload, back from the UPI app, bfcache) with
   // an attempt from a checkout whose handler never ran. Ask the backend.
   React.useEffect(() => {
@@ -195,6 +239,16 @@ export function useRazorpayPayment({
           await reportPaidFromAttempt(status, attempt, "return_check");
         } else if (status.state === "failed") {
           clearAttempt();
+        } else if (
+          status.state === "pending" &&
+          !attempt.waitClosed &&
+          Date.now() - attempt.at < PENDING_GIVE_UP_MS &&
+          checkoutsInFlight.size === 0 &&
+          (await isUpiWaitingWatchEnabled(uuidRef.current))
+        ) {
+          // CC-70: back on the page (redirect mode / reload) with the payment
+          // still pending: show the waiting sheet and keep checking.
+          beginUpiWait(attempt, attempt.at);
         }
       } catch {
         // Offline or a blip: the next visibility change tries again.
@@ -220,8 +274,10 @@ export function useRazorpayPayment({
     else alert(reason === "sdk_failed" ? "Razorpay SDK failed to load" : "Something went wrong");
   };
 
-  const handlePayment = async () => {
+  const startCheckout = async (retryFrom?: "upi_waiting") => {
     if (inFlightRef.current) return;
+    // A new checkout replaces any wait on the previous attempt (safe when none).
+    endUpiWait();
     inFlightRef.current = true;
     checkoutsInFlight.add(inFlightRef);
     setLoading(true);
@@ -244,6 +300,7 @@ export function useRazorpayPayment({
         payment_flow: "new_attempt",
         final_price: Number(price),
         ...funnelProps,
+        ...(retryFrom ? { retry_from: retryFrom } : {}),
       });
 
       const razorpayLoaded = await sentryApiClient(() => loadRazorpay(), {
@@ -309,6 +366,8 @@ export function useRazorpayPayment({
       let outcomeReported = false;
       // CC-70: stops the UPI wait watch (flag-gated, below).
       let stopWatch: (() => void) | null = null;
+      // CC-70: the flag's answer, so a dismissed popup can open the waiting sheet.
+      let watchOn = false;
 
       const options = {
         key: order.key,
@@ -491,6 +550,10 @@ export function useRazorpayPayment({
             // The saved attempt stays: a UPI payment started before closing
             // can still complete, and the return check then finds it.
             void closeAttempt(order.transaction_id).catch(() => {});
+            // CC-70: show what is happening and keep checking (a closed attempt
+            // still activates if the UPI payment comes in, CC-169).
+            const saved = readAttempt(examId);
+            if (watchOn && saved) beginUpiWait(saved, Date.now());
 
             trackPaymentEvent("Payment Outcome", {
               outcome: "payment_failed",
@@ -554,6 +617,7 @@ export function useRazorpayPayment({
       void isUpiWaitingWatchEnabled(authUser?.uuid)
         .then((on) => {
           if (!on || outcomeReported) return;
+          watchOn = true;
           stopWatch = startPendingWatch({
             check: async () => {
               if (outcomeReported) return true;
@@ -592,9 +656,30 @@ export function useRazorpayPayment({
     }
   };
 
+  const handlePayment = () => startCheckout();
+
+  // Rendered by each caller: <UpiWaitingSheet {...upiWaiting} />. Closed (and
+  // never opened) while the flag is off.
+  const upiWaiting: UpiWaitingSheetProps = {
+    isOpen: upi.isWaiting,
+    kind: "one_time",
+    startedAt: upi.waiting?.startedAt ?? 0,
+    slow: upi.waiting?.slow ?? false,
+    gaveUp: upi.waiting?.gaveUp ?? false,
+    onRetry: () => {
+      endUpiWait();
+      void startCheckout("upi_waiting");
+    },
+    onClose: () => {
+      markAttemptWaitClosed();
+      endUpiWait();
+    },
+  };
+
   return {
     handlePayment,
     loading,
     phase,
+    upiWaiting,
   };
 }
