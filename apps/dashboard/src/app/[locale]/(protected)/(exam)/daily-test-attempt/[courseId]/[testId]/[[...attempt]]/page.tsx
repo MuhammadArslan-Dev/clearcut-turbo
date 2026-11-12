@@ -26,6 +26,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
 import { TestResult, getOutcome } from "@clearcut/motion/test/flow";
 import { scoringToResultData } from "@/lib/api/scoring";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
 import { NibNote } from "@clearcut/motion/test/mini-test";
 import TestStartIntro, { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
@@ -135,6 +137,7 @@ export default function DailyTestAttemptPage() {
   // normal click-through.
   const { history, isLoading: historyLoading } = useDailyTestHistory(courseId);
   const setCachedResult = useSetDailyTestResult();
+  const queryClient = useQueryClient();
 
   // A test the history already says is completed is read through the cached
   // result query instead of POSTing /start again — so re-opening it is
@@ -371,6 +374,8 @@ export default function DailyTestAttemptPage() {
         // own history (score/best-score/avg-time), are now stale.
         invalidateDailyTestExams();
         invalidateDailyTestHistory(courseId);
+        // Daily tests feed the Cutoff Meter too (client, 2026-11-12): the backend recalculated it.
+        invalidateCutoffMeterQueries(queryClient);
         // The "checking your answers" animation plays out, then the result opens in place (see
         // onSubmitAnimationEnd). Its "Back to history" does the flow.goUp that used to run right here: it pops
         // back to this test's Attempt History when the attempt was opened from there, else swaps the attempt
@@ -384,7 +389,7 @@ export default function DailyTestAttemptPage() {
         setSubmitting(false);
       }
     },
-    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId],
+    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId, queryClient],
   );
 
   const onSubmitAnimationEnd = useCallback(() => {

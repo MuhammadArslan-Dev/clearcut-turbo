@@ -24,6 +24,7 @@ import { useCutoffMeter } from "@/hooks/course/useCutoffMeter";
 import { isApiError } from "@/lib/api/api-error";
 import {
   markCutoffMeterActionClicked,
+  unlockMinQuestions,
   type CutoffMeterAction,
   type CutoffMeterDetail,
 } from "@/lib/dashboard/cutoffMeter";
@@ -67,10 +68,8 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const value = Math.round(m.display_meter ?? m.meter ?? 0);
   const gap = m.display_gap ?? m.gap ?? 0;
   const pass = Math.round(m.pass_mark);
-  const needed = Number(m.plan?.[0]?.params?.answers_needed ?? m.actions?.[0]?.params?.answers_needed);
-  const toUnlock = Number.isFinite(m.unlock_answers)
-    ? Math.max(m.unlock_answers - m.counted_answers, 1)
-    : Number.isFinite(needed) ? needed : 5;
+  // Unlock rule: any test with this many questions (backend config).
+  const toUnlock = unlockMinQuestions(m);
   const change = !locked && !cooling && m.change ? Math.round(m.change) : 0;
   const trend = m.trend ?? [];
   const zone = locked ? "locked" : zoneOf(value, { max: m.max_marks, cutoff: pass });

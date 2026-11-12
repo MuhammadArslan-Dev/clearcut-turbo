@@ -13,7 +13,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import React, { useEffect, useMemo, useRef } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
-import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 import { useModalStore } from "@/store/modal/useModalStore";
@@ -37,7 +37,8 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
   const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
   const gap = meter.display_gap ?? meter.gap ?? 0;
   const pass = Math.round(meter.pass_mark);
-  const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
+  // Unlock rule: any test with this many questions (backend config).
+  const toUnlock = unlockMinQuestions(meter);
   const change =
     !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
 
