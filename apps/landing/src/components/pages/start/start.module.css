@@ -86,7 +86,9 @@
     flex: 1 1 0;
     min-width: 0;
   }
-  .stage {
+  /* `.left .stage` so it beats the phones' height rule further down the file:
+     on desktop the stage fills the left panel and is centred in it. */
+  .left .stage {
     flex: 1 1 0;
     background: none !important;
     margin: 0 !important;
