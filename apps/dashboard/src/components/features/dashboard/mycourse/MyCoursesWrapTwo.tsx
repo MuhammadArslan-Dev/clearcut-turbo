@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import MyCourseCard from "./MyCourseCard";
@@ -77,6 +77,8 @@ function CourseSlideCard({
   onEdit,
   onUnlock,
   onStatusClick,
+  hideBuyOnMobile,
+  part,
 }: {
   exam: ExamEnrollmentWithExam;
   // Passed in from MyCoursesWrapTwo's single batched query — this card used
@@ -89,6 +91,8 @@ function CourseSlideCard({
   onEdit: () => void;
   onUnlock?: () => void;
   onStatusClick?: () => void;
+  hideBuyOnMobile?: boolean;
+  part?: "all" | "buy";
 }) {
   return (
     <MyCourseCard
@@ -118,6 +122,8 @@ function CourseSlideCard({
       editClick={onEdit}
       unlockClick={onUnlock}
       statusClick={onStatusClick}
+      hideBuyOnMobile={hideBuyOnMobile}
+      part={part}
     />
   );
 }
@@ -138,6 +144,8 @@ export default function MyCoursesWrapTwo({
   const setFocusedCourse = useSwiperCourseStore((s) => s.setFocusedCourse);
   const setOnAddExamSlide = useSwiperCourseStore((s) => s.setOnAddExamSlide);
   const resetFocusedCourse = useSwiperCourseStore((s) => s.reset);
+  // Mobile: which course slide is showing — its Buy widget sits under the carousel.
+  const [slideIndex, setSlideIndex] = useState(0);
 
   // Always reset when the component unmounts (user leaves dashboard).
   useEffect(() => () => resetFocusedCourse(), []);
@@ -151,6 +159,21 @@ export default function MyCoursesWrapTwo({
 
   // "Trial Ended" pill → payment, tagged so the funnel can tell it apart
   // from the Buy button (CC-111). Only once a subject is picked, like Buy.
+  // Buy / renew for a trial course (same tracking + route as before). Used by
+  // the card (desktop) and by the mobile Buy widget under the carousel.
+  const unlockFor = (exam: ExamEnrollmentWithExam) =>
+    !exam.stage_id || exam.status === "active"
+      ? undefined
+      : async () => {
+          trackEvent("Purchase Intent Initiated", {
+            entry_point: "learn_dashboard",
+            product_id: exam.exam?.short_name!,
+          });
+          route.push(
+            `/payment/initiated?exam_id=${exam.group_code}&course_name=${exam.exam?.short_name}&source=my_courses_card_clicked`,
+          );
+        };
+
   const trialEndedClick = (enrollment?: ExamEnrollmentWithExam | null) =>
     (enrollment?.status === "trial_end" || enrollment?.status === "expired") && enrollment.stage_id
       ? () => {
@@ -326,6 +349,7 @@ export default function MyCoursesWrapTwo({
             className="!pt-4 !pb-7 !-mx-5 !px-5 !h-full"
             onSlideChange={(swiper: SwiperClass) => {
               // The trailing "Add Exam" slide sits after every course slide.
+              setSlideIndex(swiper.activeIndex);
               const onAddExamSlide = swiper.activeIndex >= orderedCourses.length;
               setOnAddExamSlide(onAddExamSlide);
 
@@ -373,19 +397,8 @@ export default function MyCoursesWrapTwo({
                       });
                       open("edit", exam.exam!);
                     }}
-                    onUnlock={
-                      !exam.stage_id || exam.status === "active"
-                        ? undefined
-                        : async () => {
-                            trackEvent("Purchase Intent Initiated", {
-                              entry_point: "learn_dashboard",
-                              product_id: exam.exam?.short_name!,
-                            });
-                            route.push(
-                              `/payment/initiated?exam_id=${exam.group_code}&course_name=${exam.exam?.short_name}&source=my_courses_card_clicked`,
-                            );
-                          }
-                    }
+                    onUnlock={unlockFor(exam)}
+                    hideBuyOnMobile
                     onStatusClick={trialEndedClick(exam)}
                   />
                 )}
@@ -439,6 +452,20 @@ export default function MyCoursesWrapTwo({
 
         {coursesSlow && <SlowLoadNotice className="mt-3" onRetry={retryCourses} />}
       </div>
+
+      {/* 📱 MOBILE: the shown course's Buy block as its own widget, right above
+          Today's Daily Test (it is hidden inside the carousel card on mobile). */}
+      {orderedCourses[slideIndex] && (
+        <div className="md:hidden px-2">
+          <CourseSlideCard
+            exam={orderedCourses[slideIndex] as ExamEnrollmentWithExam}
+            part="buy"
+            onContinue={() => {}}
+            onEdit={() => {}}
+            onUnlock={unlockFor(orderedCourses[slideIndex] as ExamEnrollmentWithExam)}
+          />
+        </div>
+      )}
 
       {/* Global modal */}
       <PaymentFailedWarningModal />

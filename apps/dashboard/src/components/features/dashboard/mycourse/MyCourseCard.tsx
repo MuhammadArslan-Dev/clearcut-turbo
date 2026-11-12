@@ -176,6 +176,12 @@ export interface MyCOurseCardProps {
   // "Add subjects" hint above the Continue button.
   needsSubjects?: boolean;
   unlockClick?: () => void;
+  /** Mobile carousel: hide the Buy block in the card (it is shown as its own
+   * widget under the carousel instead). Desktop keeps it in the card. */
+  hideBuyOnMobile?: boolean;
+  /** "buy": render ONLY the Buy block (button + price + trial note) in a card —
+   * the mobile widget above Today's Daily Test. Same code as inside the card. */
+  part?: "all" | "buy";
   editClick?: () => void;
 
   // ── Cutoff Meter header (phase 98) ────────────────────────────────────────
@@ -208,6 +214,8 @@ export default function MyCourseCard({
   continueClick,
   needsSubjects = false,
   unlockClick,
+  hideBuyOnMobile = false,
+  part = "all",
   editClick,
   maxWidth = "400px",
   cardClasses,
@@ -234,6 +242,54 @@ export default function MyCourseCard({
     () => getPriceForVariant("1month", null, examShortName ?? undefined),
     [examShortName],
   );
+  const buyBlock = (
+    <>
+              <MainButton
+                className="mx-auto max-w-[320px] md:mx-0 md:max-w-none"
+                fullWidth
+                loading={unlockLoading}
+                color="success"
+                text={
+                  badge === "expired"
+                    ? t("myCourses.renewCourse")
+                    : t("myCourses.buyFullCourse")
+                }
+                rightIcon={<ChevronIcon size={20} />}
+                onClick={() => {
+                  setUnlockLoading(true);
+                  unlockClick?.();
+                }}
+              />
+              <div className="flex flex-col items-center gap-1">
+                <p className="body-medium !font-normal text-surface-gray-subtle flex gap-2 items-center">
+                  <LockIcon size={20} />{" "}
+                  <span>
+                    {" "}
+                    {t("myCourses.priceNote", {
+                      price: monthlyPrice,
+                    })}
+                  </span>
+                </p>
+                {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
+                {badge !== "expired" && badge !== "trial_end" && (
+                  <p className="body-medium !font-normal text-surface-gray-muted">
+                    {t("myCourses.trialLimit", { days: 3 })}
+                  </p>
+                )}
+              </div>
+    </>
+  );
+
+  // Mobile widget above Today's Daily Test: only the Buy block, in a plain card.
+  if (part === "buy") {
+    if (!unlockClick) return null;
+    return (
+      <Card className="!rounded-2xl" padding={0}>
+        <div className="flex flex-col gap-3 p-4">{buyBlock}</div>
+      </Card>
+    );
+  }
+
   return (
     <Card
       bgcolor={bgColor}
@@ -440,41 +496,8 @@ export default function MyCourseCard({
             </div>
           )}
           {unlockClick && (
-            <>
-              <MainButton
-                className="mx-auto max-w-[320px] md:mx-0 md:max-w-none"
-                fullWidth
-                loading={unlockLoading}
-                color="success"
-                text={
-                  badge === "expired"
-                    ? t("myCourses.renewCourse")
-                    : t("myCourses.buyFullCourse")
-                }
-                rightIcon={<ChevronIcon size={20} />}
-                onClick={() => {
-                  setUnlockLoading(true);
-                  unlockClick?.();
-                }}
-              />
-              <div className="flex flex-col items-center gap-1">
-                <p className="body-medium !font-normal text-surface-gray-subtle flex gap-2 items-center">
-                  <LockIcon size={20} />{" "}
-                  <span>
-                    {" "}
-                    {t("myCourses.priceNote", {
-                      price: monthlyPrice,
-                    })}
-                  </span>
-                </p>
-                {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
-                {badge !== "expired" && badge !== "trial_end" && (
-                  <p className="body-medium !font-normal text-surface-gray-muted">
-                    {t("myCourses.trialLimit", { days: 3 })}
-                  </p>
-                )}
-              </div>
-            </>
+            // Mobile carousel moves this block to its own widget (part="buy").
+            <div className={hideBuyOnMobile ? "hidden md:flex flex-col gap-3" : "contents"}>{buyBlock}</div>
           )}
         </div>
       </div>
