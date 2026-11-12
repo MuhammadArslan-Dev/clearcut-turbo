@@ -263,6 +263,8 @@
   --color-warning-strong: #9a5b13;
   --color-warning-subtle: #e9690c;
   --color-warning-muted: #ff9040;
+  /* Rating stars / celebration accents (landing /start, phase 101). */
+  --color-gold: #f5b301;
 
   --color-info: #0f78ad;
   --color-info-subtle: #1291d0;

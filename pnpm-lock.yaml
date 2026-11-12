@@ -412,6 +412,9 @@ importers:
       '@clearcut/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@clearcut/motion':
+        specifier: workspace:*
+        version: link:../../packages/motion
       '@clearcut/react-query':
         specifier: workspace:*
         version: link:../../packages/react-query

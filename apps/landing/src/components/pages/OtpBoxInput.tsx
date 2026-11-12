@@ -25,6 +25,11 @@ interface OtpBoxInputProps {
    * it already filled) and the first box is focused. No blur(): on Android
    * that closes the keyboard and a scripted focus() can't reopen it. */
   refocusKey?: number;
+  /** "boxed" = the /start redesign's look (phase 101): bordered rounded boxes,
+   * filled = soft blue, error = red, ok = green. Default = the original look. */
+  variant?: "default" | "boxed";
+  /** Verified (boxed only): all boxes green. */
+  ok?: boolean;
 }
 
 /**
@@ -42,6 +47,8 @@ export default function OtpBoxInput({
   disabled = false,
   autoFocus = false,
   refocusKey = 0,
+  variant = "default",
+  ok = false,
 }: OtpBoxInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -138,13 +145,61 @@ export default function OtpBoxInput({
   };
 
   return (
-    <div className="flex gap-3 justify-center">
+    <div className={variant === "boxed" ? "flex gap-2.5 justify-center" : "flex gap-3 justify-center"}>
       {Array.from({ length }).map((_, i) => {
         const filled = Boolean(value[i]);
         const focused = focusedIndex === i;
 
         const borderColor = error ? COLORS.error : focused ? COLORS.primary : COLORS.gray;
         const backgroundColor = error ? COLORS.lightError : focused ? COLORS.lightPrimary : COLORS.lightGray;
+
+        if (variant === "boxed") {
+          const boxBorder = ok
+            ? "var(--color-success)"
+            : error
+              ? "var(--color-danger)"
+              : focused || filled
+                ? "var(--color-brand)"
+                : "var(--color-border-gray-subtle)";
+          const boxBg = ok
+            ? "var(--color-success-soft)"
+            : error
+              ? "color-mix(in srgb, var(--color-danger) 5%, white)"
+              : filled
+                ? "var(--color-primary-subtle)"
+                : "white";
+          return (
+            <input
+              key={`${refocusKey}-${i}`}
+              name={`otp-${refocusKey}-${i}`}
+              id={`otp-${refocusKey}-${i}`}
+              ref={(el) => {
+                inputRefs.current[i] = el;
+              }}
+              type="tel"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={value[i] ?? ""}
+              disabled={disabled}
+              readOnly={ok}
+              onChange={(e) => handleChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              onPaste={handlePaste}
+              onFocus={(e) => {
+                setFocusedIndex(i);
+                e.currentTarget.select();
+              }}
+              onBlur={() => setFocusedIndex((cur) => (cur === i ? null : cur))}
+              className="w-full max-w-[72px] h-[58px] text-center text-2xl font-bold text-[var(--color-text-gray-normal)] outline-none border-2 rounded-[14px] transition-colors caret-[var(--color-brand)] disabled:opacity-60"
+              style={{
+                borderColor: boxBorder,
+                backgroundColor: boxBg,
+                boxShadow: focused && !error && !ok ? "0 0 0 4px color-mix(in srgb, var(--color-brand) 14%, transparent)" : undefined,
+              }}
+              aria-label={`OTP digit ${i + 1}`}
+            />
+          );
+        }
 
         return (
           <input

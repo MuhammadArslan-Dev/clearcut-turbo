@@ -27,7 +27,13 @@
   transform-origin: center;
   animation: nibBlink 4.2s infinite;
 }
-.nibPupils { transform-box: fill-box; }
+/* --nib-look-x / --nib-look-y: optional "eyes follow" offset set by a parent
+   (landing /start, phase 101). Unset = 0 = exactly the old position. */
+.nibPupils {
+  transform-box: fill-box;
+  transform: translate(var(--nib-look-x, 0px), var(--nib-look-y, 0px));
+  transition: transform 0.14s ease-out;
+}
 .lookScan .nibPupils { animation: nibScan 1.2s ease-in-out infinite; }
 
 @keyframes nibBlink {

@@ -136,6 +136,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 96 | [Cutoff Meter motion (`@clearcut/motion/meters`)](96-motion-cutoff-meters.md) | — | CM packages/motion | In Progress | Built in background; user review in /animation-preview |
 | 97 | [Cutoff Meter v1 — backend + DB](97-cutoff-meter-backend.md) | Confluence PM 29360129 | BE | In Progress | 🛑 MIN_TIME 3 vs 5 s, category, chapter tests counted; content: section marks, HPTET pass mark, exam dates |
 | 98 | [Course card: Cutoff Meter header (real data)](98-course-card-cutoff-meter.md) | — | CM-dashboard, BE | In Progress | — |
+| 101 | [Landing /start: Nibbu mascot redesign (UI only)](101-start-page-mascot-redesign.md) | — | CM-landing | In Review (branch `feature/start-mascot-redesign`, not live) | User: real-phone check, go-ahead to merge |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).
