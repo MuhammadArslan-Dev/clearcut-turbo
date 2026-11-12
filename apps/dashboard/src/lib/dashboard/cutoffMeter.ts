@@ -11,6 +11,8 @@ export interface CutoffMeterSummary {
   confidence: "low" | "medium" | "high" | null;
   counted_answers: number;
   unlock_answers: number;
+  /** Unlock rule (client, 2026-11-12): any test with at least this many questions unlocks the meter. */
+  unlock_min_test_questions?: number;
   change: number | null;
   model_version: string;
   computed_at: string | null;
@@ -118,6 +120,11 @@ export async function sendLegacyTopicAnswers(payload: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+/** Questions a single test needs to unlock the meter (backend config; 5 when an older backend omits it). */
+export function unlockMinQuestions(m: Pick<CutoffMeterSummary, "unlock_min_test_questions">): number {
+  return m.unlock_min_test_questions ?? 5;
 }
 
 /** Fire-and-forget: the student tapped a plan row / the Start CTA (`nba_log.clicked_at`). */

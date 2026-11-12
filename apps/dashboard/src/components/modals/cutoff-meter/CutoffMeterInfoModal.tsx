@@ -15,7 +15,7 @@ import {
   zoneOf,
   zoneWidths,
 } from "@clearcut/motion/meters/zones";
-import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
@@ -182,10 +182,7 @@ function MeterInfoBody({
             <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
               {locked
                 ? t("youLocked", {
-                    count: Math.max(
-                      meter.unlock_answers - meter.counted_answers,
-                      1,
-                    ),
+                    count: unlockMinQuestions(meter),
                     pass,
                     max,
                   })
