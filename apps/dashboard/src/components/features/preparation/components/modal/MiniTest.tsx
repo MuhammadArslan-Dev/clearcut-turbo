@@ -120,14 +120,26 @@ export default function MiniTest() {
     setLocale(toContentLocale(courseLanguageToLocale(course?.language)));
   }, [courseData]);
 
+  // Server attempt of this open (null on the legacy flow, incl. a failed server start → legacy fallback).
+  const attemptId = useMiniTestStore((s) => s.attemptId);
   const openReportedRef = React.useRef(false);
   useEffect(() => {
     // Wait for the backend capabilities (cached after the first load). On the
     // Progress Tracker v2 path nothing is reported on OPEN — the server
     // attempt records it and "done" is the submitted attempt (decision D1).
     if (!capsReady || openReportedRef.current) return;
+    if (serverScoring) {
+      // Until the start settles we don't know which flow this open is on.
+      if (loading) return;
+      if (attemptId) {
+        openReportedRef.current = true;
+        return;
+      }
+      // The server start failed and the questions came from the legacy list
+      // (useMiniTestQuestions fallback): report the open the legacy way.
+      if (!questions.length) return;
+    }
     openReportedRef.current = true;
-    if (serverScoring) return;
 
     // These are fire-and-forget progress pings. If the backend is down or slow
     // the rejected promise used to go unhandled and take the whole page down,
@@ -189,12 +201,11 @@ export default function MiniTest() {
     });
 
     markTopicFieldDone(Number(selectedTopic?.id), "miniTestDone");
-  }, [capsReady, serverScoring]);
+  }, [capsReady, serverScoring, loading, attemptId, questions.length]);
 
   // Progress Tracker v2: the server scores and stores the attempt. Fire and
   // forget — the result screen never waits for it; submit is idempotent, so a
   // retry can never count twice.
-  const attemptId = useMiniTestStore((s) => s.attemptId);
   const submittedRef = React.useRef<string | null>(null);
   const submitServerAttempt = () => {
     if (!serverScoring || !attemptId || submittedRef.current === attemptId) return;
@@ -204,8 +215,14 @@ export default function MiniTest() {
       byQuestionId[q.id] = answers[i] ?? null;
     });
     const topicId = Number(selectedTopic?.id);
-    submitMiniTestAttempt(attemptId, byQuestionId, locale)
-      .then(() => {
+    // The language the questions were SHOWN in (same pick as `translate` below), so the
+    // server scores against the key the learner saw highlighted.
+    const shownLocale =
+      selectSection?.type === "subject" ? language : questions[0]?.translations?.[0]?.locale ?? locale;
+    submitMiniTestAttempt(attemptId, byQuestionId, shownLocale)
+      .then((res) => {
+        // Phase 103: the server's score is the truth on this flow — the result screen switches to it.
+        useMiniTestStore.getState().setServerScoring(res.scoring ?? null);
         markTopicFieldDone(topicId, "miniTestDone");
         trackEvent("Topic Status Changed", {
           topic_name: selectedTopic?.name ?? "",

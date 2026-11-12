@@ -137,7 +137,8 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 97 | [Cutoff Meter v1 — backend + DB](97-cutoff-meter-backend.md) | Confluence PM 29360129 | BE | In Progress | 🛑 MIN_TIME 3 vs 5 s, category, chapter tests counted; content: section marks, HPTET pass mark, exam dates |
 | 98 | [Course card: Cutoff Meter header (real data)](98-course-card-cutoff-meter.md) | — | CM-dashboard, BE | In Progress | — |
 | 101 | [Landing /start: Nibbu mascot redesign (UI only)](101-start-page-mascot-redesign.md) | — | CM-landing | Done (live 2026-11-12) | Real-phone check by user |
-| 102 | [Cutoff Meter: audit vs spec + fixes](102-cutoff-meter-audit-fixes.md) | — | BE + CM-dashboard | In Review (branches `fix/cutoff-meter-audit`, `fix/cutoff-meter-refetch`, not live) | Client decisions + content fixes; user go-ahead to merge |
+| 102 | [Cutoff Meter: audit vs spec + fixes](102-cutoff-meter-audit-fixes.md) | — | BE + CM-dashboard | Done (live 2026-11-12) | Client decisions + content fixes |
+| 103 | [One scoring + cutoff engine for every test type](103-unified-scoring-engine.md) | — | BE + CM-dashboard + motion | Done (live 2026-11-12; mini server scoring on in code) | Content fixes (pass_marks, metadata.cutoff, section marks) |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).

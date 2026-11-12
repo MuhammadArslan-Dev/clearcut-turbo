@@ -30,19 +30,27 @@ export type TestResultProps = {
 const RING_DELAY = 300;
 const RING_MS = 1400;
 
-export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions, label, wide, noCutoff }: TestResultProps) {
+/** Marks as the scorer sends them: whole numbers stay whole, decimals keep up to 2 places (10.2, 8.25). */
+export function formatMarks(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
+export function TestResult({ type, data, lang = "en", weakArea, onReview, onSecondary, actions, label, wide, noCutoff: noCutoffProp }: TestResultProps) {
   const reduced = usePrefersReducedMotion();
   const outcome = getOutcome(data);
-  const cutoff = data.cutoff ?? Math.round(data.maxScore * 0.6);
+  // No cutoff from the scorer = no cutoff on screen (no invented 60% line).
+  const noCutoff = noCutoffProp || data.cutoff == null;
+  const cutoff = data.cutoff ?? 0;
   const pct = Math.max(0, Math.min(100, (data.score / data.maxScore) * 100));
   const cutoffPct = (cutoff / data.maxScore) * 100;
-  const shownScore = useCountUp(data.score, { duration: RING_MS, delay: RING_DELAY });
+  // 2 decimals so a 10.2 / 12.25 score actually lands on its exact value (the default 0 stopped at 10 / 12).
+  const shownScore = useCountUp(data.score, { duration: RING_MS, delay: RING_DELAY, decimals: 2 });
   const shownPct = data.score ? (shownScore / data.score) * pct : 0;
   const attempted = data.correct + data.wrong;
   const accuracy = attempted ? Math.round((data.correct / attempted) * 100) : 0;
 
   const weak = weakArea ?? weakest(data) ?? (lang === "hi" ? "गलत सवालों" : "your wrong answers");
-  const gap = marksAway(Math.max(0, Math.ceil(cutoff - data.score)), lang);
+  const gap = marksAway(Number(formatMarks(Math.max(0, cutoff - data.score))), lang);
   const copy = (noCutoff ? NEUTRAL_OUTCOME_COPY : OUTCOME_COPY)[outcome];
   const secondaryLabel = type === "topic" ? COPY.nextTopic : type === "daily" ? COPY.dashboard : COPY.retry;
 
@@ -53,7 +61,7 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
   return (
     <section className={`${f.root} ${s.result} ${s[outcome]}${wide ? ` ${s.wide}` : ""}`} aria-labelledby="cc-result-title">
       <span className={f.srOnly} role="status">
-        {`${data.score} / ${data.maxScore}. ${noCutoff ? "" : `${COPY.cutoff[lang]} ${cutoff}. `}${fill(copy.title[lang], { gap })}`}
+        {`${formatMarks(data.score)} / ${formatMarks(data.maxScore)}. ${noCutoff ? "" : `${COPY.cutoff[lang]} ${formatMarks(cutoff)}. `}${fill(copy.title[lang], { gap })}`}
       </span>
 
       <span className={`${f.badge} ${f[type]} ${s.badge}`}>{label ?? TYPE_LABEL[type][lang]}</span>
@@ -74,11 +82,12 @@ export function TestResult({ type, data, lang = "en", weakArea, onReview, onSeco
           {!noCutoff && <line className={s.cutTick} {...tick} />}
         </svg>
         <div className={s.center}>
-          <span className={s.score}>{Math.round(shownScore)}</span>
-          <span className={s.max}>/ {data.maxScore}</span>
+          {/* whole numbers while counting up; the exact marks (10.2) once it lands */}
+          <span className={s.score}>{shownScore >= data.score ? formatMarks(data.score) : Math.round(shownScore)}</span>
+          <span className={s.max}>/ {formatMarks(data.maxScore)}</span>
           {!noCutoff && (
             <span className={s.cutChip}>
-              {COPY.cutoff[lang]} {cutoff}
+              {COPY.cutoff[lang]} {formatMarks(cutoff)}
             </span>
           )}
         </div>
@@ -169,7 +178,7 @@ function Sections({ sections, lang }: { sections: NonNullable<ResultData["sectio
             <div key={sec.name} className={`${s.sec} ${tone}`}>
               <span className={s.secName}>{sec.name}</span>
               <span className={s.secVal}>
-                {sec.score}/{sec.max}
+                {formatMarks(sec.score)}/{formatMarks(sec.max)}
               </span>
               <span className={s.secBar}>
                 <span style={{ "--p": p, animationDelay: `${2.05 + i * 0.12}s` } as CSSProperties} />

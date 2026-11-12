@@ -84,7 +84,14 @@ export function useMiniTestQuestions(
 
     queryFn: async () => {
       if (serverScoring) {
-        return startOnce(courseId as string, topicId as number);
+        try {
+          return await startOnce(courseId as string, topicId as number);
+        } catch {
+          // A server start can fail where the legacy list works (topic not in the
+          // syllabus index yet, no questions by the server's query, older backend).
+          // Never block the test: fall back to the legacy flow (no attempt id → not
+          // server-scored, result without a cutoff).
+        }
       }
 
       const res = await sentryApiClient(

@@ -1,6 +1,7 @@
 import { apiFetch } from "./client";
 import { token as tokenApi } from "../auth-token-client";
 import { ExamTranslation } from "@/types/Exam";
+import type { TestScoring } from "./scoring";
 
 export interface DailyTestExam {
   /** Opaque id for Daily Test URLs (the user's own enrollment uuid). */
@@ -101,6 +102,8 @@ export interface DailyTestResult {
   score: number;
   total_questions: number;
   is_paid: boolean;
+  /** Marks / cutoff / pass from the backend scorer (phase 103); absent on an older backend. Free users get totals only. */
+  scoring?: TestScoring;
   questions?: DailyTestResultQuestion[];
 }
 
@@ -187,10 +190,12 @@ export async function submitDailyTest(
   testId: string,
   attemptId: string,
   answers: Record<number, number>,
+  /** Language the questions were shown in — the scorer uses that language's answer key. */
+  locale?: string,
 ): Promise<{ data: DailyTestResult }> {
   return apiFetch<{ data: DailyTestResult }>(
     `${dtTest(courseId, testId)}/attempts/${encodeURIComponent(attemptId)}/submit`,
-    { method: "POST", headers: jsonHeaders(), body: JSON.stringify({ answers }) },
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify({ answers, locale }) },
   );
 }
 

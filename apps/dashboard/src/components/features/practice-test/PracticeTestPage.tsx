@@ -105,7 +105,7 @@ export default function PracticeTestPage() {
   const motionLang = useMotionLang();
   const [introDone, setIntroDone] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
-  const pendingFinishRef = useRef<{ checks: PracticeSession["checks"]; elapsedMs: number } | null>(null);
+  const pendingFinishRef = useRef<{ checks: PracticeSession["checks"]; elapsedMs: number; scoring?: PracticeSession["scoring"] } | null>(null);
   const [revealBusy, setRevealBusy] = useState<number | null>(null);
   const [revealFailed, setRevealFailed] = useState<number | null>(null);
   const revealingRef = useRef<Set<number>>(new Set());
@@ -287,12 +287,13 @@ export default function PracticeTestPage() {
     setSubmitDone(false);
     setSubmitFailed(false);
     try {
-      const results = await submitPracticeTest(
+      const { results, scoring } = await submitPracticeTest(
         courseId,
         session.questions.map((item) => ({
           question_id: item.question_id,
           selected_option: session.answers[item.question_id] ?? null,
         })),
+        activeLocale,
       );
       const checks = Object.fromEntries(results.map((r) => [r.question_id, r]));
       // Same "Test Submitted" as a test-series exam (test_type practice_test); after the save succeeded.
@@ -307,7 +308,7 @@ export default function PracticeTestPage() {
       // The onboarding answers are the first ones the Cutoff Meter counts — refetch it.
       invalidateCutoffMeterQueries(queryClient);
       // The result opens when the submit animation has played out (see <TestSubmit onFinish> below).
-      pendingFinishRef.current = { checks, elapsedMs };
+      pendingFinishRef.current = { checks, elapsedMs, scoring };
       setSubmitDone(true);
     } catch {
       // Stay on the test so nothing is lost; Finish can be tapped again.
@@ -320,7 +321,7 @@ export default function PracticeTestPage() {
     const pending = pendingFinishRef.current;
     if (!pending) return;
     pendingFinishRef.current = null;
-    update((s) => ({ ...s, checks: pending.checks, finishedAt: Date.now(), elapsedMs: pending.elapsedMs }));
+    update((s) => ({ ...s, checks: pending.checks, finishedAt: Date.now(), elapsedMs: pending.elapsedMs, scoring: pending.scoring }));
     setFinishing(false);
     setSubmitDone(false);
   }, [update]);

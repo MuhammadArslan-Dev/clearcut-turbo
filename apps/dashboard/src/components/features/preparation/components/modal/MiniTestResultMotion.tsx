@@ -13,6 +13,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@clearcut/ui/button";
 import { TestResult } from "@clearcut/motion/test/flow";
+import { scoringToResultData } from "@/lib/api/scoring";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreparationModalStore } from "@/components/features/preparation/store/usePreparationModalStore";
@@ -60,6 +61,8 @@ export default function MiniTestResultMotion() {
 function ResultBody({ close, restart }: { close: () => void; restart: () => void }) {
   const trans = useTranslations("modals.miniTestResult");
   const { getResult } = useMiniTestStore();
+  // Server-scored flow (phase 103 D6): once the server answers, its marks + cutoff replace the browser count.
+  const serverScoring = useMiniTestStore((s) => s.serverScoring);
   const { course, selectedTopic } = usePreparationStore();
 
   const result = getResult();
@@ -72,15 +75,20 @@ function ResultBody({ close, restart }: { close: () => void; restart: () => void
 
   const total = result.total;
   const data = useMemo(
-    () => ({
-      score: result.correct,
-      maxScore: Math.max(1, total),
-      correct: result.correct,
-      wrong: result.incorrect,
-      skipped: Math.max(0, total - result.correct - result.incorrect),
-      // no timeTakenSec: this test is untimed and the store does not track it, so the Time line is hidden
-    }),
-    [result.correct, result.incorrect, total],
+    () =>
+      serverScoring
+        ? scoringToResultData(serverScoring)
+        : {
+            // Legacy (browser-scored) flow: counts only, and no cutoff — the browser has no exam pass mark.
+            score: result.correct,
+            maxScore: Math.max(1, total),
+            cutoff: null,
+            correct: result.correct,
+            wrong: result.incorrect,
+            skipped: Math.max(0, total - result.correct - result.incorrect),
+            // no timeTakenSec: this test is untimed and the store does not track it, so the Time line is hidden
+          },
+    [serverScoring, result.correct, result.incorrect, total],
   );
 
   return (

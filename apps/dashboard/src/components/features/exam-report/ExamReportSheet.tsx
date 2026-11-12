@@ -36,6 +36,7 @@ import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStor
 import OptionCard from "./OptionCard";
 import { TestResult } from "@clearcut/motion/test/flow";
 import type { ResultData } from "@clearcut/motion/test/flow";
+import type { TestScoring } from "@/lib/api/scoring";
 import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 
 type QuestionFilter = "all" | "correct" | "incorrect" | "skipped";
@@ -159,34 +160,45 @@ export default function ExamReportSheet() {
     onClose: () => closeModal("exam-report"),
   });
 
-  // Animated result hero (@clearcut/motion TestResult) replaces the four plain stat cards. One mark per question in
-  // these tests, no cutoff. Chapter test = the "topic" result, sectional + full = the "full" result (per-section marks).
+  // Animated result hero (@clearcut/motion TestResult) replaces the four plain stat cards. Chapter test = the "topic"
+  // result, sectional + full = the "full" result (per-section marks). Marks, max marks, cutoff and section marks come
+  // from the backend scorer (phase 103, `result.marks`/`max_marks`/`cutoff`/`sections`); attempts submitted before it
+  // have none of these, so they keep the old count view without a cutoff.
   const motionLang = useMotionLang();
   const resultKind = exam?.type === "chapter" ? "chapter" : exam?.type === "sectional" ? "sectional" : "full";
+  const scored = result?.max_marks != null;
   const resultData = useMemo<ResultData | null>(() => {
     const total = Number(result?.total_questions ?? 0);
     if (!exam || !total) return null;
     const used = Number(exam.time_used_seconds);
     const minutes = Number(result?.time);
     const timeTakenSec = used > 0 ? used : minutes > 0 ? Math.round(minutes * 60) : undefined;
+    const serverSections: TestScoring["sections"] = Array.isArray(result?.sections) ? result.sections : [];
     const bySection =
       resultKind !== "chapter" && sections.length > 1
-        ? sections.map((s: any) => ({
-            name: s.section?.name ?? "",
-            score: (s.questions ?? []).filter((q: any) => Number(q?.is_correct) === 1).length,
-            max: (s.questions ?? []).length,
-          }))
+        ? sections.map((s: { section_id?: number; section?: { id?: number; name?: string }; questions?: { is_correct?: unknown }[] }) => {
+            const id = Number(s.section_id ?? s.section?.id);
+            const fromServer = scored ? serverSections.find((x) => Number(x.section_id) === id) : undefined;
+            return fromServer
+              ? { name: s.section?.name ?? "", score: Number(fromServer.marks), max: Number(fromServer.max_marks) }
+              : {
+                  name: s.section?.name ?? "",
+                  score: (s.questions ?? []).filter((q) => Number(q?.is_correct) === 1).length,
+                  max: (s.questions ?? []).length,
+                };
+          })
         : undefined;
     return {
-      score: Number(result?.correct ?? 0),
-      maxScore: total,
+      score: scored ? Number(result.marks) : Number(result?.correct ?? 0),
+      maxScore: scored ? Number(result.max_marks) : total,
+      cutoff: scored && result.cutoff != null ? Number(result.cutoff) : null,
       correct: Number(result?.correct ?? 0),
       wrong: Number(result?.wrong ?? 0),
       skipped: Number(result?.unanswered ?? 0),
       timeTakenSec,
       sections: bySection,
     };
-  }, [exam, result, sections, resultKind]);
+  }, [exam, result, sections, resultKind, scored]);
 
   // Moved below every hook in this component (see git history/blame if this
   // looks odd) — an early return here BEFORE the hooks that used to follow
@@ -281,7 +293,6 @@ export default function ExamReportSheet() {
                             data={resultData}
                             lang={motionLang}
                             actions={false}
-                            noCutoff
                           />
                         </div>
                       )}
