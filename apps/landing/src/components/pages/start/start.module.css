@@ -164,16 +164,18 @@
 @keyframes float { 50% { transform: translateY(-2%); } }
 @keyframes shadow { 50% { transform: scaleX(0.9); opacity: 0.1; } }
 
-.mascot[data-mood="wave"] .nib { animation: wiggle 0.5s ease-in-out infinite alternate; }
+/* No endless jumping (user, 2026-11-12): wave and hop play a couple of times,
+   then Nibbu rests (the gentle float of the base state comes back). */
+.mascot[data-mood="wave"] .nib { animation: wiggle 0.5s ease-in-out 4 alternate, float 3.2s ease-in-out 2s infinite; }
 @keyframes wiggle { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 
-.mascot[data-mood="point"] .nib { animation: hop 0.62s infinite; }
+.mascot[data-mood="point"] .nib { animation: hop 0.62s 2, float 3.2s ease-in-out 1.24s infinite; }
 @keyframes hop {
   0% { transform: translateY(0) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
   45% { transform: translateY(-8%) scale(0.95, 1.06); animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
   100% { transform: translateY(0) scale(1.1, 0.9); }
 }
-.mascot[data-mood="point"] .shadow { animation: hopshadow 0.62s infinite; }
+.mascot[data-mood="point"] .shadow { animation: hopshadow 0.62s 2, shadow 3.2s ease-in-out 1.24s infinite; }
 @keyframes hopshadow { 45% { transform: scaleX(0.6); opacity: 0.07; } }
 
 .mascot[data-mood="happy"] .nib { animation: jump 0.5s cubic-bezier(0.33, 1, 0.68, 1) 2 alternate; }
