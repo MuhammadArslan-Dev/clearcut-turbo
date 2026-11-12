@@ -87,6 +87,7 @@
     min-width: 0;
   }
   .stage {
+    flex: 1 1 0;
     background: none !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -121,7 +122,8 @@
 
 /* ---------- mascot stage ---------- */
 .stage {
-  flex: 1 1 0;
+  /* Phones: no more than the bubble + Nibbu need (user: card height kam karo). */
+  flex: 0 1 230px;
   min-height: 92px;
   display: flex;
   align-items: center;
