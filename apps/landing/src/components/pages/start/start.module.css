@@ -122,8 +122,8 @@
 
 /* ---------- mascot stage ---------- */
 .stage {
-  /* Phones: no more than the bubble + Nibbu need (user: card height kam karo). */
-  flex: 0 1 230px;
+  /* Phones: a share of the screen height, not a fixed size (user, 2026-11-12). */
+  flex: 0 1 calc(var(--vh, 100dvh) * 0.32);
   min-height: 92px;
   display: flex;
   align-items: center;
@@ -138,7 +138,7 @@
   height: 100%;
   aspect-ratio: 1 / 1;
   /* Smaller than the prototype (user, 2026-11-12: "bahut aankhon mein aa raha hai") */
-  max-height: min(72px, 18vw);
+  max-height: min(calc(var(--vh, 100dvh) * 0.14), 28vw);
   flex: none;
   position: relative;
   z-index: 1;
@@ -243,9 +243,9 @@
 
 /* tall screens + desktop: bubble above, big mascot below */
 .stage[data-col="true"] { flex-direction: column-reverse; justify-content: center; gap: 14px; padding: 14px 16px 8px; }
-.stage[data-col="true"] .mascotBtn { height: calc(100% - 96px); min-height: 64px; max-height: min(95px, 26vw); }
+.stage[data-col="true"] .mascotBtn { height: calc(100% - 96px); min-height: 64px; max-height: min(calc(var(--vh, 100dvh) * 0.17), 40vw); }
 @media (min-width: 860px) and (min-height: 600px) {
-  .stage[data-col="true"] .mascotBtn { max-height: 120px; }
+  .stage[data-col="true"] .mascotBtn { max-height: calc(var(--vh, 100dvh) * 0.2); }
 }
 .stage[data-col="true"] .bubble { flex: none; width: auto; max-width: min(330px, 100%); min-height: 0; padding: 11px 16px; font-size: 15.5px; text-align: center; justify-content: center; transform-origin: 50% 100%; }
 .stage[data-col="true"] .bubble::before,
