@@ -232,11 +232,41 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   useImperativeHandle(ref, () => handle, [handle]);
 
   // Declarative start: locked shows "?", a value springs in from 0.
+  const applied = useRef<{ locked: boolean; value: number | null | undefined; band: number }>({
+    locked: lockedProp,
+    value,
+    band: bandProp ?? 0,
+  });
   useEffect(() => {
     if (lockedProp) handle.lock(true);
     else if (value != null) void handle.set(value, { band: bandProp ?? 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live props (a refetch after a test submit): the meter used to read them on mount
+  // only, so a page showing cached data never moved to the new score until a reload.
+  useEffect(() => {
+    const prev = applied.current;
+    const band = bandProp ?? 0;
+    if (prev.locked === lockedProp && prev.value === value && prev.band === band) return;
+    applied.current = { locked: lockedProp, value, band };
+    if (lockedProp) {
+      handle.lock(true);
+      return;
+    }
+    if (value == null) return;
+    if (prev.locked) {
+      // The test that unlocked it: break the lock, then spring to the score.
+      void handle.unlock().then(() => handle.set(value, { band }));
+      return;
+    }
+    if (prev.value !== value) void handle.set(value, { band });
+    else handle.setBand(band);
+  }, [lockedProp, value, bandProp, handle]);
+
+  useEffect(() => {
+    setCooling(coolingProp);
+  }, [coolingProp]);
 
   /* ---------- derived view ---------- */
   const zoneObj = ZONES[zone];
