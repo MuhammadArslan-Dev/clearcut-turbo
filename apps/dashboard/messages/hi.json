@@ -49,7 +49,8 @@
   },
   "todayGoals": {
     "title": "आज के गोल्स",
-    "estimatedTime": "गोल्स पूरे करने का समय: {min}-{max} मिनट",
+    "doneToday": "आज {total} में से {done} गोल पूरे",
+    "loadFailed": "आपके गोल्स लोड नहीं हो सके",
     "watchVideos": "{count, plural, one {# वीडियो} other {# वीडियो}} देखें",
     "studyNotes": "{count, plural, one {# नोट} other {# नोट्स}} डाउनलोड कर अध्ययन करें",
     "attemptTests": "{count, plural, one {# मिनी-टेस्ट} other {# मिनी-टेस्ट}} दें",
@@ -92,9 +93,14 @@
     "title": "अगला माइलस्टोन",
     "chaptersAway": "{subject} पूरा करने से {count, plural, one {# चैप्टर} other {# चैप्टर्स}} दूर",
     "count": "{count, plural, one {# चैप्टर} other {# चैप्टर्स}}",
+    "toPercent": "{subject} का {percent}% पूरा करने से {count, plural, one {# चैप्टर} other {# चैप्टर्स}} दूर",
+    "allDone": "आपने {subject} के सभी चैप्टर पूरे कर लिए हैं!",
+    "noChapters": "माइलस्टोन शुरू करने के लिए {subject} का पहला चैप्टर पूरा करें।",
     "cta": "अगला माइलस्टोन पूरा करें"
   },
   "learningStreak": {
+    "activeDays": "इस महीने {days, plural, one {# सक्रिय दिन} other {# सक्रिय दिन}}",
+    "loadFailed": "आपकी स्ट्रीक लोड नहीं हो सकी",
     "title": "लर्निंग स्ट्रीक",
     "minutesToKeepStreak": "आज {minutes, plural, one {# मिनट} other {# मिनट}} पढ़ें ताकि {streak, plural, one {#-डे} other {#-डेज़}} निरंतरता बनी रहे",
     "day": "{streak, plural, one {#-डे} other {#-डेज़}} स्ट्रीक",
@@ -499,6 +505,7 @@
     "pickedBy": "आपके कटऑफ़ मीटर ने चुना",
     "start": "शुरू करें: {title}",
     "keepGoing": "आगे बढ़ें: {title}",
+    "planEmpty": "आज के प्लान में अभी कोई गतिविधि नहीं है। पढ़ते रहें, आपका प्लान यहाँ दिखेगा।",
     "allDone": "आज का सब पूरा ✓",
     "unlocksMeter": "मीटर अनलॉक",
     "takeAnyTest": "{n}+ सवालों वाला कोई भी टेस्ट दें",

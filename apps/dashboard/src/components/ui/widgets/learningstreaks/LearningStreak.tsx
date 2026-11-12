@@ -66,7 +66,7 @@ const LearningStreak: React.FC<LearningStreakProps> = ({
   if (isError || !streak) {
     return (
       <div className={clsx("p-4", bgColor, rounded)}>
-        <div className="body-medium text-red-500">Failed to load streak</div>
+        <div className="body-medium text-surface-gray-muted">{t("learningStreak.loadFailed")}</div>
       </div>
     );
   }
@@ -163,6 +163,11 @@ const LearningStreak: React.FC<LearningStreakProps> = ({
             days: streak.longest_streak,
           })}
         </div>
+        {typeof streak.active_days_this_month === "number" && (
+          <div className="body-small text-surface-gray-muted">
+            {t("learningStreak.activeDays", { days: streak.active_days_this_month })}
+          </div>
+        )}
       </div>
     </div>
   );
