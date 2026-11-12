@@ -1,4 +1,5 @@
 import type { PracticeAnswerCheck, PracticeExplanation, PracticeQuestion } from "@/lib/api/firstPracticeTest";
+import type { TestScoring } from "@/lib/api/scoring";
 
 // The practice test keeps nothing on the server: questions and the learner's
 // answers live in sessionStorage for the tab, so a refresh resumes the same
@@ -21,6 +22,8 @@ export type PracticeSession = {
   explained?: Record<number, PracticeExplanation>;
   /** Question ids whose explanation panel is open. */
   shown?: number[];
+  /** The backend scorer's totals for the submitted test (phase 103). Missing before submit and in older stored tests. */
+  scoring?: TestScoring;
 };
 
 const key = (courseId: string) => `cc-first-practice-test-v2:${courseId}`;

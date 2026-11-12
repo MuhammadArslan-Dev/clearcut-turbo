@@ -204,8 +204,14 @@ export default function MiniTest() {
       byQuestionId[q.id] = answers[i] ?? null;
     });
     const topicId = Number(selectedTopic?.id);
-    submitMiniTestAttempt(attemptId, byQuestionId, locale)
-      .then(() => {
+    // The language the questions were SHOWN in (same pick as `translate` below), so the
+    // server scores against the key the learner saw highlighted.
+    const shownLocale =
+      selectSection?.type === "subject" ? language : questions[0]?.translations?.[0]?.locale ?? locale;
+    submitMiniTestAttempt(attemptId, byQuestionId, shownLocale)
+      .then((res) => {
+        // Phase 103: the server's score is the truth on this flow — the result screen switches to it.
+        useMiniTestStore.getState().setServerScoring(res.scoring ?? null);
         markTopicFieldDone(topicId, "miniTestDone");
         trackEvent("Topic Status Changed", {
           topic_name: selectedTopic?.name ?? "",

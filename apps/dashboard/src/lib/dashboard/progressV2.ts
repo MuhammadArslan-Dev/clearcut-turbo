@@ -1,5 +1,6 @@
 import { apiFetch } from "../api/client";
 import { QuestionNew } from "@/components/features/preparation/types/question";
+import type { TestScoring } from "../api/scoring";
 
 /**
  * Progress Tracker v2 (docs/Progress Tracker/ARCHITECTURE.md §8).
@@ -86,7 +87,7 @@ export async function submitMiniTestAttempt(
   answers: Record<number, number | null>,
   locale?: string,
 ) {
-  const res = await apiFetch<{ data: { attempt_id: string; correct: number; total: number } }>(
+  const res = await apiFetch<{ data: { attempt_id: string; correct: number; total: number; scoring?: TestScoring } }>(
     `/v2/progress/mini-test/${encodeURIComponent(attemptId)}/submit`,
     {
       method: "POST",

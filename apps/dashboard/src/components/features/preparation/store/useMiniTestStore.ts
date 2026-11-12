@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { QuestionNew } from "../types/question";
+import type { TestScoring } from "@/lib/api/scoring";
 
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
@@ -20,11 +21,14 @@ interface MiniTestState {
 
   /** Server attempt (Progress Tracker v2 server scoring); null on the legacy flow. */
   attemptId: string | null;
+  /** The server's score of that attempt (phase 103: the truth, incl. marks + cutoff); null until it answers / on the legacy flow. */
+  serverScoring: TestScoring | null;
 
   /* ----------------------------- ACTIONS ----------------------------- */
 
   setQuestions: (q: QuestionNew[], locale?: string) => void;
   setAttemptId: (id: string | null) => void;
+  setServerScoring: (s: TestScoring | null) => void;
   setLocale: (locale: string) => void;
 
   selectOption: (questionIndex: number, optionKey: number) => void;
@@ -57,10 +61,12 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
   isFinished: false,
 
   attemptId: null,
+  serverScoring: null,
 
   /* ----------------------------- SETTERS ----------------------------- */
 
   setAttemptId: (attemptId) => set({ attemptId }),
+  setServerScoring: (serverScoring) => set({ serverScoring }),
 
   setQuestions: (q, locale = "en") =>
     set({
@@ -70,6 +76,7 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
       answers: {},
       checked: {},
       isFinished: false,
+      serverScoring: null,
     }),
 
   setLocale: (locale) => set({ locale }),
@@ -129,6 +136,7 @@ export const useMiniTestStore = create<MiniTestState>((set, get) => ({
       checked: {},
       isFinished: false,
       attemptId: null,
+      serverScoring: null,
     }),
 
   /* ----------------------------- RESULT ----------------------------- */

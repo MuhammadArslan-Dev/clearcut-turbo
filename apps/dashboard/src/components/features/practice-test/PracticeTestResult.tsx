@@ -16,6 +16,7 @@ import MountainFlagIllustration from "@/components/ui/illustrations/MountainFlag
 import OptionCard from "@/components/features/exam-report/OptionCard";
 import QuestionExplanation from "@/components/features/exam-report/QuestionExplanation";
 import { TestResult } from "@clearcut/motion/test/flow";
+import { scoringToResultData } from "@/lib/api/scoring";
 import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 import PracticeFooter from "./PracticeFooter";
 import {
@@ -159,14 +160,20 @@ export default function PracticeTestResult({
                   type="topic"
                   label={t("motion.badge")}
                   lang={motionLang}
-                  data={{
-                    score: correct,
-                    maxScore: Math.max(1, total),
-                    correct,
-                    wrong: incorrect,
-                    skipped: Math.max(0, total - attempted),
-                    timeTakenSec: seconds,
-                  }}
+                  // Marks / cutoff from the backend scorer (phase 103); a test stored before it shows counts, no cutoff.
+                  data={
+                    session.scoring
+                      ? { ...scoringToResultData(session.scoring), timeTakenSec: seconds }
+                      : {
+                          score: correct,
+                          maxScore: Math.max(1, total),
+                          cutoff: null,
+                          correct,
+                          wrong: incorrect,
+                          skipped: Math.max(0, total - attempted),
+                          timeTakenSec: seconds,
+                        }
+                  }
                   actions={false}
                   wide
                 />
