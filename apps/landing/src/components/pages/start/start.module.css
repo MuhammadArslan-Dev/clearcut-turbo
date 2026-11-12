@@ -337,6 +337,8 @@
 .cta[data-ready="true"] { animation: glow 1.2s ease-in-out infinite; }
 @keyframes glow { 50% { box-shadow: 0 6px 16px color-mix(in srgb, var(--s-blue) 28%, transparent), 0 0 0 8px color-mix(in srgb, var(--s-blue) 14%, transparent); } }
 .cta[data-dim="true"] { opacity: 0.45; box-shadow: none; }
+/* The prototype's arrow: the same "→", 10 px after the label, regular weight. */
+.arrow { display: inline-block; margin-left: 4px; font-weight: 400; line-height: 1; }
 
 .linkbtn { background: none; border: 0; padding: 2px; color: var(--s-blue-600); font: inherit; font-weight: 600; cursor: pointer; }
 .linkbtn:disabled { color: var(--s-muted); cursor: default; font-weight: 500; }

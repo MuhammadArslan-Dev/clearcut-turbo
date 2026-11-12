@@ -1121,7 +1121,7 @@ export default function StartAuthForm({
                     fullWidth
                     disabled={loading}
                     loading={loading}
-                    rightIcon={loading ? undefined : <span aria-hidden="true">→</span>}
+                    rightIcon={loading ? undefined : <span className={styles.arrow} aria-hidden="true">→</span>}
                     className={styles.cta}
                     data-ready={isValidPhone && !loading ? "true" : undefined}
                   >
@@ -1192,7 +1192,7 @@ export default function StartAuthForm({
                   fullWidth
                   disabled={loading}
                   loading={loading}
-                  rightIcon={loading ? undefined : <span aria-hidden="true">→</span>}
+                  rightIcon={loading ? undefined : <span className={styles.arrow} aria-hidden="true">→</span>}
                   className={styles.cta}
                   data-dim={!otpReady && !loading ? "true" : undefined}
                   aria-disabled={!otpReady}
