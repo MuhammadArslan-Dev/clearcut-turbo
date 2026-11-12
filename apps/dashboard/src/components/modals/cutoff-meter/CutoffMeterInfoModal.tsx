@@ -10,12 +10,12 @@ import { Meter } from "@clearcut/motion/meters/meter";
 import { Nib } from "@clearcut/motion/meters/nib";
 import {
   ZONES,
+  fillShare,
   riderPose,
-  trackColour,
   zoneOf,
   zoneWidths,
 } from "@clearcut/motion/meters/zones";
-import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
@@ -182,10 +182,7 @@ function MeterInfoBody({
             <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
               {locked
                 ? t("youLocked", {
-                    count: Math.max(
-                      meter.unlock_answers - meter.counted_answers,
-                      1,
-                    ),
+                    count: unlockMinQuestions(meter),
                     pass,
                     max,
                   })
@@ -265,12 +262,21 @@ function MeterInfoBody({
               {strip.map((z) => (
                 <i
                   key={z.k}
+                  className="relative block overflow-hidden"
                   style={{
                     flexGrow: Math.max(z.to - z.from, 0.001),
-                    // Same rule as the meter: full colour once the score reached this range, light before.
-                    background: trackColour(z.k, locked ? "locked" : zoneOf(value, scale)),
+                    // Same rule as the meter: light shade, full colour only up to the score.
+                    background: ZONES[z.k].t,
                   }}
-                />
+                >
+                  <i
+                    className="absolute inset-y-0 left-0 block"
+                    style={{
+                      width: `${(locked ? 0 : fillShare(z.from, z.to, value)) * 100}%`,
+                      background: ZONES[z.k].c,
+                    }}
+                  />
+                </i>
               ))}
             </div>
             <ul className="mt-3 grid grid-cols-2 gap-2">

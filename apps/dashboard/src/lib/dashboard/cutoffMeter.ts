@@ -11,6 +11,8 @@ export interface CutoffMeterSummary {
   confidence: "low" | "medium" | "high" | null;
   counted_answers: number;
   unlock_answers: number;
+  /** Unlock rule (client, 2026-11-12): any test with at least this many questions unlocks the meter. */
+  unlock_min_test_questions?: number;
   change: number | null;
   model_version: string;
   computed_at: string | null;
@@ -98,6 +100,31 @@ export async function getCutoffMeter(courseId: string | number): Promise<CutoffM
     method: "GET",
   });
   return res.data;
+}
+
+/**
+ * A topic test that ran on the legacy browser flow (the server attempt could not
+ * start): send its answers so the Cutoff Meter counts them too — every test type
+ * feeds the meter. The server decides right/wrong; `attemptRef` (one per open)
+ * makes a retry idempotent.
+ */
+export async function sendLegacyTopicAnswers(payload: {
+  course_id: string;
+  topic_id: number;
+  attempt_ref: string;
+  answers: Record<number, number | null>;
+  locale?: string;
+}): Promise<void> {
+  await apiFetch(`/v2/cutoff-meter/topic-answers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Questions a single test needs to unlock the meter (backend config; 5 when an older backend omits it). */
+export function unlockMinQuestions(m: Pick<CutoffMeterSummary, "unlock_min_test_questions">): number {
+  return m.unlock_min_test_questions ?? 5;
 }
 
 /** Fire-and-forget: the student tapped a plan row / the Start CTA (`nba_log.clicked_at`). */
