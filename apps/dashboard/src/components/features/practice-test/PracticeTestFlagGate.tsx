@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { usePracticeTestEnabled } from "@/lib/experiments/usePracticeTestEnabled";
@@ -16,14 +17,15 @@ import { PracticeTestSkeleton } from "./PracticeTestSkeletons";
 export default function PracticeTestFlagGate() {
   const enabled = usePracticeTestEnabled();
   const router = useRouter();
+  const courseHome = useCourseHome();
   const { courseId } = useParams<{ courseId: string }>();
 
   useEffect(() => {
     if (enabled !== false) return;
     // The saved attempt is deliberately kept: "false" also means a flag read that failed or timed out
     // (the answer is cached for 10 min only), and a reload must not throw an attempt away for that.
-    router.replace(`/preparation/${courseId}`);
-  }, [enabled, courseId, router]);
+    router.replace(courseHome(courseId));
+  }, [enabled, courseId, router, courseHome]);
 
   if (enabled !== true) return <PracticeTestSkeleton />;
   return <PracticeTestPage />;

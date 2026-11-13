@@ -8,7 +8,7 @@ import {
 } from "@/lib/tests/getExam";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useCallback, useRef } from "react";
 import TestCard from "../cards/TestCard";
 import { Button } from "@clearcut/ui/button";
 import { useTestSeriesModalStore } from "../../store/useTestSeriesModalStore";
@@ -39,8 +39,11 @@ export default function FullTest({ courseId }: FullTestProps) {
   const t = useTranslations();
   const cardT = useTranslations("testListContent");
 
-  const { get } = useQueryParams();
+  const { get, set } = useQueryParams();
   const testType = get("testType");
+  // Deep link from the Target tab's Today's goals (phase 111): ?paper=&startTest=<test id>.
+  const urlPaper = Number(get("paper")) || undefined;
+  const startTestParam = get("startTest");
 
   const { open } = useTestSeriesModalStore();
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
@@ -76,8 +79,11 @@ export default function FullTest({ courseId }: FullTestProps) {
     if (!data?.paper?.length) return;
 
     setPapers(data.paper);
-    if (!paper) setPaper(data.activePaper);
-  }, [data, paper, setPapers, setPaper]);
+    // A deep link names its paper: that selection wins over the one left in the shared store.
+    const named = urlPaper ? data.paper.find((p: any) => p.id === urlPaper) : undefined;
+    if (named && paper?.id !== named.id) setPaper(named);
+    else if (!paper) setPaper(data.activePaper);
+  }, [data, paper, setPapers, setPaper, urlPaper]);
 
   /* ======================= DERIVED DATA ======================= */
 
@@ -135,6 +141,25 @@ export default function FullTest({ courseId }: FullTestProps) {
       test: mandatoryTests[index !== -1 ? index : 0],
     };
   }, [mandatoryTests, paper?.id, isTestAttempted]);
+
+  /* ======================= DEEP LINK: START THE NAMED TEST ======================= */
+
+  // Today's goals → "Full-length test": open exactly that test (the sheet a card tap opens), or the paywall when
+  // the plan does not include it. Runs once; the params are removed so a refresh does not reopen it.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (!startTestParam || deepLinkDone.current || !data?.tests) return;
+    if (urlPaper && paper?.id !== urlPaper) return; // wait for the named paper to be selected
+    deepLinkDone.current = true;
+    const test = (data.tests[paper?.id ?? 0] ?? []).find((tt: any) => String(tt.id) === startTestParam);
+    set({ startTest: null, paper: null });
+    if (!test) return;
+    if ((test as any).locked) {
+      openPaywall("test-locked-modal", courseData?.exam!, "full_test_card_clicked", courseData);
+    } else {
+      open("pre-test-confirmation", { test });
+    }
+  }, [startTestParam, data, paper?.id, urlPaper, set, open, openPaywall, courseData]);
 
   /* ======================= PROGRESS ======================= */
 

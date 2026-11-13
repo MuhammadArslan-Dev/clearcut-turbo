@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { ArrowIcon, CheckIcon, FireIcon } from "@/components/ui/icons";
@@ -28,6 +29,7 @@ export default function PaymentSuccessModal() {
   const locale = useLocale(); // "en", "hi", etc.
   useDrawerBackHandler();
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   const {
     levels: levelsRaw = [],
@@ -73,7 +75,7 @@ export default function PaymentSuccessModal() {
       exam_name: activeCourse.exam?.short_name!,
     });
     
-    router.push(`/preparation/${activeCourse?.group_code}`);
+    router.push(courseHome(activeCourse?.group_code));
 
     // window.location.href = `https://app.clearcutoff.in/prepration/${
     //   activeCourse.uuid

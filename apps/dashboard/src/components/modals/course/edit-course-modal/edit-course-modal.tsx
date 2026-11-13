@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import {
   useCallback,
   useEffect,
@@ -89,6 +90,7 @@ export default function EditCourseModal() {
   const { locale } = useLanguageSwitch();
   useDrawerBackHandler();
   const router = useRouter();
+  const courseHome = useCourseHome();
   const { courses, clearCache: clearMyActiveCourses } = useMyActiveCourses();
   const [saveChangesLoading, setSaveChangesLoading] = useState(false);
   const [continueLearningLoading, setContinueLearningLoading] = useState(false);
@@ -387,7 +389,7 @@ export default function EditCourseModal() {
         onSuccess?.();
 
         if (continueLearning) {
-          router.push(`/preparation/${res?.data?.group_code}`);
+          router.push(courseHome(res?.data?.group_code));
         }
 
         close();

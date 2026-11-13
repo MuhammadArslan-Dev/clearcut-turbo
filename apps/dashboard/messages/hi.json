@@ -522,6 +522,25 @@
     },
     "marksFrom": "आपके अंक कहाँ से आ रहे हैं",
     "breakdownLocked": "विषय-वार अंक पहले टेस्ट के बाद दिखेंगे।",
+    "breakdownCorrect": "{attempted} में से {correct} सही · {percent}%",
+    "breakdownNotTested": "अभी टेस्ट नहीं दिया",
+    "breakdownNote": "जिन विषयों का टेस्ट आपने अभी नहीं दिया, उन्हें शुरुआती अनुमान (उनके अंकों का लगभग {percent}%) पर गिना गया है। किसी विषय के अंक सिर्फ़ उसी विषय में आपके जवाबों से बदलते हैं।",
+    "goals": {
+      "title": "आज के लक्ष्य",
+      "sub": "आपका अगला टॉपिक, एक सेक्शनल टेस्ट और एक फुल-लेंथ टेस्ट",
+      "unavailable": "आज के लक्ष्य अगले सिंक के बाद यहाँ दिखेंगे।",
+      "nextTopic": "अगला टॉपिक",
+      "sectional": "सेक्शनल टेस्ट",
+      "fullLength": "फुल-लेंथ टेस्ट",
+      "sectionalMeta": "{section} · टेस्ट {number} · {questions} प्रश्न",
+      "fullMeta": "फुल-लेंथ टेस्ट {number}",
+      "topicsProgress": "{total} में से {done} टॉपिक पूरे",
+      "testsProgress": "{total} में से {done} टेस्ट दिए",
+      "allTopicsDone": "आपने सभी टॉपिक पूरे कर लिए हैं",
+      "allTestsDone": "आप सभी टेस्ट दे चुके हैं",
+      "unlock": "अनलॉक करें",
+      "doneToday": "आज पूरा"
+    },
     "error": "आपका कटऑफ़ मीटर लोड नहीं हो सका।",
     "retry": "फिर से कोशिश करें"
   }

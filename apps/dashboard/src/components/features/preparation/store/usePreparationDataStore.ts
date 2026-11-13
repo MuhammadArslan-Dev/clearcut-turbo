@@ -113,7 +113,7 @@ const getIndex = <T extends { id: number }>(
   return list.findIndex((i) => i.id === item.id);
 };
 
-const flattenTopics = (topics: Topic[]): Topic[] => {
+export const flattenTopics = (topics: Topic[]): Topic[] => {
   const result: Topic[] = [];
 
   for (const topic of topics) {
@@ -373,7 +373,12 @@ export const usePreparationStore = create<PreparationState>((set) => ({
         ? chapters.find((chapter) => chapter.id === Number(state.chapter_id))
         : undefined;
 
-      const selectedChapter = restoredChapter ?? chapters[0];
+      // A saved / linked position inside a LOCKED chapter (plan ended, trial over, hand-made URL) is not
+      // restored: the first open chapter is shown instead (the server withholds locked content anyway).
+      const selectedChapter =
+        (restoredChapter && !restoredChapter.locked ? restoredChapter : undefined) ??
+        chapters.find((chapter) => !chapter.locked) ??
+        chapters[0];
 
       const flatTopics = selectedChapter?.topics
         ? flattenTopics(selectedChapter.topics)
@@ -462,14 +467,27 @@ export const usePreparationStore = create<PreparationState>((set) => ({
         return state;
       }
 
-      const paperId = state.selectedPaperId;
-      const sections = paperId ? state.sectionsByPaperId?.[paperId] : undefined;
+      // The section may belong to ANOTHER paper than the open one (a Target "Today's plan" link can
+      // point into any paper of the course): switch to the paper that owns it, else it stayed on the
+      // old paper with no `selectedSection` (phase 109).
+      let paperId = state.selectedPaperId;
+      let sections = paperId ? state.sectionsByPaperId?.[paperId] : undefined;
+      if (!sections?.some((section) => section.id === sectionId)) {
+        const owner = Object.entries(state.sectionsByPaperId ?? {}).find(([, list]) =>
+          list?.some((section) => section.id === sectionId),
+        );
+        if (owner) {
+          paperId = Number(owner[0]);
+          sections = owner[1];
+        }
+      }
 
       const selectedSection = sections?.find(
         (section) => section.id === sectionId,
       );
 
       return {
+        selectedPaperId: paperId,
         selectedSectionId: sectionId,
         selectedSection,
         selectedArea: null,

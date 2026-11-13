@@ -75,6 +75,9 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
 
   const searchParams = useSearchParams();
   const urlParamsApplied = useRef(false);
+  // Set when the opening URL's section was just applied: the URL sync below must skip that pass (its
+  // closure still holds the previous section and would write it back over the requested one).
+  const skipUrlSync = useRef(false);
   const router = useRouter();
 
   // A link built from a missing group_code (`/preparation/null`) has no
@@ -87,19 +90,30 @@ export default function PreparationPage({ courseId }: { courseId: string }) {
   const { selectedSectionId, selectedChapter, selectedTopic, selectSection } =
     usePreparationStore();
 
-  // On first hydration, override section from URL param if provided
+  // On first hydration, override section from URL param if provided (Target "Today's plan", shared link).
+  // "Applied" is only recorded once the store really is on that section: React StrictMode (dev) re-runs
+  // the mount effects, and the second hydrate (usePreparationData) put the saved section back over the
+  // one just selected — with the flag already set, the destination was lost.
   useEffect(() => {
     if (urlParamsApplied.current || !selectedSectionId) return;
-    const urlSection = searchParams.get("section");
-    if (urlSection && Number(urlSection) !== selectedSectionId) {
-      selectSection(Number(urlSection));
+    // window.location inside the effect (not the render-time searchParams): after a client-side
+    // navigation the first render still holds the previous page's query, the effect sees the new URL.
+    const urlSection = new URLSearchParams(window.location.search).get("section");
+    if (!urlSection || Number(urlSection) === selectedSectionId) {
+      urlParamsApplied.current = true;
+      return;
     }
-    urlParamsApplied.current = true;
+    skipUrlSync.current = true;
+    selectSection(Number(urlSection));
   }, [selectedSectionId]);
 
   // Sync store state → URL whenever section / chapter / topic changes
   useEffect(() => {
     if (!selectedSectionId) return;
+    if (skipUrlSync.current) {
+      skipUrlSync.current = false;
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     let changed = false;
 

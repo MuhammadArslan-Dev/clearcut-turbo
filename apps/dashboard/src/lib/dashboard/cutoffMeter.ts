@@ -82,6 +82,47 @@ export interface CutoffMeterAction {
   completed: boolean;
 }
 
+/**
+ * Target tab "Today's goals" (phase 111, BE TodayGoalsService): next topic, sectional test and
+ * full-length test of the student's current paper — all from real progress / attempts.
+ */
+export interface TodayGoalBase {
+  key: "next_topic" | "sectional_test" | "full_length_test";
+  /** todo, locked (the plan does not include it) or none (nothing left to offer). */
+  status: "todo" | "locked" | "none";
+  locked: boolean;
+  /** Activity of this kind today (IST). */
+  completed_today: boolean;
+  today_count: number;
+  progress: { done: number; total: number };
+  paper_id?: number;
+  section_id?: number;
+  test_id?: number;
+}
+export interface NextTopicGoal extends TodayGoalBase {
+  key: "next_topic";
+  topic_id?: number;
+  chapter_id?: number;
+  topic?: string;
+  chapter?: string;
+  section?: string;
+}
+export interface SectionalGoal extends TodayGoalBase {
+  key: "sectional_test";
+  test_number?: number;
+  questions?: number;
+  section?: string;
+}
+export interface FullLengthGoal extends TodayGoalBase {
+  key: "full_length_test";
+  test_number?: number;
+}
+export interface TodayGoals {
+  next_topic: NextTopicGoal;
+  sectional_test: SectionalGoal;
+  full_length_test: FullLengthGoal;
+}
+
 /** Full meter for one course (`GET /v2/cutoff-meter/{course}`) — the Target tab. */
 export interface CutoffMeterDetail extends CutoffMeterSummary {
   pass_mark_source: string;
@@ -93,6 +134,8 @@ export interface CutoffMeterDetail extends CutoffMeterSummary {
   band: number | null;
   /** last saved meter per IST week, oldest first ("Last 5 weeks"). */
   trend?: number[];
+  /** Today's goals (phase 111); absent from an older backend. */
+  goals?: TodayGoals;
 }
 
 export async function getCutoffMeter(courseId: string | number): Promise<CutoffMeterDetail> {

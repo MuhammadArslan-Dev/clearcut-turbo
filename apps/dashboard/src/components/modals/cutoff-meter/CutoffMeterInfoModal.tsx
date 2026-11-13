@@ -12,7 +12,10 @@ import { Modal } from "@/components/features/Sheets/Modal";
 import { CrossIcon } from "@/components/ui/icons";
 import { Meter } from "@clearcut/motion/meters/meter";
 import { ZONES, zoneWidths } from "@clearcut/motion/meters/zones";
-import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import {
+  unlockMinQuestions,
+  type CutoffMeterSummary,
+} from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
@@ -115,7 +118,7 @@ function MeterInfoBody({
       onClose={onClose}
       isHeader={false}
       title={t("title")}
-      maxWidth="md:max-w-[460px]"
+      maxWidth="md:max-w-[880px]"
     >
       <div
         role="dialog"
@@ -146,142 +149,154 @@ function MeterInfoBody({
           </button>
         </div>
 
-        <div className="space-y-4 overflow-y-auto px-4 pb-6">
-          {/* 1. The student's own meter (unchanged) */}
-          <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
-            {/* Same shape as where it was opened: bar (course card) or gauge (Target tab). */}
-            <div
-              className={variant === "gauge" ? "mx-auto w-[200px]" : undefined}
-            >
-              <Meter
-                variant={variant}
-                size="sm"
-                fluid
-                lang={locale === "hi" ? "hi" : "en"}
-                scale={scale}
-                locked={locked}
-                value={locked ? undefined : value}
-                band={meter.band ?? 0}
-                pill={meterPill(meter, (k) => tc(k))}
-                cutoffLabel={tc("meterCutoff", { pass })}
-                caption={
-                  variant === "gauge"
-                    ? tc("meterInfo.gaugeCaption", { max })
-                    : undefined
+        {/* Phone: one column, exactly as before. Desktop (md+): two columns — the student's meter + zones on
+            the left, "How it works" + "Keep attempting" on the right — so the sheet fits the viewport
+            instead of a 460px column that needed a long scroll (phase 109). */}
+        <div className="space-y-4 overflow-y-auto px-4 pb-6 md:grid md:grid-cols-2 md:items-start md:gap-x-6 md:space-y-0 md:px-6 md:pb-6">
+          <div className="space-y-4">
+            {/* 1. The student's own meter (unchanged) */}
+            <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
+              {/* Same shape as where it was opened: bar (course card) or gauge (Target tab). */}
+              <div
+                className={
+                  variant === "gauge" ? "mx-auto w-[200px]" : undefined
                 }
-                hideCoolChip
-              />
-            </div>
-            <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
-              {locked
-                ? t("youLocked", {
-                    count: unlockMinQuestions(meter),
-                    pass,
-                    max,
-                  })
-                : t("youSummary", { value, max, pass })}
-            </p>
-          </section>
+              >
+                <Meter
+                  variant={variant}
+                  size="sm"
+                  fluid
+                  lang={locale === "hi" ? "hi" : "en"}
+                  scale={scale}
+                  locked={locked}
+                  value={locked ? undefined : value}
+                  band={meter.band ?? 0}
+                  pill={meterPill(meter, (k) => tc(k))}
+                  cutoffLabel={tc("meterCutoff", { pass })}
+                  caption={
+                    variant === "gauge"
+                      ? tc("meterInfo.gaugeCaption", { max })
+                      : undefined
+                  }
+                  hideCoolChip
+                />
+              </div>
+              <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
+                {locked
+                  ? t("youLocked", {
+                      count: unlockMinQuestions(meter),
+                      pass,
+                      max,
+                    })
+                  : t("youSummary", { value, max, pass })}
+              </p>
+            </section>
 
-          {/* 2. Zones — this exam's own numbers */}
-          <ul className="grid grid-cols-4 gap-1.5" aria-label={t("zonesTitle")}>
-            {zones.map((z) => {
-              const icon = ZONE_ICON[z.k];
-              return (
-                <li
-                  key={z.k}
-                  className="min-w-0 rounded-2xl px-1.5 py-2.5 md:px-2.5"
-                  style={{ background: ZONES[z.k].s }}
-                >
-                  <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
-                    <Image
-                      src={icon.src}
-                      alt=""
-                      width={icon.w}
-                      height={icon.h}
-                      aria-hidden="true"
-                      className="h-4 w-auto shrink-0 md:h-5"
-                    />
-                    <p
-                      className="text-[10px] leading-[13px] font-extrabold md:text-xs"
-                      style={{ color: ZONES[z.k].ink }}
-                    >
-                      {z.name}
-                    </p>
-                  </div>
-                  <p className="mt-1.5 text-[13px] leading-4 font-medium text-surface-gray-normal md:text-sm">
-                    {z.rule}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* 3. How it works */}
-          <section className="-mx-4 border-t border-[var(--color-border-gray-subtle)] px-4 pt-4">
-            <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-[var(--color-primary-stronger)]">
-              <Image
-                src={`${IMG}/layers.webp`}
-                alt=""
-                width={48}
-                height={51}
-                aria-hidden="true"
-                className="h-[22px] w-auto shrink-0"
-              />
-              {t("howWorks")}
-            </h3>
-            <ol className="space-y-2.5">
-              {STEPS.map((s) => (
-                <li
-                  key={s.n}
-                  className="flex items-center gap-3 rounded-[20px] border border-[var(--color-primary-bg-soft)] bg-white py-2.5 pr-3 pl-2.5 shadow-sm"
-                >
-                  <Image
-                    src={s.src}
-                    alt=""
-                    width={108}
-                    height={106}
-                    aria-hidden="true"
-                    className="h-11 w-11 shrink-0 md:h-12 md:w-12"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] leading-5 font-extrabold text-[var(--color-primary-stronger)]">
-                      {t(`${s.key}Title`)}
-                    </p>
-                    <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-muted md:text-sm">
-                      {t(`${s.key}Body`)}
-                    </p>
-                  </div>
-                  <span
-                    aria-hidden="true"
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[14px] font-bold text-[var(--color-brand)]"
+            {/* 2. Zones — this exam's own numbers */}
+            <ul
+              className="grid grid-cols-4 gap-1.5 md:grid-cols-2 md:gap-2"
+              aria-label={t("zonesTitle")}
+            >
+              {zones.map((z) => {
+                const icon = ZONE_ICON[z.k];
+                return (
+                  <li
+                    key={z.k}
+                    className="min-w-0 rounded-2xl px-1.5 py-2.5 md:px-2.5"
+                    style={{ background: ZONES[z.k].s }}
                   >
-                    {s.n}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
+                    <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                      <Image
+                        src={icon.src}
+                        alt=""
+                        width={icon.w}
+                        height={icon.h}
+                        aria-hidden="true"
+                        className="h-4 w-auto shrink-0 md:h-5"
+                      />
+                      <p
+                        className="text-[10px] leading-[13px] font-extrabold md:text-xs"
+                        style={{ color: ZONES[z.k].ink }}
+                      >
+                        {z.name}
+                      </p>
+                    </div>
+                    <p className="mt-1.5 text-[13px] leading-4 font-medium text-surface-gray-normal md:text-sm">
+                      {z.rule}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
-          {/* 4. Keep attempting */}
-          <section className="flex items-center gap-3 rounded-[20px] bg-[var(--color-primary-bg-soft)] px-4 py-3.5">
-            <Image
-              src={`${IMG}/bolt.webp`}
-              alt=""
-              width={84}
-              height={114}
-              aria-hidden="true"
-              className="h-[52px] w-auto shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="text-[17px] leading-6 font-extrabold text-[var(--color-brand)]">
-                {t("keepTitle")}
-              </p>
-              <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-normal md:text-sm">
-                {t("keepBody")}
-              </p>
-            </div>
-          </section>
+          <div className="space-y-4">
+            {/* 3. How it works */}
+            <section className="-mx-4 border-t border-[var(--color-border-gray-subtle)] px-4 pt-4 md:mx-0 md:border-t-0 md:px-0 md:pt-0">
+              <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-[var(--color-primary-stronger)]">
+                <Image
+                  src={`${IMG}/layers.webp`}
+                  alt=""
+                  width={48}
+                  height={51}
+                  aria-hidden="true"
+                  className="h-[22px] w-auto shrink-0"
+                />
+                {t("howWorks")}
+              </h3>
+              <ol className="space-y-2.5">
+                {STEPS.map((s) => (
+                  <li
+                    key={s.n}
+                    className="flex items-center gap-3 rounded-[20px] border border-[var(--color-primary-bg-soft)] bg-white py-2.5 pr-3 pl-2.5 shadow-sm"
+                  >
+                    <Image
+                      src={s.src}
+                      alt=""
+                      width={108}
+                      height={106}
+                      aria-hidden="true"
+                      className="h-11 w-11 shrink-0 md:h-12 md:w-12"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] leading-5 font-extrabold text-[var(--color-primary-stronger)]">
+                        {t(`${s.key}Title`)}
+                      </p>
+                      <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-muted md:text-sm">
+                        {t(`${s.key}Body`)}
+                      </p>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[14px] font-bold text-[var(--color-brand)]"
+                    >
+                      {s.n}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            {/* 4. Keep attempting */}
+            <section className="flex items-center gap-3 rounded-[20px] bg-[var(--color-primary-bg-soft)] px-4 py-3.5">
+              <Image
+                src={`${IMG}/bolt.webp`}
+                alt=""
+                width={84}
+                height={114}
+                aria-hidden="true"
+                className="h-[52px] w-auto shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-[17px] leading-6 font-extrabold text-[var(--color-brand)]">
+                  {t("keepTitle")}
+                </p>
+                <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-normal md:text-sm">
+                  {t("keepBody")}
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </Container>

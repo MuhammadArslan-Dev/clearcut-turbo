@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
@@ -159,6 +160,7 @@ export default function MyCoursesWrapTwo({
   const exam = useMemo(() => activeCourse?.exam, [activeCourse?.exam]);
 
   const route = useRouter();
+  const courseHome = useCourseHome();
 
   // "Trial Ended" pill → payment, tagged so the funnel can tell it apart
   // from the Buy button (CC-111). Only once a subject is picked, like Buy.
@@ -310,7 +312,7 @@ export default function MyCoursesWrapTwo({
             source: "learn_dashboard",
             exam_name: exam?.short_name!,
           });
-          route.push(`/preparation/${activeExam?.group_code}`);
+          route.push(courseHome(activeExam?.group_code));
           // window.location.href = `https://app.clearcutoff.in/prepration/${
           //   activeExam?.uuid
           // }?token=${token()}`;
@@ -393,7 +395,7 @@ export default function MyCoursesWrapTwo({
                             source: "learn_dashboard",
                             exam_name: exam.exam?.short_name!,
                           });
-                          route.push(`/preparation/${exam.group_code}`);
+                          route.push(courseHome(exam.group_code));
                         })();
                       } else {
                         open("single", exam.exam!);

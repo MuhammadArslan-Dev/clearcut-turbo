@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
@@ -54,6 +55,7 @@ export default function BuySigleCourseModal() {
   const { levels: levelsRaw = [], loading, error } = useLevels(data?.id);
 
   const router = useRouter();
+  const courseHome = useCourseHome();
   const { user } = useAuth();
 
   /* ---------------------------------- state ---------------------------------- */
@@ -252,7 +254,7 @@ export default function BuySigleCourseModal() {
         if (!practiceTestOn) {
           close();
           if (celebrate) enrollStore.markEnrolled("/preparation");
-          router.push(`/preparation/${groupCode}?subject_selected=1`);
+          router.push(courseHome(groupCode, "subject_selected=1"));
           return;
         }
         const alreadyTaken = await getCourseState(groupCode)
@@ -261,7 +263,7 @@ export default function BuySigleCourseModal() {
         if (alreadyTaken) {
           close();
           if (celebrate) enrollStore.markEnrolled("/preparation");
-          router.push(`/preparation/${groupCode}?subject_selected=1`);
+          router.push(courseHome(groupCode, "subject_selected=1"));
           return;
         }
         // Remember that it was shown: if the learner leaves before answering
