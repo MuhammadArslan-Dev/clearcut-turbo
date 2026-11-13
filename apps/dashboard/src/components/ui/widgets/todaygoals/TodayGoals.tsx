@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { Button } from "@clearcut/ui/button";
 import clsx from "clsx";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
@@ -53,6 +54,7 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const open = useCourseStore((s) => s.open);
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   // focusedCourse is set by the Swiper when the user swipes to a different course.
   // Falls back to the API active course when null (default state or back on first slide).
@@ -77,11 +79,11 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
         exam_name: course.exam?.short_name!,
       });
 
-      router.push(`/preparation/${course.group_code}`);
+      router.push(courseHome(course.group_code));
     } else {
       open("single", course.exam!);
     }
-  }, [course, open]);
+  }, [course, open, courseHome]);
 
   if (isError)
     return (

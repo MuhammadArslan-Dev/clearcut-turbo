@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { TrophyIcon } from "../../icons";
 import { Button } from "@clearcut/ui/button";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
@@ -33,6 +34,7 @@ const NextMilestone: React.FC<NextMilestoneProps> = ({
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const open = useCourseStore((s) => s.open);
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   const course = focusedCourse ?? activeCourse;
   const subject = course?.exam?.short_name ?? "";
@@ -51,11 +53,11 @@ const NextMilestone: React.FC<NextMilestoneProps> = ({
         source: "next_milestone",
         exam_name: course.exam?.short_name!,
       });
-      router.push(`/preparation/${course.group_code}`);
+      router.push(courseHome(course.group_code));
     } else {
       open("single", course.exam!);
     }
-  }, [course, open]);
+  }, [course, open, courseHome]);
 
   return (
     <div className={clsx("flex h-full flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>

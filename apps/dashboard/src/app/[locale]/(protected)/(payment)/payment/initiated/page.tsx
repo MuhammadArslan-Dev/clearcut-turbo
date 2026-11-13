@@ -1,5 +1,6 @@
 "use client";
 import { FALLBACK_IMAGE } from "@/components/features/PayWalls/MainPaywall";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { MainLoader } from "@/components/FullScreenLoader";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
@@ -118,6 +119,7 @@ export default function InitiatedPage() {
   const { get } = useQueryParams();
   const locale = useLocale(); // "en", "hi", etc.
   const router = useRouter();
+  const courseHome = useCourseHome();
   const { user: authUser } = useAuth();
 
   const userPhone = String(authUser?.phone ?? "").replace(/\D/g, "").slice(-10);
@@ -481,9 +483,9 @@ export default function InitiatedPage() {
     }
     window.setTimeout(() => {
       ignoreNextPopRef.current = false;
-      if (window.location.href === before) router.replace(`/preparation/${courseId}`);
+      if (window.location.href === before) router.replace(courseHome(courseId));
     }, 400);
-  }, [router, courseId]);
+  }, [router, courseId, courseHome]);
 
   // CC-63: "Why not now?" before leaving for free learning. Every answer
   // leaves at once; "payment issue" opens WhatsApp help and stays here.
@@ -697,7 +699,7 @@ export default function InitiatedPage() {
                   ? checkoutT("existingActivating")
                   : checkoutT("existingActive"),
             );
-            const destination = existingStatus === "paused" ? "/dashboard/profile" : `/preparation/${courseId}`;
+            const destination = existingStatus === "paused" ? "/dashboard/profile" : courseHome(courseId);
             setTimeout(() => router.push(destination), 2500);
             return;
           }

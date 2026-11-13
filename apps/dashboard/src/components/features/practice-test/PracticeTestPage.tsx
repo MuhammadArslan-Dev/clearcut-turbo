@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
@@ -75,6 +76,7 @@ export default function PracticeTestPage() {
   const appLocale = useLocale();
   const td = useTranslations("DailyTests");
   const router = useRouter();
+  const courseHome = useCourseHome();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { courseId } = useParams<{ courseId: string }>();
@@ -135,7 +137,7 @@ export default function PracticeTestPage() {
         if (!alive) return;
         if (state.practice_test_status === "completed") {
           clearPracticeSession(courseId);
-          router.replace(`/preparation/${courseId}`);
+          router.replace(courseHome(courseId));
         } else {
           setGateOpen(true);
         }
@@ -148,8 +150,8 @@ export default function PracticeTestPage() {
 
   const goToPreparation = useCallback(() => {
     clearPracticeSession(courseId);
-    router.replace(`/preparation/${courseId}`);
-  }, [courseId, router]);
+    router.replace(courseHome(courseId));
+  }, [courseId, router, courseHome]);
 
   const {
     data: fetched,

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight, MoreVertical, RotateCcw } from "lucide-react";
@@ -840,6 +841,7 @@ function SubscriptionWrap({ onSwitchTab }: { onSwitchTab?: (tab: Tab) => void })
   const fmt = useFormatters();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const courseHome = useCourseHome();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<PlanFilter>("all");
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -1053,9 +1055,9 @@ function SubscriptionWrap({ onSwitchTab }: { onSwitchTab?: (tab: Tab) => void })
 
   const handleView = useCallback(
     (row: PlanRow) => {
-      if (row.groupCode) router.push(`/preparation/${row.groupCode}`);
+      if (row.groupCode) router.push(courseHome(row.groupCode));
     },
-    [router],
+    [router, courseHome],
   );
 
   /* ---- Render ---- */
