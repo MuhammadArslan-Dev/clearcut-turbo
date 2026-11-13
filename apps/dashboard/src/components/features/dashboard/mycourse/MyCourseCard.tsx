@@ -34,9 +34,8 @@ function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: 
   const t = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
-  useMeterTracking(meter, { surface: "learn_card", ...track }, wrapRef);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(meter, { surface: "learn_card", ...track });
   const locked = meter.locked || meter.meter === null;
   const cooling = !locked && !!meter.cooling?.active;
   const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
@@ -69,7 +68,6 @@ function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: 
     <>
       {/* Tap the meter → "how is this calculated" (bottom sheet on mobile, modal on desktop). */}
       <div
-        ref={wrapRef}
         role="button"
         tabIndex={0}
         aria-label={t("meterInfo.title")}
@@ -275,7 +273,7 @@ export default function MyCourseCard({
                   unlockClick?.();
                 }}
               />
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-2">
                 <p className="body-medium !font-normal text-surface-gray-subtle flex gap-2 items-center">
                   <LockIcon size={20} />{" "}
                   <span>
@@ -305,7 +303,7 @@ export default function MyCourseCard({
     if (!unlockClick) return null;
     return (
       <Card className="!rounded-2xl" padding={0}>
-        <div className="flex flex-col gap-3 p-4">{buyBlock}</div>
+        <div className="flex flex-col gap-3 px-4 pt-4 pb-5">{buyBlock}</div>
       </Card>
     );
   }

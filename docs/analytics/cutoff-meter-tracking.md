@@ -3,7 +3,7 @@
 Version 1 · 2026-11-13 · Product: ClearCutOff web app (app.clearcutoff.in) · Amplitude project: the existing ClearCutOff web project (same as every other dashboard event).
 
 ## 1. What this covers
-Seven events that describe the full life of the Cutoff Meter: seen, tapped, explained, unlocked, moved, changed zone, and acted on. They follow the existing conventions: Title Case, past tense, snake_case properties, English values only (never translated), sent through the same `trackEvent` pipeline as every other dashboard event. No separate tracking system was added.
+Six events that describe the life of the Cutoff Meter: tapped, explained, unlocked, moved, changed zone, and acted on. (The impression event "Cutoff Meter Viewed" was removed on 2026-11-13: it is no longer sent.) They follow the existing conventions: Title Case, past tense, snake_case properties, English values only (never translated), sent through the same `trackEvent` pipeline as every other dashboard event. No separate tracking system was added.
 
 **Where the Cutoff Meter appears**
 
@@ -47,37 +47,32 @@ The test result screens (Daily, Practice, Mock, Topic test) do not show the mete
 
 ## 3. Events
 
-### 3.1 Cutoff Meter Viewed
-- **Trigger:** the meter has been at least 50 % on screen for 1 second. Once per page visit per surface (scrolling away and back, or re-rendering, does not repeat it).
-- **Extra properties:** `unlock_questions_needed` (number, only while locked) — questions a single test needs to unlock it.
-- **Insights:** real reach of the meter (not just page loads); share of students who see a locked vs unlocked meter; zone distribution of the audience; how many students are one test away from unlocking.
-
-### 3.2 Cutoff Meter Clicked
+### 3.1 Cutoff Meter Clicked
 - **Trigger:** the student taps the meter (or presses Enter / Space on it).
 - **Extra properties:** `click_target` = `info_sheet`.
-- **Insights:** curiosity / interaction rate = Clicked ÷ Viewed, by surface and by zone (do students in "Needs work" tap more?).
+- **Insights:** tap volume by surface and by zone (do students in "Needs work" tap more?).
 
-### 3.3 Cutoff Meter Info Viewed
+### 3.2 Cutoff Meter Info Viewed
 - **Trigger:** the "How your Cutoff Meter works" sheet opens (once per opening).
 - **Extra properties:** `opened_from` = `learn_card` or `target_page`.
-- **Insights:** how many taps turn into understanding; which surface drives it; funnel Viewed → Clicked → Info Viewed.
+- **Insights:** how many taps turn into understanding; which surface drives it; tap → explanation funnel (Clicked → Info Viewed).
 
-### 3.4 Cutoff Meter Unlocked
+### 3.3 Cutoff Meter Unlocked
 - **Trigger:** the meter changes from locked to unlocked (compared with the last meter this browser showed for the course).
 - **Extra properties:** `previous_status` = `locked`, `current_status` = `unlocked`, `trigger` (`test_submit` when this tab just saved a test, else `refresh`), `trigger_test_type` and `trigger_test_id` (only with `test_submit`).
 - **Insights:** activation: which test type unlocks the meter, time from enrolment to unlock, share of students who never unlock.
 
-### 3.5 Cutoff Meter Score Updated
+### 3.4 Cutoff Meter Score Updated
 - **Trigger:** a new calculation of the meter changes the score (comparison uses the stored score, so the display-only "cooling" decay never fires it).
 - **Extra properties:** `previous_score`, `current_score`, `score_change` (number, negative = dropped), `previous_zone`, `current_zone`, `trigger` (`test_submit` / `refresh`), `trigger_test_type`, `trigger_test_id`.
 - **Insights:** which test types move the score and by how much; improvement over time; students whose score is falling; test types that lift the meter most per attempt.
 
-### 3.6 Cutoff Meter Zone Changed
+### 3.5 Cutoff Meter Zone Changed
 - **Trigger:** the zone differs from the last meter this browser showed for the course (same dedup as 3.5).
 - **Extra properties:** `previous_zone`, `current_zone`, `previous_colour`, `current_colour`, `direction` (`up` / `down`), `trigger`, `trigger_test_type`, `trigger_test_id`.
 - **Insights:** progress milestones (e.g. Needs work → Almost there); funnel to "Safe zone"; regression moments worth a nudge; conversion / retention by zone.
 
-### 3.7 Cutoff Meter Action Clicked
+### 3.6 Cutoff Meter Action Clicked
 - **Trigger:** the student taps a row of "Today's plan" (or the Start button) on the Target tab.
 - **Extra properties:** `action_id` (string), `action_type` (`ONBOARDING_TEST`, `TOPIC_TEST`, `LEARN`, `SECTIONAL_TEST`, `FULL_LENGTH_TEST`), `rank` (number), `plan_position` (1-based position in today's plan), `section_id`, `topic_id`, `test_id` (numbers, blank when not applicable), `expected_gain` (marks the plan estimates), `est_time_min`, `is_locked_plan` (boolean — the plan is the "unlock the meter" plan).
 - **Insights:** does the recommendation get followed; which action types are tapped; does `expected_gain` predict what students pick; link tapped actions to the score changes that follow.
@@ -87,12 +82,12 @@ The test result screens (Daily, Practice, Mock, Topic test) do not show the mete
 - A change is reported at most **once per backend calculation**, even if the Learn card and the Target tab both show it.
 - `trigger = test_submit` when a test was just submitted in the same browser tab (Daily, Practice, Mock/test-series, or Topic test) and the meter then changed. `test_id` is the test's own id (Topic test: the topic id; Practice test: the course id). Changes with no such submit (another device, a reload, a recalculation) are `trigger = refresh`.
 - A change made on another device is reported on the next visit on this one, as `refresh`.
-- If local storage is blocked, change events are skipped (never invented); Viewed / Clicked still work.
+- If local storage is blocked, change events are skipped (never invented); Clicked / Info Viewed still work.
 - Analytics only runs on production hosts (`app.clearcutoff.in` etc.); local or staging visits are not sent.
 
 ## 5. Suggested Amplitude charts
-1. Funnel: Viewed → Clicked → Info Viewed (by `surface`, by `zone`).
-2. Funnel: Viewed (locked) → Unlocked (by `trigger_test_type`).
+1. Funnel: Clicked → Info Viewed (by `surface`, by `zone`).
+2. Event segmentation: Unlocked, by `trigger_test_type`.
 3. Event segmentation: Score Updated, average `score_change`, group by `trigger_test_type`.
 4. Zone Changed, count by `previous_zone` → `current_zone`, `direction`.
 5. Action Clicked by `action_type`, split by `meter_status`.

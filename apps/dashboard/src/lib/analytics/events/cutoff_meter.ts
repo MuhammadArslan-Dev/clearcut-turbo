@@ -2,7 +2,6 @@
 // Cutoff Meter lifecycle events (phase 108). Spec: docs/analytics/cutoff-meter-tracking.md
 
 export type CutoffMeterEventName =
-  | "Cutoff Meter Viewed"
   | "Cutoff Meter Clicked"
   | "Cutoff Meter Info Viewed"
   | "Cutoff Meter Unlocked"
@@ -42,7 +41,6 @@ export interface CutoffMeterBaseProps {
 }
 
 export interface CutoffMeterEventPayloads {
-  "Cutoff Meter Viewed": CutoffMeterBaseProps & { unlock_questions_needed?: number };
   "Cutoff Meter Clicked": CutoffMeterBaseProps & { click_target: "info_sheet" };
   "Cutoff Meter Info Viewed": CutoffMeterBaseProps & { opened_from: "learn_card" | "target_page" };
   "Cutoff Meter Unlocked": CutoffMeterBaseProps & {

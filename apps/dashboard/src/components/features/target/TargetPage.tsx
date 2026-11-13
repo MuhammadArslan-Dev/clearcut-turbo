@@ -59,9 +59,8 @@ function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
   const tc = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
-  const cardRef = useRef<HTMLElement>(null);
-  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
-  useMeterTracking(m, { surface: "target_page", ...track }, cardRef);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(m, { surface: "target_page", ...track });
   const locked = m.locked || m.meter === null;
   const cooling = !locked && !!m.cooling?.active;
   const value = Math.round(m.display_meter ?? m.meter ?? 0);
@@ -93,7 +92,6 @@ function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
 
   return (
     <section
-      ref={cardRef}
       role="button"
       tabIndex={0}
       onClick={openInfo}

@@ -435,5 +435,4 @@ trackEvent("Error Occurred", {
    is_early_estimate, is_cooling, tests_count, counted_answers, model_version.
 ========================= */
 
-trackEvent("Cutoff Meter Viewed", { surface: "learn_card", meter_status: "unlocked", score: 58, max_marks: 150, cutoff_value: 90, is_early_estimate: false, is_cooling: false, counted_answers: 40, model_version: "v1" });
 trackEvent("Cutoff Meter Clicked", { surface: "target_page", click_target: "info_sheet", meter_status: "unlocked", max_marks: 150, cutoff_value: 90, is_early_estimate: false, is_cooling: false, counted_answers: 40, model_version: "v1" });

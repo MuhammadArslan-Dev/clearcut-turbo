@@ -479,7 +479,8 @@ export default function MyCoursesWrapTwo({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="px-2 pt-3">
+            {/* pt-4 / pb-3: the widget keeps the same breathing room above (carousel) and below (Daily Test). */}
+            <div className="px-2 pt-4 pb-3">
               <CourseSlideCard
                 exam={buyCourse}
                 part="buy"
