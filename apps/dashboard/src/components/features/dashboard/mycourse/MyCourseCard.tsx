@@ -273,7 +273,7 @@ export default function MyCourseCard({
                   unlockClick?.();
                 }}
               />
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1">
                 <p className="body-medium !font-normal text-surface-gray-subtle flex gap-2 items-center">
                   <LockIcon size={20} />{" "}
                   <span>
@@ -303,7 +303,7 @@ export default function MyCourseCard({
     if (!unlockClick) return null;
     return (
       <Card className="!rounded-2xl" padding={0}>
-        <div className="flex flex-col gap-3 px-4 pt-4 pb-5">{buyBlock}</div>
+        <div className="flex flex-col gap-3 p-4">{buyBlock}</div>
       </Card>
     );
   }
