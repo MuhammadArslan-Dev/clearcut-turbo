@@ -150,3 +150,5 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-11-12: added phase 105 (Target Today's plan never disappears; Learn page Next Milestone / Today's Goals / Streak on real data; streak IST-date fix). Branch fix/target-learn-real-data, not merged.
 
 - 2026-11-12: added phase 106 (My Course card + Cutoff Meter follow the paper the user was last active in; backend LastActivePaper). Branch fix/last-active-paper, not merged.
+
+- 2026-11-13: added phase 107 (resume position + paper/card sync: stale cached position, courseSync helper). Branch fix/course-position-sync, not merged.
