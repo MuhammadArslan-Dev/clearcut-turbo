@@ -264,6 +264,9 @@
     "renewCourse": "Renew plan",
     "priceNote": "₹{price} only • Subscription per month",
     "trialLimit": "Free trial is limited for {days, plural, one {# day} other {# days}} only",
+    "trialPointStudy": "Study Today",
+    "trialPointPractice": "Practice Daily",
+    "trialPointClear": "Clear your Cutoff",
     "planFull": "Full plan",
     "daysToExam": "{days, plural, =0 {Exam today} one {# day to exam} other {# days to exam}}",
     "cutoffMeter": "Cutoff Meter",
@@ -524,7 +527,7 @@
     "breakdownLocked": "Subject-wise marks unlock after your first test.",
     "breakdownCorrect": "{correct} of {attempted} correct · {percent}% accuracy",
     "breakdownNotTested": "Not tested yet",
-    "breakdownNote": "Marks marked ~ are estimates. Every subject starts at {start}% of its marks and your real answers move it: (correct + {correct}) ÷ (answers + {answers}). After about {enough} answers in a subject the starting value barely matters. Only your answers in a subject change that subject’s marks.",
+    "breakdownNote": "Marks here = your accuracy × the subject’s marks (0 when nothing is correct). Your Cutoff Meter score above also adds a starting estimate — (correct + {correct}) ÷ (answers + {answers}) — for subjects with fewer than {enough} answers, so it can be higher than the total of these.",
     "goals": {
       "title": "Today’s goals",
       "sub": "Your next topic, a sectional test and a full-length test",

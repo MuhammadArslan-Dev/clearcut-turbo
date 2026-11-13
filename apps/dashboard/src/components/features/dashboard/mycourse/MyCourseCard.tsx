@@ -34,9 +34,8 @@ function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: 
   const t = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
-  useMeterTracking(meter, { surface: "learn_card", ...track }, wrapRef);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(meter, { surface: "learn_card", ...track });
   const locked = meter.locked || meter.meter === null;
   const cooling = !locked && !!meter.cooling?.active;
   const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
@@ -69,7 +68,6 @@ function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: 
     <>
       {/* Tap the meter → "how is this calculated" (bottom sheet on mobile, modal on desktop). */}
       <div
-        ref={wrapRef}
         role="button"
         tabIndex={0}
         aria-label={t("meterInfo.title")}
@@ -262,6 +260,8 @@ export default function MyCourseCard({
                 fullWidth
                 loading={unlockLoading}
                 color="success"
+                // The same shimmer sweep the checkout / onboarding CTAs use: draws the eye to the one paid action.
+                showShimmer
                 text={
                   badge === "expired"
                     ? t("myCourses.renewCourse")
@@ -285,8 +285,13 @@ export default function MyCourseCard({
                 </p>
                 {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
                 {badge !== "expired" && badge !== "trial_end" && (
-                  <p className="body-medium !font-normal text-surface-gray-muted">
-                    {t("myCourses.trialLimit", { days: 3 })}
+                  // Three points on ONE line (replaces "Free trial is limited for 3 days only").
+                  <p className="flex w-full items-center justify-center gap-1 whitespace-nowrap text-[11px] leading-4 !font-medium text-surface-gray-muted min-[360px]:gap-1.5 min-[360px]:text-[12px] sm:text-[13px]">
+                    <span>{t("myCourses.trialPointStudy")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointPractice")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointClear")}</span>
                   </p>
                 )}
               </div>

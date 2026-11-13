@@ -15,3 +15,7 @@ Cause: the card's icon + label sat in a `flex-wrap` row, so the icon dropped abo
 - Legend: 4 cards icon-above-label with equal label and value tops at 320, 360, 375, 390, 414, 600 px in en / hi / mr; 768 / 1024 / 1440 unchanged (2×2, icon beside label); Learn-card sheet at 390.
 - Not verified: footnote hidden when every subject has ≥ 30 answers (no such course in the data), N-of-N with N > 1, a real phone / dark mode.
 - One minor spill found ("~60/120" 5.6 px past the row) → marks column widened to 3.75 rem.
+
+## 4. Follow-up (client, 2026-11-13): show the real subject marks
+The "~9/30" for "0 of 2 correct" was rejected. The Target rows now show what the student actually showed in that subject: **marks = raw accuracy × subject marks**, so 0 correct → `0/30`, nothing answered → `0/30` ("Not tested yet", grey), 1 of 2 on 120 → `60/120`; never negative; bar = the same fraction. The Cutoff Meter total/gauge is unchanged (it still uses the documented spec §1.1 smoothing); a footnote says the meter score also adds the starting estimate for subjects with fewer than 30 answers, so it can be higher than the sum of the rows. Verified on course 6a9b98cb0a1cf: 0 of 2 → 0/30 (×4), 1 of 2 → 60/120.
+Also: the buy widget gap above the card is now equal to the gap below it (8 px each at 390 px; measured).

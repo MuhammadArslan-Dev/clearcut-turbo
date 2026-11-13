@@ -59,9 +59,8 @@ function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
   const tc = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
-  const cardRef = useRef<HTMLElement>(null);
-  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
-  useMeterTracking(m, { surface: "target_page", ...track }, cardRef);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(m, { surface: "target_page", ...track });
   const locked = m.locked || m.meter === null;
   const cooling = !locked && !!m.cooling?.active;
   const value = Math.round(m.display_meter ?? m.meter ?? 0);
@@ -93,7 +92,6 @@ function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
 
   return (
     <section
-      ref={cardRef}
       role="button"
       tabIndex={0}
       onClick={openInfo}
@@ -188,14 +186,13 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
       ) : (
         <ul className="mt-3 space-y-2.5">
           {rows.map((s) => {
-            const pct = Math.min(Math.max(s.section_marks / s.total_marks, 0), 1);
-            // No answers in THIS subject yet: its marks are the starting estimate, not something the
-            // student earned — say so instead of showing a bare number (phase 109).
             const tested = (s.attempted ?? 0) > 0;
-            // Marks follow the documented formula (correct + 1.5) / (answers + 3): until a subject has about 30
-            // answers they are an estimate (the starting value still weighs in) — marked with "~".
-            const estimate = !tested || s.attempted < (m.scoring?.estimate_below ?? 30);
-            const rawAccuracy = s.raw_accuracy ?? (tested ? s.correct / s.attempted : 0);
+            // What the student has actually shown in THIS subject: accuracy × subject marks (client, 2026-11-13).
+            // 0 correct → 0, nothing answered → 0, never negative. The Cutoff Meter total above additionally blends
+            // the documented starting estimate (spec 1.1) for subjects with few answers — see the note below.
+            const rawAccuracy = Math.min(Math.max(s.raw_accuracy ?? (tested ? s.correct / s.attempted : 0), 0), 1);
+            const earned = rawAccuracy * s.total_marks;
+            const pct = rawAccuracy;
             const c = !tested ? "var(--color-border-gray-subtle)" : pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
             return (
               <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_44%_3.75rem] items-center gap-3">
@@ -213,9 +210,8 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
                     style={{ width: grown ? `${pct * 100}%` : 0, background: c }}
                   />
                 </span>
-                <b className={clsx("text-right body-medium !font-bold tabular-nums", estimate ? "text-surface-gray-muted" : "text-surface-gray-normal")}>
-                  {estimate ? "~" : ""}
-                  {Math.round(s.section_marks)}/{s.total_marks}
+                <b className={clsx("text-right body-medium !font-bold tabular-nums", tested ? "text-surface-gray-normal" : "text-surface-gray-muted")}>
+                  {Math.round(earned)}/{s.total_marks}
                 </b>
               </li>
             );

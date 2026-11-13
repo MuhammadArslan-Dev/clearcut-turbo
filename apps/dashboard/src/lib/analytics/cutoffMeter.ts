@@ -1,5 +1,5 @@
 import { trackEvent } from "./browser";
-import { unlockMinQuestions, type CutoffMeterAction, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { type CutoffMeterAction, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import type { CutoffMeterBaseProps, CutoffMeterSurface } from "./events/cutoff_meter";
 
 /**
@@ -43,14 +43,6 @@ export function meterProps(m: CutoffMeterSummary, ctx: MeterCtx): CutoffMeterBas
     counted_answers: m.counted_answers,
     model_version: m.model_version,
   };
-}
-
-export function trackMeterViewed(m: CutoffMeterSummary, ctx: MeterCtx) {
-  const locked = m.locked || m.meter === null;
-  trackEvent("Cutoff Meter Viewed", {
-    ...meterProps(m, ctx),
-    unlock_questions_needed: locked ? unlockMinQuestions(m) : undefined,
-  });
 }
 
 export function trackMeterClicked(m: CutoffMeterSummary, ctx: MeterCtx) {
