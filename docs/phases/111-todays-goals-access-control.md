@@ -1,0 +1,43 @@
+# Phase 111 — Today's goals (Next topic / Sectional / Full-length) + server-side content access control
+
+Date: 2026-11-13. Branches: frontend `feat/todays-goals-access` (on top of phases 109 + 110), backend `feat/todays-goals-access` (on top of phase 110).
+Decisions (user, 2026-11-13): the 3 goals REPLACE the meter-picked plan on Target; a locked next topic shows as a locked card + Unlock; the backend rules are enforced immediately (no log-only mode).
+
+## 1. Root causes
+| # | Finding | Evidence (real local run) |
+|---|---|---|
+| R1 | The paywall existed only in the app. `ChapterResource.locked` told the client which chapters to lock; the endpoints behind topics trusted any caller: mini test (`/mini-test/get`, `/count`, `/get-topic-question`, `/progress/mini-test/start`), topic activity, learning progress, cutoff-meter topic answers, note url / download. The chapter payload itself carried every video / note link of a locked chapter. | before the fix a trial user could read and write all of it for a locked topic (topic 131); now 403 `renewal_required` (table §4) |
+| R2 | `POST /exam/create-exam` ran the "first test is free" rule on the TEST row only (`isFreeTest`). A free first test of ANY other section / paper could be paired with a locked section's id, so a trial user started unlimited tests of a paid section; a paid student could start another exam's test through their own enrolment. | before: `sectionId=2` + free first test of section 3 → HTTP 200; `sectionId=1` + same → 200. After: 403 `not_in_course` (same two requests) |
+| R3 | The Target "Today's plan" link opened the topic and the Preparation page restored any saved/linked position, including one inside a locked chapter (a locked topic became the resume position). | user 16404: resume = topic 131 (locked chapter 38) |
+| R4 | `POST /sectional-tests/generate*` has no auth middleware (commented out) and `/practice-test/*` + `GET /sectional-tests` are public. | route list — **not changed**, see §6 |
+
+## 2. Rule (one place: `App\Services\Access\ContentAccessService`)
+- Paid access (`EnrollmentAccessService::hasPaidAccess`: active + within valid_till/grace) → every topic of a paper of the student's course.
+- Otherwise → only the FREE chapter of each section (lowest `chapter_order` mapped to the section — the same rule as `ChapterResource::freeChapterId`).
+- A topic that is not in any paper of the student's course is never allowed (wrong course / paper / level). A course the student is not enrolled in → `not_enrolled`.
+- Tests: the existing paid/free rule (CC-129: first test of a section / chapter / paper free) plus the new "the test must belong to the section / chapter / paper being started".
+Answer to a denied request: HTTP 403 with `error_code` `renewal_required` (locked) or `not_in_course` / `not_enrolled`; the app already maps `renewal_required` to its paywall.
+
+## 3. Today's goals
+Backend `TodayGoalsService` → `goals` on `GET /v2/cutoff-meter/{course}` (current paper = last-active paper). All values are real:
+- **Next topic**: learnable leaf topics (video or notes) of the paper in syllabus order (section order → chapter_order → topic_order, `exam_syllabus_topics`); done = `completed` in the same progress source the app shows (new tracker or legacy by `useNewSource`); the next topic is the first unfinished one from the saved resume position onward (wrapping to the start), in ANY section / chapter. Locked when the plan does not include its chapter. Progress = done / total leaf topics; `completed_today` = topics completed today (IST).
+- **Sectional test**: the next unseen sectional test of the next topic's section, else of the first section that has one (`NextBestActionService::nextUnseenSectional`); locked by the first-test-free rule; progress = distinct tests attempted / tests of the paper's sections; `completed_today` = sectional attempts submitted today for this paper.
+- **Full-length test**: next unseen full-length test of the paper (`nextUnseenFullLength`), same lock rule; progress attempted / total; `completed_today` likewise.
+Frontend `TodayGoalsCard` (replaces `TodayPlan`): exact destinations — next topic → `/preparation/{course}?section&chapter&topic` (phase 109 makes the page land there); tests → `/test-series/{course}?testType&paper&section&startTest={id}`, and `SectionalTest` / `FullTest` open that test's start sheet once (or the paywall when locked) and strip the params; a locked goal → the unlock (payment) page. The analytics event stays "Cutoff Meter Action Clicked" (`action_type` LEARN / SECTIONAL_TEST / FULL_LENGTH_TEST).
+
+## 4. Backend enforcement (new 403s)
+mini-test `get` / `count` / `get-topic-question`; `progress/mini-test/start`; `progress/topic-activity`; `interactions/learning-progress`; `cutoff-meter/topic-answers`; `preparation/note-url`, `download-note`, `open-note` (token → user); chapters payload (`get-section-chapters`, `content/get-notes`): topics of a locked chapter keep names / order but `data` / `content` (video + note links) are empty; `exam/create-exam`: test must belong to the named section / chapter / paper.
+Frontend: a saved or linked position inside a locked chapter is not restored (first open chapter is shown), and a link into a locked chapter opens the unlock sheet.
+
+## 5. Verification
+Real local backend + DB, test account 16404 (all courses trial = unpaid), real paid accounts through `Sanctum::actingAs` (6181 paid HTET). Browser: Playwright on localhost:3020.
+**Backend HTTP (user 16404 unpaid):** sectional free first test + own section 200; locked 2nd test 403 renewal_required; free test of another section + own section 403 not_in_course (was 200 before the fix, also with a locked section); sectionId not in paper 403; full-length locked 403 renewal_required; full-length of another paper 403 not_in_course; unknown paper 404; mini-test get/count/get-topic-question locked topic 131 → 403 renewal_required, free topic 116 → 200; progress/mini-test/start locked 403 / free 200; topic-activity, learning-progress, cutoff-meter/topic-answers locked 403; note-url + download-note of a locked topic's note 403, free topic's note 200; no token 401 (open-note without token 403). Paid user 6181: another exam's test / other section's test on own paper → 403 not_in_course. Service vs `ChapterResource.locked`: 0 mismatches over every topic of a trial and a paid user's section; locked chapters ship empty content (no leak).
+**Browser (16404, en 1280 + hi/mr 390):** goals card rows equal API goals (HTET, CTET, MAHATET); locked next topic → payment page (not Preparation); todo next topic lands on the exact ids (HTET 1/35/118 after resuming at 118; CTET 41/10/44); CTET sectional todo → start sheet of exactly "Sectional Test 1 · Hindi · 30 questions", params stripped, F5 does not reopen; locked deep link → "Test Locked" sheet; HTET full-length todo → sheet "Full-length Test 1", hard-load deep link works; hand-typed locked URL (section 1 / chapter 38 / topic 131 and a section-2 chapter) → unlock sheet + first open chapter (no locked content); free topic URL opens normally with video; no redirect loops, no console errors from the new code (pre-existing: pre-test sheet h6-in-p hydration warning, Razorpay iframe 406, 429s from a rapid reload burst).
+**Not verified:** done-today tick / "Done today" chip / progress counters changing (a topic only counts as completed after its video finishes; no test submitted); paid-account UI paths (no paid token); double tap / failing network on the rows; the raw deep-link params right after a click; notes/video endpoints for locked topics through the UI (verified at API level); starting any test; sectional / full-length todo + locked for the same course at once.
+
+## 6. Open risks (not changed)
+- `POST /v2/sectional-tests/generate*` unauthenticated (middleware commented out): anyone can trigger test generation. Needs the caller (automation?) before locking it (`VerifyAutomationApiKey` exists).
+- `/v2/practice-test/*` and `GET /v2/sectional-tests*` are public by design ("guests allowed") — a separate feature; check it does not serve paid exam content.
+- A locked-meter student no longer sees the 5-question onboarding row on Target (goals replace the plan); the first-enrolment flow still offers it, and any sectional / full-length test unlocks the meter.
+- Paid-account UI paths were not exercised in the browser (the only test token is a trial account); the paid rule is verified through real API calls as real paid users (`actingAs`) in the backend runs.
+- Resume rows pointing into locked chapters (from the old plan links) remain in the DB; they are simply no longer restored.
