@@ -262,6 +262,8 @@ export default function MyCourseCard({
                 fullWidth
                 loading={unlockLoading}
                 color="success"
+                // The same shimmer sweep the checkout / onboarding CTAs use: draws the eye to the one paid action.
+                showShimmer
                 text={
                   badge === "expired"
                     ? t("myCourses.renewCourse")
