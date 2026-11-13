@@ -285,8 +285,13 @@ export default function MyCourseCard({
                 </p>
                 {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
                 {badge !== "expired" && badge !== "trial_end" && (
-                  <p className="body-medium !font-normal text-surface-gray-muted">
-                    {t("myCourses.trialLimit", { days: 3 })}
+                  // Three points on ONE line (replaces "Free trial is limited for 3 days only").
+                  <p className="flex w-full items-center justify-center gap-1 whitespace-nowrap text-[11px] leading-4 !font-medium text-surface-gray-muted min-[360px]:gap-1.5 min-[360px]:text-[12px] sm:text-[13px]">
+                    <span>{t("myCourses.trialPointStudy")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointPractice")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointClear")}</span>
                   </p>
                 )}
               </div>
