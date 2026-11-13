@@ -67,7 +67,7 @@ export function trackMeterInfoViewed(m: CutoffMeterSummary, ctx: MeterCtx, opene
 export function trackMeterActionClicked(
   m: CutoffMeterSummary,
   ctx: MeterCtx,
-  action: CutoffMeterAction,
+  action: Omit<CutoffMeterAction, "est_time_min"> & { est_time_min?: number },
   planPosition?: number,
 ) {
   trackEvent("Cutoff Meter Action Clicked", {

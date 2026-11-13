@@ -10,12 +10,13 @@ import { Sparkline } from "@clearcut/motion/meters/sparkline";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import dynamic from "next/dynamic";
 import { useModalStore } from "@/store/modal/useModalStore";
-import { trackMeterActionClicked, trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
 import { useMeterTracking } from "@/hooks/course/useMeterTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { levelName, paperName } from "@/lib/dashboard/courseCardMeta";
+import TodayGoalsCard from "./TodayGoalsCard";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 
 const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
@@ -25,16 +26,12 @@ import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { skipToken, useQuery } from "@tanstack/react-query";
-import { useProgressCapabilities, PRACTICE_STATE_KEY } from "@/components/features/preparation/hooks/useProgressCapabilities";
-import { usePracticeTestEnabled } from "@/lib/experiments/usePracticeTestEnabled";
-import { getCourseState } from "@/lib/api/userState";
+import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { useCutoffMeter } from "@/hooks/course/useCutoffMeter";
 import { isApiError } from "@/lib/api/api-error";
 import {
-  markCutoffMeterActionClicked,
   unlockMinQuestions,
-  type CutoffMeterAction,
   type CutoffMeterDetail,
 } from "@/lib/dashboard/cutoffMeter";
 
@@ -46,27 +43,6 @@ import {
  */
 
 const CARD = "rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white p-4";
-
-/**
- * Where a plan row leads (existing routes only). The "take a test to unlock the
- * meter" row goes straight to the onboarding Practice Test while it can still be
- * taken (`practiceReady`); otherwise to Preparation, where any 5+ question test
- * (topic test, daily test…) unlocks the meter too.
- */
-function actionHref(a: CutoffMeterAction, courseId: string, practiceReady = true): string {
-  if (a.action_type === "ONBOARDING_TEST") return practiceReady ? `/practice-test/${courseId}` : `/preparation/${courseId}`;
-  if (a.action_type === "SECTIONAL_TEST" || a.action_type === "FULL_LENGTH_TEST") return `/test-series/${courseId}`;
-  if ((a.action_type === "TOPIC_TEST" || a.action_type === "LEARN") && a.topic_id) {
-    const q = new URLSearchParams();
-    // The exact destination: section → chapter → topic (the page used to get only chapter + topic and
-    // opened the resume section, where that chapter does not exist).
-    if (a.section_id) q.set("section", String(a.section_id));
-    if (a.chapter_id) q.set("chapter", String(a.chapter_id));
-    q.set("topic", String(a.topic_id));
-    return `/preparation/${courseId}?${q.toString()}`;
-  }
-  return `/preparation/${courseId}`;
-}
 
 /* ───────────────────────── Meter card ───────────────────────── */
 
@@ -190,176 +166,6 @@ function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
   );
 }
 
-/* ───────────────────────── Today's plan ───────────────────────── */
-
-/**
- * Row title = the topic / section name (DB content). The backend title is
- * "{name} · Topic test" in English; keep only the name, the type is in the meta line.
- */
-function actionTitle(a: CutoffMeterAction, t: ReturnType<typeof useTranslations>): string {
-  const p = a.params ?? {};
-  if (a.action_type === "TOPIC_TEST" || a.action_type === "LEARN" || a.action_type === "SECTIONAL_TEST") {
-    const name = p.topic ?? (a.title ? a.title.split(" · ")[0] : "") ?? p.section;
-    if (name && String(name).trim()) return String(name).trim();
-    if (p.section) return String(p.section);
-  }
-  return t(`target.types.${a.action_type}`);
-}
-
-function shorten(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
-}
-
-function TodayPlan({ m, courseId, track }: { m: CutoffMeterDetail; courseId: string; track: TrackCtx }) {
-  const { user } = useAuth() as { user?: { uuid?: string } | null };
-  const t = useTranslations();
-  const router = useRouter();
-  const locked = m.locked || m.meter === null;
-
-  // The onboarding "5-question test" is the plan ONLY while the meter is locked. The
-  // moment it unlocks (any test with 5+ questions) it is dropped here too, whatever the
-  // cached response still says, and the plan is the real NBA list for the student's marks.
-  const keep = (a: CutoffMeterAction) => locked || a.action_type !== "ONBOARDING_TEST";
-  // While the meter is locked the unlock action is NOT done, whatever an older saved row says
-  // (rows written before the per-course fix could be marked completed by another course's test).
-  const open = (a: CutoffMeterAction): CutoffMeterAction =>
-    locked && a.action_type === "ONBOARDING_TEST" && a.completed ? { ...a, completed: false } : a;
-  const actions = (m.actions ?? []).filter(keep).map(open);
-  const plan = (m.plan?.length ? m.plan : m.actions ?? []).filter(keep).map(open);
-  const done = plan.filter((a) => a.completed).length;
-  // Next: the first open row of today's plan, else the newest generated action.
-  const next = plan.find((a) => !a.completed) ?? actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
-  const [going, setGoing] = useState<string | null>(null);
-
-  // Locked → can the Practice Test still be taken? Amplitude flag on, and not completed
-  // (a skipped or never-opened test can be taken any time; a completed one is final).
-  const flag = usePracticeTestEnabled();
-  const practiceState = useQuery({
-    queryKey: PRACTICE_STATE_KEY(courseId),
-    queryFn: () => getCourseState(courseId),
-    enabled: locked,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
-  const practiceReady = flag !== false && practiceState.data?.practice_test_status !== "completed";
-
-  const go = (a: CutoffMeterAction) => {
-    if (going) return; // double tap
-    setGoing(a.id);
-    trackMeterActionClicked(m, { surface: "target_page", ...track, userId: user?.uuid ?? null }, a, plan.findIndex((p) => p.id === a.id) + 1);
-    markCutoffMeterActionClicked(a.id).catch(() => {});
-    router.push(actionHref(a, courseId, practiceReady));
-  };
-
-  // The section never disappears: with nothing planned (e.g. an exam with no mini-test
-  // content yet, or every action done and not yet regenerated) it says so.
-  if (!plan.length) {
-    return (
-      <section className={CARD}>
-        <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
-        <p className="mt-1 body-medium !font-medium text-surface-gray-muted">{t("target.planEmpty")}</p>
-      </section>
-    );
-  }
-
-  return (
-    <section className={CARD}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
-          <p className="body-small !font-medium text-surface-gray-muted">{t("target.pickedBy")}</p>
-        </div>
-        <span className="shrink-0 rounded-full px-2.5 py-0.5 body-small !font-bold tabular-nums bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
-          {done}/{plan.length}
-        </span>
-      </div>
-      <div className="mt-3">
-        <ProgressBar
-          showLabel={false}
-          completed={done}
-          total={plan.length}
-          height={3}
-          color="var(--color-brand)"
-          backgroundColor="var(--color-background-gray-subtle)"
-        />
-      </div>
-
-      <ul className="mt-1 divide-y divide-[var(--color-border-gray-subtle)]">
-        {plan.map((a) => (
-          <li key={a.id}>
-            <button
-              type="button"
-              onClick={() => go(a)}
-              disabled={!!going}
-              className="flex w-full items-center gap-3 py-3 text-left cursor-pointer disabled:cursor-default"
-            >
-              <span
-                aria-hidden="true"
-                className={clsx(
-                  "grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-2 text-white body-small !font-bold",
-                  a.completed
-                    ? "border-[var(--color-success)] bg-[var(--color-success)]"
-                    : "border-[var(--color-border-gray-subtle)]",
-                )}
-              >
-                {a.completed ? "✓" : ""}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span
-                  className={clsx(
-                    "block truncate heading-small !font-bold leading-6",
-                    a.completed ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
-                  )}
-                >
-                  {a.action_type === "ONBOARDING_TEST" && !practiceReady ? t("target.takeAnyTest", { n: unlockMinQuestions(m) }) : actionTitle(a, t)}
-                </span>
-                <span className="block body-small !font-medium text-surface-gray-muted">
-                  {a.action_type === "ONBOARDING_TEST" && !practiceReady
-                    ? t("target.takeAnyTestHint")
-                    : t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
-                </span>
-              </span>
-              {a.action_type === "ONBOARDING_TEST" && (m.locked || m.meter === null) ? (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
-                  {t("target.unlocksMeter")}
-                </span>
-              ) : a.expected_gain ? (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
-                  {t("target.gain", { marks: a.expected_gain })}
-                </span>
-              ) : null}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {next ? (
-        <MainButton
-          className="mt-3 min-h-[50px]"
-          fullWidth
-          size="lg"
-          rounded="14px"
-          pY="py-[15px]"
-          loading={going === next.id}
-          showIcon={false}
-          onClick={() => go(next)}
-          // MainButton centres its text without shrinking it, so a long topic name is
-          // shortened here (≈ 26 chars fit a 390px screen); the "›" always shows.
-          text={
-            next.action_type === "ONBOARDING_TEST" && !practiceReady
-              ? `${t("target.startATest")} ›`
-              : `${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: shorten(actionTitle(next, t), 26) })} ›`
-          }
-        />
-      ) : (
-        <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>
-      )}
-    </section>
-  );
-}
-
 /* ───────────────────────── Marks breakdown ───────────────────────── */
 
 function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
@@ -476,7 +282,7 @@ export default function TargetPage({ courseId }: { courseId: string }) {
       ) : (
         <>
           <MeterCard m={data} track={track} />
-          <TodayPlan m={data} courseId={courseId} track={track} />
+          <TodayGoalsCard m={data} courseId={courseId} track={track} />
           <MarksBreakdown m={data} />
         </>
       )}

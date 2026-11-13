@@ -373,7 +373,12 @@ export const usePreparationStore = create<PreparationState>((set) => ({
         ? chapters.find((chapter) => chapter.id === Number(state.chapter_id))
         : undefined;
 
-      const selectedChapter = restoredChapter ?? chapters[0];
+      // A saved / linked position inside a LOCKED chapter (plan ended, trial over, hand-made URL) is not
+      // restored: the first open chapter is shown instead (the server withholds locked content anyway).
+      const selectedChapter =
+        (restoredChapter && !restoredChapter.locked ? restoredChapter : undefined) ??
+        chapters.find((chapter) => !chapter.locked) ??
+        chapters[0];
 
       const flatTopics = selectedChapter?.topics
         ? flattenTopics(selectedChapter.topics)

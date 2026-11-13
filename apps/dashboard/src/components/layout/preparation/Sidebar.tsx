@@ -158,7 +158,12 @@ export default function Sidebar() {
         : openedWith.topic
           ? syllabus.chapters.find((c) => flattenTopics(c.topics).some((tp) => tp.id === Number(openedWith.topic)))
           : undefined;
-      if (sectionOk && chapterOf) {
+      if (sectionOk && chapterOf?.locked) {
+        // A link / widget must not open locked content (phase 111): show the unlock sheet and keep the
+        // normal position instead. The server refuses the content too — this is the matching screen.
+        urlParamsApplied.current = true;
+        openPaywall("topic-locked-modal", course?.exam!, "topic_card_clicked", course);
+      } else if (sectionOk && chapterOf) {
         state = {
           ...syllabus.state,
           chapter_id: String(chapterOf.id),

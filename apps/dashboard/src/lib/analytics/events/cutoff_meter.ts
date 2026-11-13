@@ -81,7 +81,7 @@ export interface CutoffMeterEventPayloads {
     topic_id?: number | null;
     test_id?: number | null;
     expected_gain?: number | null;
-    est_time_min: number;
+    est_time_min?: number;
     is_locked_plan: boolean;
   };
 }
