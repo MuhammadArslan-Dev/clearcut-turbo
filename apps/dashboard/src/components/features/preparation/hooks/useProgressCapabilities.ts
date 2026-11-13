@@ -38,7 +38,10 @@ export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
   // submit may have just completed it).
   // "today-goals" / "learning-streak" / "courses-progress-summary": the Learn page's goals,
   // streak and milestone count the same submit, so they refetch together with the meter.
+  // "my-courses": the My Course card shows the paper the student was LAST ACTIVE in
+  // (backend LastActivePaper, phase 106), so a submit in another paper must re-pick it.
   for (const key of [
+    ["my-courses"],
     ["courses-cutoff-meter"],
     ["cutoff-meter"],
     ["practice-state"],
@@ -56,6 +59,7 @@ export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
  */
 export function invalidateProgressQueries(queryClient: QueryClient) {
   for (const key of [
+    ["my-courses"],
     ["learning-progress-by-topic"],
     ["courses-progress-summary"],
     ["courses-cutoff-meter"],
