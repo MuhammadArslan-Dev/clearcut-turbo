@@ -522,9 +522,9 @@
     },
     "marksFrom": "Where your marks come from",
     "breakdownLocked": "Subject-wise marks unlock after your first test.",
-    "breakdownCorrect": "{correct} of {attempted} correct · {percent}%",
+    "breakdownCorrect": "{correct} of {attempted} correct · {percent}% accuracy",
     "breakdownNotTested": "Not tested yet",
-    "breakdownNote": "Subjects you have not tested yet are counted at a starting estimate (about {percent}% of their marks). Only your own answers in a subject change that subject’s marks.",
+    "breakdownNote": "Marks marked ~ are estimates. Every subject starts at {start}% of its marks and your real answers move it: (correct + {correct}) ÷ (answers + {answers}). After about {enough} answers in a subject the starting value barely matters. Only your answers in a subject change that subject’s marks.",
     "goals": {
       "title": "Today’s goals",
       "sub": "Your next topic, a sectional test and a full-length test",

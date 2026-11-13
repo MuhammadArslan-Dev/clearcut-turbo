@@ -192,14 +192,18 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
             // No answers in THIS subject yet: its marks are the starting estimate, not something the
             // student earned — say so instead of showing a bare number (phase 109).
             const tested = (s.attempted ?? 0) > 0;
+            // Marks follow the documented formula (correct + 1.5) / (answers + 3): until a subject has about 30
+            // answers they are an estimate (the starting value still weighs in) — marked with "~".
+            const estimate = !tested || s.attempted < (m.scoring?.estimate_below ?? 30);
+            const rawAccuracy = s.raw_accuracy ?? (tested ? s.correct / s.attempted : 0);
             const c = !tested ? "var(--color-border-gray-subtle)" : pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
             return (
-              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_46%_3rem] items-center gap-3">
+              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_44%_3.75rem] items-center gap-3">
                 <span className="leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
                   <span className="line-clamp-2">{s.name}</span>
                   <span className="mt-0.5 block body-small !font-normal text-surface-gray-muted">
                     {tested
-                      ? t("target.breakdownCorrect", { correct: s.correct, attempted: s.attempted, percent: Math.round((s.accuracy ?? 0) * 100) })
+                      ? t("target.breakdownCorrect", { correct: s.correct, attempted: s.attempted, percent: Math.round(rawAccuracy * 100) })
                       : t("target.breakdownNotTested")}
                   </span>
                 </span>
@@ -209,8 +213,8 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
                     style={{ width: grown ? `${pct * 100}%` : 0, background: c }}
                   />
                 </span>
-                <b className={clsx("text-right body-medium !font-bold tabular-nums", tested ? "text-surface-gray-normal" : "text-surface-gray-muted")}>
-                  {tested ? "" : "~"}
+                <b className={clsx("text-right body-medium !font-bold tabular-nums", estimate ? "text-surface-gray-muted" : "text-surface-gray-normal")}>
+                  {estimate ? "~" : ""}
                   {Math.round(s.section_marks)}/{s.total_marks}
                 </b>
               </li>
@@ -218,10 +222,13 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
           })}
         </ul>
       )}
-      {!locked && rows.some((s) => !(s.attempted > 0)) && (
+      {!locked && rows.some((s) => s.attempted < (m.scoring?.estimate_below ?? 30)) && (
         <p className="mt-3 body-small !font-normal text-surface-gray-muted">
           {t("target.breakdownNote", {
-            percent: Math.round((rows.find((s) => !(s.attempted > 0))?.accuracy ?? 0.5) * 100),
+            start: Math.round(((m.scoring?.prior_correct ?? 1.5) / (m.scoring?.prior_attempts ?? 3)) * 100),
+            correct: m.scoring?.prior_correct ?? 1.5,
+            answers: m.scoring?.prior_attempts ?? 3,
+            enough: m.scoring?.estimate_below ?? 30,
           })}
         </p>
       )}

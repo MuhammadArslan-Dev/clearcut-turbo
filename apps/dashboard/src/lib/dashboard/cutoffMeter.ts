@@ -54,7 +54,10 @@ export interface CutoffMeterSection {
   name: string;
   total_marks: number;
   section_marks: number;
+  /** Smoothed accuracy the marks use: (correct + prior_correct) / (attempted + prior_attempts). */
   accuracy: number;
+  /** The student's own accuracy (correct / attempted); null before any answer. */
+  raw_accuracy?: number | null;
   marks_lost: number;
   attempted: number;
   correct: number;
@@ -136,6 +139,8 @@ export interface CutoffMeterDetail extends CutoffMeterSummary {
   trend?: number[];
   /** Today's goals (phase 111); absent from an older backend. */
   goals?: TodayGoals;
+  /** The documented marks formula (spec 1.1) — used to explain a subject's marks, never to recompute them. */
+  scoring?: { prior_correct: number; prior_attempts: number; estimate_below: number };
 }
 
 export async function getCutoffMeter(courseId: string | number): Promise<CutoffMeterDetail> {

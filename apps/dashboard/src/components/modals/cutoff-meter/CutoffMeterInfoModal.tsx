@@ -205,7 +205,9 @@ function MeterInfoBody({
                     className="min-w-0 rounded-2xl px-1.5 py-2.5 md:px-2.5"
                     style={{ background: ZONES[z.k].s }}
                   >
-                    <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                    {/* Phone: icon ABOVE the label in all four cards (same structure). It used to wrap
+                        beside the label only when the label was short (Safe Zone). md+: icon beside label, as before. */}
+                    <div className="flex flex-col items-start gap-1 md:flex-row md:flex-wrap md:items-center md:gap-x-1 md:gap-y-0.5">
                       <Image
                         src={icon.src}
                         alt=""
@@ -221,7 +223,7 @@ function MeterInfoBody({
                         {z.name}
                       </p>
                     </div>
-                    <p className="mt-1.5 text-[13px] leading-4 font-medium text-surface-gray-normal md:text-sm">
+                    <p className="mt-1 text-[13px] md:mt-1.5 leading-4 font-medium text-surface-gray-normal md:text-sm">
                       {z.rule}
                     </p>
                   </li>
