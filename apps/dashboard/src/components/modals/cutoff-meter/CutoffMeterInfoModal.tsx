@@ -152,7 +152,7 @@ function MeterInfoBody({
         {/* Phone: one column, exactly as before. Desktop (md+): two columns — the student's meter + zones on
             the left, "How it works" + "Keep attempting" on the right — so the sheet fits the viewport
             instead of a 460px column that needed a long scroll (phase 109). */}
-        <div className="space-y-4 overflow-y-auto px-4 pb-6 md:grid md:grid-cols-2 md:items-start md:gap-x-6 md:space-y-0 md:px-6 md:pb-6">
+        <div className="space-y-4 overflow-y-auto px-4 pb-6 md:grid md:grid-cols-2 md:items-center md:gap-x-6 md:space-y-0 md:px-6 md:pb-6">
           <div className="space-y-4">
             {/* 1. The student's own meter (unchanged) */}
             <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
