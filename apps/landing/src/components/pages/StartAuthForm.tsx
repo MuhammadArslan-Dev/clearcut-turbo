@@ -1028,12 +1028,12 @@ export default function StartAuthForm({
             </section>
           ) : step === "phone" ? (
             <section key="phone" className={styles.panel} aria-labelledby="h-phone">
-              <h1 id="h-phone" className={styles.h1}>
+              <h1 id="h-phone" className={`${styles.h1} ${styles.h1Phone}`}>
                 {c.headingBefore}
                 <em>{c.headingAccent}</em>
                 {c.headingAfter}
               </h1>
-              <p className={styles.sub}>{c.sub}</p>
+              {/* The "Everything for your teaching exam…" line was removed (client, 2026-11-13). */}
 
               {/* Truecaller (unchanged rules): Android browsers where the app was
                   found, or ?showTruecaller=true from a /go page. */}
@@ -1130,9 +1130,7 @@ export default function StartAuthForm({
                   </Button>
                 </div>
               </form>
-              <p className={styles.perks}>
-                <span>{c.perkTrial}</span> · <span>{c.perkNoCard}</span>
-              </p>
+              {/* The "3-day FREE trial · No card or payment needed" line was removed (client, 2026-11-13). */}
             </section>
           ) : (
             <section key="otp" className={styles.panel} aria-labelledby="h-otp">

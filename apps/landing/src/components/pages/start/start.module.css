@@ -82,10 +82,12 @@
   .right {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     flex: 1 1 0;
     min-width: 0;
   }
+  /* Logo + form stay centred in the card; the terms line sits at the BOTTOM of the card (client, 2026-11-13). */
+  .right .top { margin-top: auto; }
+  .right .panel { margin-bottom: auto; }
   /* `.left .stage` so it beats the phones' height rule further down the file:
      on desktop the stage fills the left panel and is centred in it. */
   .left .stage {
@@ -107,8 +109,9 @@
   .beneHead { font-size: 13px; }
   .perks,
   .legal { text-align: left; }
-  .legal { margin-top: 16px; }
+  .legal { margin-top: 0; }
   .h1 { font-size: 30px; margin-bottom: 4px; }
+  .h1Phone { margin-bottom: 22px; }
   .sub { margin-bottom: 18px; font-size: 15px; }
 }
 
@@ -298,6 +301,8 @@
 .h1 { font-size: clamp(20px, 5.7vw, 26px); line-height: 1.2; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
 .h1 em { font-style: normal; color: var(--s-blue); }
 .sub { margin: 0 0 10px; color: var(--s-muted); font-size: 14px; }
+/* Phone step has no sub-line any more: the heading carries the gap to the number field. */
+.h1Phone { margin-bottom: 12px; }
 
 .fieldLabel { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
 .flag { width: 21px; height: 14px; border-radius: 2px; flex: none; object-fit: cover; box-shadow: 0 0 0 1px color-mix(in srgb, var(--s-ink) 8%, transparent); }
