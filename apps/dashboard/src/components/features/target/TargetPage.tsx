@@ -58,6 +58,9 @@ function actionHref(a: CutoffMeterAction, courseId: string, practiceReady = true
   if (a.action_type === "SECTIONAL_TEST" || a.action_type === "FULL_LENGTH_TEST") return `/test-series/${courseId}`;
   if ((a.action_type === "TOPIC_TEST" || a.action_type === "LEARN") && a.topic_id) {
     const q = new URLSearchParams();
+    // The exact destination: section → chapter → topic (the page used to get only chapter + topic and
+    // opened the resume section, where that chapter does not exist).
+    if (a.section_id) q.set("section", String(a.section_id));
     if (a.chapter_id) q.set("chapter", String(a.chapter_id));
     q.set("topic", String(a.topic_id));
     return `/preparation/${courseId}?${q.toString()}`;
@@ -380,11 +383,19 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
         <ul className="mt-3 space-y-2.5">
           {rows.map((s) => {
             const pct = Math.min(Math.max(s.section_marks / s.total_marks, 0), 1);
-            const c = pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
+            // No answers in THIS subject yet: its marks are the starting estimate, not something the
+            // student earned — say so instead of showing a bare number (phase 109).
+            const tested = (s.attempted ?? 0) > 0;
+            const c = !tested ? "var(--color-border-gray-subtle)" : pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
             return (
               <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_46%_3rem] items-center gap-3">
-                <span className="line-clamp-2 leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
-                  {s.name}
+                <span className="leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
+                  <span className="line-clamp-2">{s.name}</span>
+                  <span className="mt-0.5 block body-small !font-normal text-surface-gray-muted">
+                    {tested
+                      ? t("target.breakdownCorrect", { correct: s.correct, attempted: s.attempted, percent: Math.round((s.accuracy ?? 0) * 100) })
+                      : t("target.breakdownNotTested")}
+                  </span>
                 </span>
                 <span className="h-2 overflow-hidden rounded-full bg-[var(--color-background-gray-subtle)]">
                   <i
@@ -392,13 +403,21 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
                     style={{ width: grown ? `${pct * 100}%` : 0, background: c }}
                   />
                 </span>
-                <b className="text-right body-medium !font-bold tabular-nums text-surface-gray-normal">
+                <b className={clsx("text-right body-medium !font-bold tabular-nums", tested ? "text-surface-gray-normal" : "text-surface-gray-muted")}>
+                  {tested ? "" : "~"}
                   {Math.round(s.section_marks)}/{s.total_marks}
                 </b>
               </li>
             );
           })}
         </ul>
+      )}
+      {!locked && rows.some((s) => !(s.attempted > 0)) && (
+        <p className="mt-3 body-small !font-normal text-surface-gray-muted">
+          {t("target.breakdownNote", {
+            percent: Math.round((rows.find((s) => !(s.attempted > 0))?.accuracy ?? 0.5) * 100),
+          })}
+        </p>
       )}
     </section>
   );

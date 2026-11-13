@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
-import React, { useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, useState } from "react";
 
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -35,7 +35,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useSearchParams } from "next/navigation";
 
-import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
+import { usePreparationStore, flattenTopics } from "@/components/features/preparation/store/usePreparationDataStore";
 import { useChapterData } from "@/components/features/preparation/hooks/useChapterData";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
 import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
@@ -130,22 +130,42 @@ export default function Sidebar() {
     ["chapter"],
   ]);
   const urlParamsApplied = useRef(false);
+  // The destination the page was OPENED with (Target "Today's plan", a shared link, a refresh). Read at
+  // first render, before any effect: the page's own URL sync rewrites section/chapter/topic from the
+  // store, so reading the live URL later saw the resume position, not the requested one (phase 109).
+  // Captured in an EFFECT, never during render: on a client-side navigation (Target → Learn) the first
+  // render runs before the browser URL has switched (window.location and useSearchParams still hold the
+  // OLD page's query), but by the time effects run the new URL is in place. Declared before every other
+  // effect here, and child effects run before the page's own URL sync, so the page has not rewritten it.
+  const openedRef = useRef<{ section: string | null; chapter: string | null; topic: string | null } | null>(null);
+  useEffect(() => {
+    if (openedRef.current) return;
+    const p = new URLSearchParams(window.location.search);
+    openedRef.current = { section: p.get("section"), chapter: p.get("chapter"), topic: p.get("topic") };
+  }, []);
 
   // Sync fetched syllabus into store; on first load apply URL chapter/topic params
   useEffect(() => {
     if (!syllabus?.chapters?.length) return;
     let state = syllabus.state;
-    if (!urlParamsApplied.current) {
-      const urlChapter = searchParams.get("chapter");
-      const urlTopic = searchParams.get("topic");
-      if (urlChapter || urlTopic) {
+    const openedWith = openedRef.current;
+    if (!urlParamsApplied.current && openedWith && (openedWith.chapter || openedWith.topic)) {
+      // Apply only to the section the link points at. The first syllabus to arrive can be the resume
+      // section's; consuming the link there lost the chapter/topic (opened Section 1 → Chapter 1).
+      const sectionOk = !openedWith.section || Number(openedWith.section) === selectedSectionId;
+      const chapterOf = openedWith.chapter
+        ? syllabus.chapters.find((c) => c.id === Number(openedWith.chapter))
+        : openedWith.topic
+          ? syllabus.chapters.find((c) => flattenTopics(c.topics).some((tp) => tp.id === Number(openedWith.topic)))
+          : undefined;
+      if (sectionOk && chapterOf) {
         state = {
           ...syllabus.state,
-          ...(urlChapter && { chapter_id: Number(urlChapter) }),
-          ...(urlTopic && { topic_id: Number(urlTopic) }),
+          chapter_id: String(chapterOf.id),
+          ...(openedWith.topic && { topic_id: Number(openedWith.topic) }),
         };
+        urlParamsApplied.current = true;
       }
-      urlParamsApplied.current = true;
     }
     setChapters(syllabus.chapters, state);
   }, [syllabus]);
@@ -270,6 +290,11 @@ export default function Sidebar() {
     // No topic yet (e.g. right after a paper switch, until its chapters arrive): there is
     // no position to save — the backend requires a topic, and a null one is a 422.
     if (!selectedTopic || !course?.group_code) return;
+    // Opened with a destination in another section (Target "Today's plan"): until the page has moved
+    // there, the store still holds the PREVIOUS visit's selection. Saving / patching that would write
+    // the old position into the syllabus cache, which re-hydrates the page back onto it (phase 109).
+    const opened = openedRef.current;
+    if (opened?.section && Number(opened.section) !== selectedSectionId) return;
 
     const payload = {
       course_id: String(course.group_code),

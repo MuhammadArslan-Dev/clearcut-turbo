@@ -522,6 +522,9 @@
     },
     "marksFrom": "Where your marks come from",
     "breakdownLocked": "Subject-wise marks unlock after your first test.",
+    "breakdownCorrect": "{correct} of {attempted} correct · {percent}%",
+    "breakdownNotTested": "Not tested yet",
+    "breakdownNote": "Subjects you have not tested yet are counted at a starting estimate (about {percent}% of their marks). Only your own answers in a subject change that subject’s marks.",
     "error": "Couldn’t load your Cutoff Meter.",
     "retry": "Retry"
   }
