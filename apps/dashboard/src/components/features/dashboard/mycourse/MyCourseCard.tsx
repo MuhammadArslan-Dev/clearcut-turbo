@@ -15,6 +15,8 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
+import { trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { useMeterTracking } from "@/hooks/course/useMeterTracking";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
@@ -28,10 +30,13 @@ import Skeleton from "@clearcut/ui/skeleton";
  * it, centred, the gap line and "Range ±N · based on N tests" (reference).
  * Text is ours (en / hi / mr); everything else is the studio's artwork.
  */
-function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
+function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: Omit<MeterCtx, "surface" | "userId"> }) {
   const t = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(meter, { surface: "learn_card", ...track }, wrapRef);
   const locked = meter.locked || meter.meter === null;
   const cooling = !locked && !!meter.cooling?.active;
   const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
@@ -55,7 +60,8 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
   const openModal = useModalStore((s) => s.open);
   const setInfoMeter = useCutoffMeterInfoStore((s) => s.setMeter);
   const openInfo = () => {
-    setInfoMeter(meter);
+    trackMeterClicked(meter, { surface: "learn_card", ...track });
+    setInfoMeter(meter, "bar", track);
     openModal("cutoff-meter-info");
   };
 
@@ -63,6 +69,7 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
     <>
       {/* Tap the meter → "how is this calculated" (bottom sheet on mobile, modal on desktop). */}
       <div
+        ref={wrapRef}
         role="button"
         tabIndex={0}
         aria-label={t("meterInfo.title")}
@@ -197,6 +204,9 @@ export interface MyCOurseCardProps {
   meter?: CutoffMeterSummary | null;
   /** Meter is on and its request is in flight → panel skeleton (no layout shift). */
   meterLoading?: boolean;
+  /** Course context for Cutoff Meter analytics (phase 108). */
+  courseId?: string | null;
+  paperName?: string | null;
 }
 
 export default function MyCourseCard({
@@ -224,6 +234,8 @@ export default function MyCourseCard({
   daysToExam,
   meter,
   meterLoading = false,
+  courseId,
+  paperName,
 }: MyCOurseCardProps) {
   const t = useTranslations();
   const [continueLoading, setContinueLoading] = React.useState(false);
@@ -408,7 +420,10 @@ export default function MyCourseCard({
         {meterLoading ? (
           <CutoffMeterPanelSkeleton />
         ) : meter ? (
-          <CutoffMeterPanel meter={meter} />
+          <CutoffMeterPanel
+            meter={meter}
+            track={{ courseId, examName: examShortName, level: levelName, paper: paperName }}
+          />
         ) : null}
 
         <div

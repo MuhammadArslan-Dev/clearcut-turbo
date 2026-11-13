@@ -10,6 +10,12 @@ import { Sparkline } from "@clearcut/motion/meters/sparkline";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import dynamic from "next/dynamic";
 import { useModalStore } from "@/store/modal/useModalStore";
+import { trackMeterActionClicked, trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { useMeterTracking } from "@/hooks/course/useMeterTracking";
+import { useAuth } from "@/providers/AuthProvider";
+import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
+import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import { levelName, paperName } from "@/lib/dashboard/courseCardMeta";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 
 const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
@@ -18,7 +24,7 @@ const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-me
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { useProgressCapabilities, PRACTICE_STATE_KEY } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { usePracticeTestEnabled } from "@/lib/experiments/usePracticeTestEnabled";
 import { getCourseState } from "@/lib/api/userState";
@@ -67,11 +73,16 @@ function actionHref(a: CutoffMeterAction, courseId: string, practiceReady = true
  * under it, the gap line, "Range ±N · based on N tests", and a dashed row with
  * the "Last 5 weeks" sparkline (from meter_history).
  */
-function MeterCard({ m }: { m: CutoffMeterDetail }) {
+type TrackCtx = Omit<MeterCtx, "surface" | "userId">;
+
+function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
   const t = useTranslations();
   const tc = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
+  const cardRef = useRef<HTMLElement>(null);
+  // Phase 108: Viewed (once per mount) + Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(m, { surface: "target_page", ...track }, cardRef);
   const locked = m.locked || m.meter === null;
   const cooling = !locked && !!m.cooling?.active;
   const value = Math.round(m.display_meter ?? m.meter ?? 0);
@@ -86,7 +97,8 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const openModal = useModalStore((st) => st.open);
   const setInfoMeter = useCutoffMeterInfoStore((st) => st.setMeter);
   const openInfo = () => {
-    setInfoMeter(m, "gauge");
+    trackMeterClicked(m, { surface: "target_page", ...track });
+    setInfoMeter(m, "gauge", track);
     openModal("cutoff-meter-info");
   };
 
@@ -102,6 +114,7 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
 
   return (
     <section
+      ref={cardRef}
       role="button"
       tabIndex={0}
       onClick={openInfo}
@@ -194,7 +207,8 @@ function shorten(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
-function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) {
+function TodayPlan({ m, courseId, track }: { m: CutoffMeterDetail; courseId: string; track: TrackCtx }) {
+  const { user } = useAuth() as { user?: { uuid?: string } | null };
   const t = useTranslations();
   const router = useRouter();
   const locked = m.locked || m.meter === null;
@@ -231,6 +245,7 @@ function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) 
   const go = (a: CutoffMeterAction) => {
     if (going) return; // double tap
     setGoing(a.id);
+    trackMeterActionClicked(m, { surface: "target_page", ...track, userId: user?.uuid ?? null }, a, plan.findIndex((p) => p.id === a.id) + 1);
     markCutoffMeterActionClicked(a.id).catch(() => {});
     router.push(actionHref(a, courseId, practiceReady));
   };
@@ -414,6 +429,17 @@ export default function TargetPage({ courseId }: { courseId: string }) {
     if ((ready && !caps.cutoff_meter) || notFound) router.replace(`/preparation/${courseId}`);
   }, [ready, caps.cutoff_meter, notFound, courseId, router]);
 
+  // The enrolment the Learn card shows for this course (the last-active paper, phase 106) — read from
+  // the cached my-courses list, never fetched just for analytics (enabled: false). The current-course
+  // store holds an arbitrary row of the course group, so its level / paper can differ from the card.
+  const { data: mine } = useQuery<{ active_course?: ExamEnrollmentWithExam | null; courses?: ExamEnrollmentWithExam[] }>({ queryKey: MY_COURSES_KEY, queryFn: skipToken });
+  const same = [mine?.active_course, ...(mine?.courses ?? [])].find((c) => c?.group_code === courseId) ?? null;
+  const track: TrackCtx = {
+    courseId,
+    examName: same?.exam?.short_name,
+    level: levelName(same?.metadata),
+    paper: paperName(same?.metadata),
+  };
   const { isOpen, stack } = useModalStore();
   const activeModal = stack[stack.length - 1];
 
@@ -430,8 +456,8 @@ export default function TargetPage({ courseId }: { courseId: string }) {
         </div>
       ) : (
         <>
-          <MeterCard m={data} />
-          <TodayPlan m={data} courseId={courseId} />
+          <MeterCard m={data} track={track} />
+          <TodayPlan m={data} courseId={courseId} track={track} />
           <MarksBreakdown m={data} />
         </>
       )}

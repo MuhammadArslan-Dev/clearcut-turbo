@@ -42,3 +42,12 @@ export function daysToExam(examMetadata: unknown, now: Date = new Date()): numbe
   const days = examDay - day(now.getTime());
   return days >= 0 ? days : null;
 }
+
+/** The paper (leaf) the student picked, e.g. "Paper 2" — `stagesNames[1]`; null when the course has no deeper level. */
+export function paperName(enrollmentMetadata: unknown): string | null {
+  const names = decodeJson(enrollmentMetadata)?.stagesNames;
+  if (Array.isArray(names) && typeof names[1] === "string" && names[1].trim()) {
+    return names[1].trim();
+  }
+  return null;
+}

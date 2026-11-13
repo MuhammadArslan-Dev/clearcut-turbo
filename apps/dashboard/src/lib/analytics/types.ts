@@ -50,6 +50,11 @@ import type {
   SystemEventPayloads,
 } from './events/system';
 
+import type {
+  CutoffMeterEventName,
+  CutoffMeterEventPayloads,
+} from './events/cutoff_meter';
+
 // --------------------------------------------------
 // 1. Global union of ALL event names
 // --------------------------------------------------
@@ -64,7 +69,8 @@ export type AnalyticsEventName =
   | MonetizationEventName
   | ExamEventName
   | AccountEventName
-  | SystemEventName;
+  | SystemEventName
+  | CutoffMeterEventName;
 
 // --------------------------------------------------
 // 2. Event name -> payload map
@@ -80,7 +86,8 @@ export interface AnalyticsEventPayloadMap
     MonetizationEventPayloads,
     ExamEventPayloads,
     AccountEventPayloads,
-    SystemEventPayloads {}
+    SystemEventPayloads,
+    CutoffMeterEventPayloads {}
 
 // --------------------------------------------------
 // 3. Payload resolver helper

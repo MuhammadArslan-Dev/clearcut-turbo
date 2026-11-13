@@ -68,7 +68,7 @@ export default function ExamEndConfirmationSheet() {
       const res = await endExamApi({ examId: exam?.uuid! });
       examType = res.data.exam.type;
       trackTestSubmitted(exam, res, "manual", language);
-      invalidateCutoffMeterQueries(queryClient);
+      invalidateCutoffMeterQueries(queryClient, { test_type: exam?.type ?? undefined, test_id: exam?.uuid, course_id: exam?.course?.group_code });
     } catch (error) {
       console.error("End exam failed:", error);
     }

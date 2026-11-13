@@ -375,7 +375,7 @@ export default function DailyTestAttemptPage() {
         invalidateDailyTestExams();
         invalidateDailyTestHistory(courseId);
         // Daily tests feed the Cutoff Meter too (client, 2026-11-12): the backend recalculated it.
-        invalidateCutoffMeterQueries(queryClient);
+        invalidateCutoffMeterQueries(queryClient, { test_type: "daily_test", test_id: testId, course_id: enrollment?.group_code ?? undefined });
         // The "checking your answers" animation plays out, then the result opens in place (see
         // onSubmitAnimationEnd). Its "Back to history" does the flow.goUp that used to run right here: it pops
         // back to this test's Attempt History when the attempt was opened from there, else swaps the attempt
@@ -389,7 +389,7 @@ export default function DailyTestAttemptPage() {
         setSubmitting(false);
       }
     },
-    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId, queryClient],
+    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId, queryClient, enrollment?.group_code],
   );
 
   const onSubmitAnimationEnd = useCallback(() => {

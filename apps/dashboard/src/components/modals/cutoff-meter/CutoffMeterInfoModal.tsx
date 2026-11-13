@@ -1,6 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef } from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { trackMeterInfoViewed } from "@/lib/analytics/cutoffMeter";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -30,6 +33,21 @@ export default function CutoffMeterInfoModal() {
   const { closeModal } = useModalStore();
   const meter = useCutoffMeterInfoStore((st) => st.meter);
   const variant = useCutoffMeterInfoStore((st) => st.variant);
+  const ctx = useCutoffMeterInfoStore((st) => st.ctx);
+  const { user } = useAuth() as { user?: { uuid?: string } | null };
+  // Once per opening (the sheet mounts only while open). The ref also stops React StrictMode's
+  // dev-only double mount-effect from sending it twice.
+  const sent = useRef(false);
+  useEffect(() => {
+    if (!meter || sent.current) return;
+    sent.current = true;
+    trackMeterInfoViewed(
+      meter,
+      { surface: "info_sheet", ...ctx, userId: user?.uuid ?? null },
+      variant === "gauge" ? "target_page" : "learn_card",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   if (!meter) return null;
   return (
     <AnimatePresence>
