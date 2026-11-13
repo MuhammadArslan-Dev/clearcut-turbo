@@ -172,7 +172,7 @@ export default function MainContent({ examId }: { examId: string }) {
       );
       examType = res.data.exam.type;
       trackTestSubmitted(exam, res, "time_up", language);
-      invalidateCutoffMeterQueries(queryClient);
+      invalidateCutoffMeterQueries(queryClient, { test_type: exam.type ?? undefined, test_id: exam.uuid, course_id: exam.course?.group_code });
     } catch (error) {
       console.error(error);
     }

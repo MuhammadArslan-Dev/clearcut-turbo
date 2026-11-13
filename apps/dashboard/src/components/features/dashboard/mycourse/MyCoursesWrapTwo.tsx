@@ -31,7 +31,7 @@ import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
 import { useCoursesCutoffMeter } from "@/hooks/course/useCoursesCutoffMeter";
 import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
-import { daysToExam, levelName } from "@/lib/dashboard/courseCardMeta";
+import { daysToExam, levelName, paperName } from "@/lib/dashboard/courseCardMeta";
 import { prefetchLevels } from "@/hooks/onboarding/useLevels";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
@@ -106,6 +106,8 @@ function CourseSlideCard({
       courseName={`${exam.exam?.short_name} Exam`}
       logo={exam.exam?.logo_url}
       levelName={levelName(exam.metadata)}
+      courseId={exam.group_code}
+      paperName={paperName(exam.metadata)}
       daysToExam={daysToExam(exam.exam?.metadata)}
       meter={meter}
       meterLoading={meterLoading}
@@ -284,6 +286,8 @@ export default function MyCoursesWrapTwo({
     courseName: `${exam?.short_name} Exam`,
     logo: exam?.logo_url,
     levelName: levelName(activeExam?.metadata),
+    courseId: activeExam?.group_code,
+    paperName: paperName(activeExam?.metadata),
     daysToExam: daysToExam(exam?.metadata),
     meter: meterFor(activeExam?.group_code),
     meterLoading: meterOn && meterLoading,

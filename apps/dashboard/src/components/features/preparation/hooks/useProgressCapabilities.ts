@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { noteMeterTrigger, type MeterTrigger } from "@/lib/analytics/cutoffMeter";
 import {
   getProgressCapabilities,
   LEGACY_CAPABILITIES,
@@ -33,7 +34,9 @@ export function useProgressCapabilities(): { caps: ProgressCapabilities; ready: 
  */
 export const PRACTICE_STATE_KEY = (courseId: string) => ["practice-state", courseId] as const;
 
-export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
+export function invalidateCutoffMeterQueries(queryClient: QueryClient, trigger?: MeterTrigger) {
+  // Which test just changed the meter — reported with the next score / zone / unlock change (phase 108).
+  if (trigger) noteMeterTrigger(trigger);
   // "practice-state": the Target page's "can the Practice Test still be taken" (a
   // submit may have just completed it).
   // "today-goals" / "learning-streak" / "courses-progress-summary": the Learn page's goals,
@@ -57,7 +60,8 @@ export function invalidateCutoffMeterQueries(queryClient: QueryClient) {
  * Server-side progress changed: refetch everything that shows it, so the
  * sidebar, course cards and Today Goals never keep a stale number.
  */
-export function invalidateProgressQueries(queryClient: QueryClient) {
+export function invalidateProgressQueries(queryClient: QueryClient, trigger?: MeterTrigger) {
+  if (trigger) noteMeterTrigger(trigger);
   for (const key of [
     ["my-courses"],
     ["learning-progress-by-topic"],

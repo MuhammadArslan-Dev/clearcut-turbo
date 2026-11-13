@@ -234,7 +234,7 @@ export default function MiniTest() {
         answers: byQuestionId,
         locale: shownLocale,
       })
-        .then(() => invalidateCutoffMeterQueries(queryClient))
+        .then(() => invalidateCutoffMeterQueries(queryClient, { test_type: "topic_test", test_id: String(topicId), course_id: course.group_code }))
         .catch((err) => {
           legacyRefRef.current = null; // the same answers may be re-sent (same server dedupe per question)
           logger.breadcrumb("sendLegacyTopicAnswers failed", {
@@ -257,7 +257,7 @@ export default function MiniTest() {
           new_status: "miniTestDone",
           change_source: "manual_user_action",
         });
-        invalidateProgressQueries(queryClient);
+        invalidateProgressQueries(queryClient, { test_type: "topic_test", test_id: String(topicId), course_id: course?.group_code });
       })
       .catch((err) => {
         submittedRef.current = null; // allow a retry from the result screen

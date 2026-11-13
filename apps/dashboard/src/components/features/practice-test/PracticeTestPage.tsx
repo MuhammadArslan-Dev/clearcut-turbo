@@ -306,7 +306,7 @@ export default function PracticeTestPage() {
         language: activeLocale,
       });
       // The onboarding answers are the first ones the Cutoff Meter counts — refetch it.
-      invalidateCutoffMeterQueries(queryClient);
+      invalidateCutoffMeterQueries(queryClient, { test_type: "practice_test", test_id: courseId, course_id: courseId });
       // The result opens when the submit animation has played out (see <TestSubmit onFinish> below).
       pendingFinishRef.current = { checks, elapsedMs, scoring };
       setSubmitDone(true);
