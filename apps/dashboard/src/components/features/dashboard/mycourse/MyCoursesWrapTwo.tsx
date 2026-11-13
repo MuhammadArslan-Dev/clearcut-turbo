@@ -479,7 +479,7 @@ export default function MyCoursesWrapTwo({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="px-2 pt-3">
+            <div className="-mt-1 px-2 pt-0">
               <CourseSlideCard
                 exam={buyCourse}
                 part="buy"
