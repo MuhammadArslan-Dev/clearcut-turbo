@@ -55,6 +55,9 @@ import Text from "@clearcut/ui/text";
 import { ListIcon } from "@/components/ui/icons";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { setResumeState } from "@/lib/dashboard/userInteractions";
+import { patchCoursePosition, refreshCourseViews } from "@/lib/preparation/courseSync";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import CDivider from "@/components/ui/CDivider";
 import { trackEvent } from "@/lib/analytics/browser";
 import PieChartIcon from "@/components/ui/icons/pie-chart-icon";
@@ -252,11 +255,43 @@ export default function Sidebar() {
   // debounce from then on for genuine subsequent changes (user picks a
   // different topic, etc). The local UI sync below stays untouched.
   const hasSettledOnce = useRef(false);
+  const queryClient = useQueryClient();
+  const routeCourseId = useParams()?.courseId as string | undefined;
+  // The position still waiting for its (debounced) save — flushed when the page is left.
+  const pendingSave = useRef<{
+    payload: Parameters<typeof setResumeState>[0];
+    groupCode: string;
+  } | null>(null);
   useEffect(() => {
     if (!hasSettledOnce.current) {
       if (!chapters?.length || !selectedTopic) return;
       hasSettledOnce.current = true;
     }
+    // No topic yet (e.g. right after a paper switch, until its chapters arrive): there is
+    // no position to save — the backend requires a topic, and a null one is a 422.
+    if (!selectedTopic || !course?.group_code) return;
+
+    const payload = {
+      course_id: String(course.group_code),
+      paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
+      section_id: selectedSectionId != null ? String(selectedSectionId) : null,
+      chapter_id: selectedChapter?.id != null ? String(selectedChapter.id) : null,
+      topic_id: selectedTopic.id ?? null,
+    };
+    const groupCode = String(course.group_code);
+    pendingSave.current = { payload, groupCode };
+
+    // The selection is the truth the moment it is made: every cached copy of the saved
+    // position (syllabus, chapters, Learn resume bar) follows it NOW, not after the
+    // request — so reopening the course never restores (and re-saves) an older position.
+    patchCoursePosition(queryClient, {
+      groupCode,
+      routeCourseId,
+      paperId: selectedPaperId,
+      sectionId: selectedSectionId,
+      chapterId: selectedChapter?.id,
+      topicId: selectedTopic.id,
+    });
 
     // Cancel the in-flight/pending call from the previous selection —
     // without this, a fast follow-up selection (e.g. topic auto-settling
@@ -281,18 +316,14 @@ export default function Sidebar() {
       // isn't actionable — the same non-actionable-network-blip reasoning
       // useStreakTracker.ts already applies to its own background flush.
       // A genuine backend failure (4xx/5xx) is still reported as an error.
-      setResumeState(
-        {
-          course_id: String(course?.group_code),
-          paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
-          section_id:
-            selectedSectionId != null ? String(selectedSectionId) : null,
-          chapter_id:
-            selectedChapter?.id != null ? String(selectedChapter.id) : null,
-          topic_id: selectedTopic?.id ?? null,
-        },
-        controller.signal,
-      ).catch((err) => {
+      setResumeState(payload, controller.signal)
+        .then(() => {
+          if (pendingSave.current?.payload === payload) pendingSave.current = null;
+          // The server holds it now: the card's paper, its meter and the resume bar's
+          // names are derived from it.
+          refreshCourseViews(queryClient, groupCode);
+        })
+        .catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
 
         if (isNetworkFailure(err)) {
@@ -326,6 +357,25 @@ export default function Sidebar() {
     selectedTopic?.id,
     chapters,
   ]);
+
+  // Leaving the page (route change, tab close) inside the 500 ms debounce used to drop the
+  // last position: the cleanup above aborts the pending save. Flush whatever is still
+  // pending, in a request that outlives the page.
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingSave.current;
+      if (!pending) return;
+      pendingSave.current = null;
+      setResumeState(pending.payload, undefined, { keepalive: true })
+        .then(() => refreshCourseViews(queryClient, pending.groupCode))
+        .catch(() => {});
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     if (!selectedTopic || !chapters) return;

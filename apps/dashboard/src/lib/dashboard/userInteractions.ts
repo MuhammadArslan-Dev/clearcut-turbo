@@ -101,6 +101,8 @@ export async function setResumeState(
     topic_id?: string | number | null;
   },
   signal?: AbortSignal,
+  // keepalive: the page is being left (unmount / tab close) — the request must outlive it.
+  options?: { keepalive?: boolean },
 ): Promise<{ message: string; data: any }> {
   return apiFetch<{ message: string; data: any }>(
     "/v2/interactions/resume-state",
@@ -112,6 +114,7 @@ export async function setResumeState(
       },
       body: JSON.stringify(payload),
       signal,
+      keepalive: options?.keepalive,
     },
     undefined,
     // Best-effort background write (see Sidebar.tsx caller) firing from

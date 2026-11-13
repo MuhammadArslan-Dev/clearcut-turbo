@@ -10,13 +10,15 @@ import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 /* ----------------------------------
    QUERY KEY
 ----------------------------------- */
-const QUERY_KEY = (sectionId?: string | number) => ["chapter", sectionId];
+// Scoped by COURSE: the response embeds that course's saved position (`state`), and two
+// courses can share a section id — keyed by section alone one course restored the other's.
+const QUERY_KEY = (groupCode: string | null | undefined, sectionId?: string | number) => ["chapter", groupCode, sectionId];
 
 export function useChapterData(sectionId?: number) {
   const queryClient = useQueryClient();
   const { course } = usePreparationStore();
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: QUERY_KEY(sectionId),
+    queryKey: QUERY_KEY(course?.group_code, sectionId),
     enabled: !!sectionId,
 
     queryFn: async () => {
@@ -44,7 +46,7 @@ export function useChapterData(sectionId?: number) {
   const clearData = () => {
     if (!sectionId) return;
     queryClient.removeQueries({
-      queryKey: QUERY_KEY(sectionId),
+      queryKey: QUERY_KEY(course?.group_code, sectionId),
     });
   };
 

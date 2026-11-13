@@ -308,9 +308,16 @@ export const usePreparationStore = create<PreparationState>((set) => ({
   ----------------------------------- */
   hydrateFromApi: (data) => {
     const firstPaperId = data.paper?.[0]?.id;
-    const firstSection = firstPaperId
-      ? data.sections?.[firstPaperId]?.[0]
-      : undefined;
+    // The paper the course opens on (the saved one, else the first) and ITS sections: the
+    // fallback section and `selectedSection` used to come from the FIRST paper even when
+    // the course resumed on another one (a section of the wrong paper).
+    const openPaperId = data?.paper_id ?? firstPaperId;
+    const paperSections = openPaperId ? data.sections?.[openPaperId] : undefined;
+    const firstSection = paperSections?.[0];
+    const openSection =
+      (data?.section_id != null
+        ? paperSections?.find((s) => s.id === Number(data.section_id))
+        : undefined) ?? firstSection;
 
     const firstSectionId = firstSection?.id;
 
@@ -326,9 +333,9 @@ export const usePreparationStore = create<PreparationState>((set) => ({
       mainData: data.mainData,
       sectionsByPaperId: data.sections,
 
-      selectedPaperId: data?.paper_id ?? firstPaperId,
+      selectedPaperId: openPaperId,
       selectedSectionId: data?.section_id ?? firstSectionId,
-      selectedSection: firstSection,
+      selectedSection: openSection,
 
       loading: false,
       error: false,
@@ -426,12 +433,20 @@ export const usePreparationStore = create<PreparationState>((set) => ({
   selectPaper: (paperId) =>
     set((state) => {
       const firstSection = state.sectionsByPaperId?.[paperId]?.[0];
+      // Another paper means another section list: drop the chapter / topic of the OLD paper
+      // right away. They used to stay selected until the new chapters arrived, and the
+      // resume save in that window stored "new paper + old paper's chapter and topic".
+      // When both papers share the section (same id → no refetch), keep them.
+      const sameSection = firstSection?.id != null && firstSection.id === state.selectedSectionId;
 
       return {
         selectedPaperId: paperId,
         selectedSectionId: firstSection?.id,
         selectedSection: firstSection,
         selectedArea: null,
+        ...(sameSection
+          ? {}
+          : { chapters: undefined, selectedChapter: undefined, selectedTopic: undefined }),
       };
     }),
 
