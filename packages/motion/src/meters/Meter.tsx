@@ -13,12 +13,10 @@ import {
   type CSSProperties,
 } from "react";
 import { usePrefersReducedMotion } from "../core";
-import { Nib } from "./Nib";
 import styles from "./meters.module.css";
 import {
   fillShare,
   fillTiming,
-  CY,
   DEFAULT_SCALE,
   EARLY_BAND,
   EARLY_ESTIMATE,
@@ -26,7 +24,6 @@ import {
   ZONES,
   arc,
   pt,
-  riderPose,
   segments,
   tr,
   zoneOf,
@@ -276,7 +273,6 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
     background: early ? EARLY_ESTIMATE.s : zoneObj.s,
     color: early ? EARLY_ESTIMATE.ink : zoneObj.ink,
   };
-  const pct = (v / max) * 100;
   const bandZone = ZONES[zoneOf(v, scale)];
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
@@ -301,7 +297,8 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   if (variant === "gauge") {
     const tA = pt(cutoff, R - 22, max).split(" ");
     const tB = pt(cutoff, R + 14, max).split(" ");
-    const tL = pt(cutoff, R + 26, max).split(" ");
+    // "Cutoff 90" sits INSIDE the gauge, directly beneath the tick (client, 2026-11-14), not above / outside it.
+    const tL = pt(cutoff, R - 38, max).split(" ");
     body = (
       <>
         <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
@@ -338,12 +335,11 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
               );
             })}
             <line className={styles.ctick} x1={tA[0]} y1={tA[1]} x2={tB[0]} y2={tB[1]} />
-            <text className={styles.clab} x={tL[0]} y={+tL[1] - 1} textAnchor="middle">
+            <text className={styles.clab} x={tL[0]} y={+tL[1] + 3.5} textAnchor="middle">
               {cutLabel}
             </text>
             <g className={styles.ptr} style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}>
               <polygon points="120,44 113.5,57 126.5,57" fill="#192839" />
-              <circle className={styles.knob} cx="120" cy={CY - R} r="9" style={{ stroke: zoneObj.c }} />
             </g>
           </svg>
           <div className={styles.gnum}>
@@ -369,7 +365,6 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
       </>
     );
   } else {
-    const [mood, acc] = riderPose(zone);
     body = (
       <div className={[styles.barm, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
         <div className={styles.bartop}>
@@ -408,9 +403,6 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           <i className={styles.cmark} style={{ left: `${(cutoff / max) * 100}%` }}>
             <span>{cutLabel}</span>
           </i>
-          <div className={styles.rider} style={{ left: `${pct}%` }}>
-            <Nib mood={mood} accessory={acc} key={`${mood}-${acc}`} />
-          </div>
           {lockEl}
         </div>
         <div className={styles.scale}>
