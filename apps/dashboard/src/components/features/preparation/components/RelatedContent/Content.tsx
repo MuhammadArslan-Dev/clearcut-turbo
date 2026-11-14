@@ -601,8 +601,13 @@ export function Trends({
 
   const min = fmtNum(trend?.weightage_marks_min);
   const max = fmtNum(trend?.weightage_marks_max);
-  const marksLabel =
-    min && max ? (min === max ? `${min} marks` : `${min}-${max} marks`) : "—";
+  // The trend stores QUESTION counts per exam (not marks): label and unit say "questions".
+  const questionsAskedLabel =
+    min && max
+      ? min === max
+        ? trends("values.questionsExact", { count: Number(min) })
+        : trends("values.questionsRange", { min, max })
+      : "—";
 
   const lastAppeared = trend?.last_appeared_year
     ? `${examShort} ${trend.last_appeared_year}`.trim()
@@ -710,7 +715,7 @@ export function Trends({
                       weight="normal"
                       color="gray-subtle"
                     >
-                      Marks Asked
+                      {trends("labels.questionsAsked")}
                     </Text>
                   </div>
                   <div className="flex items-center">
@@ -720,7 +725,7 @@ export function Trends({
                       weight="semibold"
                       color="gray-normal"
                     >
-                      {marksLabel}
+                      {questionsAskedLabel}
                     </Text>
                   </div>
                 </div>
