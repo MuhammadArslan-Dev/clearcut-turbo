@@ -75,8 +75,8 @@ const ZONE_ICON = {
 
 /** The three "How it works" steps. */
 const STEPS = [
-  { n: 1, key: "r1", src: `${IMG}/step-target.webp` },
-  { n: 2, key: "r2", src: `${IMG}/step-chart.webp` },
+  { n: 1, key: "r1", src: null },
+  { n: 2, key: "r2", src: null },
   { n: 3, key: "r3", src: `${IMG}/step-trophy.webp` },
 ] as const;
 
@@ -128,15 +128,8 @@ function MeterInfoBody({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-          <Image
-            src={`${IMG}/shield.webp`}
-            alt=""
-            width={67}
-            height={74}
-            aria-hidden="true"
-            className="h-[34px] w-auto shrink-0"
-          />
-          <h2 className="flex-1 text-[17px] leading-6 font-extrabold text-[var(--color-primary-stronger)] md:text-[19px]">
+          {/* The decorative shield next to the title was removed (client, 2026-11-14). */}
+          <h2 className="flex-1 text-[17px] leading-6 font-extrabold text-surface-gray-normal md:text-[19px]">
             {t("title")}
           </h2>
           <button
@@ -235,7 +228,7 @@ function MeterInfoBody({
           <div className="space-y-4">
             {/* 3. How it works */}
             <section className="-mx-4 border-t border-[var(--color-border-gray-subtle)] px-4 pt-4 md:mx-0 md:border-t-0 md:px-0 md:pt-0">
-              <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-[var(--color-primary-stronger)]">
+              <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-surface-gray-normal">
                 <Image
                   src={`${IMG}/layers.webp`}
                   alt=""
@@ -250,30 +243,35 @@ function MeterInfoBody({
                 {STEPS.map((s) => (
                   <li
                     key={s.n}
-                    className="flex items-center gap-3 rounded-[20px] border border-[var(--color-primary-bg-soft)] bg-white py-2.5 pr-3 pl-2.5 shadow-sm"
+                    className="flex items-center gap-3 rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white py-2.5 pr-3 pl-2.5"
                   >
-                    <Image
-                      src={s.src}
-                      alt=""
-                      width={108}
-                      height={106}
-                      aria-hidden="true"
-                      className="h-11 w-11 shrink-0 md:h-12 md:w-12"
-                    />
+                    {/* Steps 1 and 2: the number takes the illustration's place (same 44/48 px slot); step 3 keeps its
+                        illustration and has no counter. */}
+                    {s.src ? (
+                      <Image
+                        src={s.src}
+                        alt=""
+                        width={108}
+                        height={106}
+                        aria-hidden="true"
+                        className="h-11 w-11 shrink-0 md:h-12 md:w-12"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[18px] leading-none font-bold text-[var(--color-brand)] md:h-12 md:w-12"
+                      >
+                        {s.n}
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[15px] leading-5 font-extrabold text-[var(--color-primary-stronger)]">
+                      <p className="text-[15px] leading-5 font-extrabold text-surface-gray-normal">
                         {t(`${s.key}Title`)}
                       </p>
                       <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-muted md:text-sm">
                         {t(`${s.key}Body`)}
                       </p>
                     </div>
-                    <span
-                      aria-hidden="true"
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[14px] font-bold text-[var(--color-brand)]"
-                    >
-                      {s.n}
-                    </span>
                   </li>
                 ))}
               </ol>
@@ -281,14 +279,15 @@ function MeterInfoBody({
 
             {/* 4. Keep attempting */}
             <section className="flex items-center gap-3 rounded-[20px] bg-[var(--color-primary-bg-soft)] px-4 py-3.5">
-              <Image
-                src={`${IMG}/bolt.webp`}
-                alt=""
-                width={84}
-                height={114}
+              {/* Lightning bolt in the brand blue (the artwork was yellow). */}
+              <svg
                 aria-hidden="true"
-                className="h-[52px] w-auto shrink-0"
-              />
+                viewBox="0 0 24 34"
+                className="h-[44px] w-auto shrink-0"
+                fill="var(--color-brand)"
+              >
+                <path d="M14.5 0 1.5 19.2h8.1L7.6 34 22.5 13.6h-8.6L14.5 0Z" />
+              </svg>
               <div className="min-w-0">
                 <p className="text-[17px] leading-6 font-extrabold text-[var(--color-brand)]">
                   {t("keepTitle")}
