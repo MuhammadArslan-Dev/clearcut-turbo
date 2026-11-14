@@ -21,7 +21,7 @@
 - [x] 3. `app/Services/Preparation/TopicTrendService.php`.
 - [x] 4. `app/Jobs/RefreshTopicTrendsJob.php` (lock, failure handling, cache bump only on change) + `QuestionCacheService::bumpVersion()`.
 - [x] 5. `SyncQuestionsNewJob::afterBatchSucceeded()` called from the batch `then()`.
-- [x] 6. `TopicTrendController` + routes in `routes/Apis/V2/automation.php` (X-Api-Key).
+- [x] 6. `TopicTrendController` + routes `GET|POST /api/v1/bigquery/refreshTopicTrends` and `/status` in `routes/Apis/V1/dataapi.php` (no key, like `syncQuestionsNew` — user decision after go-live; first built behind `X-Api-Key` in the automation group, then moved).
 - [x] 7. `TopicTrendImportService`: uuid set on create only; `buildSource` shared with the new service.
 - [x] 8. Frontend: label/unit "Questions Asked" (`Content.tsx` + `messages/{en,hi,mr}/relatedContent.json`).
 - [x] 9. Tests `tests/Feature/TopicTrendRefreshTest.php` (14).
@@ -43,6 +43,7 @@ Docs: this file, `docs/TOPIC_TRENDS.md`.
 | 2026-11-14 | D2 "Marks Asked" | Keep calculation, rename label to "Questions Asked" — user |
 | 2026-11-14 | D3 topic id | Prefer `topic_id_b`, but verify against `s_topics` first — user. **Verified:** `s_topics.topic_id` unique (9,000/9,000); numeric `question_new.topic_id` is only the number in `T_00885` (not `s_topics.id`: 885 vs 6264, 2,753 topics differ); 0 question/topic chapter conflicts; 206 unmapped tags are `#N/A`/`#REF!`; every stage id maps to `e_stages` |
 | 2026-11-14 | D4 scope | Auto sync: touched exams only; endpoint: all or selected — user |
+| 2026-11-14 (later) | Remove authentication from the refresh endpoint | **Done — user:** the endpoint now lives in the `bigquery` group like `syncQuestionsNew`, no key, GET or POST. Risk accepted: anyone with the URL can start a (harmless, idempotent) refresh. |
 | 2026-11-14 | D5 auth | Identify callers, protect backward-compatibly — user. **Finding:** old `bigquery/*` routes (sync, `importTopicTrends`) have **no** auth (only `api` + cache-flush middleware); docs (`Progress Tracker/BIGQUERY-SYNC.md`) list the caller as unknown. The n8n-facing `/api/v2/automation/*` group already uses `X-Api-Key` (same middleware as `question-cache/invalidate` and `syllabus-index/rebuild`, which n8n calls after a BigQuery sync). **Chosen:** the new endpoints live in that group, so nothing existing changes or breaks. Recommended separately: protect the old `bigquery/*` routes the same way, but only after finding out who calls them (`automation.key:soft` mode logs unauthenticated calls first, as phase 77 did) |
 
 ## 6. Blockers / risks / recommendations

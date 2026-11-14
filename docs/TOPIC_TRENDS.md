@@ -13,7 +13,7 @@ BigQuery staging.question ──(GET /api/v1/bigquery/syncQuestionsNew)──►
                           └─ TopicTrendService::refresh($exams)  → mapping_topic_trends
                           └─ QuestionCacheService::bumpVersion()  (only if a row changed)
 
-POST /api/v2/automation/topic-trends/refresh   (X-Api-Key)  → same job, all exams or the given ones
+GET|POST /api/v1/bigquery/refreshTopicTrends   (no key, like syncQuestionsNew) → same job, all exams or the given ones
 ```
 Trends are **never read from BigQuery**; they are calculated from `question_new` (+ `question_trans`) in our DB. Read path: `STopic::trends` (hasOne) → `PreparationService::getSectionChapters` scopes it to the enrolled exam → `section_chapters_*` cache (30 min, keyed by `QuestionCacheService` version) → Trends tab.
 
@@ -44,15 +44,16 @@ Mapping to our tables uses the **business ids**: `topic_id_b → s_topics.topic_
 - One DB transaction per exam; the whole run is serialised by the lock `topic_trends_refresh`; a failure is logged (`topic_trends.failed`), stored for `status`, and never affects the question sync.
 
 ## 4. API
-Both need header `X-Api-Key` (same key and middleware as the other `/api/v2/automation/*` n8n endpoints; `AUTOMATION_API_KEY`).
-- `POST /api/v2/automation/topic-trends/refresh` — body `{ "exams": ["ctet","htet"] | "ctet,htet" (optional, omitted = all), "dry_run": true|false }`.
-  - `dry_run: true` → `200`, calculates and diffs, **writes nothing**, returns the counts.
+Called the same way as the question sync: in the `bigquery` route group, **no key**, GET or POST, and it does not flush the cache store (`withoutMiddleware(flush.cache.after.sync)`). Routes: `routes/Apis/V1/dataapi.php`.
+- `GET|POST /api/v1/bigquery/refreshTopicTrends` — params `exams` (`ctet,htet` or an array; omitted = all exams) and `dry_run` (`true`).
+  - `dry_run=true` → `200`, calculates and diffs, **writes nothing**, returns the counts.
   - otherwise → `202 {queued:true, scope}`, the job runs on the queue.
-  - unknown exam code → `422` listing the valid codes (exam codes = letters before `_` in the instance id, lower-case: `ctet`, `hptgt`, `htet`, `mahatet`, `ugcnet`, `uptet`, …).
-- `GET /api/v2/automation/topic-trends/status` — result of the last real run (`status`, counts, `per_exam`, `trigger`, `finished_at`).
+  - unknown exam code → `422` listing the valid codes (letters before `_` in the instance id, lower-case: `ctet`, `hptgt`, `htet`, `mahatet`, `ugcnet`, `uptet`, …).
+- `GET /api/v1/bigquery/refreshTopicTrends/status` — result of the last real run (`status`, counts, `per_exam`, `trigger`, `finished_at`).
 Counts: `computed, created, updated, unchanged, stale_kept, skipped_topic, skipped_stage, ignored_untagged_questions, per_exam, seconds`.
 
-Example: `curl -X POST https://<backend>/api/v2/automation/topic-trends/refresh -H "X-Api-Key: $KEY" -H "Content-Type: application/json" -d '{"dry_run":true}'`.
+Examples (browser works too): `https://<backend>/api/v1/bigquery/refreshTopicTrends?dry_run=true`, then `https://<backend>/api/v1/bigquery/refreshTopicTrends`, then `.../refreshTopicTrends/status`.
+⚠️ The endpoint has no authentication (decision of 2026-11-14, same as the other `bigquery/*` sync routes). It is safe to repeat (idempotent, deletes nothing, ~1 s of work, one run at a time by lock), but anyone who knows the URL can start a refresh.
 
 ## 5. Operations
 - Deploy: run the migration (`php artisan migrate`) — it **refuses** (changes nothing) if duplicate `(topic_id, exam_id, stage_id)` rows exist; fix them first. A queue worker must be running (same as for the question sync).
