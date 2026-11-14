@@ -13,6 +13,7 @@ import {
   type CSSProperties,
 } from "react";
 import { usePrefersReducedMotion } from "../core";
+import { Nib } from "./Nib";
 import styles from "./meters.module.css";
 import {
   fillShare,
@@ -24,6 +25,7 @@ import {
   ZONES,
   arc,
   pt,
+  riderPose,
   segments,
   tr,
   zoneOf,
@@ -273,6 +275,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
     background: early ? EARLY_ESTIMATE.s : zoneObj.s,
     color: early ? EARLY_ESTIMATE.ink : zoneObj.ink,
   };
+  const pct = (v / max) * 100;
   const bandZone = ZONES[zoneOf(v, scale)];
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
@@ -365,6 +368,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
       </>
     );
   } else {
+    const [mood, acc] = riderPose(zone);
     body = (
       <div className={[styles.barm, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
         <div className={styles.bartop}>
@@ -403,6 +407,10 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           <i className={styles.cmark} style={{ left: `${(cutoff / max) * 100}%` }}>
             <span>{cutLabel}</span>
           </i>
+          {/* The mascot rides the end of the fill (kept: only the gauge's white knob was to go). */}
+          <div className={styles.rider} style={{ left: `${pct}%` }}>
+            <Nib mood={mood} accessory={acc} key={`${mood}-${acc}`} />
+          </div>
           {lockEl}
         </div>
         <div className={styles.scale}>
