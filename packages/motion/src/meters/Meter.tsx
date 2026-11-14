@@ -21,6 +21,7 @@ import {
   DEFAULT_SCALE,
   EARLY_BAND,
   EARLY_ESTIMATE,
+  CY,
   R,
   ZONES,
   arc,
@@ -302,6 +303,8 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
     const tB = pt(cutoff, R + 14, max).split(" ");
     // "Cutoff 90" sits INSIDE the gauge, directly beneath the tick (client, 2026-11-14), not above / outside it.
     const tL = pt(cutoff, R - 38, max).split(" ");
+    const [gMood, gAcc] = riderPose(zone);
+    const ang = (v / max) * 180 - 90;
     body = (
       <>
         <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
@@ -343,6 +346,13 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
             </text>
             <g className={styles.ptr} style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}>
               <polygon points="120,44 113.5,57 126.5,57" fill="#192839" />
+              {/* The mascot rides the end of the filled arc like it rides the bar; it turns with the needle's
+                  rotation and is counter-rotated by the same amount, so it always stands upright. */}
+              <foreignObject x="104" y={CY - R - 24} width="32" height="44" style={{ overflow: "visible" }}>
+                <div className={styles.gnib} style={{ transform: `rotate(${-ang}deg)` }}>
+                  <Nib mood={gMood} accessory={gAcc} key={`g-${gMood}-${gAcc}`} />
+                </div>
+              </foreignObject>
             </g>
           </svg>
           <div className={styles.gnum}>
