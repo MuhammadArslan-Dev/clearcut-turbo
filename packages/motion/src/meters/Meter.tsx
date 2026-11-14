@@ -18,10 +18,10 @@ import styles from "./meters.module.css";
 import {
   fillShare,
   fillTiming,
-  CY,
   DEFAULT_SCALE,
   EARLY_BAND,
   EARLY_ESTIMATE,
+  CY,
   R,
   ZONES,
   arc,
@@ -301,7 +301,10 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   if (variant === "gauge") {
     const tA = pt(cutoff, R - 22, max).split(" ");
     const tB = pt(cutoff, R + 14, max).split(" ");
-    const tL = pt(cutoff, R + 26, max).split(" ");
+    // "Cutoff 90" sits INSIDE the gauge, directly beneath the tick (client, 2026-11-14), not above / outside it.
+    const tL = pt(cutoff, R - 38, max).split(" ");
+    const [gMood, gAcc] = riderPose(zone);
+    const ang = (v / max) * 180 - 90;
     body = (
       <>
         <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
@@ -338,12 +341,17 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
               );
             })}
             <line className={styles.ctick} x1={tA[0]} y1={tA[1]} x2={tB[0]} y2={tB[1]} />
-            <text className={styles.clab} x={tL[0]} y={+tL[1] - 1} textAnchor="middle">
+            <text className={styles.clab} x={tL[0]} y={+tL[1] + 3.5} textAnchor="middle">
               {cutLabel}
             </text>
             <g className={styles.ptr} style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}>
-              <polygon points="120,44 113.5,57 126.5,57" fill="#192839" />
-              <circle className={styles.knob} cx="120" cy={CY - R} r="9" style={{ stroke: zoneObj.c }} />
+              {/* Same as on the bar: the mascot stands on the end of the filled arc (no needle triangle, no knob). It rides
+                  the rotating group and is counter-rotated by the same angle around its feet, so it stays upright. */}
+              <foreignObject x="106" y={CY - R - 40} width="28" height="36" style={{ overflow: "visible" }}>
+                <div className={styles.gnib} style={{ transform: `rotate(${-ang}deg)` }}>
+                  <Nib mood={gMood} accessory={gAcc} key={`g-${gMood}-${gAcc}`} />
+                </div>
+              </foreignObject>
             </g>
           </svg>
           <div className={styles.gnum}>
@@ -408,6 +416,7 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           <i className={styles.cmark} style={{ left: `${(cutoff / max) * 100}%` }}>
             <span>{cutLabel}</span>
           </i>
+          {/* The mascot rides the end of the fill (kept: only the gauge's white knob was to go). */}
           <div className={styles.rider} style={{ left: `${pct}%` }}>
             <Nib mood={mood} accessory={acc} key={`${mood}-${acc}`} />
           </div>
