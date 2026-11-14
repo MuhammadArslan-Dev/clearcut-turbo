@@ -36,6 +36,7 @@ export interface CardBlock {
   options: CardOption[];
   correct: number; // 1..4, 0 when unknown
   explanation: string | null;
+  incorrectExplanation: string | null;
 }
 
 export interface CardLabel {
@@ -74,7 +75,8 @@ function toBlock(t: Translation, show: LangScope): CardBlock {
     questionImage: t.question_image || null,
     options,
     correct: Number(t.correct_option) || 0,
-    explanation: t.explanation || null,
+    explanation: t.explanation?.trim() ? t.explanation : null,
+    incorrectExplanation: t.incorrect_explanation?.trim() ? t.incorrect_explanation : null,
   };
 }
 

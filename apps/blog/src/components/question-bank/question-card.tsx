@@ -127,8 +127,23 @@ export default async function QuestionCard({
                 </span>
               </div>
               {block.explanation && (
-                <div className="body-large !font-normal surface-text-gray-normal leading-7">
-                  <RichText>{block.explanation}</RichText>
+                <div className="space-y-1">
+                  {block.incorrectExplanation && (
+                    <p className="body-medium !font-semibold surface-text-gray-normal">{t("correctExplanationTitle")}</p>
+                  )}
+                  <div className="body-large !font-normal surface-text-gray-normal leading-7">
+                    <RichText>{block.explanation}</RichText>
+                  </div>
+                </div>
+              )}
+              {block.incorrectExplanation && (
+                <div className="space-y-1">
+                  {block.explanation && (
+                    <p className="body-medium !font-semibold surface-text-gray-normal">{t("incorrectExplanationTitle")}</p>
+                  )}
+                  <div className="body-large !font-normal surface-text-gray-normal leading-7">
+                    <RichText>{block.incorrectExplanation}</RichText>
+                  </div>
                 </div>
               )}
             </div>
