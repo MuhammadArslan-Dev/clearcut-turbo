@@ -18,6 +18,8 @@ export interface Translation {
 
   correct_option: string | null;
   explanation: string | null;
+  /** Why the other options are wrong (phase 100). NULL = none. */
+  incorrect_explanation?: string | null;
 }
 
 

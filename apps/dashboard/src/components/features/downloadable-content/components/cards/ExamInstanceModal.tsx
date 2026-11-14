@@ -21,6 +21,7 @@ import { ChevronIcon, LanguageIcon, NumberCountIcon, StarBadge } from '@/compone
 import Image from 'next/image';
 import { useContentDataStore } from '@/components/features/downloadable-content/store/useContentDataStore';
 import { Button } from "@clearcut/ui/button";
+import QuestionExplanation from '@/components/features/exam-report/QuestionExplanation';
 import TextMarkDown from '@/components/ui/widgets/TextMarkDown';
 
 interface QuestionOption {
@@ -36,6 +37,7 @@ interface QuestionTranslation {
   options: QuestionOption[];
   correct_option: string | number | null;
   explanation: string | null;
+  incorrect_explanation?: string | null;
 }
 
 interface InstanceQuestion {
@@ -359,45 +361,11 @@ const QuestionItem = React.memo(function QuestionItem({
               {/* Explanation panel */}
               <AnimatePresence mode="wait" initial={false}>
                 {isExplanation && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="flex flex-col gap-4 py-3"
-                  >
-                    <div className="flex justify-between items-center">
-                      <Text as="p" variant="heading-medium" weight="semibold" color="gray-normal">
-                        Answer & Explanation
-                      </Text>
-                      <div className="flex gap-1 items-center">
-                        <Text as="p" variant="body-small" weight="normal" color="gray-subtle">
-                          Correct Answer
-                        </Text>
-                        <NumberCountIcon
-                          value={
-                            translation?.correct_option != null
-                              ? (String.fromCharCode(65 + Number(translation.correct_option) - 1) as any)
-                              : '-'
-                          }
-                          radius={6}
-                          size={24}
-                          background="#006bd115"
-                          color="#0083ff"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-col justify-center items-start gap-4 bg-[#006bd108] p-3 rounded-lg">
-                      <Text as="p" variant="heading-small" weight="semibold">
-                        Explanation
-                      </Text>
-                      <MathRender content={translation?.explanation ?? ''}>
-                        <Text as="p" variant="body-large" weight="normal" color="gray-normal">
-                          <TextMarkDown>{translation?.explanation ?? ''}</TextMarkDown>
-                        </Text>
-                      </MathRender>
-                    </div>
-                  </motion.div>
+                  <QuestionExplanation
+                    correctOption={translation?.correct_option != null ? Number(translation.correct_option) : null}
+                    explanation={translation?.explanation}
+                    incorrectExplanation={translation?.incorrect_explanation}
+                  />
                 )}
               </AnimatePresence>
 

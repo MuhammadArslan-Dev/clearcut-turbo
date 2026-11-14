@@ -656,6 +656,7 @@ const QuestionItem = React.memo(function QuestionItem({
                   <QuestionExplanation
                     correctOption={translation?.correct_option != null ? Number(translation.correct_option) : null}
                     explanation={translation?.explanation}
+                    incorrectExplanation={translation?.incorrect_explanation}
                   />
                 )}
               </AnimatePresence>

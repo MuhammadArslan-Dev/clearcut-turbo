@@ -80,3 +80,13 @@ export function localizeExplanation(check: Pick<PracticeAnswerCheck, "explanatio
   const tr = locale ? check.translations?.find((t) => t.locale === locale)?.explanation : null;
   return tr || check.explanation;
 }
+
+/** Phase 100: the incorrect explanation in the learner's language, falling back to the base row. NULL when none. */
+export function localizeIncorrectExplanation(
+  check: Pick<PracticeAnswerCheck, "incorrect_explanation" | "translations"> | undefined,
+  locale: string | null,
+) {
+  if (!check) return null;
+  const tr = locale ? check.translations?.find((t) => t.locale === locale)?.incorrect_explanation : null;
+  return tr || check.incorrect_explanation || null;
+}

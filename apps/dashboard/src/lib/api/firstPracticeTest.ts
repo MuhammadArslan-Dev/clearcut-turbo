@@ -31,7 +31,8 @@ export interface PracticeAnswerCheck {
   correct_option: number;
   is_correct: boolean;
   explanation: string | null;
-  translations?: { locale: string; explanation: string | null }[];
+  incorrect_explanation?: string | null;
+  translations?: { locale: string; explanation: string | null; incorrect_explanation?: string | null }[];
 }
 
 /** One question's explanation, asked for during the test ("Show Explanation"). Read-only: never completes the test. */
@@ -39,7 +40,8 @@ export interface PracticeExplanation {
   question_id: number;
   correct_option: number;
   explanation: string | null;
-  translations?: { locale: string; explanation: string | null }[];
+  incorrect_explanation?: string | null;
+  translations?: { locale: string; explanation: string | null; incorrect_explanation?: string | null }[];
 }
 
 export const PRACTICE_TEST_QUESTION_COUNT = 5;

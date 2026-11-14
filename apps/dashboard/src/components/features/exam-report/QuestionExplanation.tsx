@@ -44,7 +44,9 @@ export default function QuestionExplanation({
   const t = useTranslations("modals.performanceReport");
   const correctLetter = correctOption != null ? String.fromCharCode(65 + Number(correctOption) - 1) : "-";
   const hasIncorrect = Boolean(incorrectExplanation?.trim());
-  const [showIncorrect, setShowIncorrect] = useState(false);
+  // Only the incorrect explanation exists: show just that, already open (no empty correct box).
+  const hasCorrect = Boolean(explanation?.trim()) || !hasIncorrect;
+  const [showIncorrect, setShowIncorrect] = useState(!hasCorrect);
 
   return (
     <motion.div
@@ -72,6 +74,7 @@ export default function QuestionExplanation({
           />
         </div>
       </div>
+      {hasCorrect && (
       <div
         className={`flex flex-col justify-center items-start gap-4 p-3 rounded-lg ${
           hasIncorrect ? "bg-green-100" : "bg-[#006bd108]"
@@ -87,8 +90,10 @@ export default function QuestionExplanation({
           </Text>
         </MathRender>
       </div>
+      )}
       {hasIncorrect && (
         <>
+          {hasCorrect && (
           <Button
             onClick={() => setShowIncorrect((v) => !v)}
             sx={{ borderRadius: "50px" }}
@@ -105,6 +110,7 @@ export default function QuestionExplanation({
               </motion.div>
             </div>
           </Button>
+          )}
           <AnimatePresence initial={false}>
             {showIncorrect && (
               <motion.div
