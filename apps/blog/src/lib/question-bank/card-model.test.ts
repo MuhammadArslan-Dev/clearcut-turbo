@@ -69,7 +69,7 @@ describe("cardBlocks", () => {
   it("drops nothing a card shows and nothing else", () => {
     const [block] = cardBlocks([tr("en")]);
     expect(Object.keys(block).sort()).toEqual(
-      ["correct", "explanation", "locale", "options", "question", "questionImage", "show"].sort(),
+      ["correct", "explanation", "incorrectExplanation", "locale", "options", "question", "questionImage", "show"].sort(),
     );
   });
 
@@ -126,5 +126,26 @@ describe("searchIndexItems", () => {
     const [item] = searchIndexItems(buildCards([q(1, [tr("en"), tr("hi")])], "chapter"));
     expect(item.h).toEqual(["hi question", "hi A hi B"]);
     expect(item.gh).toBe("विकास");
+  });
+});
+
+describe("cardBlocks: correct + incorrect explanation (phase 100)", () => {
+  const block = (over: Partial<Translation>) => cardBlocks([tr("en", over)])[0];
+
+  it("keeps both when both exist", () => {
+    const b = block({ explanation: "right", incorrect_explanation: "wrong" });
+    expect([b.explanation, b.incorrectExplanation]).toEqual(["right", "wrong"]);
+  });
+  it("keeps only the correct one", () => {
+    const b = block({ explanation: "right", incorrect_explanation: null });
+    expect([b.explanation, b.incorrectExplanation]).toEqual(["right", null]);
+  });
+  it("keeps only the incorrect one (never copied into explanation)", () => {
+    const b = block({ explanation: "", incorrect_explanation: "wrong" });
+    expect([b.explanation, b.incorrectExplanation]).toEqual([null, "wrong"]);
+  });
+  it("has neither when both are blank or the field is absent", () => {
+    expect([block({ explanation: "  ", incorrect_explanation: " " }).incorrectExplanation, block({ explanation: "" }).incorrectExplanation]).toEqual([null, null]);
+    expect(block({ explanation: "" }).explanation).toBeNull();
   });
 });

@@ -74,6 +74,8 @@ export interface Translation {
 
   correct_option: string;
   explanation: string;
+  /** Why the other options are wrong (phase 100). Absent/NULL when the question has none. */
+  incorrect_explanation?: string | null;
 }
 
 // The per-locale {"en":{"name":"..."},"hi":{"name":"..."}} shape chapters,

@@ -108,6 +108,8 @@
     "hint": "अपना परिणाम और व्याख्या देखने के लिए एक उत्तर चुनें।",
     "showExplanationResult": "व्याख्या और परिणाम देखें",
     "answerExplanation": "उत्तर और व्याख्या",
+    "correctExplanationTitle": "सही उत्तर की व्याख्या",
+    "incorrectExplanationTitle": "गलत विकल्पों की व्याख्या",
     "correctAnswer": "सही उत्तर:",
     "option": "विकल्प {label}"
   },

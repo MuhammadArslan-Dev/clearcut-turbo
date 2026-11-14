@@ -139,6 +139,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 101 | [Landing /start: Nibbu mascot redesign (UI only)](101-start-page-mascot-redesign.md) | — | CM-landing | Done (live 2026-11-12) | Real-phone check by user |
 | 102 | [Cutoff Meter: audit vs spec + fixes](102-cutoff-meter-audit-fixes.md) | — | BE + CM-dashboard | Done (live 2026-11-12) | Client decisions + content fixes |
 | 103 | [One scoring + cutoff engine for every test type](103-unified-scoring-engine.md) | — | BE + CM-dashboard + motion | Done (live 2026-11-12; mini server scoring on in code) | Content fixes (pass_marks, metadata.cutoff, section marks) |
+| 100 | [Correct + Incorrect Explanation (BigQuery → question_trans)](100-incorrect-explanation.md) | — | BE (frontend planned) | In Review (backend done + verified on local DB, uncommitted) | Client: fix sheets (Paper 1 incorrect column, Paper 2 ids/sections) before live; user approval before frontend |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
 - 2026-11-06: added phase 82 (test start + submit animations as overlays).

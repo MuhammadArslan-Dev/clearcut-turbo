@@ -21,6 +21,7 @@ import { useMotionLang } from "@/components/features/test-motion/TestStartIntro"
 import PracticeFooter from "./PracticeFooter";
 import {
   localizeExplanation,
+  localizeIncorrectExplanation,
   localizeQuestion,
   type PracticeSession,
 } from "./practiceTestSession";
@@ -227,6 +228,7 @@ export default function PracticeTestResult({
               {rows.map((r) => {
                 const display = localizeQuestion(r.q, language);
                 const explanation = localizeExplanation(r.check, language);
+                const incorrectExplanation = localizeIncorrectExplanation(r.check, language);
                 const open = openId === r.q.question_id;
                 return (
                   <div key={r.q.question_id}>
@@ -307,7 +309,8 @@ export default function PracticeTestResult({
                             )}
                             <QuestionExplanation
                               correctOption={r.check?.correct_option}
-                              explanation={explanation ?? t("noExplanation")}
+                              explanation={explanation ?? (incorrectExplanation ? null : t("noExplanation"))}
+                              incorrectExplanation={incorrectExplanation}
                             />
                           </div>
                         </motion.div>

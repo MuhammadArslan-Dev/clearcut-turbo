@@ -44,6 +44,7 @@ import {
   clearPracticeSession,
   loadPracticeSession,
   localizeExplanation,
+  localizeIncorrectExplanation,
   localizeQuestion,
   newPracticeSession,
   savePracticeSession,
@@ -845,7 +846,8 @@ export default function PracticeTestPage() {
                         <QuestionExplanation
                           key={`explanation-${q.question_id}`}
                           correctOption={explained.correct_option}
-                          explanation={localizeExplanation(explained, activeLocale) ?? t("noExplanation")}
+                          explanation={localizeExplanation(explained, activeLocale) ?? (localizeIncorrectExplanation(explained, activeLocale) ? null : t("noExplanation"))}
+                          incorrectExplanation={localizeIncorrectExplanation(explained, activeLocale)}
                         />
                       )}
                     </AnimatePresence>
