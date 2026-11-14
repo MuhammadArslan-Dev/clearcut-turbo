@@ -345,10 +345,9 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
               {cutLabel}
             </text>
             <g className={styles.ptr} style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}>
-              <polygon points="120,44 113.5,57 126.5,57" fill="#192839" />
-              {/* The mascot rides the end of the filled arc like it rides the bar; it turns with the needle's
-                  rotation and is counter-rotated by the same amount, so it always stands upright. */}
-              <foreignObject x="104" y={CY - R - 24} width="32" height="44" style={{ overflow: "visible" }}>
+              {/* Same as on the bar: the mascot stands on the end of the filled arc (no needle triangle, no knob). It rides
+                  the rotating group and is counter-rotated by the same angle around its feet, so it stays upright. */}
+              <foreignObject x="106" y={CY - R - 40} width="28" height="36" style={{ overflow: "visible" }}>
                 <div className={styles.gnib} style={{ transform: `rotate(${-ang}deg)` }}>
                   <Nib mood={gMood} accessory={gAcc} key={`g-${gMood}-${gAcc}`} />
                 </div>

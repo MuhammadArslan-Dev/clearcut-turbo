@@ -104,8 +104,8 @@
 .fill { fill: none; stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset calc(var(--k, 1) * 1150ms) var(--spring), stroke calc(var(--k, 1) * 400ms) ease, opacity .2s; }
 .band { fill: none; stroke-width: 30; stroke-linecap: round; opacity: .16; transition: opacity calc(var(--k, 1) * 400ms) ease; }
 .ptr { transform-box: view-box; transform-origin: 120px 128px; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
-.gnib { width: 32px; height: 44px; display: grid; place-items: end center; transform-origin: 50% 85%; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
-.gnib .nib { width: 28px; display: block; }
+.gnib { width: 28px; height: 36px; transform-origin: 50% 100%; transition: transform calc(var(--k, 1) * 1150ms) var(--spring); }
+.gnib .nib { width: 100%; display: block; }
 .knob { fill: #fff; stroke-width: 4; transition: stroke calc(var(--k, 1) * 400ms) ease; }
 .ctick { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
 .clab { font-size: 10px; font-weight: 800; fill: var(--ink); }
