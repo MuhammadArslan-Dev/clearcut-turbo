@@ -2,6 +2,7 @@ import { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { withSentryConfig } from "@sentry/nextjs";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import path from "node:path";
 
 // No-ops outside `next dev`; lets local dev read Cloudflare bindings the
 // same way the deployed worker does.
@@ -13,7 +14,18 @@ const withNextIntl = createNextIntlPlugin({
   },
 });
 
+// ISR / data cache in Redis instead of the container disk (phase 113, see cache-handler.mjs). Only when REDIS_URL
+// is set (build AND run time, Coolify: tick "Available at build time"); otherwise the default file cache is kept.
+const redisIsrCache = Boolean(process.env.REDIS_URL);
+
 const config: NextConfig = {
+  ...(redisIsrCache
+    ? {
+        cacheHandler: path.join(process.cwd(), "cache-handler.mjs"),
+        // The handler is the only cache: no second copy of every page in the Node heap.
+        cacheMaxMemorySize: 0,
+      }
+    : {}),
   // NOTE: `siteUrl`, `swcMinify`, `eslint` and `fonts` used to be set here.
   // Next 16 logged "Unrecognized key(s) in object: 'siteUrl', 'swcMinify',
   // 'eslint', 'fonts'" and ignored all four, so they were doing nothing —
