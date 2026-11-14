@@ -257,11 +257,11 @@ function MeterInfoBody({
                         className="h-11 w-11 shrink-0 md:h-12 md:w-12"
                       />
                     ) : (
-                      <span
-                        aria-hidden="true"
-                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[18px] leading-none font-bold text-[var(--color-brand)] md:h-12 md:w-12"
-                      >
-                        {s.n}
+                      {/* Smaller badge (client, 2026-11-14) centred in the same 44/48 px slot, so the text stays aligned with step 3. */}
+                      <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center md:h-12 md:w-12">
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[15px] leading-none font-bold text-[var(--color-brand)] md:h-9 md:w-9 md:text-[16px]">
+                          {s.n}
+                        </span>
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
