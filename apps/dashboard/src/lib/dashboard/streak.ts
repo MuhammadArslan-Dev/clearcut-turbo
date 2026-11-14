@@ -17,6 +17,8 @@ export type StreakResponse = {
   longest_streak: number;
   today_minutes: number;
   required_minutes: number;
+  /** Days of the current month (IST) with any recorded learning time — the "Visits" metric. */
+  active_days_this_month?: number;
   week: WeekDay[];
 };
 

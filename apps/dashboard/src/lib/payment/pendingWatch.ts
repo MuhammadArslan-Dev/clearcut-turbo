@@ -15,6 +15,8 @@ export type PendingWatchOptions = {
   check: () => Promise<boolean>;
   onSlow?: () => void;
   onGiveUp?: () => void;
+  /** When the wait really began (a wait resumed after a reload); default: now. */
+  startedAt?: number;
   now?: () => number;
   isVisible?: () => boolean;
   /** Tests inject fake timers; production uses the window ones. */
@@ -36,7 +38,7 @@ export function startPendingWatch(options: PendingWatchOptions): () => void {
       return () => document.removeEventListener("visibilitychange", fn);
     });
 
-  const startedAt = now();
+  const startedAt = options.startedAt ?? now();
   let stopped = false;
   let checking = false;
   let slowSent = false;

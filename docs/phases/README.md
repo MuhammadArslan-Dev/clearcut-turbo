@@ -136,6 +136,9 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 96 | [Cutoff Meter motion (`@clearcut/motion/meters`)](96-motion-cutoff-meters.md) | — | CM packages/motion | In Progress | Built in background; user review in /animation-preview |
 | 97 | [Cutoff Meter v1 — backend + DB](97-cutoff-meter-backend.md) | Confluence PM 29360129 | BE | In Progress | 🛑 MIN_TIME 3 vs 5 s, category, chapter tests counted; content: section marks, HPTET pass mark, exam dates |
 | 98 | [Course card: Cutoff Meter header (real data)](98-course-card-cutoff-meter.md) | — | CM-dashboard, BE | In Progress | — |
+| 101 | [Landing /start: Nibbu mascot redesign (UI only)](101-start-page-mascot-redesign.md) | — | CM-landing | Done (live 2026-11-12) | Real-phone check by user |
+| 102 | [Cutoff Meter: audit vs spec + fixes](102-cutoff-meter-audit-fixes.md) | — | BE + CM-dashboard | Done (live 2026-11-12) | Client decisions + content fixes |
+| 103 | [One scoring + cutoff engine for every test type](103-unified-scoring-engine.md) | — | BE + CM-dashboard + motion | Done (live 2026-11-12; mini server scoring on in code) | Content fixes (pass_marks, metadata.cutoff, section marks) |
 | 100 | [Correct + Incorrect Explanation (BigQuery → question_trans)](100-incorrect-explanation.md) | — | BE (frontend planned) | In Review (backend done + verified on local DB, uncommitted) | Client: fix sheets (Paper 1 incorrect column, Paper 2 ids/sections) before live; user approval before frontend |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
@@ -145,3 +148,8 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-11-09: added phases 85–92 (Arslan's Jira backlog after Rohit's re-ordering: small UI batch, onboarding level step, stuck subscriptions, UPI waiting screen, payment exam + source data, performance, money/Sentry triage, guest-mode design). Old docs 27/44/47/49/62/70 point to them.
 - 2026-11-09: added phase 93 (client-style testing methodology; DEVELOPMENT_RULES §8.1, CLAUDE.md pointer, template checklist).
 - 2026-11-11: added phase 99 (Preparation "Target" tab: Cutoff Meter gauge, today's plan, marks per subject; flag-gated).
+- 2026-11-12: added phase 105 (Target Today's plan never disappears; Learn page Next Milestone / Today's Goals / Streak on real data; streak IST-date fix). Branch fix/target-learn-real-data, not merged.
+
+- 2026-11-12: added phase 106 (My Course card + Cutoff Meter follow the paper the user was last active in; backend LastActivePaper). Branch fix/last-active-paper, not merged.
+
+- 2026-11-13: added phase 107 (resume position + paper/card sync: stale cached position, courseSync helper). Branch fix/course-position-sync, not merged.

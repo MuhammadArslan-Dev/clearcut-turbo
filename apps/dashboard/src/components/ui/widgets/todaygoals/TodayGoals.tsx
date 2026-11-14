@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { Button } from "@clearcut/ui/button";
 import clsx from "clsx";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
@@ -9,7 +10,7 @@ import { Exam } from "@/types/Exam";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useCourseStore } from "@/store/course/useCourseStore";
-import { FileText, PlayCircle, Target, Timer } from "lucide-react";
+import { Check, FileText, PlayCircle, Target, Timer } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import MainButton from "../../button/main-button";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
@@ -53,6 +54,7 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const open = useCourseStore((s) => s.open);
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   // focusedCourse is set by the Swiper when the user swipes to a different course.
   // Falls back to the API active course when null (default state or back on first slide).
@@ -77,17 +79,25 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
         exam_name: course.exam?.short_name!,
       });
 
-      router.push(`/preparation/${course.group_code}`);
+      router.push(courseHome(course.group_code));
     } else {
       open("single", course.exam!);
     }
-  }, [course, open]);
+  }, [course, open, courseHome]);
 
-  if (isError) return <div>Failed to load goals</div>;
+  if (isError)
+    return (
+      <div className={clsx("p-4 md:p-5", bgColor, rounded)}>
+        <div className="body-medium text-surface-gray-muted">{t("todayGoals.loadFailed")}</div>
+      </div>
+    );
   if (isLoading)
     return <TodayGoalsSkeleton bgColor={bgColor} rounded={rounded} />;
 
   const goals = data?.goals;
+  // Real numbers only: every goal's `total` comes from the backend (its daily target).
+  const goalList = GOALS_CONFIG.map(({ key }) => goals?.[key]).filter(Boolean);
+  const doneCount = goalList.filter((g) => g!.done).length;
 
   return (
     <div className={clsx("flex h-full flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>
@@ -101,29 +111,36 @@ const TodayGoals: React.FC<TodayGoalsProps> = ({
             {t("todayGoals.title")}
           </h6>
           <div className="body-small !font-normal text-surface-gray-muted">
-            {t("todayGoals.estimatedTime", { min: 20, max: 30 })}
+            {t("todayGoals.doneToday", { done: doneCount, total: goalList.length })}
           </div>
         </div>
       </div>
 
       {/* Goals List */}
       <div className="divide-y divide-gray-100">
-        {GOALS_CONFIG.map(({ key, label, videoCount, Icon }) => {
+        {GOALS_CONFIG.map(({ key, label, Icon }) => {
           const goal = goals?.[key];
+          if (!goal) return null; // never render "undefined / undefined"
 
           return (
             <div key={key} className="flex items-center justify-between py-2.5">
               <div className="flex items-center gap-3">
-                <Icon size={20} className="shrink-0 text-brand" />
-                <p className="body-medium !font-normal text-surface-gray-normal">
-                  {t(label, { count: videoCount })}
+                {goal.done ? (
+                  <Check size={20} strokeWidth={3} className="shrink-0 text-[var(--color-success)]" />
+                ) : (
+                  <Icon size={20} className="shrink-0 text-brand" />
+                )}
+                <p
+                  className={clsx(
+                    "body-medium !font-normal",
+                    goal.done ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
+                  )}
+                >
+                  {t(label, { count: goal.total })}
                 </p>
               </div>
-              <div className="body-medium !font-normal text-surface-gray-muted">
-                <span className="text-surface-gray-normal">
-                  {goal?.completed}
-                </span>{" "}
-                / {goal?.total}
+              <div className="body-medium !font-normal text-surface-gray-muted tabular-nums">
+                <span className="text-surface-gray-normal">{goal.completed}</span> / {goal.total}
               </div>
             </div>
           );

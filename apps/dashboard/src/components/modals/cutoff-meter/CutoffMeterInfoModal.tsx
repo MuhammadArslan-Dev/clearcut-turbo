@@ -1,5 +1,9 @@
 "use client";
 
+import Image from "next/image";
+import { useEffect, useRef } from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { trackMeterInfoViewed } from "@/lib/analytics/cutoffMeter";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -7,14 +11,11 @@ import { BottomSheet } from "@/components/features/Sheets/BottomSheet";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { CrossIcon } from "@/components/ui/icons";
 import { Meter } from "@clearcut/motion/meters/meter";
-import { Nib } from "@clearcut/motion/meters/nib";
+import { ZONES, zoneWidths } from "@clearcut/motion/meters/zones";
 import {
-  ZONES,
-  riderPose,
-  zoneOf,
-  zoneWidths,
-} from "@clearcut/motion/meters/zones";
-import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+  unlockMinQuestions,
+  type CutoffMeterSummary,
+} from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
@@ -25,15 +26,31 @@ import { useCutoffMeterInfoStore } from "./useCutoffMeterInfoStore";
  * LearnPage renders it while `active === "cutoff-meter-info"`, the card only
  * calls `open("cutoff-meter-info")`. Mobile = bottom sheet, desktop = modal.
  *
- * Layout in the Cutoff Meter Studio style: the student's own mini meter, three
- * "how it's calculated" tiles, the range, a zone strip with this exam's own
- * numbers, and the cooling tip. Every number is the student's / this exam's;
- * the rules mirror the backend (CutoffMeterService, config/cutoff_meter.php).
+ * Layout from the approved "Cutoff Meter Progress Modal" design: header with the
+ * shield, the student's own meter (unchanged), four zone cards with this exam's
+ * own numbers, "How it works" in three numbered cards and the "Keep attempting"
+ * card. Illustrations are the design's own artwork, extracted as WebP into
+ * `public/images/cutoff-meter/`. Every number is the student's / this exam's.
  */
 export default function CutoffMeterInfoModal() {
   const { closeModal } = useModalStore();
   const meter = useCutoffMeterInfoStore((st) => st.meter);
   const variant = useCutoffMeterInfoStore((st) => st.variant);
+  const ctx = useCutoffMeterInfoStore((st) => st.ctx);
+  const { user } = useAuth() as { user?: { uuid?: string } | null };
+  // Once per opening (the sheet mounts only while open). The ref also stops React StrictMode's
+  // dev-only double mount-effect from sending it twice.
+  const sent = useRef(false);
+  useEffect(() => {
+    if (!meter || sent.current) return;
+    sent.current = true;
+    trackMeterInfoViewed(
+      meter,
+      { surface: "info_sheet", ...ctx, userId: user?.uuid ?? null },
+      variant === "gauge" ? "target_page" : "learn_card",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   if (!meter) return null;
   return (
     <AnimatePresence>
@@ -46,8 +63,22 @@ export default function CutoffMeterInfoModal() {
   );
 }
 
-const TILE =
-  "rounded-2xl border border-[var(--color-border-gray-subtle)] bg-white p-3";
+const IMG = "/images/cutoff-meter";
+
+/** The four zone cards: this exam's own ranges, the design's icons. */
+const ZONE_ICON = {
+  need: { src: `${IMG}/zone-needs.webp`, w: 41, h: 41 },
+  almost: { src: `${IMG}/zone-almost.webp`, w: 38, h: 31 },
+  clear: { src: `${IMG}/zone-good.webp`, w: 40, h: 41 },
+  safe: { src: `${IMG}/zone-target.webp`, w: 43, h: 41 },
+} as const;
+
+/** The three "How it works" steps. */
+const STEPS = [
+  { n: 1, key: "r1", src: null },
+  { n: 2, key: "r2", src: null },
+  { n: 3, key: "r3", src: `${IMG}/step-trophy.webp` },
+] as const;
 
 function MeterInfoBody({
   meter,
@@ -72,53 +103,14 @@ function MeterInfoBody({
   const w = zoneWidths(scale);
   const almostFrom = Math.max(0, Math.round(pass - w.almost));
   const safeFrom = Math.min(max, Math.round(pass + w.clear));
-  const [mood, accessory] = riderPose(locked ? "locked" : zoneOf(value, scale));
-  const band = meter.band ?? 15;
 
-  // Zone strip: widths are this exam's own ranges.
-  const strip = [
-    {
-      k: "need",
-      from: 0,
-      to: almostFrom,
-      name: t("zoneNeed"),
-      rule: t("ruleBelow", { marks: almostFrom }),
-    },
-    {
-      k: "almost",
-      from: almostFrom,
-      to: pass,
-      name: t("zoneAlmost"),
-      rule: t("ruleBetween", { from: almostFrom, to: pass }),
-    },
-    {
-      k: "clear",
-      from: pass,
-      to: safeFrom,
-      name: t("zoneClear"),
-      rule: t("ruleBetween", { from: pass, to: safeFrom }),
-    },
-    {
-      k: "safe",
-      from: safeFrom,
-      to: max,
-      name: t("zoneSafe"),
-      rule: t("ruleAbove", { marks: safeFrom }),
-    },
+  // Zone cards: this exam's own ranges, in the design's compact form ("< 60", "60 – 89", "120+").
+  const zones = [
+    { k: "need", name: t("zoneNeed"), rule: `< ${almostFrom}` },
+    { k: "almost", name: t("zoneAlmost"), rule: `${almostFrom} – ${pass}` },
+    { k: "clear", name: t("zoneClear"), rule: `${pass} – ${safeFrom}` },
+    { k: "safe", name: t("zoneSafe"), rule: `${safeFrom}+` },
   ] as const;
-
-  const tiles = [
-    {
-      icon: "📝",
-      title: t("s1Title"),
-      body: t("s1Body", {
-        answers: meter.counted_answers,
-        tests: meter.tests_count ?? 0,
-      }),
-    },
-    { icon: "🧮", title: t("s2Title"), body: t("s2Body", { max }) },
-    { icon: "🎯", title: t("s3Title"), body: t("s3Body", { pass, max }) },
-  ];
 
   return (
     <Container
@@ -126,7 +118,7 @@ function MeterInfoBody({
       onClose={onClose}
       isHeader={false}
       title={t("title")}
-      maxWidth="md:max-w-[460px]"
+      maxWidth="md:max-w-[880px]"
     >
       <div
         role="dialog"
@@ -136,180 +128,176 @@ function MeterInfoBody({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-          <div className="w-9 shrink-0" aria-hidden="true">
-            <Nib mood={mood} accessory={accessory} bob />
-          </div>
-          <h2 className="flex-1 heading-medium !font-bold text-surface-gray-normal">
+          {/* The decorative shield next to the title was removed (client, 2026-11-14). */}
+          <h2 className="flex-1 text-[17px] leading-6 font-extrabold text-surface-gray-normal md:text-[19px]">
             {t("title")}
           </h2>
           <button
             type="button"
             aria-label={t("close")}
             onClick={onClose}
-            className="shrink-0 cursor-pointer rounded-full p-1.5 hover:bg-[var(--color-background-gray-subtle)]"
+            className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--color-border-gray-subtle)] bg-white shadow-sm hover:bg-[var(--color-background-gray-subtle)]"
           >
             <CrossIcon />
           </button>
         </div>
 
-        <div className="space-y-4 overflow-y-auto px-4 pb-6">
-          {/* 1. The student's own meter */}
-          <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
-            {/* Same shape as where it was opened: bar (course card) or gauge (Target tab). */}
-            <div
-              className={variant === "gauge" ? "mx-auto w-[200px]" : undefined}
-            >
-              <Meter
-                variant={variant}
-                size="sm"
-                fluid
-                lang={locale === "hi" ? "hi" : "en"}
-                scale={scale}
-                locked={locked}
-                value={locked ? undefined : value}
-                band={meter.band ?? 0}
-                pill={meterPill(meter, (k) => tc(k))}
-                cutoffLabel={tc("meterCutoff", { pass })}
-                caption={
-                  variant === "gauge"
-                    ? tc("meterInfo.gaugeCaption", { max })
-                    : undefined
-                }
-                hideCoolChip
-              />
-            </div>
-            <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
-              {locked
-                ? t("youLocked", {
-                    count: Math.max(
-                      meter.unlock_answers - meter.counted_answers,
-                      1,
-                    ),
-                    pass,
-                    max,
-                  })
-                : t("youSummary", { value, max, pass })}
-            </p>
-          </section>
-
-          {/* 2. How it's calculated */}
-          <section>
-            <h3 className="mb-2 heading-small !font-bold text-surface-gray-normal">
-              {t("howTitle")}
-            </h3>
-            <ol className="space-y-2">
-              {tiles.map((s, i) => (
-                <li key={i} className={`${TILE} flex gap-3`}>
-                  <span
-                    aria-hidden="true"
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-primary-bg-soft)] text-[18px]"
-                  >
-                    {s.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="heading-small !font-bold text-surface-gray-normal">
-                      {s.title}
-                    </p>
-                    <p className="mt-0.5 body-small text-surface-gray-muted">
-                      {s.body}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          {/* 3. Range */}
-          <section className={TILE}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="heading-small !font-bold text-surface-gray-normal">
-                {t("s4Title", { band })}
-              </p>
+        {/* Phone: one column, exactly as before. Desktop (md+): two columns — the student's meter + zones on
+            the left, "How it works" + "Keep attempting" on the right — so the sheet fits the viewport
+            instead of a 460px column that needed a long scroll (phase 109). */}
+        <div className="space-y-4 overflow-y-auto px-4 pb-6 md:grid md:grid-cols-2 md:items-center md:gap-x-6 md:space-y-0 md:px-6 md:pb-6">
+          <div className="space-y-4">
+            {/* 1. The student's own meter (unchanged) */}
+            <section className="rounded-2xl bg-[var(--color-background-gray-subtle)] px-4 pt-4 pb-3">
+              {/* Same shape as where it was opened: bar (course card) or gauge (Target tab). */}
               <div
-                className="flex items-center gap-1 body-small !font-bold"
-                aria-hidden="true"
+                className={
+                  variant === "gauge" ? "mx-auto w-[200px]" : undefined
+                }
               >
-                {[15, 6, 4].map((b, i) => (
-                  <span key={b} className="flex items-center gap-1">
-                    {i > 0 && (
-                      <span className="text-surface-gray-muted">→</span>
-                    )}
-                    <span
-                      className={
-                        b === band
-                          ? "rounded-full bg-[var(--color-primary-bg-soft)] px-2 py-0.5 text-[var(--color-brand-dark)]"
-                          : "px-1 text-surface-gray-muted"
-                      }
-                    >
-                      ±{b}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-            <p className="mt-1 body-small text-surface-gray-muted">
-              {t("s4Body", { band })}
-            </p>
-          </section>
-
-          {/* 4. Zones — this exam's own numbers */}
-          <section>
-            <h3 className="mb-2 heading-small !font-bold text-surface-gray-normal">
-              {t("zonesTitle")}
-            </h3>
-            <div
-              className="flex h-3 overflow-hidden rounded-full"
-              aria-hidden="true"
-            >
-              {strip.map((z) => (
-                <i
-                  key={z.k}
-                  style={{
-                    flexGrow: Math.max(z.to - z.from, 0.001),
-                    background: ZONES[z.k].c,
-                  }}
+                <Meter
+                  variant={variant}
+                  size="sm"
+                  fluid
+                  lang={locale === "hi" ? "hi" : "en"}
+                  scale={scale}
+                  locked={locked}
+                  value={locked ? undefined : value}
+                  band={meter.band ?? 0}
+                  pill={meterPill(meter, (k) => tc(k))}
+                  cutoffLabel={tc("meterCutoff", { pass })}
+                  caption={
+                    variant === "gauge"
+                      ? tc("meterInfo.gaugeCaption", { max })
+                      : undefined
+                  }
+                  hideCoolChip
                 />
-              ))}
-            </div>
-            <ul className="mt-3 grid grid-cols-2 gap-2">
-              {strip.map((z) => (
-                <li
-                  key={z.k}
-                  className="rounded-xl px-3 py-2"
-                  style={{ background: ZONES[z.k].s }}
-                >
-                  <p
-                    className="body-small !font-bold"
-                    style={{ color: ZONES[z.k].ink }}
+              </div>
+              <p className="mt-2 text-center body-medium !font-semibold text-surface-gray-normal">
+                {locked
+                  ? t("youLocked", {
+                      count: unlockMinQuestions(meter),
+                      pass,
+                      max,
+                    })
+                  : t("youSummary", { value, max, pass })}
+              </p>
+            </section>
+
+            {/* 2. Zones — this exam's own numbers */}
+            <ul
+              className="grid grid-cols-4 gap-1.5 md:grid-cols-2 md:gap-2"
+              aria-label={t("zonesTitle")}
+            >
+              {zones.map((z) => {
+                const icon = ZONE_ICON[z.k];
+                return (
+                  <li
+                    key={z.k}
+                    className="min-w-0 rounded-2xl px-1.5 py-2.5 text-center md:px-2.5 md:text-left"
+                    style={{ background: ZONES[z.k].s }}
                   >
-                    {z.name}
-                  </p>
-                  <p className="body-small text-surface-gray-normal">
-                    {z.rule}
-                  </p>
-                </li>
-              ))}
+                    {/* Phone: icon ABOVE the label in all four cards (same structure). It used to wrap
+                        beside the label only when the label was short (Safe Zone). md+: icon beside label, as before. */}
+                    <div className="flex flex-col items-center gap-1 md:flex-row md:flex-wrap md:items-center md:gap-x-1 md:gap-y-0.5">
+                      <Image
+                        src={icon.src}
+                        alt=""
+                        width={icon.w}
+                        height={icon.h}
+                        aria-hidden="true"
+                        className="h-4 w-auto shrink-0 md:h-5"
+                      />
+                      <p
+                        className="text-[10px] leading-[13px] font-extrabold md:text-xs"
+                        style={{ color: ZONES[z.k].ink }}
+                      >
+                        {z.name}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-[13px] md:mt-1.5 leading-4 font-medium text-surface-gray-normal md:text-sm">
+                      {z.rule}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
-          </section>
+          </div>
 
-          {/* 5. Updates + cooling */}
-          <section className="flex gap-3 rounded-2xl bg-[var(--color-primary-bg-soft)] p-3">
-            <span aria-hidden="true" className="text-[20px] leading-none">
-              ❄
-            </span>
-            <div>
-              <p className="heading-small !font-bold text-surface-gray-normal">
-                {t("s5Title")}
-              </p>
-              <p className="mt-0.5 body-small text-surface-gray-muted">
-                {t("s5Body")}
-              </p>
-            </div>
-          </section>
+          <div className="space-y-4">
+            {/* 3. How it works */}
+            <section className="-mx-4 border-t border-[var(--color-border-gray-subtle)] px-4 pt-4 md:mx-0 md:border-t-0 md:px-0 md:pt-0">
+              <h3 className="mb-3 flex items-center gap-2.5 text-[16px] leading-6 font-extrabold text-surface-gray-normal">
+                <Image
+                  src={`${IMG}/layers.webp`}
+                  alt=""
+                  width={48}
+                  height={51}
+                  aria-hidden="true"
+                  className="h-[22px] w-auto shrink-0"
+                />
+                {t("howWorks")}
+              </h3>
+              <ol className="space-y-2.5">
+                {STEPS.map((s) => (
+                  <li
+                    key={s.n}
+                    className="flex items-center gap-3 rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white py-2.5 pr-3 pl-2.5"
+                  >
+                    {/* Steps 1 and 2: the number takes the illustration's place (same 44/48 px slot); step 3 keeps its
+                        illustration and has no counter. */}
+                    {s.src ? (
+                      <Image
+                        src={s.src}
+                        alt=""
+                        width={108}
+                        height={106}
+                        aria-hidden="true"
+                        className="h-11 w-11 shrink-0 md:h-12 md:w-12"
+                      />
+                    ) : (
+                      /* Smaller badge (client, 2026-11-14) centred in the same 44/48 px slot, so the text stays aligned with step 3. */
+                      <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center md:h-12 md:w-12">
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-primary-bg-soft)] text-[15px] leading-none font-bold text-[var(--color-brand)] md:h-9 md:w-9 md:text-[16px]">
+                          {s.n}
+                        </span>
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] leading-5 font-extrabold text-surface-gray-normal">
+                        {t(`${s.key}Title`)}
+                      </p>
+                      <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-muted md:text-sm">
+                        {t(`${s.key}Body`)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-          <p className="text-center body-small text-surface-gray-muted">
-            {t("note")}
-          </p>
+            {/* 4. Keep attempting */}
+            <section className="flex items-center gap-3 rounded-[20px] bg-[var(--color-primary-bg-soft)] px-4 py-3.5">
+              {/* Lightning bolt in the brand blue (the artwork was yellow). */}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 34"
+                className="h-[34px] w-auto shrink-0"
+                fill="var(--color-brand)"
+              >
+                <path d="M14.5 0 1.5 19.2h8.1L7.6 34 22.5 13.6h-8.6L14.5 0Z" />
+              </svg>
+              <div className="min-w-0">
+                <p className="text-[17px] leading-6 font-extrabold text-[var(--color-brand)]">
+                  {t("keepTitle")}
+                </p>
+                <p className="mt-0.5 text-[13px] leading-[18px] text-surface-gray-normal md:text-sm">
+                  {t("keepBody")}
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </Container>

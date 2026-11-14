@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { noteMeterTrigger, type MeterTrigger } from "@/lib/analytics/cutoffMeter";
 import {
   getProgressCapabilities,
   LEGACY_CAPABILITIES,
@@ -27,16 +28,48 @@ export function useProgressCapabilities(): { caps: ProgressCapabilities; ready: 
 }
 
 /**
+ * A test was submitted (chapter / sectional / full-length / onboarding): the
+ * backend has already recalculated the Cutoff Meter, so the course card and the
+ * Target tab must refetch instead of showing the pre-test meter for 5 minutes.
+ */
+export const PRACTICE_STATE_KEY = (courseId: string) => ["practice-state", courseId] as const;
+
+export function invalidateCutoffMeterQueries(queryClient: QueryClient, trigger?: MeterTrigger) {
+  // Which test just changed the meter — reported with the next score / zone / unlock change (phase 108).
+  if (trigger) noteMeterTrigger(trigger);
+  // "practice-state": the Target page's "can the Practice Test still be taken" (a
+  // submit may have just completed it).
+  // "today-goals" / "learning-streak" / "courses-progress-summary": the Learn page's goals,
+  // streak and milestone count the same submit, so they refetch together with the meter.
+  // "my-courses": the My Course card shows the paper the student was LAST ACTIVE in
+  // (backend LastActivePaper, phase 106), so a submit in another paper must re-pick it.
+  for (const key of [
+    ["my-courses"],
+    ["courses-cutoff-meter"],
+    ["cutoff-meter"],
+    ["practice-state"],
+    ["today-goals"],
+    ["learning-streak"],
+    ["courses-progress-summary"],
+  ]) {
+    queryClient.invalidateQueries({ queryKey: key });
+  }
+}
+
+/**
  * Server-side progress changed: refetch everything that shows it, so the
  * sidebar, course cards and Today Goals never keep a stale number.
  */
-export function invalidateProgressQueries(queryClient: QueryClient) {
+export function invalidateProgressQueries(queryClient: QueryClient, trigger?: MeterTrigger) {
+  if (trigger) noteMeterTrigger(trigger);
   for (const key of [
+    ["my-courses"],
     ["learning-progress-by-topic"],
     ["courses-progress-summary"],
     ["courses-cutoff-meter"],
     ["cutoff-meter"],
     ["today-goals"],
+    ["learning-streak"],
     ["resume-state"],
   ]) {
     queryClient.invalidateQueries({ queryKey: key });

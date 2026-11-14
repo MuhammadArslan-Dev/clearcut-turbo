@@ -427,3 +427,12 @@ trackEvent("Error Occurred", {
   error_message: "Could not load manifest",
   page_context: "topic_detail",
 });
+
+/* =========================
+   CUTOFF METER (phase 108) — full spec: docs/analytics/cutoff-meter-tracking.md
+   Every event also carries the common props: surface, course_id, exam_name, level, paper,
+   meter_status, zone, colour, score, max_marks, cutoff_value, gap, percent, confidence,
+   is_early_estimate, is_cooling, tests_count, counted_answers, model_version.
+========================= */
+
+trackEvent("Cutoff Meter Clicked", { surface: "target_page", click_target: "info_sheet", meter_status: "unlocked", max_marks: 150, cutoff_value: 90, is_early_estimate: false, is_cooling: false, counted_answers: 40, model_version: "v1" });

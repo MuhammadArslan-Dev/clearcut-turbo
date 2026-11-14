@@ -16,10 +16,12 @@ import { usePrefersReducedMotion } from "../core";
 import { Nib } from "./Nib";
 import styles from "./meters.module.css";
 import {
-  CY,
+  fillShare,
+  fillTiming,
   DEFAULT_SCALE,
   EARLY_BAND,
   EARLY_ESTIMATE,
+  CY,
   R,
   ZONES,
   arc,
@@ -230,11 +232,41 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   useImperativeHandle(ref, () => handle, [handle]);
 
   // Declarative start: locked shows "?", a value springs in from 0.
+  const applied = useRef<{ locked: boolean; value: number | null | undefined; band: number }>({
+    locked: lockedProp,
+    value,
+    band: bandProp ?? 0,
+  });
   useEffect(() => {
     if (lockedProp) handle.lock(true);
     else if (value != null) void handle.set(value, { band: bandProp ?? 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live props (a refetch after a test submit): the meter used to read them on mount
+  // only, so a page showing cached data never moved to the new score until a reload.
+  useEffect(() => {
+    const prev = applied.current;
+    const band = bandProp ?? 0;
+    if (prev.locked === lockedProp && prev.value === value && prev.band === band) return;
+    applied.current = { locked: lockedProp, value, band };
+    if (lockedProp) {
+      handle.lock(true);
+      return;
+    }
+    if (value == null) return;
+    if (prev.locked) {
+      // The test that unlocked it: break the lock, then spring to the score.
+      void handle.unlock().then(() => handle.set(value, { band }));
+      return;
+    }
+    if (prev.value !== value) void handle.set(value, { band });
+    else handle.setBand(band);
+  }, [lockedProp, value, bandProp, handle]);
+
+  useEffect(() => {
+    setCooling(coolingProp);
+  }, [coolingProp]);
 
   /* ---------- derived view ---------- */
   const zoneObj = ZONES[zone];
@@ -249,6 +281,14 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   const lo = Math.max(0, v - band);
   const hi = Math.min(max - 0.01, v + band);
   const segs = segments(scale);
+  // Each range: light shade on the track, its full colour only up to the score.
+  const fillMs = 1150 * k;
+  const segFill = (a: number, b: number) => {
+    const share = locked ? 0 : fillShare(a, b, v);
+    const { delay, duration } = fillTiming(a, b, v, fillMs);
+    const easing = v <= b ? "cubic-bezier(.22, 1, .36, 1)" : "linear"; // ease out on the range the score lands in
+    return { share, delay, duration, easing };
+  };
   const cutLabel = cutoffLabel ?? `${tr({ en: "Cutoff ", hi: "कटऑफ़ " }, lang)}${cutoff}`;
   const coolText = coolLabel ?? `❄ ${tr({ en: "Cooling", hi: "ठंडा पड़ रहा" }, lang)}`;
   const lockEl = (locked || lockBreaking) && <span className={[styles.lock, lockBreaking && styles.break].filter(Boolean).join(" ")}>{LOCK_SVG}</span>;
@@ -261,7 +301,10 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
   if (variant === "gauge") {
     const tA = pt(cutoff, R - 22, max).split(" ");
     const tB = pt(cutoff, R + 14, max).split(" ");
-    const tL = pt(cutoff, R + 26, max).split(" ");
+    // "Cutoff 90" sits INSIDE the gauge, directly beneath the tick (client, 2026-11-14), not above / outside it.
+    const tL = pt(cutoff, R - 38, max).split(" ");
+    const [gMood, gAcc] = riderPose(zone);
+    const ang = (v / max) * 180 - 90;
     body = (
       <>
         <div className={[styles.gauge, size === "sm" && styles.sm].filter(Boolean).join(" ")} style={fluid ? { width: "100%" } : undefined}>
@@ -276,23 +319,39 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
                 key={z}
                 className={styles.seg0}
                 d={arc(a + (a ? 0.6 : 0), b - (b < max ? 0.6 : 0.01), R, max)}
-                stroke={ZONES[z].s}
+                stroke={ZONES[z].t}
               />
             ))}
-            <path
-              className={styles.fill}
-              d={arc(0, max - 0.01, R, max)}
-              pathLength={100}
-              strokeDasharray="100 200"
-              style={{ strokeDashoffset: 100 - pct, opacity: v > 0 ? 1 : 0, stroke: zoneObj.c }}
-            />
+            {segs.map(([a, b, z]) => {
+              const f = segFill(a, b);
+              return (
+                <path
+                  key={`fill-${z}`}
+                  className={styles.seg0}
+                  d={arc(a + (a ? 0.6 : 0), b - (b < max ? 0.6 : 0.01), R, max)}
+                  pathLength={100}
+                  strokeDasharray="100 200"
+                  stroke={ZONES[z].c}
+                  style={{
+                    strokeDashoffset: 100 - f.share * 100,
+                    opacity: f.share > 0 ? 1 : 0,
+                    transition: `stroke-dashoffset ${f.duration}ms ${f.easing} ${f.delay}ms, opacity .2s ${f.share > 0 ? f.delay : 0}ms`,
+                  }}
+                />
+              );
+            })}
             <line className={styles.ctick} x1={tA[0]} y1={tA[1]} x2={tB[0]} y2={tB[1]} />
-            <text className={styles.clab} x={tL[0]} y={+tL[1] - 1} textAnchor="middle">
+            <text className={styles.clab} x={tL[0]} y={+tL[1] + 3.5} textAnchor="middle">
               {cutLabel}
             </text>
             <g className={styles.ptr} style={{ transform: `rotate(${(v / max) * 180 - 90}deg)` }}>
-              <polygon points="120,44 113.5,57 126.5,57" fill="#192839" />
-              <circle className={styles.knob} cx="120" cy={CY - R} r="9" style={{ stroke: zoneObj.c }} />
+              {/* Same as on the bar: the mascot stands on the end of the filled arc (no needle triangle, no knob). It rides
+                  the rotating group and is counter-rotated by the same angle around its feet, so it stays upright. */}
+              <foreignObject x="106" y={CY - R - 40} width="28" height="36" style={{ overflow: "visible" }}>
+                <div className={styles.gnib} style={{ transform: `rotate(${-ang}deg)` }}>
+                  <Nib mood={gMood} accessory={gAcc} key={`g-${gMood}-${gAcc}`} />
+                </div>
+              </foreignObject>
             </g>
           </svg>
           <div className={styles.gnum}>
@@ -331,26 +390,33 @@ export const Meter = forwardRef<MeterHandle, MeterProps>(function Meter(
           </span>
         </div>
         <div className={styles.track}>
-          {segs.map(([a, b, z]) => (
-            <i
-              key={z}
-              className={styles.z}
-              style={{
-                left: `${(a / max) * 100}%`,
-                width: `${((b - a) / max) * 100}%`,
-                background: ZONES[z].s,
-                borderRadius: a === 0 ? "99px 0 0 99px" : b === max ? "0 99px 99px 0" : undefined,
-              }}
-            />
-          ))}
+          {segs.map(([a, b, z]) => {
+            const f = segFill(a, b);
+            const radius = a === 0 ? "99px 0 0 99px" : b === max ? "0 99px 99px 0" : undefined;
+            return (
+              <i
+                key={z}
+                className={styles.z}
+                style={{ left: `${(a / max) * 100}%`, width: `${((b - a) / max) * 100}%`, background: ZONES[z].t, borderRadius: radius, overflow: "hidden" }}
+              >
+                <i
+                  style={{
+                    position: "absolute", left: 0, top: 0, bottom: 0, display: "block",
+                    width: `${f.share * 100}%`, background: ZONES[z].c, borderRadius: radius,
+                    transition: `width ${f.duration}ms ${f.easing} ${f.delay}ms`,
+                  }}
+                />
+              </i>
+            );
+          })}
           <i
             className={styles.bandb}
             style={band ? { left: `${(lo / max) * 100}%`, width: `${((hi - lo) / max) * 100}%`, background: bandZone.c } : { opacity: 0 }}
           />
-          <i className={styles.fillb} style={{ width: `${pct}%`, background: zoneObj.c }} />
           <i className={styles.cmark} style={{ left: `${(cutoff / max) * 100}%` }}>
             <span>{cutLabel}</span>
           </i>
+          {/* The mascot rides the end of the fill (kept: only the gauge's white knob was to go). */}
           <div className={styles.rider} style={{ left: `${pct}%` }}>
             <Nib mood={mood} accessory={acc} key={`${mood}-${acc}`} />
           </div>

@@ -14,6 +14,7 @@ import { highlightTextUtil } from "@/utils/text/highlightTextUtil";
 import { Button } from "@clearcut/ui/button";
 import { useTranslations } from "next-intl";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
+import UpiWaitingSheet from "@/components/features/payment/UpiWaitingSheet";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Modal } from "@/components/features/Sheets/Modal";
 import { DrawerSheet } from "@/components/features/Sheets/DrawerSheet";
@@ -52,7 +53,7 @@ export default function PaymentFailedModal() {
   );
 
   /* ---------------------------------- payment hook ---------------------------------- */
-  const { handlePayment, loading } = useRazorpayPayment({
+  const { handlePayment, loading, upiWaiting } = useRazorpayPayment({
     examId: data?.id!,
     examName: data?.short_name!,
     price,
@@ -77,6 +78,7 @@ export default function PaymentFailedModal() {
 
   /* ---------------------------------- render ---------------------------------- */
   return (
+    <>
     <AnimatePresence>
       {isOpen && mode === "payment-failed" && (
         <Container
@@ -239,5 +241,8 @@ export default function PaymentFailedModal() {
         </Container>
       )}
     </AnimatePresence>
+    {/* CC-70: approve-in-UPI-app wait after the popup closed (flag-gated, closed by default). */}
+    <UpiWaitingSheet {...upiWaiting} />
+    </>
   );
 }

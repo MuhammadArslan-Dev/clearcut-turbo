@@ -10,6 +10,13 @@ import { Sparkline } from "@clearcut/motion/meters/sparkline";
 import { meterPill } from "@/lib/dashboard/meterPill";
 import dynamic from "next/dynamic";
 import { useModalStore } from "@/store/modal/useModalStore";
+import { trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { useMeterTracking } from "@/hooks/course/useMeterTracking";
+import { useAuth } from "@/providers/AuthProvider";
+import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
+import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import { levelName, paperName } from "@/lib/dashboard/courseCardMeta";
+import TodayGoalsCard from "./TodayGoalsCard";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 
 const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
@@ -18,13 +25,13 @@ const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-me
 import Skeleton from "@clearcut/ui/skeleton";
 import MainButton from "@/components/ui/button/main-button";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { useGetCurrentCourse } from "@/hooks/course/useGetCurrentCourse";
 import { useCutoffMeter } from "@/hooks/course/useCutoffMeter";
 import { isApiError } from "@/lib/api/api-error";
 import {
-  markCutoffMeterActionClicked,
-  type CutoffMeterAction,
+  unlockMinQuestions,
   type CutoffMeterDetail,
 } from "@/lib/dashboard/cutoffMeter";
 
@@ -37,18 +44,6 @@ import {
 
 const CARD = "rounded-[20px] border border-[var(--color-border-gray-subtle)] bg-white p-4";
 
-/** Where a plan row leads (existing routes only). */
-function actionHref(a: CutoffMeterAction, courseId: string): string {
-  if (a.action_type === "SECTIONAL_TEST" || a.action_type === "FULL_LENGTH_TEST") return `/test-series/${courseId}`;
-  if ((a.action_type === "TOPIC_TEST" || a.action_type === "LEARN") && a.topic_id) {
-    const q = new URLSearchParams();
-    if (a.chapter_id) q.set("chapter", String(a.chapter_id));
-    q.set("topic", String(a.topic_id));
-    return `/preparation/${courseId}?${q.toString()}`;
-  }
-  return `/preparation/${courseId}`;
-}
-
 /* ───────────────────────── Meter card ───────────────────────── */
 
 /**
@@ -57,20 +52,22 @@ function actionHref(a: CutoffMeterAction, courseId: string): string {
  * under it, the gap line, "Range ±N · based on N tests", and a dashed row with
  * the "Last 5 weeks" sparkline (from meter_history).
  */
-function MeterCard({ m }: { m: CutoffMeterDetail }) {
+type TrackCtx = Omit<MeterCtx, "surface" | "userId">;
+
+function MeterCard({ m, track }: { m: CutoffMeterDetail; track: TrackCtx }) {
   const t = useTranslations();
   const tc = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(m, { surface: "target_page", ...track });
   const locked = m.locked || m.meter === null;
   const cooling = !locked && !!m.cooling?.active;
   const value = Math.round(m.display_meter ?? m.meter ?? 0);
   const gap = m.display_gap ?? m.gap ?? 0;
   const pass = Math.round(m.pass_mark);
-  const needed = Number(m.plan?.[0]?.params?.answers_needed ?? m.actions?.[0]?.params?.answers_needed);
-  const toUnlock = Number.isFinite(m.unlock_answers)
-    ? Math.max(m.unlock_answers - m.counted_answers, 1)
-    : Number.isFinite(needed) ? needed : 5;
+  // Unlock rule: any test with this many questions (backend config).
+  const toUnlock = unlockMinQuestions(m);
   const change = !locked && !cooling && m.change ? Math.round(m.change) : 0;
   const trend = m.trend ?? [];
   const zone = locked ? "locked" : zoneOf(value, { max: m.max_marks, cutoff: pass });
@@ -78,7 +75,8 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   const openModal = useModalStore((st) => st.open);
   const setInfoMeter = useCutoffMeterInfoStore((st) => st.setMeter);
   const openInfo = () => {
-    setInfoMeter(m, "gauge");
+    trackMeterClicked(m, { surface: "target_page", ...track });
+    setInfoMeter(m, "gauge", track);
     openModal("cutoff-meter-info");
   };
 
@@ -166,134 +164,6 @@ function MeterCard({ m }: { m: CutoffMeterDetail }) {
   );
 }
 
-/* ───────────────────────── Today's plan ───────────────────────── */
-
-/**
- * Row title = the topic / section name (DB content). The backend title is
- * "{name} · Topic test" in English; keep only the name, the type is in the meta line.
- */
-function actionTitle(a: CutoffMeterAction, t: ReturnType<typeof useTranslations>): string {
-  const p = a.params ?? {};
-  if (a.action_type === "TOPIC_TEST" || a.action_type === "LEARN" || a.action_type === "SECTIONAL_TEST") {
-    const name = p.topic ?? (a.title ? a.title.split(" · ")[0] : "") ?? p.section;
-    if (name && String(name).trim()) return String(name).trim();
-    if (p.section) return String(p.section);
-  }
-  return t(`target.types.${a.action_type}`);
-}
-
-function shorten(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
-}
-
-function TodayPlan({ m, courseId }: { m: CutoffMeterDetail; courseId: string }) {
-  const t = useTranslations();
-  const router = useRouter();
-  const plan = m.plan?.length ? m.plan : m.actions;
-  const done = plan.filter((a) => a.completed).length;
-  // Next: the first open row of today's plan, else the newest generated action.
-  const next = plan.find((a) => !a.completed) ?? m.actions.find((a) => !a.completed && !plan.some((p) => p.id === a.id));
-  const [going, setGoing] = useState<string | null>(null);
-
-  const go = (a: CutoffMeterAction) => {
-    if (going) return; // double tap
-    setGoing(a.id);
-    markCutoffMeterActionClicked(a.id).catch(() => {});
-    router.push(actionHref(a, courseId));
-  };
-
-  if (!plan.length) return null;
-
-  return (
-    <section className={CARD}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="heading-medium !font-bold text-surface-gray-normal">{t("target.todayPlan")}</h2>
-          <p className="body-small !font-medium text-surface-gray-muted">{t("target.pickedBy")}</p>
-        </div>
-        <span className="shrink-0 rounded-full px-2.5 py-0.5 body-small !font-bold tabular-nums bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
-          {done}/{plan.length}
-        </span>
-      </div>
-      <div className="mt-3">
-        <ProgressBar
-          showLabel={false}
-          completed={done}
-          total={plan.length}
-          height={3}
-          color="var(--color-brand)"
-          backgroundColor="var(--color-background-gray-subtle)"
-        />
-      </div>
-
-      <ul className="mt-1 divide-y divide-[var(--color-border-gray-subtle)]">
-        {plan.map((a) => (
-          <li key={a.id}>
-            <button
-              type="button"
-              onClick={() => go(a)}
-              disabled={!!going}
-              className="flex w-full items-center gap-3 py-3 text-left cursor-pointer disabled:cursor-default"
-            >
-              <span
-                aria-hidden="true"
-                className={clsx(
-                  "grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-2 text-white body-small !font-bold",
-                  a.completed
-                    ? "border-[var(--color-success)] bg-[var(--color-success)]"
-                    : "border-[var(--color-border-gray-subtle)]",
-                )}
-              >
-                {a.completed ? "✓" : ""}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span
-                  className={clsx(
-                    "block truncate heading-small !font-bold leading-6",
-                    a.completed ? "text-surface-gray-muted line-through" : "text-surface-gray-normal",
-                  )}
-                >
-                  {actionTitle(a, t)}
-                </span>
-                <span className="block body-small !font-medium text-surface-gray-muted">
-                  {t("target.meta", { type: t(`target.types.${a.action_type}`), min: a.est_time_min })}
-                </span>
-              </span>
-              {a.action_type === "ONBOARDING_TEST" && (m.locked || m.meter === null) ? (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-primary-bg-soft)] text-[var(--color-brand-dark)]">
-                  {t("target.unlocksMeter")}
-                </span>
-              ) : a.expected_gain ? (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-full px-2 body-small !font-bold bg-[var(--color-success-bg-soft)] text-[var(--color-success-strong)]">
-                  {t("target.gain", { marks: a.expected_gain })}
-                </span>
-              ) : null}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {next ? (
-        <MainButton
-          className="mt-3 min-h-[50px]"
-          fullWidth
-          size="lg"
-          rounded="14px"
-          pY="py-[15px]"
-          loading={going === next.id}
-          showIcon={false}
-          onClick={() => go(next)}
-          // MainButton centres its text without shrinking it, so a long topic name is
-          // shortened here (≈ 26 chars fit a 390px screen); the "›" always shows.
-          text={`${t(plan.includes(next) ? "target.start" : "target.keepGoing", { title: shorten(actionTitle(next, t), 26) })} ›`}
-        />
-      ) : (
-        <p className="mt-3 text-center heading-small !font-semibold text-[var(--color-success-strong)]">{t("target.allDone")}</p>
-      )}
-    </section>
-  );
-}
-
 /* ───────────────────────── Marks breakdown ───────────────────────── */
 
 function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
@@ -316,12 +186,23 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
       ) : (
         <ul className="mt-3 space-y-2.5">
           {rows.map((s) => {
-            const pct = Math.min(Math.max(s.section_marks / s.total_marks, 0), 1);
-            const c = pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
+            const tested = (s.attempted ?? 0) > 0;
+            // What the student has actually shown in THIS subject: accuracy × subject marks (client, 2026-11-13).
+            // 0 correct → 0, nothing answered → 0, never negative. The Cutoff Meter total above additionally blends
+            // the documented starting estimate (spec 1.1) for subjects with few answers — see the note below.
+            const rawAccuracy = Math.min(Math.max(s.raw_accuracy ?? (tested ? s.correct / s.attempted : 0), 0), 1);
+            const earned = rawAccuracy * s.total_marks;
+            const pct = rawAccuracy;
+            const c = !tested ? "var(--color-border-gray-subtle)" : pct < 0.5 ? ZONES.need.c : pct < 0.6 ? ZONES.almost.c : ZONES.clear.c;
             return (
-              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_46%_3rem] items-center gap-3">
-                <span className="line-clamp-2 leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
-                  {s.name}
+              <li key={s.section_id} className="grid grid-cols-[minmax(0,1fr)_44%_3.75rem] items-center gap-3">
+                <span className="leading-tight body-medium !font-normal text-surface-gray-normal" title={s.name}>
+                  <span className="line-clamp-2">{s.name}</span>
+                  <span className="mt-0.5 block body-small !font-normal text-surface-gray-muted">
+                    {tested
+                      ? t("target.breakdownCorrect", { correct: s.correct, attempted: s.attempted, percent: Math.round(rawAccuracy * 100) })
+                      : t("target.breakdownNotTested")}
+                  </span>
                 </span>
                 <span className="h-2 overflow-hidden rounded-full bg-[var(--color-background-gray-subtle)]">
                   <i
@@ -329,13 +210,23 @@ function MarksBreakdown({ m }: { m: CutoffMeterDetail }) {
                     style={{ width: grown ? `${pct * 100}%` : 0, background: c }}
                   />
                 </span>
-                <b className="text-right body-medium !font-bold tabular-nums text-surface-gray-normal">
-                  {Math.round(s.section_marks)}/{s.total_marks}
+                <b className={clsx("text-right body-medium !font-bold tabular-nums", tested ? "text-surface-gray-normal" : "text-surface-gray-muted")}>
+                  {Math.round(earned)}/{s.total_marks}
                 </b>
               </li>
             );
           })}
         </ul>
+      )}
+      {!locked && rows.some((s) => s.attempted < (m.scoring?.estimate_below ?? 30)) && (
+        <p className="mt-3 body-small !font-normal text-surface-gray-muted">
+          {t("target.breakdownNote", {
+            start: Math.round(((m.scoring?.prior_correct ?? 1.5) / (m.scoring?.prior_attempts ?? 3)) * 100),
+            correct: m.scoring?.prior_correct ?? 1.5,
+            answers: m.scoring?.prior_attempts ?? 3,
+            enough: m.scoring?.estimate_below ?? 30,
+          })}
+        </p>
       )}
     </section>
   );
@@ -366,6 +257,17 @@ export default function TargetPage({ courseId }: { courseId: string }) {
     if ((ready && !caps.cutoff_meter) || notFound) router.replace(`/preparation/${courseId}`);
   }, [ready, caps.cutoff_meter, notFound, courseId, router]);
 
+  // The enrolment the Learn card shows for this course (the last-active paper, phase 106) — read from
+  // the cached my-courses list, never fetched just for analytics (enabled: false). The current-course
+  // store holds an arbitrary row of the course group, so its level / paper can differ from the card.
+  const { data: mine } = useQuery<{ active_course?: ExamEnrollmentWithExam | null; courses?: ExamEnrollmentWithExam[] }>({ queryKey: MY_COURSES_KEY, queryFn: skipToken });
+  const same = [mine?.active_course, ...(mine?.courses ?? [])].find((c) => c?.group_code === courseId) ?? null;
+  const track: TrackCtx = {
+    courseId,
+    examName: same?.exam?.short_name,
+    level: levelName(same?.metadata),
+    paper: paperName(same?.metadata),
+  };
   const { isOpen, stack } = useModalStore();
   const activeModal = stack[stack.length - 1];
 
@@ -382,8 +284,8 @@ export default function TargetPage({ courseId }: { courseId: string }) {
         </div>
       ) : (
         <>
-          <MeterCard m={data} />
-          <TodayPlan m={data} courseId={courseId} />
+          <MeterCard m={data} track={track} />
+          <TodayGoalsCard m={data} courseId={courseId} track={track} />
           <MarksBreakdown m={data} />
         </>
       )}

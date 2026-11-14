@@ -35,6 +35,11 @@ describe("first-touch cookie helpers", () => {
     });
   });
 
+  it("keeps utm_id (the campaign id, CC-171 / CC-136) through the round trip", () => {
+    const enc = encodeFirstTouch({ utm: { source: "fb", campaign: "htet_lead", id: "120210" } });
+    expect(decodeFirstTouch(enc)?.utm).toEqual({ source: "fb", campaign: "htet_lead", id: "120210" });
+  });
+
   it("stores nothing when there is nothing to store", () => {
     expect(encodeFirstTouch({})).toBeNull();
     expect(encodeFirstTouch({ utm: {}, click_ids: {} })).toBeNull();

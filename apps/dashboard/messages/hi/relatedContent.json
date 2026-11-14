@@ -33,12 +33,13 @@
       "subtitle": "रिसेंट {examName} एग्ज़ाम्स पर आधारित",
       "labels": {
         "topicImportance": "टॉपिक इम्पोर्टेंस",
-        "marksAsked": "पूछे गए मार्क्स",
+        "questionsAsked": "पूछे गए प्रश्न",
         "lastAppeared": "लास्ट अपीयरेंस",
         "questionsPerExam": "प्रश्न (प्रति एग्ज़ाम)"
       },
       "values": {
-        "marksRange": "{{min}}-{{max}} मार्क्स",
+        "questionsRange": "{min}-{max} प्रश्न",
+        "questionsExact": "{count} प्रश्न",
         "questionsCount": "{{count}} प्रति एग्ज़ाम",
         "basedOnYears": "({{years}} ईयर के आधार पर)"
       },

@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { TrophyIcon } from "../../icons";
 import { Button } from "@clearcut/ui/button";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
@@ -13,6 +14,8 @@ import { useRouter } from "@/i18n/navigation";
 import MainButton from "../../button/main-button";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 import { Trophy } from "lucide-react";
+import { useCoursesProgressSummary } from "@/hooks/course/useCourseProgressSummary";
+import { nextMilestone } from "@/lib/dashboard/milestone";
 
 interface NextMilestoneProps {
   bgColor?: string;
@@ -31,10 +34,15 @@ const NextMilestone: React.FC<NextMilestoneProps> = ({
   const focusedCourse = useSwiperCourseStore((s) => s.focusedCourse);
   const open = useCourseStore((s) => s.open);
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   const course = focusedCourse ?? activeCourse;
   const subject = course?.exam?.short_name ?? "";
-  const count = 2;
+
+  // Real chapter progress of this course (same request/numbers as the course card).
+  const { data: progressByCourse, isLoading } = useCoursesProgressSummary([course?.group_code]);
+  const progress = course?.group_code ? progressByCourse?.[course.group_code] : undefined;
+  const milestone = progress ? nextMilestone(progress.chapters_completed, progress.chapters_total) : null;
 
   /* ---------------------------------- CTA handler ---------------------------------- */
   const handleStart = useCallback(async () => {
@@ -45,11 +53,11 @@ const NextMilestone: React.FC<NextMilestoneProps> = ({
         source: "next_milestone",
         exam_name: course.exam?.short_name!,
       });
-      router.push(`/preparation/${course.group_code}`);
+      router.push(courseHome(course.group_code));
     } else {
       open("single", course.exam!);
     }
-  }, [course, open]);
+  }, [course, open, courseHome]);
 
   return (
     <div className={clsx("flex h-full flex-col gap-4 p-4 md:p-5", bgColor, rounded)}>
@@ -72,13 +80,22 @@ const NextMilestone: React.FC<NextMilestoneProps> = ({
           <TrophyIcon size={56} />
         </div>
         <div className="flex-1">
-          {highlightTextUtil(
-            t("nextMilestone.chaptersAway", {
-              count,
-              subject,
-            }),
-            [t("nextMilestone.count", { count }), subject],
-            "body-large !font-semibold text-surface-gray-normal",
+          {isLoading || !milestone ? (
+            <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
+          ) : milestone.kind === "next" ? (
+            highlightTextUtil(
+              t("nextMilestone.toPercent", {
+                count: milestone.chaptersAway,
+                percent: milestone.percent,
+                subject,
+              }),
+              [t("nextMilestone.count", { count: milestone.chaptersAway }), `${milestone.percent}%`, subject],
+              "body-large !font-semibold text-surface-gray-normal",
+            )
+          ) : (
+            <p className="body-large !font-semibold text-surface-gray-normal">
+              {t(milestone.kind === "complete" ? "nextMilestone.allDone" : "nextMilestone.noChapters", { subject })}
+            </p>
           )}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import type { MeterCtx } from "@/lib/analytics/cutoffMeter";
 
 /**
  * Which course's meter the "how it works" sheet explains. The sheet itself is
@@ -13,9 +14,12 @@ export const useCutoffMeterInfoStore = create<{
   /** How the sheet draws the student's meter: like where it was opened from
    * (course card = bar, Target tab = gauge). */
   variant: "bar" | "gauge";
-  setMeter: (m: CutoffMeterSummary, variant?: "bar" | "gauge") => void;
+  /** Course context for analytics (phase 108). */
+  ctx: Omit<MeterCtx, "surface" | "userId"> | null;
+  setMeter: (m: CutoffMeterSummary, variant?: "bar" | "gauge", ctx?: Omit<MeterCtx, "surface" | "userId">) => void;
 }>((set) => ({
   meter: null,
   variant: "bar",
-  setMeter: (meter, variant = "bar") => set({ meter, variant }),
+  ctx: null,
+  setMeter: (meter, variant = "bar", ctx) => set({ meter, variant, ctx: ctx ?? null }),
 }));

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +32,7 @@ import type { CourseProgressSummary } from "@/lib/dashboard/userInteractions";
 import { useCoursesCutoffMeter } from "@/hooks/course/useCoursesCutoffMeter";
 import { useProgressCapabilities } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
-import { daysToExam, levelName } from "@/lib/dashboard/courseCardMeta";
+import { daysToExam, levelName, paperName } from "@/lib/dashboard/courseCardMeta";
 import { prefetchLevels } from "@/hooks/onboarding/useLevels";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
@@ -106,6 +107,8 @@ function CourseSlideCard({
       courseName={`${exam.exam?.short_name} Exam`}
       logo={exam.exam?.logo_url}
       levelName={levelName(exam.metadata)}
+      courseId={exam.group_code}
+      paperName={paperName(exam.metadata)}
       daysToExam={daysToExam(exam.exam?.metadata)}
       meter={meter}
       meterLoading={meterLoading}
@@ -157,6 +160,7 @@ export default function MyCoursesWrapTwo({
   const exam = useMemo(() => activeCourse?.exam, [activeCourse?.exam]);
 
   const route = useRouter();
+  const courseHome = useCourseHome();
 
   // "Trial Ended" pill → payment, tagged so the funnel can tell it apart
   // from the Buy button (CC-111). Only once a subject is picked, like Buy.
@@ -284,6 +288,8 @@ export default function MyCoursesWrapTwo({
     courseName: `${exam?.short_name} Exam`,
     logo: exam?.logo_url,
     levelName: levelName(activeExam?.metadata),
+    courseId: activeExam?.group_code,
+    paperName: paperName(activeExam?.metadata),
     daysToExam: daysToExam(exam?.metadata),
     meter: meterFor(activeExam?.group_code),
     meterLoading: meterOn && meterLoading,
@@ -306,7 +312,7 @@ export default function MyCoursesWrapTwo({
             source: "learn_dashboard",
             exam_name: exam?.short_name!,
           });
-          route.push(`/preparation/${activeExam?.group_code}`);
+          route.push(courseHome(activeExam?.group_code));
           // window.location.href = `https://app.clearcutoff.in/prepration/${
           //   activeExam?.uuid
           // }?token=${token()}`;
@@ -389,7 +395,7 @@ export default function MyCoursesWrapTwo({
                             source: "learn_dashboard",
                             exam_name: exam.exam?.short_name!,
                           });
-                          route.push(`/preparation/${exam.group_code}`);
+                          route.push(courseHome(exam.group_code));
                         })();
                       } else {
                         open("single", exam.exam!);
@@ -473,7 +479,7 @@ export default function MyCoursesWrapTwo({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="px-2 pt-3">
+            <div className="-mt-1 px-2 pt-0">
               <CourseSlideCard
                 exam={buyCourse}
                 part="buy"

@@ -37,6 +37,8 @@ import { NibNote } from "@clearcut/motion/test/mini-test";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
 import { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
 import { useExamSubmitStore } from "../store/useExamSubmitStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 
 // ===============================
 // SLIDE ANIMATION
@@ -98,6 +100,7 @@ export default function MainContent({ examId }: { examId: string }) {
   const language = useExamStore((s) => s.language);
 
   const { open } = useExamModalStore();
+  const queryClient = useQueryClient();
 
   // CC-103: test_abandoned once per attempt, when the page is closed or the
   // student does nothing for 30 minutes while the test is in progress.
@@ -169,11 +172,12 @@ export default function MainContent({ examId }: { examId: string }) {
       );
       examType = res.data.exam.type;
       trackTestSubmitted(exam, res, "time_up", language);
+      invalidateCutoffMeterQueries(queryClient, { test_type: exam.type ?? undefined, test_id: exam.uuid, course_id: exam.course?.group_code });
     } catch (error) {
       console.error(error);
     }
     useExamSubmitStore.getState().settle(examType);
-  }, [exam, language]);
+  }, [exam, language, queryClient]);
 
   // The animation ends -> open the report (what the End Test sheet / timer expiry used to do straight away).
   const onSubmitAnimationEnd = useCallback(() => {

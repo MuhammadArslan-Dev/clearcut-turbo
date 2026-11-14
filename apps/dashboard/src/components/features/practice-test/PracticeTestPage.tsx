@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { toast } from "react-toastify";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bookmark, Check, Lightbulb } from "lucide-react";
@@ -74,6 +76,7 @@ export default function PracticeTestPage() {
   const appLocale = useLocale();
   const td = useTranslations("DailyTests");
   const router = useRouter();
+  const courseHome = useCourseHome();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { courseId } = useParams<{ courseId: string }>();
@@ -104,7 +107,7 @@ export default function PracticeTestPage() {
   const motionLang = useMotionLang();
   const [introDone, setIntroDone] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
-  const pendingFinishRef = useRef<{ checks: PracticeSession["checks"]; elapsedMs: number } | null>(null);
+  const pendingFinishRef = useRef<{ checks: PracticeSession["checks"]; elapsedMs: number; scoring?: PracticeSession["scoring"] } | null>(null);
   const [revealBusy, setRevealBusy] = useState<number | null>(null);
   const [revealFailed, setRevealFailed] = useState<number | null>(null);
   const revealingRef = useRef<Set<number>>(new Set());
@@ -134,7 +137,7 @@ export default function PracticeTestPage() {
         if (!alive) return;
         if (state.practice_test_status === "completed") {
           clearPracticeSession(courseId);
-          router.replace(`/preparation/${courseId}`);
+          router.replace(courseHome(courseId));
         } else {
           setGateOpen(true);
         }
@@ -147,8 +150,8 @@ export default function PracticeTestPage() {
 
   const goToPreparation = useCallback(() => {
     clearPracticeSession(courseId);
-    router.replace(`/preparation/${courseId}`);
-  }, [courseId, router]);
+    router.replace(courseHome(courseId));
+  }, [courseId, router, courseHome]);
 
   const {
     data: fetched,
@@ -286,12 +289,13 @@ export default function PracticeTestPage() {
     setSubmitDone(false);
     setSubmitFailed(false);
     try {
-      const results = await submitPracticeTest(
+      const { results, scoring } = await submitPracticeTest(
         courseId,
         session.questions.map((item) => ({
           question_id: item.question_id,
           selected_option: session.answers[item.question_id] ?? null,
         })),
+        activeLocale,
       );
       const checks = Object.fromEntries(results.map((r) => [r.question_id, r]));
       // Same "Test Submitted" as a test-series exam (test_type practice_test); after the save succeeded.
@@ -303,21 +307,23 @@ export default function PracticeTestPage() {
         reason: "manual",
         language: activeLocale,
       });
+      // The onboarding answers are the first ones the Cutoff Meter counts — refetch it.
+      invalidateCutoffMeterQueries(queryClient, { test_type: "practice_test", test_id: courseId, course_id: courseId });
       // The result opens when the submit animation has played out (see <TestSubmit onFinish> below).
-      pendingFinishRef.current = { checks, elapsedMs };
+      pendingFinishRef.current = { checks, elapsedMs, scoring };
       setSubmitDone(true);
     } catch {
       // Stay on the test so nothing is lost; Finish can be tapped again.
       setSubmitFailed(true);
       setFinishing(false);
     }
-  }, [session, finishing, courseId, readElapsed, analyticsBase, activeLocale]);
+  }, [session, finishing, courseId, readElapsed, analyticsBase, activeLocale, queryClient]);
 
   const onSubmitAnimationEnd = useCallback(() => {
     const pending = pendingFinishRef.current;
     if (!pending) return;
     pendingFinishRef.current = null;
-    update((s) => ({ ...s, checks: pending.checks, finishedAt: Date.now(), elapsedMs: pending.elapsedMs }));
+    update((s) => ({ ...s, checks: pending.checks, finishedAt: Date.now(), elapsedMs: pending.elapsedMs, scoring: pending.scoring }));
     setFinishing(false);
     setSubmitDone(false);
   }, [update]);

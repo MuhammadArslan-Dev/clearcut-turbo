@@ -1,5 +1,6 @@
 "use client";
 import { FALLBACK_IMAGE } from "@/components/features/PayWalls/MainPaywall";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { MainLoader } from "@/components/FullScreenLoader";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
 import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChip";
@@ -20,6 +21,10 @@ import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useLevels } from "@/hooks/onboarding/useLevels";
 import { useAutopayFallback } from "@/hooks/payment/useAutopayFallback";
 import { useRazorpayPayment } from "@/hooks/payment/useRazorpayPayment";
+import { useUpiWaiting } from "@/hooks/payment/useUpiWaiting";
+import UpiWaitingSheet from "@/components/features/payment/UpiWaitingSheet";
+import { isUpiWaitingWatchEnabled } from "@/lib/experiments/upiWaitingFlag";
+import { PENDING_GIVE_UP_MS } from "@/lib/payment/pendingWatch";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import {
   trackFacebookEventOnce,
@@ -57,7 +62,13 @@ import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
 import { checkoutReturnUrl, isInAppBrowser } from "@/lib/payment/paymentAttempt";
-import { clearAutopayAttempt, saveAutopayAttempt } from "@/lib/payment/autopayFallback";
+import {
+  clearAutopayAttempt,
+  getSubscriptionStatus,
+  markAutopayWaitClosed,
+  readAutopayAttempt,
+  saveAutopayAttempt,
+} from "@/lib/payment/autopayFallback";
 import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analytics/paymentFunnel";
 import ContinueFreeSheet, { type ContinueFreeReason } from "@/components/features/payment/ContinueFreeSheet";
 import PlanCard from "@/components/features/payment/PlanCard";
@@ -108,6 +119,7 @@ export default function InitiatedPage() {
   const { get } = useQueryParams();
   const locale = useLocale(); // "en", "hi", etc.
   const router = useRouter();
+  const courseHome = useCourseHome();
   const { user: authUser } = useAuth();
 
   const userPhone = String(authUser?.phone ?? "").replace(/\D/g, "").slice(-10);
@@ -394,7 +406,7 @@ export default function InitiatedPage() {
   // made the page "load twice". Nothing read that `price` param.
 
   /* ---------------------------------- payment hook ---------------------------------- */
-  const { handlePayment, loading, phase: paymentPhase } = useRazorpayPayment({
+  const { handlePayment, loading, phase: paymentPhase, upiWaiting } = useRazorpayPayment({
     examId: data?.id!,
     examName: data?.short_name!,
     price: selectedPrice,
@@ -434,11 +446,15 @@ export default function InitiatedPage() {
 
   // One-time fallback after an autopay attempt (CC-168). The payment hook above
   // already does the return check for this page.
-  const { offer: offerFallback, sheet: autopayFallbackSheet } = useAutopayFallback({
+  // CC-70: the autopay "approve in your UPI app" wait (flag `upi_waiting_watch`).
+  const autopayWait = useUpiWaiting();
+  const { offer: offerFallback, arm: fallbackArm, sheet: autopayFallbackSheet } = useAutopayFallback({
     courseId,
     exam: data,
     price: getPriceForVariant("1month-onetime", pricing, data?.short_name),
     returnCheck: false,
+    // Our waiting sheet already offers "pay once": no second sheet on top of it.
+    paused: autopayWait.isWaiting,
   });
   // handleSubscriptionPayment's checkout callbacks outlive the render they were made in.
   const offerFallbackRef = React.useRef(offerFallback);
@@ -467,9 +483,9 @@ export default function InitiatedPage() {
     }
     window.setTimeout(() => {
       ignoreNextPopRef.current = false;
-      if (window.location.href === before) router.replace(`/preparation/${courseId}`);
+      if (window.location.href === before) router.replace(courseHome(courseId));
     }, 400);
-  }, [router, courseId]);
+  }, [router, courseId, courseHome]);
 
   // CC-63: "Why not now?" before leaving for free learning. Every answer
   // leaves at once; "payment issue" opens WhatsApp help and stays here.
@@ -542,6 +558,80 @@ export default function InitiatedPage() {
     in_app_browser: inAppBrowserKind(),
   });
 
+  // CC-70: poll the subscription behind the waiting sheet. Mandate approved ->
+  // the same success steps as Razorpay's handler (Payment Outcome with
+  // confirmed_via, server-decided Meta Subscribe/Purchase with its event_id,
+  // cache refresh, success page). Anything else than "created" -> not coming:
+  // offer the one-time fallback as before.
+  const beginAutopayWait = (subscriptionId: number, startedAt: number) => {
+    autopayWait.begin({
+      kind: "autopay",
+      startedAt,
+      check: async () => {
+        const status = await getSubscriptionStatus(subscriptionId);
+        if (status === "authenticated" || status === "active") return "paid";
+        return status === "created" ? "pending" : "failed";
+      },
+      onPaid: async () => {
+        clearAutopayAttempt();
+        trackPaymentEvent("Payment Outcome", {
+          outcome: "payment_successful",
+          billing_type: "auto_renew",
+          final_price: selectedPrice,
+          exam_name: data?.short_name ?? "",
+          payment_session_id: String(subscriptionId),
+          confirmed_via: "upi_wait_watch",
+          ...payFunnelProps(),
+        });
+        try {
+          const meta = await Promise.race([
+            getSubscriptionMetaPurchase(subscriptionId).then((r) => r.meta_purchase),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+          ]);
+          if (meta?.send) {
+            trackFacebookEventOnce(
+              "Subscribe",
+              { value: meta.value, currency: meta.currency, predicted_ltv: meta.value },
+              meta.event_id,
+            );
+            trackFacebookEventOnce(
+              "Purchase",
+              { value: meta.value, currency: meta.currency, amount_paid: meta.amount_paid, plan: "monthly_autopay", ...metaContentParams(meta) },
+              meta.event_id,
+            );
+          }
+        } catch {
+          // No client-side fallback values here: without the backend's event_id a
+          // Purchase could be counted twice.
+        }
+        setRedirecting(true);
+        await invalidateAfterPayment(queryClient);
+        router.push(
+          `/payment/success?exam_id=${courseId}&course_name=${data?.short_name}&source=${source}&price=${selectedPrice}`,
+        );
+      },
+      onFailed: () => {
+        clearAutopayAttempt();
+        void offerFallbackRef.current("dismissed");
+      },
+    });
+  };
+  const beginAutopayWaitRef = React.useRef(beginAutopayWait);
+  beginAutopayWaitRef.current = beginAutopayWait;
+
+  // CC-70: back on this page (FB/IG redirect mode, reload) with an autopay
+  // attempt still pending: resume the wait from when it started.
+  const resumedAutopayRef = React.useRef(false);
+  useEffect(() => {
+    if (resumedAutopayRef.current || !courseId || !authUser?.uuid || !data) return;
+    const attempt = readAutopayAttempt(courseId);
+    if (!attempt || attempt.waitClosed || Date.now() - attempt.at >= PENDING_GIVE_UP_MS) return;
+    resumedAutopayRef.current = true;
+    void isUpiWaitingWatchEnabled(authUser.uuid).then((on) => {
+      if (on) beginAutopayWaitRef.current(attempt.subscriptionId, attempt.at);
+    });
+  }, [courseId, authUser?.uuid, data]);
+
   const handleSubscriptionPayment = useCallback(async () => {
     setSubscriptionLoading(true);
     // Busy until the popup is closed or the payment ends, not just until
@@ -609,7 +699,7 @@ export default function InitiatedPage() {
                   ? checkoutT("existingActivating")
                   : checkoutT("existingActive"),
             );
-            const destination = existingStatus === "paused" ? "/dashboard/profile" : `/preparation/${courseId}`;
+            const destination = existingStatus === "paused" ? "/dashboard/profile" : courseHome(courseId);
             setTimeout(() => router.push(destination), 2500);
             return;
           }
@@ -809,7 +899,16 @@ export default function InitiatedPage() {
               payment_session_id: res.subscription.razorpay_subscription_id,
               ...payFunnelProps(),
             });
-            void offerFallbackRef.current("dismissed");
+            // CC-70: flag on -> show "approve the autopay in your UPI app" and
+            // keep checking; the one-time fallback is offered when that wait
+            // ends without a mandate. Flag off -> exactly as before.
+            const subscriptionId = res.subscription.id;
+            void isUpiWaitingWatchEnabled(authUser?.uuid)
+              .then((on) => {
+                if (on) beginAutopayWaitRef.current(subscriptionId, Date.now());
+                else void offerFallbackRef.current("dismissed");
+              })
+              .catch(() => void offerFallbackRef.current("dismissed"));
           },
         },
       };
@@ -1268,6 +1367,32 @@ export default function InitiatedPage() {
               </button>
             </div>
             {autopayFallbackSheet}
+            <UpiWaitingSheet {...upiWaiting} />
+            <UpiWaitingSheet
+              isOpen={autopayWait.isWaiting}
+              kind="autopay"
+              startedAt={autopayWait.waiting?.startedAt ?? 0}
+              slow={autopayWait.waiting?.slow ?? false}
+              gaveUp={autopayWait.waiting?.gaveUp ?? false}
+              onRetry={() => {
+                autopayWait.stop();
+                handlePayClick();
+              }}
+              onPayOnce={() => {
+                autopayWait.stop();
+                clearAutopayAttempt();
+                // Treatment arm: the fallback sheet opens its own one-time checkout.
+                // Otherwise (holdout / no experiment) the offer is only counted and
+                // the one-time plan is selected here, ready for the Pay button.
+                void offerFallbackRef.current("dismissed");
+                if (fallbackArm !== "on") handleSelectVariant("1month-onetime");
+              }}
+              onClose={() => {
+                markAutopayWaitClosed();
+                autopayWait.stop();
+                void offerFallbackRef.current("dismissed");
+              }}
+            />
             <ContinueFreeSheet
               isOpen={continueFreeOpen}
               onAnswer={handleContinueFreeAnswer}

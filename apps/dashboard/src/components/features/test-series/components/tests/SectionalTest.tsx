@@ -1,5 +1,5 @@
 import { Button } from "@clearcut/ui/button";
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import TestCard from "../cards/TestCard";
 import Text from "@clearcut/ui/text";
 import SectionHeaderCard from "@/components/ui/cards/preparation/chapter-list/SectionHeaderCard";
@@ -46,8 +46,11 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     setDefaultPaperId,
     setIndexSections,
   } = useTestListDataStore();
-  const { get } = useQueryParams();
+  const { get, set } = useQueryParams();
   const testType = get("testType");
+  // Deep link from the Target tab's Today's goals (phase 111): ?paper=&section=&startTest=<test id>.
+  const urlPaper = Number(get("paper")) || undefined;
+  const startTestParam = get("startTest");
 
   // Passing paper_id vs. omitting it returns byte-identical data as long as
   // paper_id is the same paper the backend would've defaulted to anyway
@@ -56,8 +59,9 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   // local ref (a ref would reset on every tab switch remount, missing the
   // cache and reloading on every revisit).
   const defaultPaperId = defaultPaperIdByEndpoint["sectional-test"] ?? null;
+  const wantedPaper = urlPaper ?? paper?.id;
   const explicitPaperId =
-    paper?.id && paper.id !== defaultPaperId ? paper.id : undefined;
+    wantedPaper && wantedPaper !== defaultPaperId ? wantedPaper : undefined;
 
   const { data, isLoading, error, refetchData } = useSectionalTestHook(courseId, explicitPaperId);
 
@@ -74,8 +78,9 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     if (explicitPaperId === undefined) {
       setDefaultPaperId("sectional-test", data.paper?.id ?? null);
     }
-    if (!paper) setPaper(data.paper);
-  }, [data, paper, setPaper, setPapers, setDefaultPaperId, explicitPaperId]);
+    // A deep link names its paper: that selection wins over the one left in the shared store.
+    if (!paper || (urlPaper && data.paper?.id === urlPaper && paper.id !== urlPaper)) setPaper(data.paper);
+  }, [data, paper, setPaper, setPapers, setDefaultPaperId, explicitPaperId, urlPaper]);
 
   /* ================= DERIVED DATA ================= */
 
@@ -172,6 +177,26 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     },
     [open, contentLocale],
   );
+
+  /* ================= DEEP LINK: START THE NAMED TEST ================= */
+
+  // Today's goals → "Sectional test": open exactly that test (the same pre-test sheet a card tap opens), or the
+  // paywall when the plan does not include it. Runs once; the params are removed so a refresh does not reopen it.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (!startTestParam || deepLinkDone.current || !sections.length) return;
+    if (urlPaper && data?.paper?.id !== urlPaper) return; // wait for the named paper's list
+    deepLinkDone.current = true;
+    const section = sections.find((s) => s.tests.some((tt) => String(tt.id) === startTestParam));
+    const test = section?.tests.find((tt) => String(tt.id) === startTestParam);
+    set({ startTest: null, section: null, paper: null });
+    if (!section || !test) return;
+    if (test.locked) {
+      openPaywall("test-locked-modal", courseData?.exam!, "sectional_test_card_clicked", courseData);
+    } else {
+      handleStartTest(test, section);
+    }
+  }, [startTestParam, sections, urlPaper, data?.paper?.id, set, openPaywall, courseData, handleStartTest]);
 
   const handleViewHistory = useCallback(
     (test: SectionalTestItem, section: SectionalSection) => {

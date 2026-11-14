@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { PREP_TOUR } from "@/components/features/preparation/components/startGuideIds";
-import React, { useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, useState } from "react";
 
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -35,7 +35,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTopbarScrollHide } from "@/hooks/useTopbarScrollHide";
 import { useSearchParams } from "next/navigation";
 
-import { usePreparationStore } from "@/components/features/preparation/store/usePreparationDataStore";
+import { usePreparationStore, flattenTopics } from "@/components/features/preparation/store/usePreparationDataStore";
 import { useChapterData } from "@/components/features/preparation/hooks/useChapterData";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
 import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
@@ -55,6 +55,9 @@ import Text from "@clearcut/ui/text";
 import { ListIcon } from "@/components/ui/icons";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { setResumeState } from "@/lib/dashboard/userInteractions";
+import { patchCoursePosition, refreshCourseViews } from "@/lib/preparation/courseSync";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import CDivider from "@/components/ui/CDivider";
 import { trackEvent } from "@/lib/analytics/browser";
 import PieChartIcon from "@/components/ui/icons/pie-chart-icon";
@@ -127,22 +130,47 @@ export default function Sidebar() {
     ["chapter"],
   ]);
   const urlParamsApplied = useRef(false);
+  // The destination the page was OPENED with (Target "Today's plan", a shared link, a refresh). Read at
+  // first render, before any effect: the page's own URL sync rewrites section/chapter/topic from the
+  // store, so reading the live URL later saw the resume position, not the requested one (phase 109).
+  // Captured in an EFFECT, never during render: on a client-side navigation (Target → Learn) the first
+  // render runs before the browser URL has switched (window.location and useSearchParams still hold the
+  // OLD page's query), but by the time effects run the new URL is in place. Declared before every other
+  // effect here, and child effects run before the page's own URL sync, so the page has not rewritten it.
+  const openedRef = useRef<{ section: string | null; chapter: string | null; topic: string | null } | null>(null);
+  useEffect(() => {
+    if (openedRef.current) return;
+    const p = new URLSearchParams(window.location.search);
+    openedRef.current = { section: p.get("section"), chapter: p.get("chapter"), topic: p.get("topic") };
+  }, []);
 
   // Sync fetched syllabus into store; on first load apply URL chapter/topic params
   useEffect(() => {
     if (!syllabus?.chapters?.length) return;
     let state = syllabus.state;
-    if (!urlParamsApplied.current) {
-      const urlChapter = searchParams.get("chapter");
-      const urlTopic = searchParams.get("topic");
-      if (urlChapter || urlTopic) {
+    const openedWith = openedRef.current;
+    if (!urlParamsApplied.current && openedWith && (openedWith.chapter || openedWith.topic)) {
+      // Apply only to the section the link points at. The first syllabus to arrive can be the resume
+      // section's; consuming the link there lost the chapter/topic (opened Section 1 → Chapter 1).
+      const sectionOk = !openedWith.section || Number(openedWith.section) === selectedSectionId;
+      const chapterOf = openedWith.chapter
+        ? syllabus.chapters.find((c) => c.id === Number(openedWith.chapter))
+        : openedWith.topic
+          ? syllabus.chapters.find((c) => flattenTopics(c.topics).some((tp) => tp.id === Number(openedWith.topic)))
+          : undefined;
+      if (sectionOk && chapterOf?.locked) {
+        // A link / widget must not open locked content (phase 111): show the unlock sheet and keep the
+        // normal position instead. The server refuses the content too — this is the matching screen.
+        urlParamsApplied.current = true;
+        openPaywall("topic-locked-modal", course?.exam!, "topic_card_clicked", course);
+      } else if (sectionOk && chapterOf) {
         state = {
           ...syllabus.state,
-          ...(urlChapter && { chapter_id: Number(urlChapter) }),
-          ...(urlTopic && { topic_id: Number(urlTopic) }),
+          chapter_id: String(chapterOf.id),
+          ...(openedWith.topic && { topic_id: Number(openedWith.topic) }),
         };
+        urlParamsApplied.current = true;
       }
-      urlParamsApplied.current = true;
     }
     setChapters(syllabus.chapters, state);
   }, [syllabus]);
@@ -252,11 +280,48 @@ export default function Sidebar() {
   // debounce from then on for genuine subsequent changes (user picks a
   // different topic, etc). The local UI sync below stays untouched.
   const hasSettledOnce = useRef(false);
+  const queryClient = useQueryClient();
+  const routeCourseId = useParams()?.courseId as string | undefined;
+  // The position still waiting for its (debounced) save — flushed when the page is left.
+  const pendingSave = useRef<{
+    payload: Parameters<typeof setResumeState>[0];
+    groupCode: string;
+  } | null>(null);
   useEffect(() => {
     if (!hasSettledOnce.current) {
       if (!chapters?.length || !selectedTopic) return;
       hasSettledOnce.current = true;
     }
+    // No topic yet (e.g. right after a paper switch, until its chapters arrive): there is
+    // no position to save — the backend requires a topic, and a null one is a 422.
+    if (!selectedTopic || !course?.group_code) return;
+    // Opened with a destination in another section (Target "Today's plan"): until the page has moved
+    // there, the store still holds the PREVIOUS visit's selection. Saving / patching that would write
+    // the old position into the syllabus cache, which re-hydrates the page back onto it (phase 109).
+    const opened = openedRef.current;
+    if (opened?.section && Number(opened.section) !== selectedSectionId) return;
+
+    const payload = {
+      course_id: String(course.group_code),
+      paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
+      section_id: selectedSectionId != null ? String(selectedSectionId) : null,
+      chapter_id: selectedChapter?.id != null ? String(selectedChapter.id) : null,
+      topic_id: selectedTopic.id ?? null,
+    };
+    const groupCode = String(course.group_code);
+    pendingSave.current = { payload, groupCode };
+
+    // The selection is the truth the moment it is made: every cached copy of the saved
+    // position (syllabus, chapters, Learn resume bar) follows it NOW, not after the
+    // request — so reopening the course never restores (and re-saves) an older position.
+    patchCoursePosition(queryClient, {
+      groupCode,
+      routeCourseId,
+      paperId: selectedPaperId,
+      sectionId: selectedSectionId,
+      chapterId: selectedChapter?.id,
+      topicId: selectedTopic.id,
+    });
 
     // Cancel the in-flight/pending call from the previous selection —
     // without this, a fast follow-up selection (e.g. topic auto-settling
@@ -281,18 +346,14 @@ export default function Sidebar() {
       // isn't actionable — the same non-actionable-network-blip reasoning
       // useStreakTracker.ts already applies to its own background flush.
       // A genuine backend failure (4xx/5xx) is still reported as an error.
-      setResumeState(
-        {
-          course_id: String(course?.group_code),
-          paper_id: selectedPaperId != null ? String(selectedPaperId) : null,
-          section_id:
-            selectedSectionId != null ? String(selectedSectionId) : null,
-          chapter_id:
-            selectedChapter?.id != null ? String(selectedChapter.id) : null,
-          topic_id: selectedTopic?.id ?? null,
-        },
-        controller.signal,
-      ).catch((err) => {
+      setResumeState(payload, controller.signal)
+        .then(() => {
+          if (pendingSave.current?.payload === payload) pendingSave.current = null;
+          // The server holds it now: the card's paper, its meter and the resume bar's
+          // names are derived from it.
+          refreshCourseViews(queryClient, groupCode);
+        })
+        .catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
 
         if (isNetworkFailure(err)) {
@@ -326,6 +387,25 @@ export default function Sidebar() {
     selectedTopic?.id,
     chapters,
   ]);
+
+  // Leaving the page (route change, tab close) inside the 500 ms debounce used to drop the
+  // last position: the cleanup above aborts the pending save. Flush whatever is still
+  // pending, in a request that outlives the page.
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingSave.current;
+      if (!pending) return;
+      pendingSave.current = null;
+      setResumeState(pending.payload, undefined, { keepalive: true })
+        .then(() => refreshCourseViews(queryClient, pending.groupCode))
+        .catch(() => {});
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     if (!selectedTopic || !chapters) return;

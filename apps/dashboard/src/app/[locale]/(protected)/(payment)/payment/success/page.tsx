@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useCallback, useEffect, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { ArrowIcon, CheckIcon, FireIcon } from "@/components/ui/icons";
 import ShimmerButton from "@/components/ui/button/shimmer-button";
@@ -31,6 +32,7 @@ export default function Success() {
   const locale = useLocale(); // "en", "hi", etc.
   useDrawerBackHandler();
   const router = useRouter();
+  const courseHome = useCourseHome();
 
   const { get, set } = useQueryParams();
 
@@ -153,7 +155,7 @@ export default function Success() {
         exam_name: target.exam?.short_name ?? "",
       });
 
-      router.push(`/preparation/${target.group_code}`);
+      router.push(courseHome(target.group_code));
     } else if (target.exam) {
       open("single", target.exam);
     } else {

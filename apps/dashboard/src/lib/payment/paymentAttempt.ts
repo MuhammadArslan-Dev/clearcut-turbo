@@ -17,6 +17,8 @@ export type PaymentAttempt = {
   /** What was actually charged and where the order came from, for the return check. */
   price?: number;
   source?: string;
+  /** CC-70: the student closed the "approve in your UPI app" sheet; don't reopen it for this attempt. */
+  waitClosed?: boolean;
 };
 
 const ATTEMPT_KEY = "cc-payment-attempt-v1";
@@ -39,6 +41,17 @@ export function readAttempt(examId: number): PaymentAttempt | null {
     return attempt;
   } catch {
     return null;
+  }
+}
+
+/** CC-70: remember that the waiting sheet was closed for the saved attempt (same `at`, so it still expires on time). */
+export function markAttemptWaitClosed() {
+  try {
+    const raw = localStorage.getItem(ATTEMPT_KEY);
+    if (!raw) return;
+    localStorage.setItem(ATTEMPT_KEY, JSON.stringify({ ...(JSON.parse(raw) as PaymentAttempt), waitClosed: true }));
+  } catch {
+    // ignore
   }
 }
 

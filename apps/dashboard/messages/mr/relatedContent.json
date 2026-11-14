@@ -33,12 +33,13 @@
       "subtitle": "अलीकडील {examName} परीक्षांवर आधारित",
       "labels": {
         "topicImportance": "विषयाचे महत्त्व",
-        "marksAsked": "विचारलेले मार्क्स",
+        "questionsAsked": "विचारलेले प्रश्न",
         "lastAppeared": "शेवटचे कधी आले",
         "questionsPerExam": "प्रश्न (प्रति परीक्षा)"
       },
       "values": {
-        "marksRange": "{{min}}-{{max}} मार्क्स",
+        "questionsRange": "{min}-{max} प्रश्न",
+        "questionsExact": "{count} प्रश्न",
         "questionsCount": "{{count}} प्रति परीक्षा",
         "basedOnYears": "({{years}} वर्षांवर आधारित)"
       },

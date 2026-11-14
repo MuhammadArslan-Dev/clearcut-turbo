@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
+import { ChevronRight } from "lucide-react";
 
 // false in the server render and during hydration, true afterwards.
 const noopSubscribe = () => () => {};
@@ -8,8 +10,6 @@ function useHydrated() {
   return useSyncExternalStore(noopSubscribe, () => true, () => false);
 }
 import Button from "@clearcut/ui/button";
-import Text from "@clearcut/ui/text";
-import MainInput from "@clearcut/ui/main-input";
 import OtpBoxInput from "./OtpBoxInput";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
@@ -49,7 +49,11 @@ import {
 } from "@clearcut/auth/truecaller";
 import { TruecallerButton } from "@clearcut/auth/truecaller-button";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
-import { highlightTextUtil } from "@clearcut/utils/highlight-text";
+import styles from "./start/start.module.css";
+import StartMascotStage from "./start/StartMascotStage";
+import { useStartMascot } from "./start/useStartMascot";
+import { useOneScreen } from "./start/useOneScreen";
+import { START_COPY } from "./start/startCopy";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
@@ -130,12 +134,12 @@ const CONTENT: Record<
     otpDisclaimerLine1: "Used only for login & exam updates. No spam.",
     otpDisclaimerLine2: "OTP will be sent via SMS and WhatsApp.",
     trustedByLine: "Trusted by 10,000+ students to clear TET exams across India",
-    terms: "By Signing Up, I agree to",
+    terms: "By signing up, I agree to the",
     termsLink: "Terms & Conditions",
     privacyLink: "Privacy Policy",
     termsSuffix: ".",
     andWord: "and",
-    mobileLabel: "Mobile or WhatsApp Number",
+    mobileLabel: "Mobile or WhatsApp number",
     phonePlaceholder: "10-digit number",
     continueBtn: "Start FREE Preparation",
     verifyHeading: "Verify your number",
@@ -271,7 +275,8 @@ const CONTENT: Record<
 
 
 /**
- * Interactive left panel — the only client-rendered part of /start.
+ * The whole /start page (phase 101: the Nibbu redesign moved the layout in
+ * here; the old right panel StartHero is no longer rendered).
  * Same validation, same authApi calls, same analytics event names, same
  * Meta Lead tracking, same redirect builder as the login modal
  * (packages/auth's login-screen.tsx + otp-screen.tsx) — this is a visual
@@ -613,7 +618,8 @@ export default function StartAuthForm({
         leadId,
       });
 
-      window.location.replace(redirectUrl);
+      // Phase 101: Nibbu's "verified" screen, then the same redirect.
+      finishThenGoRef.current(redirectUrl);
     } catch (err: unknown) {
       // One classifier for the event and the message (CC-87): it reads the
       // ApiError's `.status`, which the old `err.response.status` check
@@ -697,45 +703,342 @@ export default function StartAuthForm({
       course,
     });
 
-    window.location.replace(redirectUrl);
+    finishThenGoRef.current(redirectUrl);
   }, logAmplitudeEvent);
 
+  /* ---------------- NIBBU + LAYOUT (phase 101: UI only, the logic above is unchanged) ---------------- */
+
+  const c = START_COPY[locale];
+  const screen = useOneScreen();
+  const nib = useStartMascot(c.say.hello);
+  const [done, setDone] = useState(false);
+  // Partial-number errors show only after a blur / a tap (the prototype's
+  // renderPhone(showErrors)); a wrong first digit, "91", fake or a send
+  // failure show at once. The `error` state itself is unchanged.
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [nudge, setNudge] = useState(false);
+  const [shakeKey, setShakeKey] = useState({ phone: 0, otp: 0, cta: 0 });
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [sendFailed, setSendFailed] = useState(false);
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleCountRef = useRef(0);
+  const otpWrapRef = useRef<HTMLDivElement | null>(null);
+  const ctaWrapRef = useRef<HTMLDivElement | null>(null);
+  const keepSayRef = useRef(false);
+  // The CC-84 auto-focus is not the student's doing: the field's "focus" line
+  // only replaces the greeting after a real tap / key press.
+  const userActedRef = useRef(false);
+  useEffect(() => {
+    const acted = () => {
+      userActedRef.current = true;
+    };
+    window.addEventListener("pointerdown", acted, { capture: true, once: true });
+    window.addEventListener("keydown", acted, { capture: true, once: true });
+    return () => {
+      window.removeEventListener("pointerdown", acted, true);
+      window.removeEventListener("keydown", acted, true);
+    };
+  }, []);
+  const live = useRef({ step, phone, isValidPhone, loading, done, otp });
+  live.current = { step, phone, isValidPhone, loading, done, otp };
+
+  const shake = (k: "phone" | "otp" | "cta") => setShakeKey((s) => ({ ...s, [k]: s[k] + 1 }));
+
+  // Greeting: wave, then point at the field. The CC-84 auto-focus (an earlier
+  // effect) already fired the field's focus line; the greeting wins on load.
+  useEffect(() => {
+    nib.say(c.say.hello);
+    nib.setMood("wave", "point", 2400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Nibbu's line for a freshly typed number (same rules, in the same order, as validatePhone). */
+  const reactToPhone = (raw: string) => {
+    const cleaned = normalizeIndianMobileInput(raw);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    setNudge(false);
+    setSendFailed(false);
+    nib.lookAtEl(phoneInputRef.current);
+    if (!cleaned.length) {
+      nib.say(c.say.focus);
+      nib.setMood("idle");
+    } else if (cleaned.length === 1 && !FIRST_DIGIT_REGEX.test(cleaned)) {
+      nib.say(c.say.badStart, "sad");
+      nib.setMood("sad", "idle", 1400);
+    } else if (cleaned.length >= 2 && cleaned.length < 10 && cleaned.startsWith("91") && (cleaned.length === 2 || /^[6-9]$/.test(cleaned[2]))) {
+      nib.say(t.errNo91, "sad");
+      nib.setMood("sad", "idle", 1400);
+    } else if (cleaned.length < 10) {
+      nib.say(c.say.typing(10 - cleaned.length));
+      nib.setMood("idle");
+      const left = 10 - cleaned.length;
+      pauseTimerRef.current = setTimeout(() => {
+        if (!live.current.loading && live.current.step === "phone" && live.current.phone.length === cleaned.length) {
+          nib.say(c.say.pause(left));
+          nib.setMood("point");
+        }
+      }, 3500);
+    } else if (PHONE_REGEX.test(cleaned) && isFakeNumber(cleaned)) {
+      nib.say(t.errFakeNumber, "sad");
+      nib.setMood("sad", "idle", 1400);
+    } else if (PHONE_REGEX.test(cleaned)) {
+      // validatePhone's effect sends the OTP on the 10th digit (unchanged).
+      nib.say(c.say.valid, "happy");
+      nib.setMood("happy");
+    } else {
+      nib.say(t.errInvalidPhone, "sad");
+      nib.setMood("sad", "idle", 1400);
+    }
+  };
+
+  /** A tap on Start with a missing / wrong number (handleLogin then shows the reason, as before). */
+  const reactToBadSubmit = () => {
+    setPhoneTouched(true);
+    shake("phone");
+    const n = phone.length;
+    nib.say(!n ? c.say.empty : !FIRST_DIGIT_REGEX.test(phone[0]) ? c.say.badStart : n < 10 ? c.say.short(10 - n) : error || c.say.empty, "sad");
+    nib.setMood("sad", "point", 1400);
+  };
+
+  const submitPhone = () => {
+    if (loading) return;
+    if (!PHONE_REGEX.test(phone) || isFakeNumber(phone)) reactToBadSubmit();
+    else {
+      nib.say(c.say.valid, "happy");
+      nib.setMood("happy");
+    }
+    void handleLogin();
+  };
+
+  // A send that failed (handleLogin's catch sets `error` while still on the phone step).
+  const prevLoading = useRef(loading);
+  useEffect(() => {
+    const was = prevLoading.current;
+    prevLoading.current = loading;
+    if (!was || loading) return;
+    if (step === "phone" && error && PHONE_REGEX.test(phone) && !isFakeNumber(phone)) {
+      setSendFailed(true);
+      shake("cta");
+      nib.say(c.say.sendFail, "sad");
+      nib.setMood("sad", "point", 1600);
+    } else if (step === "otp" && error && !done) {
+      nib.say(otp.length === 0 ? c.say.otpWrong : error, "sad");
+      nib.setMood("sad", "otp", 1600);
+      shake("otp");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  // Entering / leaving the OTP step (not on mount: the greeting stays).
+  const prevStepRef = useRef(step);
+  useEffect(() => {
+    if (prevStepRef.current === step) return;
+    prevStepRef.current = step;
+    if (step === "otp") {
+      nib.say(c.say.otp);
+      nib.setMood("otp");
+      nib.lookAtEl(otpWrapRef.current);
+    } else if (!done) {
+      nib.say(c.say.focus);
+      nib.setMood("idle");
+    }
+    idleCountRef.current = 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Resend finished: a new OTP is on its way (or it failed).
+  const prevResending = useRef(resendingOtp);
+  useEffect(() => {
+    const was = prevResending.current;
+    prevResending.current = resendingOtp;
+    if (!was || resendingOtp) return;
+    if (error) {
+      nib.say(c.say.sendFail, "sad");
+      nib.setMood("sad", "otp", 1600);
+    } else {
+      nib.say(c.say.resent, "happy");
+      nib.setMood("happy", "otp", 1200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resendingOtp]);
+
+  const showDone = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    // Commit the whole "verified" state at once (panel, bubble, mood, confetti).
+    flushSync(() => {
+      setDone(true);
+      nib.say(c.say.done, "happy");
+      nib.setMood("cheer");
+      nib.lookFront();
+      setConfettiKey((k) => k + 1);
+    });
+  };
+  const showDoneRef = useRef(showDone);
+  showDoneRef.current = showDone;
+
+  /**
+   * Phase 101: show the "verified" screen, then the (unchanged) redirect one
+   * frame later — a location.replace in the same tick started the navigation
+   * before the browser ever painted the new state (seen in Playwright). The
+   * URL and every step before it are exactly as before; only ~1 frame added.
+   */
+  const finishThenGo = (url: string) => {
+    showDone();
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
+      window.location.replace(url);
+    };
+    window.requestAnimationFrame(() => window.setTimeout(go, 0));
+    // A hidden tab (e.g. back from the Truecaller app) runs no animation frames.
+    window.setTimeout(go, 120);
+  };
+  const finishThenGoRef = useRef(finishThenGo);
+  finishThenGoRef.current = finishThenGo;
+
+  // Idle nudges: push toward the next action (6 s, then every 9 s).
+  useEffect(() => {
+    const nudgeNow = () => {
+      const s = live.current;
+      if (s.loading || s.done) return;
+      idleCountRef.current += 1;
+      if (s.step === "phone") {
+        if (s.isValidPhone) {
+          nib.say(c.say.ready, "happy");
+          nib.setMood("point");
+          nib.lookAtEl(ctaWrapRef.current);
+        } else {
+          nib.say(s.phone.length > 0 ? c.say.pause(10 - s.phone.length) : c.say.idle[(idleCountRef.current - 1) % 3]);
+          nib.setMood("point");
+          setNudge(true);
+          nib.lookAtEl(phoneInputRef.current);
+        }
+      } else {
+        nib.say(c.say.otpIdle);
+        nib.setMood("otp");
+        nib.lookAtEl(otpWrapRef.current);
+      }
+      idleTimerRef.current = setTimeout(nudgeNow, 9000);
+    };
+    const arm = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      setNudge(false);
+      if (live.current.loading || live.current.done) return;
+      idleTimerRef.current = setTimeout(nudgeNow, idleCountRef.current === 0 ? 6000 : 9000);
+    };
+    const onVisible = () => {
+      const s = live.current;
+      if (!document.hidden && s.step === "phone" && !s.loading && !s.isValidPhone) {
+        nib.say(c.say.back);
+        nib.setMood("wave", "point", 1600);
+        setNudge(true);
+      }
+    };
+    const onLeave = (e: MouseEvent) => {
+      const s = live.current;
+      if (e.clientY <= 0 && s.step === "phone" && !s.loading && !s.done) {
+        nib.say(c.say.exit);
+        nib.setMood("wave", "point", 1600);
+        setNudge(true);
+      }
+    };
+    arm();
+    window.addEventListener("pointerdown", arm, true);
+    window.addEventListener("keydown", arm, true);
+    document.addEventListener("visibilitychange", onVisible);
+    document.addEventListener("mouseleave", onLeave);
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      window.removeEventListener("pointerdown", arm, true);
+      window.removeEventListener("keydown", arm, true);
+      document.removeEventListener("visibilitychange", onVisible);
+      document.removeEventListener("mouseleave", onLeave);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const onMascotTap = () => {
+    if (loading || done) return;
+    if (step === "phone") {
+      nib.say(c.say.tap);
+      nib.setMood("happy", "point", 900);
+      keepSayRef.current = document.activeElement !== phoneInputRef.current;
+      phoneInputRef.current?.focus();
+    } else {
+      nib.say(c.say.otp);
+      const boxes = otpWrapRef.current?.querySelectorAll<HTMLInputElement>("input");
+      const firstEmpty = boxes ? Array.from(boxes).find((b) => !b.value) ?? boxes[0] : null;
+      firstEmpty?.focus();
+    }
+  };
+
+  const phoneErrorVisible =
+    Boolean(error) && (phoneTouched || sendFailed || error !== t.errValid10);
+  const phoneState: "valid" | "invalid" | "" = phoneErrorVisible ? "invalid" : isValidPhone ? "valid" : "";
+  const stepIndex = done ? 3 : step === "phone" ? 1 : 2;
+  const prettyPhone = `+91 ${phone.slice(0, 5)} ${phone.slice(5)}`;
+  const otpReady = otp.length === OTP_LENGTH;
+
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto px-6 py-5 md:px-10 lg:px-12">
-      <div className="flex justify-center pt-10">
-        <Link href="/">
-          <Image
-            src={IMAGES.mainLogo}
-            alt="Clear Cutoff"
-            width={140}
-            height={40}
-            priority
+    <div ref={screen.ref} className={styles.root} data-kb={screen.kb ? "true" : "false"}>
+      <main className={styles.card}>
+        <div className={styles.left}>
+          <StartMascotStage
+            ref={nib.mascotRef}
+            mood={nib.mood}
+            text={nib.line.text}
+            tone={nib.line.tone}
+            sayKey={nib.line.key}
+            column={screen.column}
+            confettiKey={confettiKey}
+            look={nib.look}
+            label={c.mascotLabel}
+            onTap={onMascotTap}
           />
-        </Link>
-      </div>
+        </div>
 
-      <div className="flex-1 flex pt-10 justify-center py-4">
-        <div className="w-full max-w-[380px] flex flex-col gap-5">
-          {step === "phone" ? (
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col items-center gap-1 text-center">
-                <Text as="h1" variant="heading-medium" weight="semibold" color="gray-normal">
-                  {t.heading}
-                </Text>
-                <Text as="p" variant="body-medium" color="gray-muted">
-                  {t.featuresLine}
-                </Text>
+        <div className={styles.right}>
+          <div className={styles.top}>
+            <Link href="/" className={styles.brand} aria-label="Clear Cutoff">
+              <Image src={IMAGES.mainLogo} alt="Clear Cutoff" width={140} height={40} priority />
+            </Link>
+            <div className={styles.stepper}>
+              <span>{done ? c.stepDone : c.stepOf(stepIndex)}</span>
+              <span className={styles.segs} aria-hidden="true">
+                <i className={styles.seg} data-state={stepIndex === 1 ? "on" : "ok"} />
+                <i className={styles.seg} data-state={stepIndex === 2 ? "on" : stepIndex === 3 ? "ok" : undefined} />
+              </span>
+            </div>
+          </div>
+
+          {done ? (
+            <section className={styles.panel} aria-labelledby="h-done">
+              <div className={styles.done}>
+                <h1 id="h-done" className={styles.h1} tabIndex={-1}>
+                  {c.doneHeading}
+                </h1>
+                <p className={styles.sub}>{c.doneSub}</p>
+                <div className={styles.progress}>
+                  <i />
+                </div>
               </div>
+            </section>
+          ) : step === "phone" ? (
+            <section key="phone" className={styles.panel} aria-labelledby="h-phone">
+              <h1 id="h-phone" className={`${styles.h1} ${styles.h1Phone}`}>
+                {c.headingBefore}
+                <em>{c.headingAccent}</em>
+                {c.headingAfter}
+              </h1>
+              {/* The "Everything for your teaching exam…" line was removed (client, 2026-11-13). */}
 
-              {/* Rendered once useTruecallerAvailability confirms the app is
-                  on this device (cached across every clearcutoff.in property
-                  — see that hook's docblock), OR when ?showTruecaller=true
-                  arrives from a /go marketing page that already confirmed it
-                  on its own. */}
-              {hydrated &&
-                (truecallerAvailability === "available" ||
-                forceShowTruecaller) && (
-                <div className="flex md:hidden flex-col gap-2">
+              {/* Truecaller (unchanged rules): Android browsers where the app was
+                  found, or ?showTruecaller=true from a /go page. */}
+              {hydrated && (truecallerAvailability === "available" || forceShowTruecaller) && (
+                <div className="flex md:hidden flex-col gap-2 mb-2">
                   <TruecallerButton
                     state={truecallerState}
                     error={truecallerError}
@@ -744,217 +1047,191 @@ export default function StartAuthForm({
                     waitingLabel={t.truecallerWaiting}
                     unavailableMessage={t.truecallerUnavailable}
                   />
-
-                  <div className="flex items-center gap-3 py-1">
-                    <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                    <Text as="span" variant="body-small" color="gray-muted">
-                      {t.orDivider}
-                    </Text>
-                    <div className="flex-1 h-px bg-[var(--color-border-gray-subtle)]" />
-                  </div>
+                  <div className={styles.orRow}>{t.orDivider}</div>
                 </div>
               )}
 
-              <div className="space-y-4 w-full">
-                <div className="flex gap-3 items-center">
-                  <Image
-                    src="/images/indian-flage.webp"
-                    alt="Indian flag"
-                    width={24}
-                    height={24}
-                    priority
-                    unoptimized
-                  />
-                  <label
-                    htmlFor="start-phone"
-                    className="body-small !font-semibold text-[var(--color-text-gray-subtle)]"
-                  >
-                    {t.mobileLabel}
-                  </label>
-                </div>
-
-                <div className="flex gap-0 flex-col w-full items-center">
-                  <div className="w-full flex items-center gap-2">
-                    <div className="w-full h-[48px] relative">
-                      <MainInput
-                        ref={phoneInputRef}
-                        id="start-phone"
-                        autoComplete="tel-national"
-                        normalizeValue={normalizeIndianMobileInput}
-                        focusOnTap
-                        value={phone}
-                        placeholder={t.phonePlaceholder}
-                        inputType="phone"
-                        error={error}
-                        maxLength={10}
-                        className="h-full"
-                        inputClassName="body-large !font-normal text-[var(--color-text-gray-normal)]"
-                        onChange={(e) => validatePhone(e.target.value)}
-                        inputPrefix="+91 -"
-                        showError={false}
-                      />
-                      {phone.length > 0 && (
-                        <span className="absolute left-1/4 -translate-x-1/2 top-0 -translate-y-1/2 text-xs text-[var(--color-gray-blue)] bg-white rounded-full border border-[var(--color-gray-blue)] px-2.5 py-0.5 pointer-events-none select-none whitespace-nowrap">
-                          {t.phonePlaceholder}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <p
-                    className={`text-sm w-full text-center min-h-[1.5rem] ${error ? "text-red-600" : success ? "text-green-600" : "invisible"}`}
-                  >
-                    {error || success}
-                  </p>
-
-                  <div className="text-center mt-2 body-small !font-normal text-[var(--color-surface-gray-muted)]">
-                    <p>
-                      <em>{t.otpDisclaimerLine1}</em>
-                    </p>
-                    <p>
-                      <em>{t.otpDisclaimerLine2}</em>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                size="lg"
-                sx={{ borderRadius: "50px" }}
-                fullWidth
-                onClick={() => handleLogin()}
-                disabled={loading}
-                loading={loading}
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitPhone();
+                }}
               >
-                {t.continueBtn}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-1">
-                <Text as="h1" variant="heading-large" weight="bold">
-                  {t.verifyHeading}
-                </Text>
-                <Text as="p" variant="body-medium" color="gray-muted">
-                  {t.otpSentTo} <strong>+91 {phone}</strong>{" "}
-                  <span
-                    onClick={handleEditNumber}
-                    className="text-[var(--color-brand)] font-semibold cursor-pointer"
-                  >
-                    {t.editLabel}
-                  </span>
-                </Text>
-              </div>
-
-              <div className="space-y-2">
-                <Text
-                  as="p"
-                  variant="body-small"
-                  weight="semibold"
-                  color="gray-muted"
+                <label className={styles.fieldLabel} htmlFor="start-phone">
+                  <Image src="/images/indian-flage.webp" alt="" width={21} height={14} className={styles.flag} unoptimized />
+                  {t.mobileLabel}
+                </label>
+                <div
+                  key={`phone-${shakeKey.phone}`}
+                  className={`${styles.phone} ${shakeKey.phone ? styles.shake : ""}`}
+                  data-state={phoneState || undefined}
+                  data-nudge={nudge ? "true" : undefined}
+                  onClick={() => phoneInputRef.current?.focus()}
                 >
-                  {t.otpLabel}
-                </Text>
-                <OtpBoxInput
-                  length={OTP_LENGTH}
-                  value={otp}
-                  error={!!error}
-                  disabled={loading}
-                  autoFocus
-                  refocusKey={otpRefocusKey}
-                  onChange={(val) => {
-                    setOtp(val);
-                    if (val.length === OTP_LENGTH) handleVerify(val);
-                  }}
-                />
-                {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
-
-                <div className="text-sm">
-                  {resendingOtp ? (
-                    <span className="text-[var(--color-brand)]">
-                      {t.resendingOtp}
-                    </span>
-                  ) : (
-                    <span
-                      onClick={handleResendOtp}
-                      className={`text-[var(--color-brand)] font-semibold ${resendTimer > 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      {resendTimer > 0
-                        ? t.resendOtpTimer.replace(
-                            "{seconds}",
-                            String(resendTimer),
-                          )
-                        : t.resendOtp}
-                    </span>
-                  )}
+                  <span className={styles.cc} aria-hidden="true">
+                    +91
+                  </span>
+                  <input
+                    ref={phoneInputRef}
+                    id="start-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    placeholder={t.phonePlaceholder}
+                    value={phone}
+                    readOnly={loading}
+                    aria-invalid={phoneState === "invalid"}
+                    aria-describedby="phone-msg"
+                    onFocus={() => {
+                      setNudge(false);
+                      nib.lookAtEl(phoneInputRef.current);
+                      if (!phone && !loading && !keepSayRef.current && userActedRef.current) {
+                        nib.say(c.say.focus);
+                        nib.setMood("idle");
+                      }
+                      keepSayRef.current = false;
+                    }}
+                    onChange={(e) => {
+                      validatePhone(e.target.value);
+                      reactToPhone(e.target.value);
+                    }}
+                    onBlur={() => {
+                      if (phone.length > 0 && phone.length < 10 && FIRST_DIGIT_REGEX.test(phone[0])) {
+                        setPhoneTouched(true);
+                        nib.say(c.say.short(10 - phone.length), "sad");
+                        nib.setMood("sad", "point", 1400);
+                      }
+                    }}
+                  />
+                  <span className={styles.dots} aria-hidden="true">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <i key={i} data-on={i < phone.length ? "true" : undefined} />
+                    ))}
+                  </span>
                 </div>
-              </div>
+                <p id="phone-msg" className={styles.msg} data-kind={phoneErrorVisible ? "error" : success ? "ok" : undefined} aria-live="polite">
+                  {phoneErrorVisible ? error : success}
+                </p>
 
-              <Button
-                size="lg"
-                sx={{ borderRadius: "50px" }}
-                fullWidth
-                disabled={otp.length !== OTP_LENGTH || loading}
-                loading={loading}
-                onClick={() => handleVerify()}
+                <div ref={ctaWrapRef} key={`cta-${shakeKey.cta}`} className={shakeKey.cta ? styles.shake : undefined}>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    sx={{ borderRadius: "50px" }}
+                    fullWidth
+                    disabled={loading}
+                    loading={loading}
+                    rightIcon={loading ? undefined : <ChevronRight size={20} strokeWidth={2.5} aria-hidden="true" />}
+                    className={styles.cta}
+                    data-ready={isValidPhone && !loading ? "true" : undefined}
+                  >
+                    {loading ? c.sending : sendFailed ? c.tryAgain : t.continueBtn}
+                  </Button>
+                </div>
+              </form>
+              {/* The "3-day FREE trial · No card or payment needed" line was removed (client, 2026-11-13). */}
+            </section>
+          ) : (
+            <section key="otp" className={styles.panel} aria-labelledby="h-otp">
+              <h1 id="h-otp" className={styles.h1}>
+                {c.otpHeading}
+              </h1>
+              <p className={styles.sent}>
+                {c.sentTo} <b>{prettyPhone}</b>{" "}
+                <button type="button" className={styles.linkbtn} onClick={handleEditNumber} disabled={loading}>
+                  {c.change}
+                </button>
+              </p>
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!otpReady) {
+                    shake("otp");
+                    nib.say(c.say.otpShort, "sad");
+                    nib.setMood("sad", "otp", 1400);
+                  } else {
+                    nib.say(c.say.otpCheck);
+                    nib.setMood("idle");
+                  }
+                  void handleVerify();
+                }}
               >
-                {t.verifyOtpBtn}
-              </Button>
-            </div>
+                <div ref={otpWrapRef} key={`otp-${shakeKey.otp}`} className={shakeKey.otp ? styles.shake : undefined} role="group" aria-label={t.otpLabel}>
+                  <OtpBoxInput
+                    variant="boxed"
+                    length={OTP_LENGTH}
+                    value={otp}
+                    error={!!error}
+                    disabled={loading}
+                    autoFocus
+                    refocusKey={otpRefocusKey}
+                    onChange={(val) => {
+                      setOtp(val);
+                      nib.lookAtEl(otpWrapRef.current);
+                      if (val.length === OTP_LENGTH) {
+                        nib.say(c.say.otpCheck);
+                        nib.setMood("idle");
+                        handleVerify(val);
+                      } else if (val.length) {
+                        nib.say(c.say.otpType(OTP_LENGTH - val.length));
+                        nib.setMood("otp");
+                      }
+                    }}
+                  />
+                </div>
+                <p className={styles.msg} data-kind={error ? "error" : undefined} aria-live="polite">
+                  {error}
+                </p>
+                <Button
+                  type="submit"
+                  size="lg"
+                  sx={{ borderRadius: "50px" }}
+                  fullWidth
+                  disabled={loading}
+                  loading={loading}
+                  rightIcon={loading ? undefined : <ChevronRight size={20} strokeWidth={2.5} aria-hidden="true" />}
+                  className={styles.cta}
+                  data-dim={!otpReady && !loading ? "true" : undefined}
+                  aria-disabled={!otpReady}
+                >
+                  {loading ? c.verifying : c.verifyStart}
+                </Button>
+              </form>
+              <div className={styles.resend}>
+                <span className={styles.resendHint}>{c.didntGet}</span>
+                {resendingOtp ? (
+                  <span className={styles.count}>{t.resendingOtp}</span>
+                ) : (
+                  <button type="button" className={styles.linkbtn} onClick={handleResendOtp} disabled={resendTimer > 0 || loading}>
+                    {resendTimer > 0 ? (
+                      <>
+                        {t.resendOtp} <span className={styles.count}>0:{String(resendTimer).padStart(2, "0")}</span>
+                      </>
+                    ) : (
+                      t.resendOtp
+                    )}
+                  </button>
+                )}
+              </div>
+            </section>
           )}
 
-          {/* Plain text, not a card (CC-84): the boxed version with an icon
-              looked tappable and students kept tapping it. */}
-          <Text as="p" variant="body-small" color="gray-muted" className="text-center">
-            <span className="!font-semibold text-[var(--color-brand)]">
-              {t.trialTitle}
-            </span>{" "}
-            • {t.trialSubtitle}
-          </Text>
-
-          <Text
-            as="p"
-            variant="body-medium"
-            color="gray-muted"
-            className="text-center"
-          >
-            {highlightTextUtil(t.trustedByLine, ["10,000"])}
-          </Text>
-
-          <div className="px-4">
-            <Text
-              as="p"
-              variant="body-medium"
-              color="gray-muted"
-              className="text-center"
-            >
-              {/* New tab (CC-85, decision D5) so the form and the typed
-                  number stay; the padding (cancelled by the negative margin,
-                  so the text doesn't move) makes each link a ~44px tap
-                  target. */}
-              {t.terms}{" "}
-              <Link
-                href="/terms-and-conditions"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
-              >
-                {t.termsLink}
-              </Link>{" "}
-              {t.andWord}{" "}
-              <Link
-                href="/privacy-policy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block py-2.5 -my-2.5 text-[var(--color-brand)] font-medium"
-              >
-                {t.privacyLink}
-              </Link>
-              {t.termsSuffix}
-            </Text>
-          </div>
+          <p className={styles.legal}>
+            {/* New tab (CC-85) so the form and the typed number stay. */}
+            {t.terms}{" "}
+            <Link href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">
+              {t.termsLink}
+            </Link>{" "}
+            {t.andWord}{" "}
+            <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+              {t.privacyLink}
+            </Link>
+            {t.termsSuffix}
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

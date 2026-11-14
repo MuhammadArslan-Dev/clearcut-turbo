@@ -23,7 +23,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import DailyTestReviewRow, { type ReviewStatus } from "@/components/features/daily-tests/DailyTestReviewRow";
-import { TestResult } from "@clearcut/motion/test/flow";
+import { TestResult, getOutcome } from "@clearcut/motion/test/flow";
+import { scoringToResultData } from "@/lib/api/scoring";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCutoffMeterQueries } from "@/components/features/preparation/hooks/useProgressCapabilities";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
 import { NibNote } from "@clearcut/motion/test/mini-test";
 import TestStartIntro, { useMotionLang } from "@/components/features/test-motion/TestStartIntro";
@@ -129,6 +132,7 @@ export default function DailyTestAttemptPage() {
   // normal click-through.
   const { history, isLoading: historyLoading } = useDailyTestHistory(courseId);
   const setCachedResult = useSetDailyTestResult();
+  const queryClient = useQueryClient();
 
   // A test the history already says is completed is read through the cached
   // result query instead of POSTing /start again — so re-opening it is
@@ -345,7 +349,7 @@ export default function DailyTestAttemptPage() {
       setSubmitDone(false);
       setSubmitPhase("running");
       try {
-        const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers);
+        const res = await submitDailyTest(courseId, testId, state.attemptId, finalAnswers ?? answers, activeLocale);
         const picked = Object.keys(finalAnswers ?? answers).length;
         trackLiteTestSubmitted(analyticsBase(state.attemptId, state.questions.length, state.sectionName), {
           correct: res.data.score,
@@ -365,6 +369,8 @@ export default function DailyTestAttemptPage() {
         // own history (score/best-score/avg-time), are now stale.
         invalidateDailyTestExams();
         invalidateDailyTestHistory(courseId);
+        // Daily tests feed the Cutoff Meter too (client, 2026-11-12): the backend recalculated it.
+        invalidateCutoffMeterQueries(queryClient, { test_type: "daily_test", test_id: testId, course_id: enrollment?.group_code ?? undefined });
         // The "checking your answers" animation plays out, then the result opens in place (see
         // onSubmitAnimationEnd). Its "Back to history" does the flow.goUp that used to run right here: it pops
         // back to this test's Attempt History when the attempt was opened from there, else swaps the attempt
@@ -378,7 +384,7 @@ export default function DailyTestAttemptPage() {
         setSubmitting(false);
       }
     },
-    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId],
+    [state, answers, analyticsBase, activeLocale, invalidateDailyTestExams, invalidateDailyTestHistory, invalidateDailyTestAttempts, setCachedResult, courseId, testId, queryClient, enrollment?.group_code],
   );
 
   const onSubmitAnimationEnd = useCallback(() => {
@@ -1219,8 +1225,9 @@ function DailyTestResultView({
   };
 
   const total = result.total_questions;
-  const correct = result.score;
-  const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+  // Phase 103: counts, marks and cutoff from the backend scorer when it sent them.
+  const scoring = result.scoring;
+  const correct = scoring?.correct ?? result.score;
 
   const reviewed = useMemo(
     () =>
@@ -1230,10 +1237,13 @@ function DailyTestResultView({
       })),
     [result.questions],
   );
-  const skipped = reviewed.filter((r) => r.status === "skipped").length;
-  // Free users get score only, so skipped questions can't be told apart
-  // from wrong ones — everything not correct counts as incorrect there.
-  const incorrect = result.is_paid ? total - correct - skipped : total - correct;
+  // The scorer's totals tell skipped from wrong for free users too (no per-question
+  // data needed); an older backend without them keeps the old fallback.
+  const skipped = scoring ? scoring.unanswered : reviewed.filter((r) => r.status === "skipped").length;
+  const incorrect = scoring ? scoring.wrong : result.is_paid ? total - correct - skipped : total - correct;
+  const resultData = scoring
+    ? scoringToResultData(scoring)
+    : { score: correct, maxScore: Math.max(1, total), cutoff: null, correct, wrong: incorrect, skipped: result.is_paid ? skipped : 0 };
 
   const testDate = history?.tests.find((t) => String(t.test_id) === String(testId))?.test_date;
   const dateLabel = testDate
@@ -1260,8 +1270,10 @@ function DailyTestResultView({
     { key: "skipped", label: t("result.skipped"), count: skipped },
   ];
 
+  // Same outcome as the result ring below (real cutoff when there is one), so the two never disagree.
+  const outcome = getOutcome(resultData);
   const bannerTitle =
-    percent >= 70 ? t("result.greatJob") : percent >= 40 ? t("result.goodEffort") : t("result.keepPracticing");
+    outcome === "pass" ? t("result.greatJob") : outcome === "near" ? t("result.goodEffort") : t("result.keepPracticing");
 
   return (
     <DashboardShell>
@@ -1333,13 +1345,7 @@ function DailyTestResultView({
             <TestResult
               type="daily"
               lang={motionLang}
-              data={{
-                score: correct,
-                maxScore: Math.max(1, total),
-                correct,
-                wrong: incorrect,
-                skipped: result.is_paid ? skipped : 0,
-              }}
+              data={resultData}
               actions={false}
               wide
             />

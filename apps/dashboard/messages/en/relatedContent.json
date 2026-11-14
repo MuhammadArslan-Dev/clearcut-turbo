@@ -40,13 +40,14 @@
 
       "labels": {
         "topicImportance": "Topic Importance",
-        "marksAsked": "Marks Asked",
+        "questionsAsked": "Questions Asked",
         "lastAppeared": "Last Appeared",
         "questionsPerExam": "Questions (per exam)"
       },
 
       "values": {
-        "marksRange": "{{min}}-{{max}} marks",
+        "questionsRange": "{min}-{max} questions",
+        "questionsExact": "{count, plural, one {# question} other {# questions}}",
         "questionsCount": "{{count}} per exam",
         "basedOnYears": "(Based on {{years}} year)"
       },

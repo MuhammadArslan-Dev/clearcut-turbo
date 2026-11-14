@@ -25,16 +25,58 @@ export interface Zone {
   s: string;
   /** text colour on the pill */
   ink: string;
+  /** LIGHT shade of this zone's range on the track while the score has not reached it */
+  t: string;
   lab: { en: string; hi: string };
 }
 
+/**
+ * Progression Red → Yellow → Green → Dark Green. On the track every range is its
+ * light shade (`t`) until the score enters it, then its full colour (`c`) — see
+ * trackColour(). The top range (Safe Zone) is light green until reached, full dark
+ * green after. Its pill/legend tile is a green tint (was gold #fff6db = "yellow").
+ */
 export const ZONES: Record<ZoneKey, Zone> = {
-  need: { c: "#f04438", s: "#fdecea", ink: "#b42318", lab: { en: "Needs work", hi: "मेहनत ज़रूरी" } },
-  almost: { c: "#f79009", s: "#fef0c7", ink: "#b54708", lab: { en: "Almost there", hi: "बस थोड़ा और" } },
-  clear: { c: "#12b76a", s: "#e3f8ee", ink: "#067a46", lab: { en: "Clear Zone", hi: "क्लियर ज़ोन" } },
-  safe: { c: "#067a46", s: "#fff6db", ink: "#067a46", lab: { en: "Safe Zone ★", hi: "सेफ़ ज़ोन ★" } },
-  locked: { c: "#b7c7d8", s: "#eef2f6", ink: "#566c82", lab: { en: "Locked", hi: "लॉक है" } },
+  need: { c: "#f04438", s: "#fdecea", ink: "#b42318", t: "#fdecea", lab: { en: "Needs work", hi: "मेहनत ज़रूरी" } },
+  almost: { c: "#f79009", s: "#fef0c7", ink: "#b54708", t: "#fef0c7", lab: { en: "Almost there", hi: "बस थोड़ा और" } },
+  clear: { c: "#12b76a", s: "#e3f8ee", ink: "#067a46", t: "#e3f8ee", lab: { en: "Clear Zone", hi: "क्लियर ज़ोन" } },
+  safe: { c: "#067a46", s: "#d2ecdf", ink: "#055c35", t: "#d2ecdf", lab: { en: "Safe Zone ★", hi: "सेफ़ ज़ोन ★" } },
+  locked: { c: "#b7c7d8", s: "#eef2f6", ink: "#566c82", t: "#eef2f6", lab: { en: "Locked", hi: "लॉक है" } },
 };
+
+const ORDER: Record<Exclude<ZoneKey, "locked">, number> = { need: 0, almost: 1, clear: 2, safe: 3 };
+
+/**
+ * Track colour of one range for the score's current zone: full colour once the
+ * score has entered that range (or a higher one), light shade before. Locked →
+ * every range light.
+ */
+export function trackColour(range: Exclude<ZoneKey, "locked">, active: ZoneKey): string {
+  const reached = active !== "locked" && ORDER[active] >= ORDER[range];
+  return reached ? ZONES[range].c : ZONES[range].t;
+}
+
+/**
+ * How much of the range [from, to] the score has filled, 0–1. The track shows
+ * each range's light shade; its full colour covers only this share — up to the
+ * score, never beyond it (user, 2026-11-12: "bar ka color utna hi fill kro jitni bar hoti ha").
+ */
+export function fillShare(from: number, to: number, score: number | null | undefined): number {
+  if (score == null || to <= from) return 0;
+  return Math.min(1, Math.max(0, (score - from) / (to - from)));
+}
+
+/**
+ * CSS timing for one range's fill so the colour runs 0 → score continuously
+ * across ranges (each range starts when the previous one is full). `totalMs`
+ * is the meter's fill duration.
+ */
+export function fillTiming(from: number, to: number, score: number, totalMs: number): { delay: number; duration: number } {
+  if (score <= 0) return { delay: 0, duration: totalMs };
+  const end = Math.min(to, score);
+  if (end <= from) return { delay: 0, duration: totalMs * 0.25 };
+  return { delay: (from / score) * totalMs, duration: ((end - from) / score) * totalMs };
+}
 
 /** Pill shown while the range is still wide (band ≥ 12). */
 export const EARLY_ESTIMATE = { s: "#e8f2fb", ink: "#005cb8", lab: { en: "Early estimate", hi: "शुरुआती अनुमान" } };

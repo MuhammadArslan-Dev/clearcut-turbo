@@ -1,5 +1,6 @@
 import { apiFetch } from "./client";
 import { token as tokenApi } from "../auth-token-client";
+import type { TestScoring } from "./scoring";
 
 // The one-time practice test between subject selection and Preparation.
 // {courseId} is the enrolment's group_code (the id the /preparation URL uses);
@@ -65,13 +66,15 @@ export async function getPracticeTestQuestions(
 export async function submitPracticeTest(
   courseId: string,
   answers: { question_id: number; selected_option?: number | null }[],
-): Promise<PracticeAnswerCheck[]> {
-  const res = await apiFetch<{ data: { results: PracticeAnswerCheck[] } }>(`${base(courseId)}/submit`, {
+  /** Language the questions were shown in — the scorer uses that language's answer key. */
+  locale?: string,
+): Promise<{ results: PracticeAnswerCheck[]; scoring?: TestScoring }> {
+  const res = await apiFetch<{ data: { results: PracticeAnswerCheck[]; scoring?: TestScoring } }>(`${base(courseId)}/submit`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, locale }),
   });
-  return res.data.results;
+  return { results: res.data.results, scoring: res.data.scoring };
 }
 
 /** The explanation (and correct option) of ONE question, for the "Show Explanation" button. Does not record a result. */

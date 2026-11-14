@@ -13,8 +13,10 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import React, { useEffect, useMemo, useRef } from "react";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
-import type { CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
+import { unlockMinQuestions, type CutoffMeterSummary } from "@/lib/dashboard/cutoffMeter";
 import { meterPill } from "@/lib/dashboard/meterPill";
+import { trackMeterClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { useMeterTracking } from "@/hooks/course/useMeterTracking";
 import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCutoffMeterInfoStore";
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
@@ -28,16 +30,19 @@ import Skeleton from "@clearcut/ui/skeleton";
  * it, centred, the gap line and "Range ±N · based on N tests" (reference).
  * Text is ours (en / hi / mr); everything else is the studio's artwork.
  */
-function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
+function CutoffMeterPanel({ meter, track }: { meter: CutoffMeterSummary; track: Omit<MeterCtx, "surface" | "userId"> }) {
   const t = useTranslations("myCourses");
   const locale = useLocale();
   const ref = useRef<MeterHandle>(null);
+  // Phase 108: Unlocked / Score Updated / Zone Changed.
+  useMeterTracking(meter, { surface: "learn_card", ...track });
   const locked = meter.locked || meter.meter === null;
   const cooling = !locked && !!meter.cooling?.active;
   const value = Math.round(meter.display_meter ?? meter.meter ?? 0);
   const gap = meter.display_gap ?? meter.gap ?? 0;
   const pass = Math.round(meter.pass_mark);
-  const toUnlock = Math.max(meter.unlock_answers - meter.counted_answers, 1);
+  // Unlock rule: any test with this many questions (backend config).
+  const toUnlock = unlockMinQuestions(meter);
   const change =
     !locked && !cooling && meter.change ? Math.round(meter.change) : 0;
 
@@ -54,7 +59,8 @@ function CutoffMeterPanel({ meter }: { meter: CutoffMeterSummary }) {
   const openModal = useModalStore((s) => s.open);
   const setInfoMeter = useCutoffMeterInfoStore((s) => s.setMeter);
   const openInfo = () => {
-    setInfoMeter(meter);
+    trackMeterClicked(meter, { surface: "learn_card", ...track });
+    setInfoMeter(meter, "bar", track);
     openModal("cutoff-meter-info");
   };
 
@@ -196,6 +202,9 @@ export interface MyCOurseCardProps {
   meter?: CutoffMeterSummary | null;
   /** Meter is on and its request is in flight → panel skeleton (no layout shift). */
   meterLoading?: boolean;
+  /** Course context for Cutoff Meter analytics (phase 108). */
+  courseId?: string | null;
+  paperName?: string | null;
 }
 
 export default function MyCourseCard({
@@ -223,6 +232,8 @@ export default function MyCourseCard({
   daysToExam,
   meter,
   meterLoading = false,
+  courseId,
+  paperName,
 }: MyCOurseCardProps) {
   const t = useTranslations();
   const [continueLoading, setContinueLoading] = React.useState(false);
@@ -249,6 +260,8 @@ export default function MyCourseCard({
                 fullWidth
                 loading={unlockLoading}
                 color="success"
+                // The same shimmer sweep the checkout / onboarding CTAs use: draws the eye to the one paid action.
+                showShimmer
                 text={
                   badge === "expired"
                     ? t("myCourses.renewCourse")
@@ -272,8 +285,13 @@ export default function MyCourseCard({
                 </p>
                 {/* The 3-day trial note is for a student still on trial: not after the trial or a paid plan ended. */}
                 {badge !== "expired" && badge !== "trial_end" && (
-                  <p className="body-medium !font-normal text-surface-gray-muted">
-                    {t("myCourses.trialLimit", { days: 3 })}
+                  // Three points on ONE line (replaces "Free trial is limited for 3 days only").
+                  <p className="flex w-full items-center justify-center gap-1 whitespace-nowrap text-[11px] leading-4 !font-medium text-surface-gray-muted min-[360px]:gap-1.5 min-[360px]:text-[12px] sm:text-[13px]">
+                    <span>{t("myCourses.trialPointStudy")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointPractice")}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{t("myCourses.trialPointClear")}</span>
                   </p>
                 )}
               </div>
@@ -407,7 +425,10 @@ export default function MyCourseCard({
         {meterLoading ? (
           <CutoffMeterPanelSkeleton />
         ) : meter ? (
-          <CutoffMeterPanel meter={meter} />
+          <CutoffMeterPanel
+            meter={meter}
+            track={{ courseId, examName: examShortName, level: levelName, paper: paperName }}
+          />
         ) : null}
 
         <div

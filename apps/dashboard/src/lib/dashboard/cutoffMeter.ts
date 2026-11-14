@@ -11,6 +11,8 @@ export interface CutoffMeterSummary {
   confidence: "low" | "medium" | "high" | null;
   counted_answers: number;
   unlock_answers: number;
+  /** Unlock rule (client, 2026-11-12): any test with at least this many questions unlocks the meter. */
+  unlock_min_test_questions?: number;
   change: number | null;
   model_version: string;
   computed_at: string | null;
@@ -52,7 +54,10 @@ export interface CutoffMeterSection {
   name: string;
   total_marks: number;
   section_marks: number;
+  /** Smoothed accuracy the marks use: (correct + prior_correct) / (attempted + prior_attempts). */
   accuracy: number;
+  /** The student's own accuracy (correct / attempted); null before any answer. */
+  raw_accuracy?: number | null;
   marks_lost: number;
   attempted: number;
   correct: number;
@@ -80,6 +85,47 @@ export interface CutoffMeterAction {
   completed: boolean;
 }
 
+/**
+ * Target tab "Today's goals" (phase 111, BE TodayGoalsService): next topic, sectional test and
+ * full-length test of the student's current paper — all from real progress / attempts.
+ */
+export interface TodayGoalBase {
+  key: "next_topic" | "sectional_test" | "full_length_test";
+  /** todo, locked (the plan does not include it) or none (nothing left to offer). */
+  status: "todo" | "locked" | "none";
+  locked: boolean;
+  /** Activity of this kind today (IST). */
+  completed_today: boolean;
+  today_count: number;
+  progress: { done: number; total: number };
+  paper_id?: number;
+  section_id?: number;
+  test_id?: number;
+}
+export interface NextTopicGoal extends TodayGoalBase {
+  key: "next_topic";
+  topic_id?: number;
+  chapter_id?: number;
+  topic?: string;
+  chapter?: string;
+  section?: string;
+}
+export interface SectionalGoal extends TodayGoalBase {
+  key: "sectional_test";
+  test_number?: number;
+  questions?: number;
+  section?: string;
+}
+export interface FullLengthGoal extends TodayGoalBase {
+  key: "full_length_test";
+  test_number?: number;
+}
+export interface TodayGoals {
+  next_topic: NextTopicGoal;
+  sectional_test: SectionalGoal;
+  full_length_test: FullLengthGoal;
+}
+
 /** Full meter for one course (`GET /v2/cutoff-meter/{course}`) — the Target tab. */
 export interface CutoffMeterDetail extends CutoffMeterSummary {
   pass_mark_source: string;
@@ -91,6 +137,10 @@ export interface CutoffMeterDetail extends CutoffMeterSummary {
   band: number | null;
   /** last saved meter per IST week, oldest first ("Last 5 weeks"). */
   trend?: number[];
+  /** Today's goals (phase 111); absent from an older backend. */
+  goals?: TodayGoals;
+  /** The documented marks formula (spec 1.1) — used to explain a subject's marks, never to recompute them. */
+  scoring?: { prior_correct: number; prior_attempts: number; estimate_below: number };
 }
 
 export async function getCutoffMeter(courseId: string | number): Promise<CutoffMeterDetail> {
@@ -98,6 +148,31 @@ export async function getCutoffMeter(courseId: string | number): Promise<CutoffM
     method: "GET",
   });
   return res.data;
+}
+
+/**
+ * A topic test that ran on the legacy browser flow (the server attempt could not
+ * start): send its answers so the Cutoff Meter counts them too — every test type
+ * feeds the meter. The server decides right/wrong; `attemptRef` (one per open)
+ * makes a retry idempotent.
+ */
+export async function sendLegacyTopicAnswers(payload: {
+  course_id: string;
+  topic_id: number;
+  attempt_ref: string;
+  answers: Record<number, number | null>;
+  locale?: string;
+}): Promise<void> {
+  await apiFetch(`/v2/cutoff-meter/topic-answers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Questions a single test needs to unlock the meter (backend config; 5 when an older backend omits it). */
+export function unlockMinQuestions(m: Pick<CutoffMeterSummary, "unlock_min_test_questions">): number {
+  return m.unlock_min_test_questions ?? 5;
 }
 
 /** Fire-and-forget: the student tapped a plan row / the Start CTA (`nba_log.clicked_at`). */

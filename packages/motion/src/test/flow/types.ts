@@ -5,10 +5,16 @@ export type Outcome = "pass" | "near" | "below";
 export type Section = { name: string; score: number; max: number };
 
 export type ResultData = {
+  /** Marks scored (may be a decimal, e.g. 10.2 on a 3.4-mark paper). */
   score: number;
+  /** Max marks of this test. */
   maxScore: number;
-  /** Cutoff in marks (same scale as score). Omit for tests without a cutoff. */
-  cutoff?: number;
+  /**
+   * Cutoff in marks (same scale as score), calculated by the backend scorer from
+   * the exam's pass marks. Omit (or null) when the exam has none — the result then
+   * shows no cutoff at all; nothing is invented on the client.
+   */
+  cutoff?: number | null;
   correct: number;
   wrong: number;
   skipped: number;
@@ -27,8 +33,15 @@ export type ResultData = {
 /** Within this share of max marks below cutoff counts as "near" (min 1 mark, so 10-mark tests work). */
 export const NEAR_BAND = 0.08;
 
+/**
+ * Pass / near / below the real cutoff. Without a cutoff this only picks the tone
+ * of the cutoff-free wording (NEUTRAL_OUTCOME_COPY: "Great score / Good effort /
+ * Keep going") by share of max marks — it is never shown as a cutoff or a pass line.
+ */
+export const NEUTRAL_TONE_SHARE = 0.6;
+
 export function getOutcome(r: ResultData): Outcome {
-  const cutoff = r.cutoff ?? r.maxScore * 0.6;
+  const cutoff = r.cutoff ?? r.maxScore * NEUTRAL_TONE_SHARE;
   if (r.score >= cutoff) return "pass";
   const band = Math.max(1, Math.ceil(r.maxScore * NEAR_BAND));
   if (cutoff - r.score <= band) return "near";

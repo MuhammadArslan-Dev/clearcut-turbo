@@ -19,6 +19,8 @@ export async function getMyCourses(userId: string) {
 
 export type ExamEnrollmentWithExam = ExamEnrollment & {
   exam: Exam;
+  /** Server record (phase 110): a resume position is saved for this course → Target, not Preparation. */
+  learning_started?: boolean;
 };
 
 

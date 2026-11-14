@@ -49,7 +49,9 @@ import { logger } from "@/lib/sentry/sentry-logger";
 import { isNetworkFailure } from "@/lib/api/api-error";
 import { courseLanguageToLocale, toContentLocale } from "@/utils/text/contentLocale";
 import { submitMiniTestAttempt } from "@/lib/dashboard/progressV2";
+import { sendLegacyTopicAnswers } from "@/lib/dashboard/cutoffMeter";
 import {
+  invalidateCutoffMeterQueries,
   invalidateProgressQueries,
   useProgressCapabilities,
 } from "../../hooks/useProgressCapabilities";
@@ -120,14 +122,26 @@ export default function MiniTest() {
     setLocale(toContentLocale(courseLanguageToLocale(course?.language)));
   }, [courseData]);
 
+  // Server attempt of this open (null on the legacy flow, incl. a failed server start → legacy fallback).
+  const attemptId = useMiniTestStore((s) => s.attemptId);
   const openReportedRef = React.useRef(false);
   useEffect(() => {
     // Wait for the backend capabilities (cached after the first load). On the
     // Progress Tracker v2 path nothing is reported on OPEN — the server
     // attempt records it and "done" is the submitted attempt (decision D1).
     if (!capsReady || openReportedRef.current) return;
+    if (serverScoring) {
+      // Until the start settles we don't know which flow this open is on.
+      if (loading) return;
+      if (attemptId) {
+        openReportedRef.current = true;
+        return;
+      }
+      // The server start failed and the questions came from the legacy list
+      // (useMiniTestQuestions fallback): report the open the legacy way.
+      if (!questions.length) return;
+    }
     openReportedRef.current = true;
-    if (serverScoring) return;
 
     // These are fire-and-forget progress pings. If the backend is down or slow
     // the rejected promise used to go unhandled and take the whole page down,
@@ -189,30 +203,61 @@ export default function MiniTest() {
     });
 
     markTopicFieldDone(Number(selectedTopic?.id), "miniTestDone");
-  }, [capsReady, serverScoring]);
+  }, [capsReady, serverScoring, loading, attemptId, questions.length]);
 
   // Progress Tracker v2: the server scores and stores the attempt. Fire and
   // forget — the result screen never waits for it; submit is idempotent, so a
   // retry can never count twice.
-  const attemptId = useMiniTestStore((s) => s.attemptId);
   const submittedRef = React.useRef<string | null>(null);
+  // One id per open of the legacy flow, so a re-sent result never doubles the meter's rows.
+  const legacyRefRef = React.useRef<string | null>(null);
   const submitServerAttempt = () => {
-    if (!serverScoring || !attemptId || submittedRef.current === attemptId) return;
-    submittedRef.current = attemptId;
     const byQuestionId: Record<number, number | null> = {};
     questions.forEach((q, i) => {
       byQuestionId[q.id] = answers[i] ?? null;
     });
     const topicId = Number(selectedTopic?.id);
-    submitMiniTestAttempt(attemptId, byQuestionId, locale)
-      .then(() => {
+    // The language the questions were SHOWN in (same pick as `translate` below), so the
+    // server scores against the key the learner saw highlighted.
+    const shownLocale =
+      selectSection?.type === "subject" ? language : questions[0]?.translations?.[0]?.locale ?? locale;
+
+    if (!attemptId) {
+      // Legacy browser flow (no server attempt): still send the answers so the
+      // Cutoff Meter counts this test — every test type feeds it (client, 2026-11-12).
+      if (legacyRefRef.current || !course?.group_code || !questions.length) return;
+      legacyRefRef.current = crypto.randomUUID();
+      sendLegacyTopicAnswers({
+        course_id: course.group_code,
+        topic_id: topicId,
+        attempt_ref: legacyRefRef.current,
+        answers: byQuestionId,
+        locale: shownLocale,
+      })
+        .then(() => invalidateCutoffMeterQueries(queryClient, { test_type: "topic_test", test_id: String(topicId), course_id: course.group_code }))
+        .catch((err) => {
+          legacyRefRef.current = null; // the same answers may be re-sent (same server dedupe per question)
+          logger.breadcrumb("sendLegacyTopicAnswers failed", {
+            tags: { type: "background_sync", module: "mini-test" },
+            extra: { action: "sendLegacyTopicAnswers", topicId, message: String(err) },
+          });
+        });
+      return;
+    }
+
+    if (!serverScoring || submittedRef.current === attemptId) return;
+    submittedRef.current = attemptId;
+    submitMiniTestAttempt(attemptId, byQuestionId, shownLocale)
+      .then((res) => {
+        // Phase 103: the server's score is the truth on this flow — the result screen switches to it.
+        useMiniTestStore.getState().setServerScoring(res.scoring ?? null);
         markTopicFieldDone(topicId, "miniTestDone");
         trackEvent("Topic Status Changed", {
           topic_name: selectedTopic?.name ?? "",
           new_status: "miniTestDone",
           change_source: "manual_user_action",
         });
-        invalidateProgressQueries(queryClient);
+        invalidateProgressQueries(queryClient, { test_type: "topic_test", test_id: String(topicId), course_id: course?.group_code });
       })
       .catch((err) => {
         submittedRef.current = null; // allow a retry from the result screen

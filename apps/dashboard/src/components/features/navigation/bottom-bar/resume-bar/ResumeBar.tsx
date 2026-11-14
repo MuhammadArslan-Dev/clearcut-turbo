@@ -1,4 +1,5 @@
 import React, { memo, useState } from "react";
+import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { Button } from "@clearcut/ui/button";
 
 import Image from "next/image";
@@ -49,6 +50,7 @@ function ResumeBar({
   const isMobile = useIsMobile();
   const open = useCourseStore((s) => s.open);
   const router = useRouter();
+  const courseHome = useCourseHome();
   const [isResuming, setIsResuming] = useState(false);
 
   const courseContent = () => {
@@ -134,7 +136,7 @@ function ResumeBar({
                       source: "next_milestone",
                       exam_name: activeCourse?.exam?.short_name!,
                     });
-                    router.push(`/preparation/${activeCourse?.group_code}`);
+                    router.push(courseHome(activeCourse?.group_code));
                   }
                 : () => open("single", activeCourse?.exam!)
             }
