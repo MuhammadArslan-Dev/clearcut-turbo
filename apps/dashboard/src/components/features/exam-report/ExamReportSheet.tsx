@@ -1,3 +1,4 @@
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useExamModalStore } from "../exam/store/useExamModalStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -637,7 +638,7 @@ const QuestionItem = React.memo(function QuestionItem({
               {/* Options — tapping one opens the answer + explanation, the
                   same panel as the button below (CC-102 dead taps; same
                   rule as CC-105's PreviousModal/ExamInstanceModal). */}
-              <div className="grid md:grid-cols-2 gap-3" onClick={() => setIsExplanation(true)}>
+              <OptionsGrid options={translation?.options ?? []} breakpoint="md" className="gap-3" onClick={() => setIsExplanation(true)}>
                 {translation?.options.map((opt: any, i: number) => (
                   <OptionCard
                     key={i}
@@ -648,7 +649,7 @@ const QuestionItem = React.memo(function QuestionItem({
                     isQuestionAnswered={data?.is_correct !== null && data?.is_correct !== undefined}
                   />
                 ))}
-              </div>
+              </OptionsGrid>
 
               {/* Explanation */}
               <AnimatePresence mode="wait" initial={false}>

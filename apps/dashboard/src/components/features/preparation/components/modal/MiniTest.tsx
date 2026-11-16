@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { useMemo, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { TestIntro } from "@clearcut/motion/test/flow";
@@ -568,7 +569,7 @@ const Content = ({
         </div>
 
         {/* Options */}
-        <div className="grid md:grid-cols-2 gap-3 px-3">
+        <OptionsGrid options={question?.options ?? []} breakpoint="md" className="gap-3 px-3">
           {question?.options?.map((option: QuestionOption, index: number) => {
             const isSelected = selected === option.option;
             const isCorrect = option.option === correctKey;
@@ -646,7 +647,7 @@ const Content = ({
               </OptionMotion>
             );
           })}
-        </div>
+        </OptionsGrid>
 
         </div>
         </QuestionSlide>

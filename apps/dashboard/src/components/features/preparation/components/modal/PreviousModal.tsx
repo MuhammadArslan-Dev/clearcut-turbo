@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { useMemo, useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -350,11 +351,11 @@ const QuestionItem = React.memo(function QuestionItem({
               </div>
 
               {/* Options */}
-              <div className="grid md:grid-cols-2 gap-3">
+              <OptionsGrid options={options} breakpoint="md" className="gap-3">
                 {options.map((opt: QuestionOption, i: number) => (
                   <OptionCard key={i} index={i} value={opt} onSelect={showAnswer} />
                 ))}
-              </div>
+              </OptionsGrid>
 
               {/* Explanation */}
               <AnimatePresence mode="wait" initial={false}>

@@ -1,4 +1,5 @@
 "use client";
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import { Card } from "@clearcut/ui/card";
 import QOption from "@/components/questions/q-option";
 import React from "react";
@@ -72,6 +73,13 @@ export default function AssessmentQuestionBlock({
 
   const selectedTranslation = selectTranslation(selectedQuestion?.translations, courseLang);
 
+  const mcqOptions = [
+    { text: selectedTranslation?.option_1_text, img: selectedTranslation?.option_1_image },
+    { text: selectedTranslation?.option_2_text, img: selectedTranslation?.option_2_image },
+    { text: selectedTranslation?.option_3_text, img: selectedTranslation?.option_3_image },
+    { text: selectedTranslation?.option_4_text, img: selectedTranslation?.option_4_image },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 p-3  bg-white">
@@ -89,25 +97,8 @@ export default function AssessmentQuestionBlock({
             </TextMarkDown>
           </Math>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            {
-              text: selectedTranslation?.option_1_text,
-              img: selectedTranslation?.option_1_image,
-            },
-            {
-              text: selectedTranslation?.option_2_text,
-              img: selectedTranslation?.option_2_image,
-            },
-            {
-              text: selectedTranslation?.option_3_text,
-              img: selectedTranslation?.option_3_image,
-            },
-            {
-              text: selectedTranslation?.option_4_text,
-              img: selectedTranslation?.option_4_image,
-            },
-          ].map((opt, idx) => (
+        <OptionsGrid options={mcqOptions} breakpoint="md" className="gap-4">
+          {mcqOptions.map((opt, idx) => (
             <Card bgcolor="white" key={idx + 1} cursor="pointer">
               <QOption
                 index={idx + 1}
@@ -116,7 +107,7 @@ export default function AssessmentQuestionBlock({
               />
             </Card>
           ))}
-        </div>
+        </OptionsGrid>
       </div>
 
       <div className="bg-white p-3">

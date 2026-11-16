@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import { useEffect, useMemo, useState } from "react";
 
 import ReactMarkdown from "react-markdown";
@@ -189,7 +190,7 @@ export default function QuestionTesterView() {
           </div>
 
           {/* Options — same as ExamReportSheet */}
-          <div className="grid md:grid-cols-2 gap-3">
+          <OptionsGrid options={activeTranslation.options} breakpoint="md" className="gap-3">
             {activeTranslation.options.map((opt, i: number) => (
               <OptionCard
                 key={i}
@@ -202,7 +203,7 @@ export default function QuestionTesterView() {
                 isQuestionAnswered={true}
               />
             ))}
-          </div>
+          </OptionsGrid>
 
           {/* Explanation — same as ExamReportSheet */}
           <div className="flex flex-col gap-4 py-3">

@@ -1,4 +1,5 @@
 "use client";
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@clearcut/ui/card";
@@ -86,7 +87,7 @@ export default function QuestionInteraction({
 
   return (
     <>
-      <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3" role="group" aria-label={t("optionsFor", { index: position })}>
+      <OptionsGrid ref={gridRef} options={options} breakpoint="lg" className="gap-3" role="group" aria-label={t("optionsFor", { index: position })}>
         {options.map(({ n, text, image, html }) => {
           const isCorrect = n === correct;
           const isSelected = n === selectedOption;
@@ -170,7 +171,7 @@ export default function QuestionInteraction({
             </button>
           );
         })}
-      </div>
+      </OptionsGrid>
 
       {!revealed && (
         <div aria-live="polite" className="text-center">

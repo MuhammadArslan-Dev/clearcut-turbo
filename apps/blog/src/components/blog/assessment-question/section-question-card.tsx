@@ -1,4 +1,5 @@
 "use client";
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@clearcut/ui/card";
@@ -163,8 +164,10 @@ export default function SectionQuestionCard({
         />
       )}
 
-      <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+      <OptionsGrid
+        options={options}
+        breakpoint="lg"
+        className="gap-3"
         role="group"
         aria-label={t("optionsFor", { index })}
       >
@@ -254,7 +257,7 @@ export default function SectionQuestionCard({
             </button>
           );
         })}
-      </div>
+      </OptionsGrid>
 
       {/*
         SEO-safe disclosure: the correct answer and explanation are ALWAYS

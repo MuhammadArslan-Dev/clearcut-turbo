@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCourseHome } from "@/hooks/course/useCourseHome";
 import { useParams } from "next/navigation";
@@ -735,7 +736,7 @@ export default function PracticeTestPage() {
                   </div>
                 )}
 
-                <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <OptionsGrid options={options} breakpoint="xl" className="mt-4 gap-3">
                   {options.map(({ key, text }, optIndex) => {
                     const number = Number(key);
                     const isSelected = selected === number;
@@ -792,7 +793,7 @@ export default function PracticeTestPage() {
                       </OptionMotion>
                     );
                   })}
-                </div>
+                </OptionsGrid>
 
                 {/* Nibbu reacts to the revealed answer (library AnswerFeedback); the explanation stays on demand below. */}
                 {isRevealed && (
