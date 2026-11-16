@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDailyTestAttempts, DailyTestAttemptsResponse } from "@/lib/api/dailyTests";
+import { isUsableDailyTestId } from "@/components/features/daily-tests/testId";
 
 export const DAILY_TEST_ATTEMPTS_KEY = (courseId: string, testId: string) => [
   "daily-test-attempts",
@@ -14,7 +15,7 @@ export function useDailyTestAttempts(courseId: string, testId: string) {
   const { data, isLoading, isError } = useQuery<DailyTestAttemptsResponse>({
     queryKey: DAILY_TEST_ATTEMPTS_KEY(courseId, testId),
     queryFn: async () => (await getDailyTestAttempts(courseId, testId)).data,
-    enabled: !!courseId && !!testId,
+    enabled: !!courseId && isUsableDailyTestId(testId),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
