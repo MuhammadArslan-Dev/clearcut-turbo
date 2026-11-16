@@ -112,6 +112,7 @@ export default function Sidebar() {
     selectedChapter,
     sectionsByPaperId,
     selectedArea,
+    selectedSection,
     requestTourReplay,
   } = usePreparationStore();
   // The course's own content language, not the site's UI locale — see
@@ -213,12 +214,16 @@ export default function Sidebar() {
     });
   }, [selectedTopic]);
 
-  // Filter chapters by selected area (if section has areas)
+  // Filter chapters by selected area (if section has areas). A chapter whose `area` is empty in the data
+  // (CTET Paper 2 Social Science: the 6 Geography chapters came through with area = NULL, so the Geography
+  // tab showed "0/0 Chapters") belongs to the section's FIRST area instead of being dropped from every tab.
+  const firstAreaId = selectedSection?.areas?.areas?.[0]?.id;
   const filteredChapters = useMemo(() => {
     if (!chapters) return undefined;
     if (!selectedArea) return chapters;
-    return chapters.filter((c) => c.area === selectedArea.name);
-  }, [chapters, selectedArea]);
+    const isFirstArea = selectedArea.id === firstAreaId;
+    return chapters.filter((c) => (c.area ? c.area === selectedArea.name : isFirstArea));
+  }, [chapters, selectedArea, firstAreaId]);
 
   // Auto-select first chapter of filtered list when area changes
   useEffect(() => {
