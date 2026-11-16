@@ -1,4 +1,5 @@
 'use client'
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import Image from "next/image"
@@ -101,7 +102,7 @@ export function QuestionPanel({
 
                 {/* Options */}
                 {/* Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <OptionsGrid options={options} breakpoint="md" className="gap-3">
                   {options.map((opt, idx) => {
                     const { isSelected, isCorrect, isWrong } = optionState(idx)
 
@@ -179,7 +180,7 @@ export function QuestionPanel({
                       </div>
                     )
                   })}
-                </div>
+                </OptionsGrid>
 
                 {/* Explanation */}
                 {/* {submitted && activeT?.explanation && (

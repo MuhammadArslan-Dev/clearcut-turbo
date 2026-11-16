@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -89,7 +90,7 @@ export default function DailyTestReviewRow({
                 <QuestionText question={q.question ?? ""} image={q.question_image ?? undefined} />
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
+              <OptionsGrid options={options} breakpoint="md" className="gap-3">
                 {options.map((opt, i) => (
                   <OptionCard
                     key={i}
@@ -100,7 +101,7 @@ export default function DailyTestReviewRow({
                     isQuestionAnswered={isAnswered}
                   />
                 ))}
-              </div>
+              </OptionsGrid>
 
               <AnimatePresence mode="wait" initial={false}>
                 {isExplanation && (

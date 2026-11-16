@@ -1,4 +1,5 @@
 'use client';
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -350,13 +351,13 @@ const QuestionItem = React.memo(function QuestionItem({
               </div>
 
               {/* Options — neutral, no correct/wrong coloring */}
-              <div className="grid md:grid-cols-2 gap-3">
+              <OptionsGrid options={translation?.options ?? []} breakpoint="md" className="gap-3">
                 {translation?.options.map((opt, i) => {
                   if (!opt.text && !opt.image) return null;
                   // Tapping an option opens the answer (CC-105 dead taps).
                   return <OptionCard key={i} index={i} value={opt} onSelect={() => setIsExplanation(true)} />;
                 })}
-              </div>
+              </OptionsGrid>
 
               {/* Explanation panel */}
               <AnimatePresence mode="wait" initial={false}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { memo, useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -521,7 +522,7 @@ export default function MainContent({ examId }: { examId: string }) {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <OptionsGrid options={translation?.options ?? []} breakpoint="lg" className="gap-3">
                 {translation?.options?.map((opt: any, index: number) => {
                   const value = String(index);
                   const isSelected = draftAnswer === value;
@@ -548,7 +549,7 @@ export default function MainContent({ examId }: { examId: string }) {
                     />
                   );
                 })}
-              </div>
+              </OptionsGrid>
 
               {/* Neutral Nibbu note (graded test: the right answer stays hidden until submit). */}
               {draftAnswer != null && (

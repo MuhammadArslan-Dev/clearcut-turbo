@@ -1,5 +1,6 @@
 "use client";
 
+import { OptionsGrid } from "@clearcut/ui/options-grid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -793,7 +794,11 @@ export default function DailyTestAttemptPage() {
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <OptionsGrid
+                    options={(["1", "2", "3", "4"] as const).map((key) => displayQuestion?.options[key])}
+                    breakpoint="lg"
+                    className="mt-4 gap-3"
+                  >
                     {(["1", "2", "3", "4"] as const).map((key) => {
                       const text = displayQuestion?.options[key];
                       if (!text) return null;
@@ -818,7 +823,7 @@ export default function DailyTestAttemptPage() {
                         />
                       );
                     })}
-                  </div>
+                  </OptionsGrid>
 
                   {draftOption != null && (
                     <div className="mt-4">

@@ -17,6 +17,8 @@
     "./links-list": "./src/links-list.tsx",
     "./main-input": "./src/main-input.tsx",
     "./modals-bottom-sheet": "./src/modals-bottom-sheet.tsx",
+    "./options-grid": "./src/options-grid.tsx",
+    "./options-layout": "./src/options-layout.ts",
     "./overlay": "./src/overlay.tsx",
     "./page-breadcrumbs": "./src/page-breadcrumbs.tsx",
     "./page-not-found": "./src/page-not-found.tsx",
