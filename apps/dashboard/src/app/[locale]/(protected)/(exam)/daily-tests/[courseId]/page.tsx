@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
@@ -18,6 +18,8 @@ import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { DailyTestHistoryItem } from "@/lib/api/dailyTests";
+import { isUsableDailyTestId } from "@/components/features/daily-tests/testId";
+import { logger } from "@/lib/sentry/sentry-logger";
 
 // Same lazy-loaded interstitial the preparation/test-series shells mount.
 const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), { ssr: false });
@@ -35,7 +37,20 @@ export default function DailyTestHistoryPage() {
   const [page, setPage] = useState(1);
 
   // API returns tests oldest-first; the design pins "Today's Test" at the top.
-  const tests = useMemo(() => (history ? [...history.tests].reverse() : []), [history]);
+  // A row without a test id (CC-190) has nothing to open: every button on it would link to /null.
+  const tests = useMemo(
+    () => (history ? history.tests.filter((x) => isUsableDailyTestId(x.test_id)).reverse() : []),
+    [history],
+  );
+  const rowsWithoutId = history ? history.tests.length - tests.length : 0;
+  useEffect(() => {
+    if (rowsWithoutId > 0) {
+      logger.warn("Daily test history has rows without a test id", {
+        tags: { module: "daily-tests" },
+        extra: { courseId, rows: rowsWithoutId },
+      });
+    }
+  }, [rowsWithoutId, courseId]);
 
   // Months that have tests, newest first ("2026-09"); always shows the latest month.
   const months = useMemo(() => Array.from(new Set(tests.map((x) => x.test_date.slice(0, 7)))), [tests]);

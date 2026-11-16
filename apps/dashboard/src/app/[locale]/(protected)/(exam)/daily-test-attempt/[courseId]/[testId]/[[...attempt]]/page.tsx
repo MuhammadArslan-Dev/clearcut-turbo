@@ -86,6 +86,7 @@ import { useInvalidateDailyTestHistory, useDailyTestHistory } from "@/components
 import { useInvalidateDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
 import { useDailyTestResult, useSetDailyTestResult } from "@/components/features/daily-tests/hooks/useDailyTestResult";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
+import { isUsableDailyTestId } from "@/components/features/daily-tests/testId";
 
 // Its own full-screen chrome (topbar, timer/progress/tip strip, Test
 // Information + Quick Tips sidebar, question navigator) — a purpose-built
@@ -116,6 +117,8 @@ export default function DailyTestAttemptPage() {
   const locale = useLocale();
   const params = useParams<{ courseId: string; testId: string; attempt?: string[] }>();
   const { courseId, testId } = params;
+  // CC-190: a link built without a test id ends up here as /null or /undefined — see the redirect effect below.
+  const testIdUsable = isUsableDailyTestId(testId);
   // Optional third segment: /new → start a new numbered attempt of this same
   // test; /<attemptId> → show that specific past attempt's result; absent →
   // resume/start (or the latest result of a completed test).
@@ -140,7 +143,7 @@ export default function DailyTestAttemptPage() {
   const attemptedItem = history?.tests.find(
     (t) => String(t.test_id) === String(testId) && t.attempted && t.attempt_id != null,
   );
-  const completedAttemptId = retake ? null : (attemptParam ?? attemptedItem?.attempt_id ?? null);
+  const completedAttemptId = !testIdUsable || retake ? null : (attemptParam ?? attemptedItem?.attempt_id ?? null);
   const { result: cachedResult, isError: resultError } = useDailyTestResult(courseId, testId, completedAttemptId);
 
   const [state, setState] = useState<ViewState>({ phase: "loading" });
@@ -165,7 +168,20 @@ export default function DailyTestAttemptPage() {
   // user taps the language button.
   const [language, setLanguage] = useState<string | null>(null);
 
+  // CC-190 (Sentry CLEARCUTOFF-NEXTJS-APP-BB): there is nothing to start without a test id, so go to the
+  // course's daily-tests list instead of POSTing /tests/null/start and ending on a 404. The warning carries
+  // the referrer so the page that built the link can be found.
   useEffect(() => {
+    if (testIdUsable) return;
+    logger.warn("Daily test opened without a test id", {
+      tags: { module: "daily-test-attempt" },
+      extra: { courseId, testId, referrer: typeof document !== "undefined" ? document.referrer : "" },
+    });
+    flow.replace(`/daily-tests/${courseId}`);
+  }, [testIdUsable, courseId, testId, flow]);
+
+  useEffect(() => {
+    if (!testIdUsable) return;
     // Wait for history so a completed test isn't started (POST) needlessly;
     // it's read via the result query above instead. If the result query
     // fails, fall through to start(), which also returns a completed result.
@@ -259,7 +275,7 @@ export default function DailyTestAttemptPage() {
     return () => {
       cancelled = true;
     };
-  }, [courseId, testId, historyLoading, completedAttemptId, resultError, retake, loadTick]);
+  }, [courseId, testId, testIdUsable, historyLoading, completedAttemptId, resultError, retake, loadTick]);
 
   const questions = state.phase === "attempting" ? state.questions : [];
   const currentQuestion = questions[currentIndex] ?? null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, CalendarDays, Clock, Eye, FileText, Info, Lightbulb, RefreshCw, Target, TrendingUp, Trophy } from "lucide-react";
@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import { useDailyTestAttempts } from "@/components/features/daily-tests/hooks/useDailyTestAttempts";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
+import { isUsableDailyTestId } from "@/components/features/daily-tests/testId";
+import { logger } from "@/lib/sentry/sentry-logger";
 import InfoRow from "@/components/features/daily-tests/InfoRow";
 import { DailyTestAttemptSummary } from "@/lib/api/dailyTests";
 
@@ -42,6 +44,14 @@ export default function DailyTestAttemptHistoryPage() {
   const params = useParams<{ courseId: string; testId: string }>();
   const { courseId, testId } = params;
   const { data, isLoading, isError } = useDailyTestAttempts(courseId, testId);
+
+  // CC-190: /daily-tests/{course}/null has no attempts to show — go to the list (the query above is disabled for it).
+  const testIdUsable = isUsableDailyTestId(testId);
+  useEffect(() => {
+    if (testIdUsable) return;
+    logger.breadcrumb("Daily test history opened without a test id", { tags: { module: "daily-tests" }, extra: { courseId, testId } });
+    flow.replace(`/daily-tests/${courseId}`);
+  }, [testIdUsable, courseId, testId, flow]);
 
   const dateFmt = useMemo(
     () =>
