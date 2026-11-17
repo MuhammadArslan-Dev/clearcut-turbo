@@ -17,6 +17,7 @@
     "@clearcut/assets": "workspace:*",
     "@clearcut/auth": "workspace:*",
     "@clearcut/design-tokens": "workspace:*",
+    "@clearcut/experiments": "workspace:*",
     "@clearcut/error-reporting": "workspace:*",
     "@clearcut/hooks": "workspace:*",
     "@clearcut/i18n": "workspace:*",

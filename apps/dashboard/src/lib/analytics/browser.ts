@@ -93,6 +93,27 @@ export function trackEvent<TName extends AnalyticsEventName>(
     amplitudeTrack(eventName, (payload ?? {}) as Record<string, any>);
 }
 
+/**
+ * Amplitude-reserved events that are not part of the typed catalogue, e.g. `$exposure` (CC-192, experiment exposure).
+ * Sent with the exact name (EVENT_NAME_CASE does not apply) and under the same enabled / allowed-host / init guards.
+ */
+export function trackReservedEvent(name: string, payload: Record<string, unknown>) {
+    if (!AMPLITUDE_ENABLED) return;
+    internalInit();
+    if (!isInitialized) return;
+    amplitudeTrack(name, payload);
+}
+
+/** One user property on the current Amplitude user (CC-192: `exp_<flag>` = variant). No-op when analytics are off. */
+export function setAnalyticsUserProperty(key: string, value: string) {
+    if (!AMPLITUDE_ENABLED) return;
+    internalInit();
+    if (!isInitialized) return;
+    const identify = new Identify();
+    identify.set(key, value);
+    amplitudeIdentify(identify);
+}
+
 /** True when an event tracked now would be handed to the SDK (enabled, allowed host, initialised). */
 export function canTrackEvents(): boolean {
     if (!AMPLITUDE_ENABLED) return false;

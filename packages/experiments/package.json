@@ -1,0 +1,30 @@
+{
+  "name": "@clearcut/experiments",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "exports": {
+    "./id": "./src/id.ts",
+    "./attributes": "./src/attributes.ts",
+    "./exposure": "./src/exposure.ts",
+    "./client": "./src/client.ts",
+    "./react": "./src/react.tsx"
+  },
+  "dependencies": {
+    "@growthbook/growthbook": "2.1.0"
+  },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

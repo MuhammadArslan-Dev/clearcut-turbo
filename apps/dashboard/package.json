@@ -15,6 +15,7 @@
     "@amplitude/analytics-browser": "^2.32.0",
     "@amplitude/analytics-node": "^1.5.27",
     "@clearcut/design-tokens": "workspace:*",
+    "@clearcut/experiments": "workspace:*",
     "@clearcut/i18n": "workspace:*",
     "@clearcut/motion": "workspace:*",
     "@clearcut/react-query": "workspace:*",

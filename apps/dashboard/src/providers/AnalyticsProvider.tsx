@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { initAmplitude, setAnalyticsUser } from '@/lib/analytics/browser';
+import { setExperimentUser } from '@/lib/experiment-user';
 
 type Props = {
   children: React.ReactNode;
@@ -24,6 +25,9 @@ export function AnalyticsProvider({ children }: Props) {
 
   
     if (!user) return;
+
+    // CC-192: targeting attributes only (tiny store, does not load the GrowthBook SDK).
+    setExperimentUser({ user_id: user.uuid, is_logged_in: true });
 
     setAnalyticsUser(user?.uuid, {
       phone: user?.phone,
