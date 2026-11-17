@@ -1,0 +1,71 @@
+name: Release tracking
+
+# Phase 117 (docs/phases/117-release-tracking.md). Follows Coolify's DEPLOYMENT records, not git pushes:
+# a Jira comment / Sentry deploy is written only after Coolify reports `finished` for that commit.
+#
+# SAFE BY DEFAULT: scheduled runs only write when the repository VARIABLE RELEASE_TRACKING_WRITE is exactly "true"
+# (kill switch: set it to anything else to stop all writes at once). Manual runs choose with the `write` input.
+# RELEASE_TRACKING_FROM (repository variable, ISO date) = go-live moment; releases finished before it are never touched.
+#
+# Independent of ci.yml and every deploy workflow. A failure here cannot affect a deployment.
+# Note: GitHub only runs `schedule` from the default branch, and `workflow_dispatch` only for a workflow file that
+# exists on the default branch.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Write to Jira and Sentry (unchecked = dry-run, log only)"
+        type: boolean
+        default: false
+      app:
+        description: "Only this app id (dashboard, blog, landing, backend). Empty = all"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-tracking
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (full history for the commit ranges)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Track releases
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_WRITE: ${{ inputs.write }}
+          INPUT_APP: ${{ inputs.app }}
+          VAR_WRITE: ${{ vars.RELEASE_TRACKING_WRITE }}
+          RELEASE_TRACKING_FROM: ${{ vars.RELEASE_TRACKING_FROM }}
+          ORACLE_COOLIFY_URL: ${{ secrets.ORACLE_COOLIFY_URL }}
+          ORACLE_COOLIFY_TOKEN: ${{ secrets.ORACLE_COOLIFY_TOKEN }}
+          HETZNER_COOLIFY_URL: ${{ secrets.HETZNER_COOLIFY_URL }}
+          HETZNER_COOLIFY_TOKEN: ${{ secrets.HETZNER_COOLIFY_TOKEN }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          RELEASE_GH_TOKEN: ${{ secrets.RELEASE_GH_TOKEN }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then WRITE="$INPUT_WRITE"; else WRITE="$VAR_WRITE"; fi
+          ARGS=""
+          if [ "$WRITE" = "true" ]; then ARGS="$ARGS --write"; fi
+          if [ -n "$INPUT_APP" ]; then ARGS="$ARGS --app $INPUT_APP"; fi
+          echo "write=$WRITE args=[$ARGS]"
+          node scripts/release-tracking/run.mjs $ARGS
