@@ -89,12 +89,14 @@ Built so far (2026-11-17): `scripts/release-tracking/` = `config.mjs`, `lib.mjs`
 
 ## 10. Final status and go-live checklist (2026-11-17)
 
+**Merged to `main` as `2a90177` and pushed on 2026-11-17.** The push redeployed nothing (checked in both Coolify instances). Writes are still OFF: no GitHub secrets exist yet and the repo variable `RELEASE_TRACKING_WRITE` is not set, so nothing has been written to Jira or Sentry by the tracker. Read-only check after the push: no `release-tracker` marker in any CC ticket comment, and no commits/deploys on any Sentry release.
+
 **Built (all on branch `feat/release-tracking`, uncommitted):** `scripts/release-tracking/` (config, lib, coolify, git, github, http, jira, sentry, track, run, 2 test files), `.github/workflows/release-tracking.yml`, this doc, README row. No existing file was changed except `docs/phases/README.md` (one row).
 
 **Tested:** 45/45 unit/flow tests · mutation controls (removing the Jira marker check, the Sentry deploy guard, or the Jira/Sentry isolation each makes tests fail) · real dry-run on all 4 apps against the live Coolify APIs · real wrong-token (HTTP 401) and dead-port failures · `--write` refuses without a tracking start and does nothing without Jira/Sentry secrets · workflow YAML parses · leak scan of every new file against the real Coolify tokens = 0 hits · `ci.yml`, `deploy*.yml`, `warm-blog-cache.yml`, `package.json`, lockfile unchanged.
 
 **NOT verified (needs secrets or the workflow on `main`; do not enable writes before these):**
-1. Jira: live `POST /rest/api/3/issue/{key}/comment` with the ADF body, and the service-account permissions (official reference page unreadable by my tools).
+1. Jira, PARTLY verified 2026-11-17: the tracker's real comment body (built by `buildReleaseComment` from real release data: dashboard `6ac34b4`, 2 real CC-190 commits) was accepted by Jira on the scratch ticket **CC-194** (comment `10100`, label `release-tracking-test`) and came back unchanged (bold, links, bullet list and the marker text intact). That post went through the Atlassian MCP as the user, not through the tracker's own client. STILL NOT verified: the tracker's REST client (Basic auth `email:API token`, `POST /rest/api/3/issue/{key}/comment`), the service-account permissions, and the 429 behaviour. JQL `comment ~ "release-tracker"` did not return CC-194 right after the post (cause not confirmed, probably search-index delay); the tracker does not use JQL, it reads each ticket's comments and looks for the marker.
 2. Sentry writes through `sentry-cli` 2.58.6: the `--commit OWNER/REPO@PREV..SHA` repo name must match a repository registered in Sentry (needs the Sentry GitHub integration), `SENTRY_URL` for the DE region (`https://de.sentry.io`), and that the REST release read returns `commitCount`/`deployCount`/`lastDeploy` as documented.
 3. GitHub compare for the private backend repo: needs `RELEASE_GH_TOKEN`; the live public-repo check could not run (unauthenticated limit of 60/hour was exhausted), it is covered only by a simulated test.
 4. The workflow itself on GitHub Actions (schedule runs only from the default branch; `workflow_dispatch` only for a workflow file that exists there).
@@ -106,7 +108,7 @@ Built so far (2026-11-17): `scripts/release-tracking/` = `config.mjs`, `lib.mjs`
 3. Backend (Coolify web + worker): env `SENTRY_RELEASE=$SOURCE_COMMIT` (Coolify exposes `SOURCE_COMMIT` at runtime).
 4. Merge `feat/release-tracking` to `main` (only `scripts/`, `docs/`, `.github/` change: none of them match the dashboard/landing Coolify watch paths, so no app redeploys; the blog is manual) — only when the user says so.
 5. Dry-run on Actions: Run workflow with `write` unchecked; read the log.
-6. Real write test on a scratch Jira ticket and a throwaway Sentry release name (Sentry deploys cannot be deleted) before touching real ones.
+6. Real write test on a scratch Jira ticket and a throwaway Sentry release name (Sentry deploys cannot be deleted) before touching real ones. CC-194 is the scratch ticket (it already holds the sample comment; reuse it or delete it).
 7. Repository variables: `RELEASE_TRACKING_FROM` = go-live ISO time, then `RELEASE_TRACKING_WRITE=true`. Setting it to anything else stops all writes (kill switch).
 
 **Cost:** cron `*/15` = 96 runs/day. GitHub private repos include $12 (Free) / $18 (Team) of Linux compute per month at $0.006/min (GitHub billing docs) ≈ 2,000 / 3,000 min. At an assumed ~45 s per run that is ≈ $13/month, near the Free allowance; `*/30` halves it. Public repo = free. Plan and repo visibility not checked.
