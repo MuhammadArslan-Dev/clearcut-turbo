@@ -11,11 +11,6 @@ import { Exam } from "@/types/page";
 import { Link } from "@/i18n/navigation";
 import VerificationBadgeIcon from "@/components/icons/verification-badge-icon";
 import { Locale, defaultLocale } from "@/lib/i18n/config";
-import { ExperimentText } from "@/lib/experiments";
-
-// CC-192 pilot: the copy of the "Start for free" button on exam cards is a GrowthBook string feature (control = the translated
-// text below). English only; Hindi/Marathi always show their own copy. Off, and plain text, until a GrowthBook client key is set.
-const CTA_COPY_FLAG = "lp_all_cta_copy_202611";
 
 const CARD_COPY: Record<Locale, {
   badge: string;
@@ -116,7 +111,7 @@ export default function CourseCard({ course, data, badge, viewDetailsClick, prio
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ContinueFreeButton fullWidth size="md" showIcon={false} text={<ExperimentText flagKey={CTA_COPY_FLAG} control={t.startFree} enabled={locale === defaultLocale} />} />
+          <ContinueFreeButton fullWidth size="md" showIcon={false} text={t.startFree} />
           {/* Course page slugs have no separator (e.g. "uppgt", not "up-pgt"
               or "up pgt") — short_name values like "UP PGT" need their
               spaces stripped, not just lowercased, or this links to a 404. */}

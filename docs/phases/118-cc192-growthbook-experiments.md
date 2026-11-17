@@ -2,9 +2,9 @@
 
 **Tickets:** CC-192 (High, assignee Muhammad Arslan)
 **Repos:** CM (`apps/landing`, `apps/dashboard`, new `packages/experiments`)
-**Branch:** `feat/cc-192-growthbook` (from main 7fcb81d) — committed locally, NOT merged, NOT pushed
+**Branch:** `feat/cc-192-growthbook` (from main 7fcb81d)
 **Created / start date:** 2026-11-17
-**Status:** Implemented + verified on landing in a real browser against the real GrowthBook CDN. Not live: the two env vars below still have to be set in Coolify. Dashboard code is written and typechecked but NOT exercised in a browser. LCP/CLS before/after not measured.
+**Status:** Implemented and verified in a real browser against the real GrowthBook CDN (landing text experiment, dashboard per-`user_id` card test). Inert in production until the two env vars below are set in Coolify. The landing text pilot was REMOVED again from `CourseCard.tsx` at the user's request (the package and `apps/landing/src/lib/experiments.ts` stay); the dashboard QA page `/growthbook-test` is the practice surface. LCP/CLS before/after not measured.
 
 ---
 
@@ -34,18 +34,23 @@ A repeatable way to run A/B tests on the landing pages and the main app without 
   - `exposure`: tracking callback → `$exposure { flag_key, variant }` + user property `exp_<key>`; once per experiment+variant per page; try/catch.
   - `client`: `resolveConfig` (null = experiments off), `createExperimentsClient` with 500 ms init timeout; any error or type mismatch → control.
   - `react`: `createExperimentsHooks({ getClient, configured })` → `useExperimentValue`, `ExperimentText`. No provider: the SDK is only loaded on pages that mount an experiment element. `ExperimentText` is `visibility:hidden` (space kept, no layout shift) only while the assignment is unknown (≤ 500 ms) and only when configured + enabled; it never swaps after settling; copy is trimmed plain text, max 60 chars, else control.
-- `apps/landing/src/lib/experiments.ts`: lazy singleton; Amplitude via the existing `logAmplitudeEvent` / `setUserProperties` (queued until the deferred init). `CourseCard.tsx`: CTA text is `<ExperimentText flagKey="lp_all_cta_copy_202611" control={t.startFree} enabled={locale === defaultLocale} />` (English only; Hindi/Marathi copy is never replaced).
+- `apps/landing/src/lib/experiments.ts`: lazy singleton; Amplitude via the existing `logAmplitudeEvent` / `setUserProperties` (queued until the deferred init). The first pilot put `<ExperimentText flagKey="lp_all_cta_copy_202611" control={t.startFree} enabled={locale === defaultLocale} />` into `CourseCard.tsx` (English only) and was verified (§8); it was then removed again, so no landing page renders an experiment today. To run a landing test, use `ExperimentText` / `useExperimentValue` from this file.
+- **Dashboard QA page `/growthbook-test`** (`app/[locale]/(public-pages)/growthbook-test/page.tsx` + `components/features/growthbook-test/GrowthbookTest.tsx`): shows an "Old card" or a "New card" from the String flag `dash_all_test_card_202611` (`old` / `new`) plus a debug panel (flag, `user.uuid`, the `user_id` GrowthBook holds, status, value served, card shown). 404 in production unless `NEXT_PUBLIC_ENABLE_GROWTHBOOK_TEST=true` (same pattern as `/animation-preview`). English only (QA page, like animation-preview). Nothing is shown until the answer is known (space is kept, no old-then-new flicker); the experiment component is `key`ed by `user.uuid` so it is re-evaluated when the server-confirmed user differs from the cached one.
+- **Targeting by user, never by phone.** Only `user_id` (= `users.uuid`) is sent; the phone number is not an attribute. Reason: GrowthBook rules are served from a PUBLIC CDN URL that anyone can open with the client key (verified by reading our own payload), so a phone number in a rule would be public. A uuid identifies nobody. Get the uuid with `SELECT phone, uuid FROM users WHERE phone IN (...)` (production DB: run by the user / backend owner).
 - `apps/dashboard/src/lib/experiments.ts` + `experiment-user.ts`: same pattern; `AnalyticsProvider` calls `setExperimentUser({ user_id, is_logged_in: true })`; `lib/analytics/browser.ts` gained `trackReservedEvent` and `setAnalyticsUserProperty` (exact event name, same gating as the rest of that file). No dashboard code uses an experiment element yet.
 - Env (both apps, build time): `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY`, `NEXT_PUBLIC_GROWTHBOOK_API_HOST` (`.env.example` of dashboard updated; landing's `.env.example` is git-ignored).
 
 ## 6. GrowthBook state (real, app.growthbook.io)
 - Project `clearcutoff`; SDK connection `sdk_19g6dmwkflald`; client key `sdk-dIndvZ1qzJJOPrh0` (client keys are public by design); host `https://cdn.growthbook.io`; environment `production` only.
 - Feature `lp_all_cta_copy_202611` (String, default `Start for free`), Revision 2 live: experiment "Landing CTA copy: Start for free vs Try it for free", hash attribute `id`, tracking key = feature key, 100 % traffic, 50/50, control `Start for free` / variation 1 `Try it for free`, no data source (results are read in Amplitude). Confirmed in the live CDN payload.
+- Feature `dash_all_test_card_202611` (String, default `old`), Revision 2 live: one Force rule "QA: show the new card to one test user_id": condition (Advanced JSON, because `user_id` is not in the default attribute dropdown) `{"user_id": "7fd0a79a-6742-4850-807f-b7a4994fbb39"}` → `new`. That uuid is the local test user `9988776655`; it matches nobody in production. A Force rule does not call the tracking callback, so no `$exposure` is sent for it (only experiment rules do).
+- `lp_all_cta_copy_202611` is still live in GrowthBook but nothing reads it any more. Switch it off in GrowthBook if it should not stay.
 - Naming: `<surface>_<exam|all>_<what>_<yyyymm>`.
 - Switching the feature or the experiment off in GrowthBook → everyone gets control without a deploy (CDN payload changes; caches follow within the SDK stale window).
 
 ## 7. To do by the user
 - [ ] Coolify, landing AND dashboard, build-time vars: `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-dIndvZ1qzJJOPrh0`, `NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://cdn.growthbook.io`, then redeploy. Without them the code is inert (everyone gets control, nothing hidden or fetched).
+- [ ] Optional: `NEXT_PUBLIC_ENABLE_GROWTHBOOK_TEST=true` on the dashboard build to open `/growthbook-test` in production (404 otherwise).
 - [ ] Real Android 4G screen recording for the flicker acceptance (only the user can do it).
 - [ ] Merge/push to main only on the user's explicit go-ahead (pushing main auto-deploys).
 
@@ -63,14 +68,27 @@ Done (2026-11-17):
   - Hindi page (`/hi/teaching`): zero GrowthBook requests, Hindi copy untouched;
   - click-through: CTA opens the login sheet as before (no OTP sent), "View more details" opens `/teaching/htet`; console 0 errors.
 
+Dashboard (2026-11-17, local backend + the dashboard dev server with the real key, 2 local test users A=9988776655 whose uuid is in the rule and B=9988776644):
+- [x] Logged-in `/dashboard` and `/dashboard/profile` load, 0 errors; zero GrowthBook requests and no GrowthBook/experiments chunk on pages without an experiment element (the SDK is lazy).
+- [x] `/growthbook-test`: A → New card, B → Old card, in a fresh browser and on a normal reload; the `user_id` GrowthBook holds equals the DB `users.uuid`; one visible state per load.
+- [x] Also: typecheck 92 = baseline (none in the new files), eslint and `check:colors` clean.
+
+Two behaviours found by testing, both worth knowing before the next experiment:
+1. **A change in GrowthBook reaches a returning visitor one page view late.** The SDK uses its localStorage payload cache (`gbFeaturesCache`, stale after 60 s, kept 4 h) immediately and refreshes in the background. First load after publishing: old value; the next load: new value. New visitors (no cache) wait for the network (max 500 ms, else control). If QA "does not show", reload once.
+2. **Cached user.** `AuthProvider` renders the localStorage user (≤ 5 min) first and confirms it with the server 2-4 s later. If the cached user is not the logged-in one (another login on the same browser without logout), the answer was first computed for the wrong user and was never re-evaluated (reproduced: user B got A's card). Fixed in the page with `key={user.uuid}`; the remaining effect is that in that rare case the previous user's card shows for the confirmation delay. Rule for dashboard experiments targeted by `user_id`: key the experiment component by `user.uuid`.
+
 **Not verified:**
-- Dashboard in a browser (needs a logged-in user; nothing renders an experiment there yet).
+- Production: `/growthbook-test` (404 until `NEXT_PUBLIC_ENABLE_GROWTHBOOK_TEST=true`), anything behind the live login. `testLogin` was only ever called against the local backend, never in production.
+- `useExperimentValue` swapping a whole component was only exercised on the QA page; an experiment (not a Force rule) on the dashboard, including its `$exposure`, has not been run.
 - LCP/CLS before/after (ticket asks for numbers), request count to the GrowthBook CDN per page view against the 1M/month quota, real Android 4G.
 - Production hosts (tested on localhost with the `cc-analytics-local` opt-in), and that the events show up in the Amplitude UI (only the outgoing request was read).
 - Facebook/Instagram in-app browser → Chrome escape: the cookie jars differ, so the visitor may be re-bucketed; Safari ITP caps JS-set cookies at 7 days (the id is restored from localStorage, which ITP also limits). Accepted limitations.
 - Starter quota behaviour, and the feature's behaviour with a second experiment on the same page.
 
-## 9. Next steps
+## 9. Security note (not part of this ticket)
+`POST /api/v1/auth/testLogin` (`routes/Apis/V1/authapi.php`, `AuthController::testLogin`) has no environment guard and no auth middleware: it creates the user if needed and returns a Sanctum token for any Indian mobile number. Wherever that backend is deployed with this route, anyone can obtain a session for any phone. Reading the code only; not tested in production. Needs an owner decision (remove, or guard by `app()->environment('local')`).
+
+## 10. Next steps
 1. User sets the two env vars in Coolify and redeploys landing (and dashboard).
 2. Measure LCP/CLS before/after on an ad-traffic landing page; check the first `$exposure` events in Amplitude; read the result in Amplitude after enough traffic.
 3. Draft the Confluence how-to (create/read/stop an experiment, naming, one experiment per surface per exam); publish after the user picks the space.
