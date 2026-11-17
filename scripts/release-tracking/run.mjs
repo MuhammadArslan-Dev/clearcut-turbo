@@ -42,13 +42,19 @@ if (!trackFrom) {
 }
 
 const env = process.env;
-const jira = WRITE && env.JIRA_EMAIL && env.JIRA_API_TOKEN ? createJiraClient({ baseUrl: env.JIRA_BASE_URL || "https://clear-cutoff.atlassian.net", email: env.JIRA_EMAIL, token: env.JIRA_API_TOKEN }) : null;
+// Jira is OFF while there is no Atlassian API token (documented blocker, phase doc section 10) or when RELEASE_TRACKING_JIRA=off.
+// It is never skipped silently: the reason is printed for every release and as a GitHub warning in CI.
+const jiraOffReason = env.RELEASE_TRACKING_JIRA === "off" ? "disabled on purpose (RELEASE_TRACKING_JIRA=off)" : !(env.JIRA_EMAIL && env.JIRA_API_TOKEN) ? "no Jira credentials (JIRA_EMAIL / JIRA_API_TOKEN)" : null;
+const jira = WRITE && !jiraOffReason ? createJiraClient({ baseUrl: env.JIRA_BASE_URL || "https://clear-cutoff.atlassian.net", email: env.JIRA_EMAIL, token: env.JIRA_API_TOKEN }) : null;
 const sentry = WRITE && env.SENTRY_AUTH_TOKEN ? createSentryClient({ baseUrl: env.SENTRY_URL || "https://de.sentry.io", org: env.SENTRY_ORG || "clear-cutoff", token: env.SENTRY_AUTH_TOKEN }) : null;
 const sentryWebUrl = env.SENTRY_WEB_URL || "https://clear-cutoff.sentry.io";
 const ghToken = env.RELEASE_GH_TOKEN || "";
 
 console.log(`${WRITE ? "WRITE MODE" : "DRY-RUN"}, environment=${ENVIRONMENT}, releases that finished at/after ${trackFrom}`);
-if (WRITE) console.log(`integrations: Jira ${jira ? "on" : "OFF (no credentials)"}, Sentry ${sentry ? "on" : "OFF (no credentials)"}`);
+if (WRITE) {
+  console.log(`integrations: Jira ${jira ? "on" : `OFF (${jiraOffReason})`}, Sentry ${sentry ? "on" : "OFF (no SENTRY_AUTH_TOKEN)"}`);
+  if (!jira) warn(`Jira updates are OFF: ${jiraOffReason}`);
+}
 console.log("");
 
 async function commitsFor(app, release) {
@@ -99,12 +105,13 @@ for (const app of apps) {
         continue;
       }
 
-      const res = await processRelease({ app, release: r, commits, jira, sentry, environment: ENVIRONMENT, jiraProjectKeys: JIRA_PROJECT_KEYS, sentryWebUrl });
+      const res = await processRelease({ app, release: r, commits, jira, jiraOffReason, sentry, environment: ENVIRONMENT, jiraProjectKeys: JIRA_PROJECT_KEYS, sentryWebUrl });
       const j = res.jira;
       console.log(`     Jira: ${j.notRun ? `not run (${j.notRun})` : `commented ${j.commented.join(", ") || "-"}; skipped ${j.skipped.map((s) => `${s.key} (${s.reason})`).join(", ") || "-"}`}`);
       for (const f of j.failed) warn(`${app.id} ${r.sha.slice(0, 7)} Jira ${f.key}: ${f.error} (retried next run)`);
       const s = res.sentry;
       console.log(`     Sentry: ${s.notRun ? `not run (${s.notRun})` : s.error ? "FAILED" : `did [${s.did.join("; ") || "-"}] skipped [${s.skipped.join("; ") || "-"}]`}`);
+      for (const w of s.warnings ?? []) warn(`${app.id} ${r.sha.slice(0, 7)} Sentry: ${w}`);
       if (s.error) warn(`${app.id} ${r.sha.slice(0, 7)} Sentry: ${s.error} (retried next run)`);
       if (hasFailure(res)) failures++;
     }

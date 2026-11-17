@@ -14,10 +14,13 @@ export const SENTRY_CLI_VERSION = "2.58.6";
 
 export function createSentryClient({ baseUrl, org, token, fetchImpl, backoffMs, runCli }) {
   const origin = String(baseUrl).replace(/\/+$/, "");
+  // SENTRY_CLI_BIN = path to the sentry-cli JS wrapper (used for local runs on Windows, where spawning `npx` fails);
+  // otherwise `npx @sentry/cli@<pinned version>` (GitHub Actions / Linux).
+  const [bin, binArgs] = process.env.SENTRY_CLI_BIN ? [process.execPath, [process.env.SENTRY_CLI_BIN]] : ["npx", ["--yes", `@sentry/cli@${SENTRY_CLI_VERSION}`]];
   const cli =
     runCli ??
     ((args) =>
-      execFileSync("npx", ["--yes", `@sentry/cli@${SENTRY_CLI_VERSION}`, ...args], {
+      execFileSync(bin, [...binArgs, ...args], {
         env: { ...process.env, SENTRY_AUTH_TOKEN: token, SENTRY_ORG: org, SENTRY_URL: origin, SENTRY_DISABLE_TELEMETRY: "1" },
         stdio: ["ignore", "pipe", "pipe"],
         encoding: "utf8",
@@ -44,6 +47,8 @@ export function createSentryClient({ baseUrl, org, token, fetchImpl, backoffMs, 
     createDeploy: (version, { environment, name, url, finishedUnix }) =>
       cli(["deploys", "new", "-r", version, "-e", environment, "-n", name, ...(url ? ["-u", url] : []), "--finished", String(finishedUnix)]),
     finalize: (version, releasedUnix) => cli(["releases", "finalize", version, "--released", String(releasedUnix)]),
+    /** Only for the self-test (throwaway release); the tracker itself never deletes anything. */
+    deleteRelease: (version, project) => cli(["releases", "delete", "-p", project, version]),
   };
 }
 
@@ -52,6 +57,7 @@ export async function syncSentry({ client, app, release, environment }) {
   const version = release.sha;
   const did = [];
   const skipped = [];
+  const warnings = [];
   const finishedUnix = Math.floor(Date.parse(release.finishedAt) / 1000);
 
   let state = await client.getRelease(version);
@@ -66,8 +72,17 @@ export async function syncSentry({ client, app, release, environment }) {
   if ((state.commitCount ?? 0) > 0) skipped.push("commits already set");
   else if (!release.previousSha) skipped.push("commits: first release of this app has no previous commit (Sentry needs one)");
   else {
-    await client.setCommits(version, `${app.repo}@${release.previousSha}..${release.sha}`, app.sentryProject);
-    did.push("commits set");
+    // NON-FATAL: Sentry can only link commits of repositories its GitHub integration knows (today only the Clear-Cutoff org).
+    // A failure here must not stop the deploy record and the finalize below; it is retried (and warned about) on the next run.
+    try {
+      await client.setCommits(version, `${app.repo}@${release.previousSha}..${release.sha}`, app.sentryProject);
+      did.push("commits set");
+    } catch (e) {
+      const lines = String(e.stderr || e.message || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      const errLines = lines.filter((l) => /^error:|sentry reported an error/i.test(l));
+      const detail = (errLines.length ? errLines : lines.slice(-2)).join(" | ").slice(0, 240);
+      warnings.push(`commits NOT set for ${app.repo} (release continues without them): ${detail}`);
+    }
   }
 
   if ((state.deployCount ?? 0) === 0) {
@@ -81,5 +96,5 @@ export async function syncSentry({ client, app, release, environment }) {
     await client.finalize(version, finishedUnix);
     did.push("finalized");
   }
-  return { did, skipped };
+  return { did, skipped, warnings };
 }

@@ -3,14 +3,14 @@
 import { extractJiraKeys, buildMarker, commentHasMarker, buildReleaseComment } from "./lib.mjs";
 import { syncSentry } from "./sentry.mjs";
 
-export async function processRelease({ app, release, commits, jira, sentry, environment, jiraProjectKeys, sentryWebUrl }) {
-  const result = { jira: { commented: [], skipped: [], failed: [], notRun: null }, sentry: { did: [], skipped: [], error: null, notRun: null } };
+export async function processRelease({ app, release, commits, jira, jiraOffReason, sentry, environment, jiraProjectKeys, sentryWebUrl }) {
+  const result = { jira: { commented: [], skipped: [], failed: [], notRun: null }, sentry: { did: [], skipped: [], warnings: [], error: null, notRun: null } };
   const marker = buildMarker(app.id, release.sha);
   const repoUrl = `https://github.com/${app.repo}`;
 
   // ---- Jira
   const keys = commits ? extractJiraKeys(commits.flatMap((c) => [c.subject, c.body]), jiraProjectKeys) : [];
-  if (!jira) result.jira.notRun = "no Jira credentials";
+  if (!jira) result.jira.notRun = jiraOffReason || "no Jira credentials";
   else if (commits === null) result.jira.notRun = "commits not available for this repo (no GitHub token)";
   else if (!keys.length) result.jira.notRun = "no ticket keys in this release";
   else {
@@ -53,6 +53,7 @@ export async function processRelease({ app, release, commits, jira, sentry, envi
       const r = await syncSentry({ client: sentry, app, release, environment });
       result.sentry.did = r.did;
       result.sentry.skipped = r.skipped;
+      result.sentry.warnings = r.warnings;
     } catch (e) {
       result.sentry.error = e.message;
     }
