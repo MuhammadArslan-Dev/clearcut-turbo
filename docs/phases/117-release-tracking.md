@@ -114,3 +114,46 @@ Built so far (2026-11-17): `scripts/release-tracking/` = `config.mjs`, `lib.mjs`
 **Cost:** cron `*/15` = 96 runs/day. GitHub private repos include $12 (Free) / $18 (Team) of Linux compute per month at $0.006/min (GitHub billing docs) ≈ 2,000 / 3,000 min. At an assumed ~45 s per run that is ≈ $13/month, near the Free allowance; `*/30` halves it. Public repo = free. Plan and repo visibility not checked.
 
 **Known limitations:** a rollback to an older SHA is not recorded as a new release (the SHA was already released); when landing and blog deploy the same SHA, Sentry commits/deploy are recorded once per release (first app wins); blog path filter is an assumption (Coolify has none); Oracle's stale backend/worker copy is excluded pending D5; updates land up to ~15 min + deploy time after a deployment; a persistent Jira/Sentry failure keeps retrying every run and shows as a red run.
+
+
+## 11. Sentry first, Jira blocked (2026-11-17, branch `feat/release-tracking-sentry`)
+
+### 11.1 Verified with REAL services (org `clear-cutoff`, region `https://de.sentry.io`, token scope `org:ci`)
+`node scripts/release-tracking/sentry-selftest.mjs` uses a throwaway release name (never a real SHA). Result of the real run: 14 checks PASS, the cleanup step could not run (see below).
+- A wrong token gets a real **HTTP 401**; the error carries no token.
+- A missing release is read as "not found" (REST 404 handled).
+- Run 1 created the release and the **deploy** (environment recorded, name = app id) and **finalized** it. Sentry's own UI shows Finalized, Last Deploy and the Deploys entry.
+- The release is attached to the right project (`clearcutoff-nextjs-app`).
+- **Duplicate prevention / retry:** runs 2 and 3 on the same release created nothing; `deployCount` stayed 1 (Sentry cannot delete deploys, so this guard matters).
+- **Commits fail for real:** `error: Unknown repo 'MuhammadArslan-Dev/clearcut-turbo'` (Sentry's GitHub integration does not know the repo). Fixed in code: this is now NON-FATAL. The deploy and finalize still happen, a warning with Sentry's real reason is printed, and the next run retries only the commit step.
+- Real Coolify: dry-run of all 4 apps; the real failed landing deployment `9ef05c1` produces no release; the real double-deployed backend commit `855b653` produces one release; write-mode wiring was checked with the real Sentry token and a far-future tracking start (nothing processed, nothing written).
+- Cleanup: the token has no delete right (`releases delete` = HTTP 403), so the throwaway release `release-tracking-selftest-1794902323149` was **archived by hand in the Sentry UI**. The local test token was revoked and removed from the local file.
+
+Code: `sentry.mjs` (commits non-fatal, `SENTRY_CLI_BIN`), `track.mjs`, `run.mjs` (explicit Jira-off reason + GitHub warning), the workflow (`RELEASE_TRACKING_JIRA`), `sentry-selftest.mjs`. 49 unit/flow tests pass.
+
+### 11.2 Per app: what Sentry gets after go-live
+| App | Sentry project | Release version | Deploy record | Commits | Errors linked to the release |
+|---|---|---|---|---|---|
+| Dashboard | `clearcutoff-nextjs-app` | full SHA (same name the build already creates) | yes, env `production`, name `dashboard` | NO, until the GitHub integration knows the repo | yes: DSN + auth token exist in Coolify, the SDK uses the same SHA |
+| Backend | `laravel-backend` | full SHA (created by the tracker) | yes, name `backend` | NO (same reason) | only after Coolify env `SENTRY_RELEASE=$SOURCE_COMMIT` is set on web + worker |
+| Landing | `clearcutoff-public` | full SHA | yes, name `landing` | NO | NO: no Sentry DSN in its Coolify env, so its errors never reach Sentry |
+| Blog | `clearcutoff-public` | full SHA | yes, name `blog` | NO | NO: no Sentry DSN in its Coolify env |
+
+### 11.3 BLOCKED (exact blockers, nothing silently skipped)
+1. **Jira: no Atlassian API token.** The Chrome the assistant controls is not logged in to Atlassian (`id.atlassian.com/login` came up on 3 attempts) and the assistant cannot type a password or 2FA. Jira is therefore OFF on purpose: every write run prints `WARNING: Jira updates are OFF: <reason>` (a GitHub warning in CI) and each release shows `Jira: not run (<reason>)`.
+   - Verified for Jira: the tracker's comment body (ADF) is accepted and stored unchanged by Jira (scratch ticket CC-194, comment 10100, posted through the Atlassian MCP).
+   - NOT verified: the tracker's own REST client with Basic auth.
+   - To finish Jira the user provides GitHub secrets `JIRA_EMAIL` (the Atlassian login email) and `JIRA_API_TOKEN` (create at https://id.atlassian.com/manage-profile/security/api-tokens, with an expiry), plus `RELEASE_GH_TOKEN` (fine-grained PAT with read access to `dalal-rohit/cc-new-backend`) for the backend's ticket keys. Then leave the repo variable `RELEASE_TRACKING_JIRA` unset (set it to `off` to switch Jira off on purpose).
+2. **Sentry commits:** Sentry's GitHub integration is installed only for the `Clear-Cutoff` GitHub organization. Needed: install it for the `MuhammadArslan-Dev` and `dalal-rohit` accounts (Sentry Settings > Integrations > GitHub > Add Installation; needs Sentry owner/manager/admin and GitHub owner rights per the Sentry docs), or move the repos into `Clear-Cutoff`. Then the repo names in `config.mjs` must match what Sentry lists.
+3. **Backend release in errors:** set `SENTRY_RELEASE=$SOURCE_COMMIT` in Coolify (web + worker). Production Coolify config, done by the user.
+4. **Landing / blog errors:** add `NEXT_PUBLIC_SENTRY_DSN` (and `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`) to their Coolify env if their errors should reach Sentry (decision for the user; the tracker works without it, but there is nothing to link).
+5. **Real end-to-end on an actual deployment** (successful deploy -> Sentry release + deploy) can only be confirmed after go-live, on the next real deployment after `RELEASE_TRACKING_FROM`. Backfilling an old one to test it is forbidden by the brief.
+
+### 11.4 GitHub setup done in the browser (with the user's authorization)
+Repository secrets in `MuhammadArslan-Dev/clearcut-turbo`: `ORACLE_COOLIFY_URL`, `ORACLE_COOLIFY_TOKEN`, `HETZNER_COOLIFY_URL`, `HETZNER_COOLIFY_TOKEN`, `SENTRY_AUTH_TOKEN` (Sentry org token `release-tracking (GitHub Actions)`, scope `org:ci`). Values were never shown in the transcript (clipboard path). Not set: `JIRA_EMAIL`, `JIRA_API_TOKEN`, `RELEASE_GH_TOKEN`, and the variables `RELEASE_TRACKING_FROM` / `RELEASE_TRACKING_WRITE` (writes are still OFF).
+
+### 11.5 Go-live (needs the user's go-ahead)
+1. Merge `feat/release-tracking-sentry` (it contains `docs/117-jira-verified`) to `main` and push. It touches only `scripts/`, `docs/` and `.github/`, so no app redeploys.
+2. Actions > Release tracking > Run workflow with `write` unchecked; read the log.
+3. Set the repo variables `RELEASE_TRACKING_FROM` (go-live ISO time) and `RELEASE_TRACKING_WRITE=true`. Kill switch: set `RELEASE_TRACKING_WRITE` to anything else.
+4. Watch the next real deployment: its Sentry release must show a Deploy and be Finalized.

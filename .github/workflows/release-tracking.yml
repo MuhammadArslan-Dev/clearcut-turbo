@@ -54,6 +54,7 @@ jobs:
           INPUT_APP: ${{ inputs.app }}
           VAR_WRITE: ${{ vars.RELEASE_TRACKING_WRITE }}
           RELEASE_TRACKING_FROM: ${{ vars.RELEASE_TRACKING_FROM }}
+          RELEASE_TRACKING_JIRA: ${{ vars.RELEASE_TRACKING_JIRA }}
           ORACLE_COOLIFY_URL: ${{ secrets.ORACLE_COOLIFY_URL }}
           ORACLE_COOLIFY_TOKEN: ${{ secrets.ORACLE_COOLIFY_TOKEN }}
           HETZNER_COOLIFY_URL: ${{ secrets.HETZNER_COOLIFY_URL }}

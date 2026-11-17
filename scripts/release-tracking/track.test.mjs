@@ -261,3 +261,46 @@ test("GitHub compare: pages through >100 commits, newest first; first release us
   assert.equal(single.length, 1);
   assert.match(urls.at(-1), /\/commits\/b$/);
 });
+
+test("COMMITS FAIL (repo unknown to Sentry): release, deploy and finalize still happen; only a warning, no failure", async () => {
+  const s = fakeSentry({ cliFails: "set-commits" });
+  const out = await run({ sentry: s.client });
+  assert.deepEqual(out.sentry.did, ["release created", "deploy production created", "finalized"]);
+  assert.equal(out.sentry.error, null);
+  assert.match(out.sentry.warnings[0], /commits NOT set for MuhammadArslan-Dev\/clearcut-turbo/);
+  assert.equal(hasFailure(out), false, "a missing commit link must not turn the run red");
+});
+
+test("commits failing again on the next run repeats ONLY the commit attempt: no second deploy, no second finalize", async () => {
+  const s = fakeSentry({ cliFails: "set-commits" });
+  await run({ sentry: s.client });
+  const deploysBefore = s.cliCalls.filter((c) => c.startsWith("deploys")).length;
+  const again = await run({ sentry: s.client });
+  assert.deepEqual(again.sentry.did, []);
+  assert.equal(again.sentry.warnings.length, 1);
+  assert.equal(s.cliCalls.filter((c) => c.startsWith("deploys")).length, deploysBefore, "deploy count unchanged");
+  assert.equal(s.cliCalls.filter((c) => c.startsWith("releases finalize")).length, 1);
+});
+
+test("Jira switched off with a reason: reported with that reason (never silent), Sentry unaffected", async () => {
+  const s = fakeSentry();
+  const out = await run({ jira: null, jiraOffReason: "disabled on purpose (RELEASE_TRACKING_JIRA=off)", sentry: s.client });
+  assert.equal(out.jira.notRun, "disabled on purpose (RELEASE_TRACKING_JIRA=off)");
+  assert.deepEqual(out.jira.commented, []);
+  assert.ok(out.sentry.did.includes("finalized"));
+});
+
+test("the commits warning carries Sentry's real reason (error: Unknown repo ...), not the CLI boilerplate", async () => {
+  const state = { projects: [{ slug: app.sentryProject }], commitCount: 0, deployCount: 0, lastDeploy: null, dateReleased: null };
+  const runCli = (argv) => {
+    if (argv[1] === "set-commits") {
+      const e = new Error("Command failed");
+      e.stderr = "error: Unknown repo 'MuhammadArslan-Dev/clearcut-turbo'" + String.fromCharCode(10) + "Add --log-level=[info|debug] to see more output." + String.fromCharCode(10) + "Please attach the full debug log to all bug reports.";
+      throw e;
+    }
+  };
+  const client = createSentryClient({ baseUrl: "https://de.sentry.io", org: "o", token: "T", fetchImpl: async () => res(state), runCli });
+  const out = await syncSentry({ client, app, release, environment: "production" });
+  assert.ok(out.warnings[0].includes("error: Unknown repo 'MuhammadArslan-Dev/clearcut-turbo'"), out.warnings[0]);
+  assert.ok(!/Please attach/.test(out.warnings[0]));
+});
