@@ -59,11 +59,11 @@ export function Modal({
           <Overlay variants="modal" onClick={dismissible ? onClose : () => {}} />
 
           <motion.div
-            className={`${maxWidth} bg-white rounded-lg shadow-xl w-full ${maxHeight} overflow-hidden relative`}
+            className={`${maxWidth} bg-white rounded-lg shadow-xl w-full ${maxHeight} overflow-hidden relative flex flex-col`}
             onClick={(e) => e.stopPropagation()}
           >
             {isHeader && (
-              <header className="sticky top-0 z-10 bg-white border-b px-6 pt-3 pb-2 flex justify-between">
+              <header className="shrink-0 sticky top-0 z-10 bg-white border-b px-6 pt-3 pb-2 flex justify-between">
                 <div>
                   <h2 className={clsx("text-gray-900", titleClass)}>{title}</h2>
                   <p className={clsx("text-sm text-gray-600", subtitleClass)}>
@@ -76,7 +76,11 @@ export function Modal({
               </header>
             )}
 
-            <div className="overflow-y-auto no-scrollbar">{children}</div>
+            {/* min-h-0 + flex-1: the scroll area takes the panel's remaining height (the panel is capped by
+                `maxHeight`), so tall content scrolls inside it instead of being cut off by `overflow-hidden`.
+                A `sticky bottom-0` footer in `children` then stays visible. Without these, this div grew to the
+                content height and never scrolled: long lists (e.g. 18 PGT subjects) lost their Start button. */}
+            <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">{children}</div>
           </motion.div>
         </motion.div>
       </>
