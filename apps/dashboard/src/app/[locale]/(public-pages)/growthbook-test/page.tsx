@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import ExperimentsPayload from "@/components/features/experiments/ExperimentsPayload";
 import GrowthbookTest from "@/components/features/growthbook-test/GrowthbookTest";
 
 // QA-only page for practising GrowthBook targeting by user_id (CC-192, docs/phases/118). Not linked from any flow.
@@ -12,5 +13,10 @@ export const metadata: Metadata = {
 export default function GrowthbookTestPage() {
   const enabled = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_GROWTHBOOK_TEST === "true";
   if (!enabled) notFound();
-  return <GrowthbookTest />;
+  return (
+    <>
+      <ExperimentsPayload />
+      <GrowthbookTest />
+    </>
+  );
 }

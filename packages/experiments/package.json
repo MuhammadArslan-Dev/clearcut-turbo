@@ -11,6 +11,7 @@
     "./attributes": "./src/attributes.ts",
     "./exposure": "./src/exposure.ts",
     "./client": "./src/client.ts",
+    "./payload": "./src/payload.ts",
     "./react": "./src/react.tsx"
   },
   "dependencies": {

@@ -4,6 +4,7 @@
 import { GrowthBook, type Attributes } from "@growthbook/growthbook";
 import { cleanAttributes } from "./attributes";
 import { createTrackingCallback, type ExposureSink } from "./exposure";
+import type { FeaturesPayload } from "./payload";
 
 export const DEFAULT_API_HOST = "https://cdn.growthbook.io";
 /** The ticket's guardrail: a short fetch timeout, then control. Cached features (localStorage) resolve immediately. */
@@ -32,7 +33,13 @@ export type ExperimentsClient = {
   getValue: <T extends string | number | boolean>(flagKey: string, control: T) => T;
 };
 
-export function createExperimentsClient(args: { config: ExperimentsConfig; attributes: Record<string, unknown>; sink: ExposureSink }): ExperimentsClient {
+export function createExperimentsClient(args: {
+  config: ExperimentsConfig;
+  attributes: Record<string, unknown>;
+  sink: ExposureSink;
+  /** Features fetched on the server (see ./payload). With it the SDK decides synchronously: no request, no timeout, no cache read. */
+  payload?: FeaturesPayload | null;
+}): ExperimentsClient {
   const gb = new GrowthBook({
     apiHost: args.config.apiHost,
     clientKey: args.config.clientKey,
@@ -41,10 +48,23 @@ export function createExperimentsClient(args: { config: ExperimentsConfig; attri
     enableDevMode: false,
   });
 
-  const ready: Promise<ReadyResult> = gb.init({ timeout: args.config.timeoutMs }).then(
-    (r) => ({ success: r.success, source: r.source, error: r.error }),
-    (error: unknown) => ({ success: false, source: "error", error: error instanceof Error ? error : new Error(String(error)) }),
-  );
+  const initFromNetwork = (): Promise<ReadyResult> =>
+    gb.init({ timeout: args.config.timeoutMs }).then(
+      (r) => ({ success: r.success, source: r.source, error: r.error }),
+      (error: unknown) => ({ success: false, source: "error", error: error instanceof Error ? error : new Error(String(error)) }),
+    );
+
+  let ready: Promise<ReadyResult>;
+  if (args.payload) {
+    try {
+      void gb.initSync({ payload: args.payload });
+      ready = Promise.resolve({ success: true, source: "server-payload" });
+    } catch {
+      ready = initFromNetwork(); // a payload the SDK cannot use: behave as if there was none
+    }
+  } else {
+    ready = initFromNetwork();
+  }
 
   return {
     gb,
