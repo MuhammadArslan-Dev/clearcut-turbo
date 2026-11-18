@@ -12,6 +12,7 @@
     "./exposure": "./src/exposure.ts",
     "./client": "./src/client.ts",
     "./payload": "./src/payload.ts",
+    "./webhook": "./src/webhook.ts",
     "./react": "./src/react.tsx"
   },
   "dependencies": {

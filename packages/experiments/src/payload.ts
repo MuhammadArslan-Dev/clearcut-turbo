@@ -11,6 +11,8 @@ export type FeaturesPayload = FeatureApiResponse;
 
 /** The client's rule: GrowthBook changes may take up to 5 minutes to reach visitors. */
 export const PAYLOAD_REVALIDATE_SECONDS = 300;
+/** Cache tag on the payload fetch: the GrowthBook webhook route calls `revalidateTag` with it so a change shows up in seconds instead of after the window. */
+export const GROWTHBOOK_CACHE_TAG = "growthbook";
 /** The server answers the page only after this; past it the page renders without a payload (browser path, then control). */
 export const PAYLOAD_FETCH_TIMEOUT_MS = 1500;
 
@@ -42,7 +44,7 @@ export async function fetchFeaturesPayload(args: FetchPayloadArgs): Promise<Feat
       headers: { Accept: "application/json" },
       signal: controller.signal,
       // Next.js data cache: one GrowthBook request per revalidate window, shared by every visitor. Ignored outside Next.
-      next: { revalidate: args.revalidateSeconds ?? PAYLOAD_REVALIDATE_SECONDS },
+      next: { revalidate: args.revalidateSeconds ?? PAYLOAD_REVALIDATE_SECONDS, tags: [GROWTHBOOK_CACHE_TAG] },
     } as RequestInit);
     if (!res.ok) return null;
     const json: unknown = await res.json();
