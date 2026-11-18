@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setPolyfills } from "@growthbook/growthbook";
 import { createExperimentsClient } from "./client";
-import { PAYLOAD_REVALIDATE_SECONDS, fetchFeaturesPayload, isFeaturesPayload, type FeaturesPayload } from "./payload";
+import { GROWTHBOOK_CACHE_TAG, PAYLOAD_REVALIDATE_SECONDS, fetchFeaturesPayload, isFeaturesPayload, type FeaturesPayload } from "./payload";
 
 const FLAG = "dash_all_test_card_202611";
 const PAYLOAD: FeaturesPayload = {
@@ -34,7 +34,8 @@ describe("fetchFeaturesPayload", () => {
     expect(out).toEqual(PAYLOAD);
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe("https://cdn.test/api/features/sdk-abc");
-    expect((init as { next: { revalidate: number } }).next.revalidate).toBe(PAYLOAD_REVALIDATE_SECONDS);
+    expect((init as { next: { revalidate: number; tags: string[] } }).next.revalidate).toBe(PAYLOAD_REVALIDATE_SECONDS);
+    expect((init as { next: { tags: string[] } }).next.tags).toEqual([GROWTHBOOK_CACHE_TAG]); // what the webhook route invalidates
     expect(PAYLOAD_REVALIDATE_SECONDS).toBe(300);
   });
 
