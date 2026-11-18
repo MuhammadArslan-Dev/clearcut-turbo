@@ -21,6 +21,7 @@
     "noPressureTitle": "No Pressure!",
     "noPressureBody": "This is just a quick check to help you plan your preparation better.",
     "body": "Try 5 questions from your subjects to see where you stand before you start. You can skip it and begin preparing right away.",
+    "bodyNoSkip": "Try 5 questions from your subjects to see where you stand before you start.",
     "take": "Take Practice Test",
     "skip": "Skip, go to Preparation"
   },

@@ -15,6 +15,18 @@ export const PAYLOAD_REVALIDATE_SECONDS = 300;
 export const GROWTHBOOK_CACHE_TAG = "growthbook";
 /** The server answers the page only after this; past it the page renders without a payload (browser path, then control). */
 export const PAYLOAD_FETCH_TIMEOUT_MS = 1500;
+/**
+ * After a failed fetch, do not try again for this long. The payload is requested by the layout of every dashboard page, so
+ * without this a GrowthBook outage (nothing cached yet) would add the 1.5 s timeout to every page on this server. Per server
+ * instance; a success clears it. Pages simply render without a payload meanwhile (browser path, then control).
+ */
+export const PAYLOAD_FAILURE_COOLDOWN_MS = 30_000;
+
+let lastFailureAt = 0;
+/** Test helper. */
+export function resetPayloadFailureCooldown(): void {
+  lastFailureAt = 0;
+}
 
 export function isFeaturesPayload(value: unknown): value is FeaturesPayload {
   if (typeof value !== "object" || value === null) return false;
@@ -29,12 +41,16 @@ export type FetchPayloadArgs = {
   timeoutMs?: number;
   /** Injection point for tests. */
   fetchImpl?: typeof fetch;
+  /** Injection point for tests. */
+  nowMs?: number;
 };
 
 /** Never throws. `null` = no usable payload (no key, network error, timeout, non-200, bad JSON): callers fall back. */
 export async function fetchFeaturesPayload(args: FetchPayloadArgs): Promise<FeaturesPayload | null> {
   const clientKey = args.clientKey.trim();
   if (!clientKey) return null;
+  const now = args.nowMs ?? Date.now();
+  if (lastFailureAt && now - lastFailureAt < PAYLOAD_FAILURE_COOLDOWN_MS) return null;
   const host = (args.apiHost ?? "").trim().replace(/\/+$/, "") || DEFAULT_API_HOST;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? PAYLOAD_FETCH_TIMEOUT_MS);
@@ -46,10 +62,19 @@ export async function fetchFeaturesPayload(args: FetchPayloadArgs): Promise<Feat
       // Next.js data cache: one GrowthBook request per revalidate window, shared by every visitor. Ignored outside Next.
       next: { revalidate: args.revalidateSeconds ?? PAYLOAD_REVALIDATE_SECONDS, tags: [GROWTHBOOK_CACHE_TAG] },
     } as RequestInit);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      lastFailureAt = now;
+      return null;
+    }
     const json: unknown = await res.json();
-    return isFeaturesPayload(json) ? json : null;
+    if (!isFeaturesPayload(json)) {
+      lastFailureAt = now;
+      return null;
+    }
+    lastFailureAt = 0;
+    return json;
   } catch {
+    lastFailureAt = now;
     return null;
   } finally {
     clearTimeout(timer);

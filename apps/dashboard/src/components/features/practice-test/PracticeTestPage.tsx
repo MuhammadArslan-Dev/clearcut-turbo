@@ -19,6 +19,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { getPracticeExplanation, getPracticeTestQuestions, submitPracticeTest, type PracticeQuestion } from "@/lib/api/firstPracticeTest";
 import { getCourseState } from "@/lib/api/userState";
+import { usePracticeSkip } from "./usePracticeSkip";
 import { trackLiteTestAbandoned, trackLiteTestStarted, trackLiteTestSubmitted, watchTestAbandoned } from "@/lib/analytics/testFunnel";
 import AttemptTopbar from "@/components/features/attempt-ui/AttemptTopbar";
 import AttemptSummaryStrip from "@/components/features/attempt-ui/AttemptSummaryStrip";
@@ -154,6 +155,12 @@ export default function PracticeTestPage() {
     clearPracticeSession(courseId);
     router.replace(courseHome(courseId));
   }, [courseId, router, courseHome]);
+
+  // Phase 119 (A/B test, flag `dash_all_practice_skip_202611`): the `no_skip` variant has no skip controls while the test is being
+  // taken (topbar button + sidebar card). The error screen's "Go to Preparation" stays: it is the only way out when the test cannot
+  // load. `allowSkip` is true for the control and for every failure path; until the answer is known the controls keep their space
+  // but are invisible.
+  const { allowSkip, ready: skipReady } = usePracticeSkip();
 
   const {
     data: fetched,
@@ -628,7 +635,7 @@ export default function PracticeTestPage() {
                 <LanguageIcon size={30} />
               </button>
             )}
-            {skipButton()}
+            {allowSkip && <span className={skipReady ? "contents" : "contents invisible"}>{skipButton()}</span>}
           </>
         }
       />
@@ -861,15 +868,18 @@ export default function PracticeTestPage() {
 
             {/* Right: skip. */}
             <motion.aside className="hidden w-[240px] shrink-0 flex-col gap-4 lg:sticky lg:top-0 lg:flex xl:w-[260px]" {...enter(0.2)}>
-              <Card bgcolor="var(--color-danger-bg-soft)" border="border-none" padding="16px" borderRadius={12} className="!h-auto">
-                <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
-                  {t("skipCardTitle")}
-                </Text>
-                <Text as="p" variant="body-small" color="gray-muted" className="mb-3">
-                  {t("skipCardBody")}
-                </Text>
-                {skipCardButton}
-              </Card>
+              {/* no_skip keeps this column (empty) so the question card and the pinned footer do not move. */}
+              {allowSkip && (
+                <Card bgcolor="var(--color-danger-bg-soft)" border="border-none" padding="16px" borderRadius={12} className={`!h-auto ${skipReady ? "" : "invisible"}`}>
+                  <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
+                    {t("skipCardTitle")}
+                  </Text>
+                  <Text as="p" variant="body-small" color="gray-muted" className="mb-3">
+                    {t("skipCardBody")}
+                  </Text>
+                  {skipCardButton}
+                </Card>
+              )}
             </motion.aside>
           </div>
         </div>

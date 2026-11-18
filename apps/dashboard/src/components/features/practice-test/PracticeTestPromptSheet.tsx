@@ -13,6 +13,7 @@ import { Modal } from "@/components/features/Sheets/Modal";
 import { ChevronIcon } from "@/components/ui/icons";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { prefetchPracticeTest } from "./practiceTestQuery";
+import { usePracticeSkip } from "./usePracticeSkip";
 
 /**
  * Asked right after a learner's first subjects are saved (and again on the
@@ -27,6 +28,11 @@ import { prefetchPracticeTest } from "./practiceTestQuery";
  * Layout follows the approved onboarding design: illustration (one small webp,
  * `public/images/practice-test-prompt.webp`), two-line title with the accent
  * line in brand blue, body, the "No Pressure!" note, Take (filled) + Skip (outlined).
+ *
+ * Phase 119 (A/B test, GrowthBook flag `dash_all_practice_skip_202611`): for the `no_skip` variant the Skip button is not
+ * rendered and the body text drops "You can skip it...". Flag off / unreachable / any other value = today's prompt. The flag is
+ * read in `PromptContent`, which only exists while the prompt is open, so the Amplitude `$exposure` is sent when the learner
+ * actually sees the prompt (this sheet is mounted, closed, on every Preparation page and in the enrolment modal).
  */
 export default function PracticeTestPromptSheet({
   isOpen,
@@ -47,71 +53,7 @@ export default function PracticeTestPromptSheet({
   }, [isOpen, courseCode, queryClient]);
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
-  const rise = (delay: number) =>
-    reduceMotion
-      ? {}
-      : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay, ease: "easeOut" as const } };
-
-  const content = (
-    <div className={isMobile ? "flex min-h-dvh flex-col bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))]" : "flex flex-col bg-white pb-6"}>
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        // Desktop: width follows the viewport height (illustration is 780x602) so the whole modal fits short screens (e.g. 1536x738) without clipping the buttons.
-        style={isMobile ? undefined : { width: "min(380px, calc(28dvh * 1.296))" }}
-        className={isMobile ? "w-full" : "mx-auto max-w-full [mask-image:linear-gradient(to_right,transparent,black_14%,black_86%,transparent),linear-gradient(to_bottom,transparent,black_10%,black_88%,transparent)] [mask-composite:intersect]"}
-      >
-        <Image src="/images/practice-test-prompt.webp" alt="" width={780} height={602} priority className="h-auto w-full" />
-      </motion.div>
-
-      <div className="flex flex-col items-center gap-3 px-5 text-center">
-        <motion.div {...rise(0.1)}>
-          <Text as="h2" variant={isMobile ? "heading-xlarge" : "heading-large"} weight="bold" color="gray-normal">
-            <span className="block">{t("prompt.titleTop")}</span>
-            <span className="block text-brand">{t("prompt.titleAccent")}</span>
-          </Text>
-        </motion.div>
-        <motion.div {...rise(0.18)}>
-          <Text as="p" variant={isMobile ? "body-large" : "body-medium"} color="gray-muted" className="mx-auto max-w-[420px]">
-            {t("prompt.body")}
-          </Text>
-        </motion.div>
-      </div>
-
-      <motion.div {...rise(0.26)} className="mx-auto mt-5 w-full max-w-[420px] px-5">
-        <div className="flex items-center gap-4 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-[var(--color-primary-bg-soft)]/40 p-4 text-left">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-bg-soft)] text-brand">
-            <Target size={24} />
-          </span>
-          <div className="min-w-0">
-            <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
-              {t("prompt.noPressureTitle")}
-            </Text>
-            <Text as="p" variant="body-small" color="gray-muted">
-              {t("prompt.noPressureBody")}
-            </Text>
-          </div>
-        </div>
-      </motion.div>
-
-      {isMobile && <div className="flex-1" />}
-
-      <div className={`mx-auto flex w-full max-w-[420px] flex-col gap-3 px-5 ${isMobile ? "pt-8" : "pt-5"}`}>
-        <ShimmerButton
-          size="lg"
-          shimmer={!reduceMotion}
-          text={t("prompt.take")}
-          iconPosition="right"
-          icon={<ChevronIcon size={16} variant="right" color="white" />}
-          onClick={onTake}
-        />
-        <Button variant="outlined" color="gray" size="md" fullWidth sx={{ borderRadius: "50px" }} onClick={onSkip}>
-          {t("prompt.skip")}
-        </Button>
-      </div>
-    </div>
-  );
+  const content = <PromptContent isMobile={isMobile} reduceMotion={!!reduceMotion} onTake={onTake} onSkip={onSkip} />;
 
   return (
     <AnimatePresence>
@@ -136,5 +78,91 @@ export default function PracticeTestPromptSheet({
           </Modal>
         ))}
     </AnimatePresence>
+  );
+}
+
+/** Only mounted while the prompt is open (see the note above): this is where the experiment flag is read. */
+function PromptContent({
+  isMobile,
+  reduceMotion,
+  onTake,
+  onSkip,
+}: {
+  isMobile: boolean;
+  reduceMotion: boolean;
+  onTake: () => void;
+  onSkip: () => void;
+}) {
+  const t = useTranslations("PracticeTest");
+  // `allowSkip` is true for the control and for every failure path. Until GrowthBook has answered (milliseconds with the server
+  // payload) the text and the buttons keep their space but are invisible, so nothing flashes and nothing moves afterwards.
+  const { allowSkip, ready } = usePracticeSkip();
+  const hiddenUntilReady = ready ? "" : "invisible";
+  const rise = (delay: number) =>
+    reduceMotion
+      ? {}
+      : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay, ease: "easeOut" as const } };
+
+  return (
+    <div className={isMobile ? "flex min-h-dvh flex-col bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))]" : "flex flex-col bg-white pb-6"}>
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        // Desktop: width follows the viewport height (illustration is 780x602) so the whole modal fits short screens (e.g. 1536x738) without clipping the buttons.
+        style={isMobile ? undefined : { width: "min(380px, calc(28dvh * 1.296))" }}
+        className={isMobile ? "w-full" : "mx-auto max-w-full [mask-image:linear-gradient(to_right,transparent,black_14%,black_86%,transparent),linear-gradient(to_bottom,transparent,black_10%,black_88%,transparent)] [mask-composite:intersect]"}
+      >
+        <Image src="/images/practice-test-prompt.webp" alt="" width={780} height={602} priority className="h-auto w-full" />
+      </motion.div>
+
+      <div className="flex flex-col items-center gap-3 px-5 text-center">
+        <motion.div {...rise(0.1)}>
+          <Text as="h2" variant={isMobile ? "heading-xlarge" : "heading-large"} weight="bold" color="gray-normal">
+            <span className="block">{t("prompt.titleTop")}</span>
+            <span className="block text-brand">{t("prompt.titleAccent")}</span>
+          </Text>
+        </motion.div>
+        <motion.div {...rise(0.18)}>
+          <Text as="p" variant={isMobile ? "body-large" : "body-medium"} color="gray-muted" className={`mx-auto max-w-[420px] ${hiddenUntilReady}`}>
+            {allowSkip ? t("prompt.body") : t("prompt.bodyNoSkip")}
+          </Text>
+        </motion.div>
+      </div>
+
+      <motion.div {...rise(0.26)} className="mx-auto mt-5 w-full max-w-[420px] px-5">
+        <div className="flex items-center gap-4 rounded-2xl border border-[var(--color-border-gray-subtle)] bg-[var(--color-primary-bg-soft)]/40 p-4 text-left">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-bg-soft)] text-brand">
+            <Target size={24} />
+          </span>
+          <div className="min-w-0">
+            <Text as="p" variant="body-large" weight="semibold" color="gray-normal">
+              {t("prompt.noPressureTitle")}
+            </Text>
+            <Text as="p" variant="body-small" color="gray-muted">
+              {t("prompt.noPressureBody")}
+            </Text>
+          </div>
+        </div>
+      </motion.div>
+
+      {isMobile && <div className="flex-1" />}
+
+      <div className={`mx-auto flex w-full max-w-[420px] flex-col gap-3 px-5 ${isMobile ? "pt-8" : "pt-5"} ${hiddenUntilReady}`}>
+        <ShimmerButton
+          size="lg"
+          shimmer={!reduceMotion}
+          text={t("prompt.take")}
+          iconPosition="right"
+          icon={<ChevronIcon size={16} variant="right" color="white" />}
+          onClick={onTake}
+        />
+        {allowSkip && (
+          <Button variant="outlined" color="gray" size="md" fullWidth sx={{ borderRadius: "50px" }} onClick={onSkip}>
+            {t("prompt.skip")}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
