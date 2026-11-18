@@ -1,9 +1,9 @@
 // pnpm --filter @clearcut/experiments test
 // Server-side payload (CC-192 follow-up): the REAL @growthbook/growthbook 2.1.0 SDK decides from a payload the server fetched.
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setPolyfills } from "@growthbook/growthbook";
 import { createExperimentsClient } from "./client";
-import { GROWTHBOOK_CACHE_TAG, PAYLOAD_REVALIDATE_SECONDS, fetchFeaturesPayload, isFeaturesPayload, type FeaturesPayload } from "./payload";
+import { GROWTHBOOK_CACHE_TAG, PAYLOAD_FAILURE_COOLDOWN_MS, PAYLOAD_REVALIDATE_SECONDS, fetchFeaturesPayload, resetPayloadFailureCooldown, isFeaturesPayload, type FeaturesPayload } from "./payload";
 
 const FLAG = "dash_all_test_card_202611";
 const PAYLOAD: FeaturesPayload = {
@@ -14,6 +14,10 @@ const PAYLOAD: FeaturesPayload = {
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+
+beforeEach(() => {
+  resetPayloadFailureCooldown();
+});
 
 afterEach(() => {
   setPolyfills({ fetch: globalThis.fetch });
@@ -64,6 +68,37 @@ describe("fetchFeaturesPayload", () => {
     const out = await fetchFeaturesPayload({ clientKey: "k", timeoutMs: 100, fetchImpl: fetchImpl as unknown as typeof fetch });
     expect(out).toBeNull();
     expect(Date.now() - t0).toBeLessThan(1500);
+  });
+});
+
+describe("failure cooldown (the layout asks on every dashboard page)", () => {
+  it("after a failure the next calls inside the cooldown do not touch the network at all", async () => {
+    const failing = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    const t0 = 1_000_000;
+    expect(await fetchFeaturesPayload({ clientKey: "k", fetchImpl: failing, nowMs: t0 })).toBeNull();
+    expect(failing).toHaveBeenCalledTimes(1);
+    const healthy = vi.fn().mockResolvedValue(json(PAYLOAD));
+    expect(await fetchFeaturesPayload({ clientKey: "k", fetchImpl: healthy, nowMs: t0 + PAYLOAD_FAILURE_COOLDOWN_MS - 1 })).toBeNull();
+    expect(healthy).not.toHaveBeenCalled(); // skipped: no 1.5 s wait for every page while GrowthBook is down
+  });
+
+  it("after the cooldown it asks again, and a success clears the failure", async () => {
+    const t0 = 1_000_000;
+    await fetchFeaturesPayload({ clientKey: "k", fetchImpl: vi.fn().mockResolvedValue(json({}, 500)), nowMs: t0 });
+    const healthy = vi.fn(() => Promise.resolve(json(PAYLOAD))); // a fresh Response per call: a body can be read once
+    expect(await fetchFeaturesPayload({ clientKey: "k", fetchImpl: healthy, nowMs: t0 + PAYLOAD_FAILURE_COOLDOWN_MS + 1 })).toEqual(PAYLOAD);
+    expect(healthy).toHaveBeenCalledTimes(1);
+    // cleared: an immediate next call is allowed again
+    expect(await fetchFeaturesPayload({ clientKey: "k", fetchImpl: healthy, nowMs: t0 + PAYLOAD_FAILURE_COOLDOWN_MS + 2 })).toEqual(PAYLOAD);
+    expect(healthy).toHaveBeenCalledTimes(2);
+  });
+
+  it("bad JSON and a wrong shape count as failures too", async () => {
+    const t0 = 2_000_000;
+    await fetchFeaturesPayload({ clientKey: "k", fetchImpl: vi.fn().mockResolvedValue(json({ nope: 1 })), nowMs: t0 });
+    const healthy = vi.fn().mockResolvedValue(json(PAYLOAD));
+    expect(await fetchFeaturesPayload({ clientKey: "k", fetchImpl: healthy, nowMs: t0 + 5 })).toBeNull();
+    expect(healthy).not.toHaveBeenCalled();
   });
 });
 

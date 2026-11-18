@@ -9,6 +9,7 @@ import "../../styles/globals.css";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { AnalyticsProvider } from "@/providers/AnalyticsProvider";
+import ExperimentsPayload from "@/components/features/experiments/ExperimentsPayload";
 import LazyGTM from "@/components/thirdparties/LazyGTM";
 import LazyClarity from "@/components/thirdparties/LazyClarity";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
@@ -132,6 +133,8 @@ export default async function LocaleLayout({
                 <ReactQueryProvider>
                   {/* <AuthProvider> */}
                   <ThemeProvider>
+                    {/* GrowthBook features for the A/B tests (cached 5 min on the server): the first view is already right. See phase 118/119. */}
+                    <ExperimentsPayload />
                     <AnalyticsProvider>{children}</AnalyticsProvider>
                     {/* Onboarding completion animation: survives the route change to the dashboard. */}
                     <OnboardingCelebrationHost />

@@ -345,3 +345,6 @@ Dev-server numbers (no production build, HMR, hydration in dev); the absolute re
 - Same pitfall likely elsewhere: ~58 `where/whereIn('chapter_id'|'section_id'|'topic_id', ...)` calls across the backend (Daily Test, Mini Test, ...) pass integers to `varchar` columns. Not touched (unrelated); worth a separate look, or a migration changing the columns to bigint.
 - Deploy: backend change must go to `main` of the backend repo (auto-deploys); dashboard change to `main` here.
 
+---
+
+> **Phase 119 (2026-11-18):** the prompt's Skip button and the in-test skip controls are now an A/B test (GrowthBook flag `dash_all_practice_skip_202611`; flag off = everything above unchanged). See `119-practice-prompt-skip-experiment.md`.
