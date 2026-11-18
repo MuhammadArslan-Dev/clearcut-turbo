@@ -49,11 +49,13 @@ function Experiment({ userUuid }: { userUuid: string }) {
   const { value, ready } = useExperimentValue<string>(TEST_CARD_FLAG, "old");
   const [seenByGrowthBook, setSeenByGrowthBook] = useState<string>("(waiting)");
   const [active, setActive] = useState<boolean | null>(null);
+  const [source, setSource] = useState<string>("-");
 
   useEffect(() => {
     if (!ready) return;
     const client = getExperiments();
     setActive(client !== null);
+    void client?.ready.then((r) => setSource(r.source));
     setSeenByGrowthBook(client ? String(client.gb.getAttributes().user_id ?? "(not set)") : "(experiments are off)");
   }, [ready]);
 
@@ -79,6 +81,7 @@ function Experiment({ userUuid }: { userUuid: string }) {
           <Row label="user.uuid (app)" value={userUuid} />
           <Row label="user_id (GrowthBook)" value={seenByGrowthBook} />
           <Row label="status" value={!ready ? "waiting for GrowthBook (max 0.5 s)" : active === false ? "experiments OFF: no key, or not a production host (add localStorage cc-analytics-local=1 locally)" : "experiments ON"} />
+          <Row label="source" value={source === "server-payload" ? "server payload (decided without a browser request)" : source} />
           <Row label="value served" value={ready ? value : "-"} />
           <Row label="card shown" value={!ready ? "-" : showNew ? "New card" : "Old card"} />
         </div>

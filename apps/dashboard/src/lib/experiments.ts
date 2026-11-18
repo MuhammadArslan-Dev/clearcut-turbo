@@ -6,6 +6,7 @@ import { analyticsAllowedHere } from "@clearcut/utils/analytics-hosts";
 import { localeFromPathname, platformFromUserAgent, utmFromSearch } from "@clearcut/experiments/attributes";
 import { createExperimentsClient, resolveConfig, type ExperimentsClient } from "@clearcut/experiments/client";
 import { getBrowserExpId } from "@clearcut/experiments/id";
+import type { FeaturesPayload } from "@clearcut/experiments/payload";
 import { createExperimentsHooks } from "@clearcut/experiments/react";
 import { setAnalyticsUserProperty, trackReservedEvent } from "@/lib/analytics/browser";
 import { getExperimentUser, onExperimentUserChange } from "@/lib/experiment-user";
@@ -15,6 +16,12 @@ const CLIENT_KEY = process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY;
 const API_HOST = process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST;
 
 let client: ExperimentsClient | null | undefined;
+let serverPayload: FeaturesPayload | null = null;
+
+/** Called by <ExperimentsBootstrap> with the payload the server fetched (cached 5 min). Must run before the client is created. */
+export function setServerPayload(payload: FeaturesPayload | null): void {
+  serverPayload = payload;
+}
 
 /** Lazy singleton: the GrowthBook client (and its CDN request) only exists once an experiment element has mounted. */
 export function getExperiments(): ExperimentsClient | null {
@@ -27,6 +34,7 @@ export function getExperiments(): ExperimentsClient | null {
   }
   const created = createExperimentsClient({
     config,
+    payload: serverPayload,
     attributes: {
       // Same cookie as the landing pages (cookie domain .clearcutoff.in): the variant survives the OTP signup.
       id: getBrowserExpId(),
