@@ -33,7 +33,12 @@ export function useAddPaper() {
   const papers = usePreparationStore((s) => s.papers);
   const course = usePreparationStore((s) => s.course);
 
-  const { totalPapers } = useAvailablePapers(course?.exam?.id);
+  const { totalPapers, rootPapers } = useAvailablePapers(course?.exam?.id);
+
+  // HTET's roots are Levels (group "Level": Level 1 / 2 / 3), alternatives of each other: a learner is in one of them and
+  // switches, they do not collect them. Every other exam's roots are Papers (group "Paper") that really are added.
+  // For a level exam the same entry point is therefore "Change Paper", not "Add Paper" (it opens the same edit modal).
+  const isLevelExam = rootPapers.some((root) => root.group === "Level");
 
   // `papers` is enrolled-only; `totalPapers` is what the exam offers. A gap
   // between them means there is still a paper this user could add.
@@ -58,6 +63,8 @@ export function useAddPaper() {
   return {
     canAddPaper,
     openAddPaper,
+    /** true: label the entry point "Change Paper" instead of "Add Paper". */
+    isLevelExam,
     enrolledPaperCount: papers.length,
   };
 }

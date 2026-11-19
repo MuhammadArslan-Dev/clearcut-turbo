@@ -18,7 +18,8 @@ export default React.memo(function PaperSwitch() {
     usePreparationStore();
   const { locale } = useLanguageSwitch();
   const addP = useTranslations("modals.addPaper");
-  const { canAddPaper, openAddPaper } = useAddPaper();
+  const changeP = useTranslations("modals.changePaper");
+  const { canAddPaper, openAddPaper, isLevelExam } = useAddPaper();
 
   const paperItems = React.useMemo(
     () => {
@@ -37,12 +38,12 @@ export default React.memo(function PaperSwitch() {
         id: ADD_PAPER_TAB_ID,
         label: (
           <div className="flex flex-col">
-            <span className="heading-small">{addP("title")}</span>
+            <span className="heading-small">{isLevelExam ? changeP("change_paper") : addP("title")}</span>
           </div>
         ),
       },
     ];
-  }, [paperItems, canAddPaper, addP]);
+  }, [paperItems, canAddPaper, addP, changeP, isLevelExam]);
 
   const handleChange = (id: string) => {
     if (id === ADD_PAPER_TAB_ID) {
