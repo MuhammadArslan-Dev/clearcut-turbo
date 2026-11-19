@@ -69,31 +69,6 @@ const RESEND_INTERVAL = 30;
 // it only feeds API payloads/analytics, so there's no hydration-mismatch
 // risk to guard against here.
 const PENDING_USER_ID_KEY = "pending_user_id";
-
-// localStorage can throw (SecurityError) where storage is blocked (Facebook/Instagram in-app
-// browsers, some private modes). Read from a useState initializer it crashed the whole /start page
-// (Sentry CLEARCUTOFF-PUBLIC-4/5), so every access here is guarded: reads give null, writes are skipped.
-const safeGetItem = (key: string): string | null => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-const safeSetItem = (key: string, value: string): void => {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // storage blocked: the value is kept in React state for this visit
-  }
-};
-const safeRemoveItem = (key: string): void => {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    // storage blocked: nothing to remove
-  }
-};
 const REDIRECT_BASE_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in";
 // "Login with WhatsApp" — pure frontend wa.me deep link, no backend call.
@@ -330,7 +305,7 @@ export default function StartAuthForm({
   const [otpRefocusKey, setOtpRefocusKey] = useState(0);
   const [userId, setUserId] = useState(() =>
     typeof window !== "undefined"
-      ? (safeGetItem(PENDING_USER_ID_KEY) ?? "")
+      ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
       : "",
   );
   const [isNewUser, setIsNewUser] = useState(false);
@@ -515,7 +490,7 @@ export default function StartAuthForm({
       // Brand-new signup only — see packages/auth login-screen.tsx.
       if (data?.is_new_user && data?.user_id) setAmplitudeUserId(data.user_id);
 
-      safeSetItem("is_new_user", data?.is_new_user ? "true" : "false");
+      localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
       setIsNewUser(Boolean(data?.is_new_user));
 
       // The backend only echoes `user_id` back for a genuinely new signup
@@ -526,7 +501,7 @@ export default function StartAuthForm({
       const nextUserId = data?.user_id ?? userId;
       setUserId(nextUserId);
       if (nextUserId) {
-        safeSetItem(PENDING_USER_ID_KEY, nextUserId);
+        localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
       }
 
       setSuccess(message);
@@ -641,7 +616,7 @@ export default function StartAuthForm({
       outcomeTracked = true;
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
-      safeRemoveItem(PENDING_USER_ID_KEY);
+      localStorage.removeItem(PENDING_USER_ID_KEY);
       identifyClarityUser({ userId, phone });
 
       // See packages/auth/src/screens/otp-screen.tsx's comment above the
