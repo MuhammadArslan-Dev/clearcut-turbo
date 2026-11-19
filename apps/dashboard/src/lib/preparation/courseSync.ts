@@ -77,10 +77,14 @@ export function patchCoursePosition(queryClient: QueryClient, pos: CoursePositio
  */
 export function refreshAfterEnrollmentChange(queryClient: QueryClient): Promise<unknown> {
   queryClient.removeQueries({ queryKey: ["edit-enrollment"] });
-  const keys: string[][] = [
+  // Chapter lists of screens that are not open: drop them (patchCoursePosition writes into them with setQueryData, which
+  // would silently clear an invalidation). Open ones are refetched by the invalidate below.
+  queryClient.removeQueries({ queryKey: ["chapter"], type: "inactive" });
+  // These two are written to with setQueryData when the student opens the course (patchCoursePosition, position saves), and
+  // setQueryData clears the "stale" mark. So they are refetched right away, even when no screen is showing them.
+  const refetchNow: string[][] = [["get-current-course"], ["preparation"]];
+  const markStale: string[][] = [
     ["my-courses"],
-    ["get-current-course"],
-    ["preparation"],
     ["chapter"],
     ["resume-state"],
     ["courses-cutoff-meter"],
@@ -88,7 +92,10 @@ export function refreshAfterEnrollmentChange(queryClient: QueryClient): Promise<
     ["courses-progress-summary"],
     ["learning-progress-by-topic"],
   ];
-  return Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+  return Promise.all([
+    ...refetchNow.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: "all" })),
+    ...markStale.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  ]);
 }
 
 /**
