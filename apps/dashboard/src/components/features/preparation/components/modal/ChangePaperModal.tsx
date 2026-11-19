@@ -173,7 +173,6 @@ const Footer = React.memo(function Footer({
 }) {
   const changeP = useTranslations("modals.changePaper");
   const addP = useTranslations("modals.addPaper");
-  const { isLevelExam } = useAddPaper();
 
   return (
     <div className="sticky bottom-0 z-10 px-3 py-2 bg-white">
@@ -205,7 +204,7 @@ const Footer = React.memo(function Footer({
                 fullWidth
               >
                 <div className="flex body-large !font-semibold gap-1 items-center">
-                  {isLevelExam ? changeP("change_paper") : addP("title")}
+                  {addP("title")}
                 </div>
               </Button>
             )}

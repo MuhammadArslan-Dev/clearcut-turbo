@@ -66,7 +66,7 @@ export default function BottomBar({
   // courseLanguageToLocale()'s docblock.
   const contentLocale = courseLanguageToLocale(course?.language);
 
-  const { canAddPaper, openAddPaper, isLevelExam } = useAddPaper();
+  const { canAddPaper, openAddPaper } = useAddPaper();
 
   // Only the single-paper case earns a slot in the bar. Once a second paper
   // exists the bar already carries the "Current Paper" switcher, and showing
@@ -196,7 +196,7 @@ export default function BottomBar({
             >
               <div className="flex items-center gap-2">
                 <span className="body-small !font-semibold">
-                  {isLevelExam ? changeP("change_paper") : addP("title")}
+                  {addP("title")}
                 </span>
               </div>
             </Button>

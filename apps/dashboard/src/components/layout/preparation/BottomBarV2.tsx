@@ -113,7 +113,7 @@ function BottomBarV2Desktop() {
   // courseLanguageToLocale()'s docblock.
   const contentLocale = courseLanguageToLocale(course?.language);
 
-  const { canAddPaper, openAddPaper, isLevelExam } = useAddPaper();
+  const { canAddPaper, openAddPaper } = useAddPaper();
 
   // Same query key + params as V1 / ChapterDetailHeader, so all three share one
   // cached request per topic.
@@ -149,16 +149,14 @@ function BottomBarV2Desktop() {
     );
   }
 
-  const paperAction: PaperAction = canAddPaper
-    ? "add"
-    : papers.length > 1
-      ? "change"
-      : null;
+  // Enrolled in more than one paper/level: "Change Paper" (the switcher modal, which still offers "Add Paper" in its footer
+  // while there is one left to add). "Add Paper" is only the entry point for a learner who has a single paper.
+  const paperAction: PaperAction =
+    papers.length > 1 ? "change" : canAddPaper ? "add" : null;
 
   return (
     <BottomBarV2View
       paperAction={paperAction}
-      addAsChange={isLevelExam}
       hasPrev={!isFirstTopicOverall}
       hasNext={nextTopicLocked || !!nextTopic}
       nextLocked={nextTopicLocked}
@@ -189,8 +187,6 @@ export type PaperAction = "add" | "change" | null;
 
 type ViewProps = {
   paperAction: PaperAction;
-  /** "add" still opens the edit modal, but is worded "Change Paper" (level exams such as HTET). */
-  addAsChange?: boolean;
   hasPrev: boolean;
   hasNext: boolean;
   nextLocked: boolean;
@@ -225,7 +221,6 @@ type NeighbourMode = keyof typeof NEIGHBOUR_MODES;
 /** Pure layout — no store/network access, so every combination can be previewed. */
 export function BottomBarV2View({
   paperAction,
-  addAsChange = false,
   hasPrev,
   hasNext,
   nextLocked,
@@ -283,13 +278,13 @@ export function BottomBarV2View({
               className="shrink-0"
             >
               <span className="flex items-center gap-1.5">
-                {paperAction === "add" && !addAsChange ? (
+                {paperAction === "add" ? (
                   <CirclePlus size={16} />
                 ) : (
                   <ArrowLeftRight size={16} />
                 )}
                 <span className="body-small !font-semibold">
-                  {paperAction === "add" && !addAsChange ? addP("title") : changeP("change_paper")}
+                  {paperAction === "add" ? addP("title") : changeP("change_paper")}
                 </span>
               </span>
             </Button>
