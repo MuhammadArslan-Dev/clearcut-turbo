@@ -22,6 +22,8 @@ export type StartCopy = {
     sendFail: string;
     otp: string;
     otpIdle: string;
+    /** Phase 120 (airplane variant): the wait is taking longer than usual. */
+    slow: string;
     otpType: (n: number) => string;
     otpShort: string;
     otpCheck: string;
@@ -74,6 +76,7 @@ export const START_COPY: Record<Locale, StartCopy> = {
       sendFail: "OTP nahi gaya. Internet check karke dobara try karo",
       otp: "OTP bhej diya! SMS ya WhatsApp dekho",
       otpIdle: "OTP nahi aaya? Thoda ruko, phir Resend dabao",
+      slow: "Network thoda slow hai, bas ek pal ⏳",
       otpType: (n) => `Bas ${n} digit aur…`,
       otpShort: "Poore 4 digit likho",
       otpCheck: "Check kar raha hoon…",
@@ -124,6 +127,7 @@ export const START_COPY: Record<Locale, StartCopy> = {
       sendFail: "OTP नहीं गया। इंटरनेट चेक करके दोबारा कोशिश करो",
       otp: "OTP भेज दिया! SMS या WhatsApp देखो",
       otpIdle: "OTP नहीं आया? थोड़ा रुको, फिर Resend दबाओ",
+      slow: "नेटवर्क थोड़ा स्लो है, बस एक पल ⏳",
       otpType: (n) => `बस ${n} अंक और…`,
       otpShort: "पूरे 4 अंक लिखो",
       otpCheck: "चेक कर रहा हूँ…",
@@ -174,6 +178,7 @@ export const START_COPY: Record<Locale, StartCopy> = {
       sendFail: "OTP गेला नाही. इंटरनेट तपासून पुन्हा प्रयत्न करा",
       otp: "OTP पाठवला! SMS किंवा WhatsApp पाहा",
       otpIdle: "OTP आला नाही? थोडं थांबा, मग Resend दाबा",
+      slow: "नेटवर्क थोडा स्लो आहे, फक्त एक क्षण ⏳",
       otpType: (n) => `फक्त ${n} अंक अजून…`,
       otpShort: "पूर्ण 4 अंक लिहा",
       otpCheck: "तपासतोय…",

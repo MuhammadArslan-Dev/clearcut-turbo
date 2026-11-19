@@ -346,6 +346,35 @@
 .linkbtn { background: none; border: 0; padding: 2px; color: var(--s-blue-600); font: inherit; font-weight: 600; cursor: pointer; }
 .linkbtn:disabled { color: var(--s-muted); cursor: default; font-weight: 500; }
 
+/* Phase 120 (variant "airplane"): resend ring + the paper plane layer. Tokens only. */
+.rbtn { display: inline-flex; align-items: center; gap: 7px; }
+.ring { width: 18px; height: 18px; flex: none; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 2.6; }
+.ringBg { stroke: var(--s-line); }
+.ringFg { stroke: var(--s-blue); stroke-linecap: round; stroke-dasharray: 44; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.rbtn[data-ready="true"] .ring { animation: ringNudge 1.6s ease-in-out 2; }
+@keyframes ringNudge { 0%, 100% { transform: rotate(-90deg) scale(1); } 50% { transform: rotate(-90deg) scale(1.25); } }
+.flight { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.flightCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.plane { position: absolute; left: 0; top: 0; width: 38px; height: 38px; opacity: 0; will-change: transform, opacity; filter: drop-shadow(0 6px 6px color-mix(in srgb, var(--color-brand) 28%, transparent)); }
+.planeStopA0 { stop-color: color-mix(in srgb, var(--color-brand) 42%, white); }
+.planeStopA1 { stop-color: color-mix(in srgb, var(--color-brand) 90%, white); }
+.planeStopB0 { stop-color: color-mix(in srgb, var(--color-brand) 95%, black); }
+.planeStopB1 { stop-color: color-mix(in srgb, var(--color-brand) 70%, black); }
+.planeC { fill: white; fill-opacity: 0.55; }
+/* Empty air above the OTP boxes where the plane circles (prototype: .lane 58px, 54px on a phone). Only rendered in the variant. */
+.lane { height: 58px; flex: none; }
+@media (max-width: 859px) { .lane { height: 54px; } }
+.root[data-kb="true"] .lane { height: 26px; }
+.resend[data-airplane="true"][data-ready="true"] .resendHint { color: var(--s-ink); }
+.rbtn .count { min-width: 2.4em; text-align: left; }
+.rbtn:not(:disabled):hover { text-decoration: underline; }
+/* Nibbu throws the plane / catches it again (prototype keyframes). The attribute is set by OtpAirplane for a moment. */
+.mascotBtn[data-fx="throw"] .mascot .nib { animation: nibThrow 0.5s cubic-bezier(0.3, 0.8, 0.4, 1); }
+.mascotBtn[data-fx="catch"] .mascot .nib { animation: nibCatch 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes nibThrow { 0% { transform: scale(1); } 30% { transform: scale(1.1, 0.88) rotate(-4deg); } 65% { transform: scale(0.94, 1.08) rotate(3deg); } 100% { transform: scale(1); } }
+@keyframes nibCatch { 0% { transform: scale(1); } 35% { transform: scale(1.08, 0.92); } 100% { transform: scale(1); } }
+
 .perks { margin: 8px 0 0; font-size: 12px; font-weight: 600; color: var(--s-blue-700); text-align: center; }
 .perks span { white-space: nowrap; }
 .legal { flex: none; margin: 8px 0 0; font-size: 11.5px; color: var(--s-muted); text-align: center; }
