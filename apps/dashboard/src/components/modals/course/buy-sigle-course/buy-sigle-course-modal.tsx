@@ -30,6 +30,8 @@ import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
+import { useQueryClient } from "@tanstack/react-query";
+import { refreshAfterEnrollmentChange } from "@/lib/preparation/courseSync";
 import { ApiError, isNetworkFailure } from "@/lib/api/api-error";
 import { logger } from "@/lib/sentry/sentry-logger";
 import PracticeTestPromptSheet from "@/components/features/practice-test/PracticeTestPromptSheet";
@@ -51,6 +53,7 @@ export default function BuySigleCourseModal() {
   useDrawerBackHandler();
   const changeP = useTranslations("modals.changePaper");
   const invalidateMyCourses = useInvalidateQuery(MY_COURSES_KEY);
+  const queryClient = useQueryClient();
 
   const { levels: levelsRaw = [], loading, error } = useLevels(data?.id);
 
@@ -238,6 +241,8 @@ export default function BuySigleCourseModal() {
           selected_navigation_names: selectionNames,
         });
         await invalidateMyCourses();
+        // Also drop the other cached views of this enrollment (current course, preparation paper tabs, chapters...).
+        void refreshAfterEnrollmentChange(queryClient);
         // First time this course gets subjects (this modal only opens for a
         // course without them, or a newly added exam): ask whether to take the
         // short practice test first (see PracticeTestPromptSheet). Either way

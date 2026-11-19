@@ -69,6 +69,36 @@ export function patchCoursePosition(queryClient: QueryClient, pos: CoursePositio
 }
 
 /**
+ * The student's ENROLLMENT changed (level / paper / language saved in the edit or buy modal). Every cached view that embeds
+ * it is now wrong: the My Courses list, the current-course query (15 min fresh, feeds the course store the sidebars read),
+ * the preparation syllabus (paper tabs), chapters, resume bar, meter and progress. Mark them all stale at once so the next
+ * render refetches (active ones refetch immediately); the edit form's own copy is dropped so it reopens from the server.
+ * Prefix keys, so it covers every course.
+ */
+export function refreshAfterEnrollmentChange(queryClient: QueryClient): Promise<unknown> {
+  queryClient.removeQueries({ queryKey: ["edit-enrollment"] });
+  // Chapter lists of screens that are not open: drop them (patchCoursePosition writes into them with setQueryData, which
+  // would silently clear an invalidation). Open ones are refetched by the invalidate below.
+  queryClient.removeQueries({ queryKey: ["chapter"], type: "inactive" });
+  // These two are written to with setQueryData when the student opens the course (patchCoursePosition, position saves), and
+  // setQueryData clears the "stale" mark. So they are refetched right away, even when no screen is showing them.
+  const refetchNow: string[][] = [["get-current-course"], ["preparation"]];
+  const markStale: string[][] = [
+    ["my-courses"],
+    ["chapter"],
+    ["resume-state"],
+    ["courses-cutoff-meter"],
+    ["cutoff-meter"],
+    ["courses-progress-summary"],
+    ["learning-progress-by-topic"],
+  ];
+  return Promise.all([
+    ...refetchNow.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: "all" })),
+    ...markStale.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  ]);
+}
+
+/**
  * The server now holds the new position (and, through it, the paper the My Course card
  * shows — backend `LastActivePaper`): refetch what is derived from it.
  */
