@@ -149,11 +149,10 @@ function BottomBarV2Desktop() {
     );
   }
 
-  const paperAction: PaperAction = canAddPaper
-    ? "add"
-    : papers.length > 1
-      ? "change"
-      : null;
+  // Enrolled in more than one paper/level: "Change Paper" (the switcher modal, which still offers "Add Paper" in its footer
+  // while there is one left to add). "Add Paper" is only the entry point for a learner who has a single paper.
+  const paperAction: PaperAction =
+    papers.length > 1 ? "change" : canAddPaper ? "add" : null;
 
   return (
     <BottomBarV2View
