@@ -4,6 +4,7 @@ import { groupsByLang } from "@/lib/question-bank/card-model";
 import { pageCount } from "@/lib/question-bank/pagination";
 import type { ScopeChapter } from "@/lib/question-bank/scope-page";
 import { GROUP_BY, searchIndexPath, type QuestionScope } from "@/lib/question-bank/scope";
+import CollapsibleChapters from "./collapsible-chapters";
 import CourseLangScope from "./course-lang-scope";
 import QuestionBankToolbar from "./question-bank-toolbar";
 import QuestionCard from "./question-card";
@@ -151,8 +152,11 @@ export async function ChapterLinks({
   const t = await getTranslations({ locale, namespace: "QuestionBank" });
 
   return (
-    <nav aria-label={t("chaptersHeading")} className="bg-white rounded-none md:rounded-lg border border-[var(--color-border-gray-subtle)] p-3 space-y-2">
-      <h2 className="heading-small !font-semibold surface-text-gray-normal">{t("chaptersHeading")}</h2>
+    <nav aria-label={t("chaptersHeading")} className="bg-white rounded-none md:rounded-lg border border-[var(--color-border-gray-subtle)] p-3">
+      <CollapsibleChapters
+        heading={t("chaptersHeading")}
+        toggleLabel={t("chaptersToggle", { count: chapters.length })}
+      >
       <ul className="flex flex-wrap gap-2">
         {chapters.map(({ slug, href, labels, count }) => (
           <li key={slug}>
@@ -171,6 +175,7 @@ export async function ChapterLinks({
           </li>
         ))}
       </ul>
+      </CollapsibleChapters>
     </nav>
   );
 }
