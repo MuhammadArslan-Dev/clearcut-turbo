@@ -54,6 +54,9 @@ import StartMascotStage from "./start/StartMascotStage";
 import { useStartMascot } from "./start/useStartMascot";
 import { useOneScreen } from "./start/useOneScreen";
 import { START_COPY } from "./start/startCopy";
+import OtpWaitExtras from "./start/OtpWaitExtras";
+import type { OtpExperimentProps } from "./start/otpAirplaneValue";
+import { getExperiments } from "@/lib/experiments";
 
 const OTP_LENGTH = 4;
 const RESEND_INTERVAL = 30;
@@ -320,6 +323,20 @@ export default function StartAuthForm({
   const resendCountRef = useRef(0);
   const isVerifyingRef = useRef(false);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  // Phase 120: set by <OtpWaitExtras> once this learner is in the OTP-airplane experiment (null = not in it: nothing is added).
+  const experimentRef = useRef<OtpExperimentProps | null>(null);
+  // Phase 120: the airplane variant is on (adds the empty lane above the OTP boxes). Always false for control.
+  const [airplaneOn, setAirplaneOn] = useState(false);
+  // The existing funnel events (Verification Sent/Resent/Failed, Authentication Outcome) with the experiment properties on them,
+  // so both variants can be compared in Amplitude without joins. Identical to logAmplitudeEvent for everybody not in the experiment.
+  const trackFunnel = (name: string, properties?: Record<string, unknown>) =>
+    logAmplitudeEvent(name, { ...properties, ...experimentRef.current });
+
+  // Phase 120: start loading the experiments client as soon as the page opens (it evaluates no flag, so it sends no exposure),
+  // so the answer is ready by the time the OTP step opens.
+  useEffect(() => {
+    getExperiments();
+  }, []);
 
   /* ---------------- ANALYTICS (same event names as login-screen.tsx) ---------------- */
 
@@ -469,7 +486,7 @@ export default function StartAuthForm({
       const { data, message } = res?.data;
 
       resendCountRef.current = 0;
-      trackVerificationSent(logAmplitudeEvent, number);
+      trackVerificationSent(trackFunnel, number);
       // Brand-new signup only — see packages/auth login-screen.tsx.
       if (data?.is_new_user && data?.user_id) setAmplitudeUserId(data.user_id);
 
@@ -497,7 +514,7 @@ export default function StartAuthForm({
     } catch (err) {
       // The OTP was not sent (CC-87/D4): say why, and record it.
       const reason = getAuthFailureReason(err);
-      trackVerificationFailed(logAmplitudeEvent, number, reason);
+      trackVerificationFailed(trackFunnel, number, reason);
       setLoading(false);
       setError(sendFailureMessage(reason));
     }
@@ -538,11 +555,11 @@ export default function StartAuthForm({
       setOtpRefocusKey((k) => k + 1);
 
       resendCountRef.current += 1;
-      trackVerificationResent(logAmplitudeEvent, phone, resendCountRef.current);
+      trackVerificationResent(trackFunnel, phone, resendCountRef.current);
     } catch (err) {
       // Used to fail silently (console only).
       const reason = getAuthFailureReason(err);
-      trackVerificationFailed(logAmplitudeEvent, phone, reason, true);
+      trackVerificationFailed(trackFunnel, phone, reason, true);
       setError(sendFailureMessage(reason));
     } finally {
       setResendingOtp(false);
@@ -595,7 +612,7 @@ export default function StartAuthForm({
 
       setToken(data.token);
       if (userId) setAmplitudeUserId(userId);
-      trackAuthSuccess(logAmplitudeEvent);
+      trackAuthSuccess(trackFunnel);
       outcomeTracked = true;
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
@@ -625,7 +642,7 @@ export default function StartAuthForm({
       // ApiError's `.status`, which the old `err.response.status` check
       // never found, so every failure here said "something went wrong".
       const reason = getAuthFailureReason(err);
-      if (!outcomeTracked) trackAuthFailure(logAmplitudeEvent, reason);
+      if (!outcomeTracked) trackAuthFailure(trackFunnel, reason);
       setLoading(false);
       if (reason === "incorrect_otp" || reason === "otp_expired") {
         setError(reason === "otp_expired" ? t.errOtpExpired : t.errOtpInvalid);
@@ -1143,6 +1160,7 @@ export default function StartAuthForm({
                   {c.change}
                 </button>
               </p>
+              {airplaneOn && <div className={styles.lane} aria-hidden="true" />}
               <form
                 noValidate
                 onSubmit={(e) => {
@@ -1199,22 +1217,27 @@ export default function StartAuthForm({
                   {loading ? c.verifying : c.verifyStart}
                 </Button>
               </form>
-              <div className={styles.resend}>
-                <span className={styles.resendHint}>{c.didntGet}</span>
-                {resendingOtp ? (
-                  <span className={styles.count}>{t.resendingOtp}</span>
-                ) : (
-                  <button type="button" className={styles.linkbtn} onClick={handleResendOtp} disabled={resendTimer > 0 || loading}>
-                    {resendTimer > 0 ? (
-                      <>
-                        {t.resendOtp} <span className={styles.count}>0:{String(resendTimer).padStart(2, "0")}</span>
-                      </>
-                    ) : (
-                      t.resendOtp
-                    )}
-                  </button>
-                )}
-              </div>
+              <OtpWaitExtras
+                hint={c.didntGet}
+                resendLabel={t.resendOtp}
+                resendingLabel={t.resendingOtp}
+                resendTimer={resendTimer}
+                resendInterval={RESEND_INTERVAL}
+                resendingOtp={resendingOtp}
+                error={error}
+                loading={loading}
+                nextResendCount={resendCountRef.current + 1}
+                onResend={handleResendOtp}
+                onExperiment={(p) => {
+                  experimentRef.current = p;
+                }}
+                onVariant={setAirplaneOn}
+                onSlow={() => {
+                  if (live.current.step === "otp" && !live.current.otp) nib.say(c.say.slow);
+                }}
+                getMascot={() => nib.mascotRef.current}
+                getTarget={() => otpWrapRef.current}
+              />
             </section>
           )}
 

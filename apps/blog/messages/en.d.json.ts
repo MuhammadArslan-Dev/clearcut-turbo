@@ -121,6 +121,8 @@ declare const messages: {
     "hint": "Choose an answer to reveal your result and explanation.",
     "showExplanationResult": "Show Explanation & Result",
     "answerExplanation": "Answer & Explanation",
+    "correctExplanationTitle": "Correct Explanation",
+    "incorrectExplanationTitle": "Incorrect Explanation",
     "correctAnswer": "Correct Answer:",
     "option": "Option {label}"
   },
