@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
 interface PersistedStoreApi {
-  persist: { rehydrate: () => void | Promise<void> };
+  // Optional on purpose: when localStorage is blocked (SecurityError in Facebook/Instagram in-app
+  // browsers, some private modes) zustand builds the store WITHOUT its `persist` API.
+  persist?: { rehydrate: () => void | Promise<void> };
 }
 
 /**
@@ -18,7 +20,9 @@ interface PersistedStoreApi {
  */
 export function useHydrateStore(store: PersistedStoreApi): void {
   useEffect(() => {
-    store.persist.rehydrate();
+    // Storage blocked => no `persist` API => nothing to rehydrate; the store keeps its defaults
+    // instead of crashing the page (Sentry CLEARCUTOFF-PUBLIC-4/5).
+    store.persist?.rehydrate();
     // Only ever needs to run once per mount — store identity is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

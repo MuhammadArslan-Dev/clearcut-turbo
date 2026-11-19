@@ -62,12 +62,20 @@ function readPendingNonce(): PendingNonce | null {
 
 function writePendingNonce(nonce: string): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PENDING_NONCE_KEY, JSON.stringify({ nonce, startedAt: Date.now() }));
+  try {
+    localStorage.setItem(PENDING_NONCE_KEY, JSON.stringify({ nonce, startedAt: Date.now() }));
+  } catch {
+    // storage blocked (e.g. in-app browser): the poll still runs, it just cannot resume after a reload
+  }
 }
 
 function clearPendingNonce(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(PENDING_NONCE_KEY);
+  try {
+    localStorage.removeItem(PENDING_NONCE_KEY);
+  } catch {
+    // storage blocked: nothing to clear
+  }
 }
 
 export interface TruecallerLoginResult {
@@ -340,12 +348,22 @@ function writeCookie(name: string, value: string, maxAgeDays: number): void {
 export function getCachedTruecallerAvailability(): "available" | "unavailable" | null {
   if (typeof window === "undefined") return null;
 
-  const fromLocal = localStorage.getItem(TRUECALLER_FLAG_KEY);
+  // localStorage can throw (SecurityError) where storage is blocked; fall back to the cookie then.
+  let fromLocal: string | null = null;
+  try {
+    fromLocal = localStorage.getItem(TRUECALLER_FLAG_KEY);
+  } catch {
+    fromLocal = null;
+  }
   if (fromLocal === "available" || fromLocal === "unavailable") return fromLocal;
 
   const fromCookie = readCookie(TRUECALLER_FLAG_KEY);
   if (fromCookie === "available" || fromCookie === "unavailable") {
-    localStorage.setItem(TRUECALLER_FLAG_KEY, fromCookie);
+    try {
+      localStorage.setItem(TRUECALLER_FLAG_KEY, fromCookie);
+    } catch {
+      // storage blocked: the cookie value is still returned
+    }
     return fromCookie;
   }
 
@@ -354,7 +372,11 @@ export function getCachedTruecallerAvailability(): "available" | "unavailable" |
 
 export function setCachedTruecallerAvailability(value: "available" | "unavailable"): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TRUECALLER_FLAG_KEY, value);
+  try {
+    localStorage.setItem(TRUECALLER_FLAG_KEY, value);
+  } catch {
+    // storage blocked: the cookie below still records it
+  }
   writeCookie(TRUECALLER_FLAG_KEY, value, TRUECALLER_FLAG_MAX_AGE_DAYS);
 }
 
