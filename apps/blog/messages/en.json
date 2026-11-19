@@ -144,6 +144,7 @@
   "QuestionBank": {
     "chaptersHeading": "Chapters in this subject",
     "chapterCount": "{count} questions",
+    "chaptersToggle": "Chapters in this subject ({count})",
     "loadError": "Questions couldn't be loaded right now. Please try again in a few minutes."
   },
   "QuestionBankPage": {

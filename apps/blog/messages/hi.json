@@ -134,6 +134,7 @@
   "QuestionBank": {
     "chaptersHeading": "इस विषय के अध्याय",
     "chapterCount": "{count} प्रश्न",
+    "chaptersToggle": "इस विषय के अध्याय ({count})",
     "loadError": "अभी प्रश्न लोड नहीं हो सके। कृपया कुछ मिनट बाद फिर से कोशिश करें।"
   },
   "QuestionBankPage": {
