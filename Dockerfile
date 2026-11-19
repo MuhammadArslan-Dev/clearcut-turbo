@@ -35,8 +35,14 @@ ARG NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY
 ARG NEXT_PUBLIC_GTM_ID
 ARG REVALIDATE_SECRET
 
+# The GrowthBook CLIENT key and host are public (the key is part of the public CDN URL, the dashboard bundle already ships it).
+# next build only inlines NEXT_PUBLIC_* values that exist at build time; the landing app's Coolify value did not reach the build
+# (a missing/empty variable is not passed as a build arg), so experiments stayed off. `:-` also covers an EMPTY value.
+# Coolify can still override both by setting a real value.
 # Same build command as the Coolify app settings. landing fetches the CMS at build time (CMS_URL).
-RUN pnpm exec turbo run build --filter=landing
+RUN export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY="${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY:-sdk-dIndvZ1qzJJOPrh0}" \
+    NEXT_PUBLIC_GROWTHBOOK_API_HOST="${NEXT_PUBLIC_GROWTHBOOK_API_HOST:-https://cdn.growthbook.io}" \
+ && pnpm exec turbo run build --filter=landing
 
 EXPOSE 3000
 ENV PORT=3000
