@@ -69,6 +69,29 @@ export function patchCoursePosition(queryClient: QueryClient, pos: CoursePositio
 }
 
 /**
+ * The student's ENROLLMENT changed (level / paper / language saved in the edit or buy modal). Every cached view that embeds
+ * it is now wrong: the My Courses list, the current-course query (15 min fresh, feeds the course store the sidebars read),
+ * the preparation syllabus (paper tabs), chapters, resume bar, meter and progress. Mark them all stale at once so the next
+ * render refetches (active ones refetch immediately); the edit form's own copy is dropped so it reopens from the server.
+ * Prefix keys, so it covers every course.
+ */
+export function refreshAfterEnrollmentChange(queryClient: QueryClient): Promise<unknown> {
+  queryClient.removeQueries({ queryKey: ["edit-enrollment"] });
+  const keys: string[][] = [
+    ["my-courses"],
+    ["get-current-course"],
+    ["preparation"],
+    ["chapter"],
+    ["resume-state"],
+    ["courses-cutoff-meter"],
+    ["cutoff-meter"],
+    ["courses-progress-summary"],
+    ["learning-progress-by-topic"],
+  ];
+  return Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+}
+
+/**
  * The server now holds the new position (and, through it, the paper the My Course card
  * shows — backend `LastActivePaper`): refetch what is derived from it.
  */
