@@ -22,6 +22,8 @@ import GuaranteeBadge from "@/components/shared/GuaranteeBadge";
 import HeaderBlock from "@/components/shared/text-render/HeaderBlock";
 import ContinueFreeButton from "@/components/ui/buttons/ContinueFreeButton";
 import { RotatingBadge } from "@/components/features/animation/RotatingBadge";
+import { useAuthStore } from "@/lib/auth";
+import { logAmplitudeEvent } from "@/services/analytics";
 import { Locale } from "@/lib/i18n/config";
 import { useLocale } from "next-intl";
 
@@ -353,6 +355,15 @@ function useCountdown(target: Date) {
 
 export default function CoursrMarketingPage({ data }: any) {
   const t = COPY[useLocale()];
+  const { goToLogin, setMarketing, setCourse } = useAuthStore();
+  // The Videos/Notes/PDFs/Tests pill looks like a tab. Tapping it opens the same
+  // signup as the trial button instead of doing nothing (CC-108).
+  const openSignup = () => {
+    logAmplitudeEvent("Authentication Initiated", { element_location: "sticky_bar_unlock", element_type: "link" });
+    goToLogin();
+    setMarketing("course-marketing");
+    setCourse(data || "");
+  };
   return (
     <div className="bg-brand/10">
       <div className="flex flex-col max-w-[600px] bg-white mx-auto">
@@ -429,6 +440,7 @@ export default function CoursrMarketingPage({ data }: any) {
             animationDuration={0.45}
             direction="up"
             items={["Videos", "Notes", "PDFs", "Tests"]}
+            onPillClick={openSignup}
           />
         </div>
       </div>

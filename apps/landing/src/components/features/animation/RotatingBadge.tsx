@@ -9,6 +9,8 @@ type RotatingBadgeProps = {
     animationDuration?: number;
     direction?: Direction;
     text?: string;
+    /** When set, the word pill is a real button (CC-108: students tapped it). Omit = plain decoration, as before. */
+    onPillClick?: () => void;
 };
 
 const defaultItems = ["Videos", "Notes", "PDFs"];
@@ -18,6 +20,7 @@ export function RotatingBadge({
     intervalMs = 3000,
     direction = "up",
     text = "Unlock what you need to clear exam —",
+    onPillClick,
 }: RotatingBadgeProps) {
     const [index, setIndex] = useState(0);
 
@@ -29,6 +32,7 @@ export function RotatingBadge({
         return () => clearInterval(id);
     }, [items, intervalMs]);
 
+    const Pill = onPillClick ? "button" : "span";
     const current = items[index];
     const animClass = direction === "down" ? "badge-slide-down" : "badge-slide-up";
 
@@ -37,14 +41,15 @@ export function RotatingBadge({
             <span className="body-small !font-normal text-surface-gray-subtle">{text}</span>
 
             <div className="relative h-7 min-w-[80px] overflow-hidden flex items-center">
-                <span
+                <Pill
                     key={`${current}-${index}`}
-                    className={`inline-flex items-center px-4 py-0.5 rounded-full border-2 border-[var(--color-success)] bg-[var(--color-success-soft)] ${animClass}`}
+                    {...(onPillClick ? { type: "button" as const, onClick: onPillClick } : {})}
+                    className={`inline-flex items-center px-4 py-0.5 rounded-full border-2 border-[var(--color-success)] bg-[var(--color-success-soft)] ${animClass}${onPillClick ? " cursor-pointer" : ""}`}
                 >
                     <p className="body-xsmall !font-semibold text-[var(--color-success)]">
                         {current}
                     </p>
-                </span>
+                </Pill>
             </div>
         </div>
     );
