@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next
+**/.turbo
+out
+lhout
+.playwright-mcp
+coolify-token
+**/.env
+**/.env.*
+!**/.env.example
+docs
