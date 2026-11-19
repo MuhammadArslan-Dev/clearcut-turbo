@@ -30,9 +30,11 @@ import ShimmerButton from "@/components/ui/button/shimmer-button";
 import { ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import useButtonArrowAnimation from "@/hooks/useButtonArrowAnimation";
 import { useTranslations } from "next-intl";
-import { useQueryClient } from "@tanstack/react-query";
-import { refreshAfterEnrollmentChange } from "@/lib/preparation/courseSync";
-import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
+import {
+  MY_COURSES_KEY,
+  useMyActiveCourses,
+} from "@/hooks/course/useMyActiveCourses";
 import { parseTranslation } from "@/utils/text/translation";
 import useLanguageSwitch from "@/hooks/useLanguageSwitch";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
@@ -84,7 +86,7 @@ export default function EditCourseModal() {
   const modalT = useTranslations("modals.editCourseModal");
   // Reused from the buy modal: the same "Select any one option" hint (CC-176).
   const pickHintT = useTranslations("modals.buySingleCourseModal.paperSelection");
-  const queryClient = useQueryClient();
+  const invalidateMyCourses = useInvalidateQuery(MY_COURSES_KEY);
   const { locale } = useLanguageSwitch();
   useDrawerBackHandler();
   const router = useRouter();
@@ -380,9 +382,7 @@ export default function EditCourseModal() {
 
         clearCache(); // clear cache.
 
-        // The enrollment changed: refresh every cached view of it (my courses, current course + the course
-        // store, preparation paper tabs, chapters, resume, meter) so no screen keeps the old level for minutes.
-        void refreshAfterEnrollmentChange(queryClient);
+        invalidateMyCourses(); // refresh courses list
 
         // Screen-specific refresh (e.g. preparation's paper tabs). See the
         // `onSuccess` docs in useCourseStore.
