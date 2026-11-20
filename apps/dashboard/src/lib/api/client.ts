@@ -6,6 +6,7 @@ import {
   redirectToLogin,
 } from "../auth-token-client";
 import { fetchWithRetry } from "./fetchWithRetry";
+import { retryAfterMs, waitUnlessAborted } from "./retryAfter";
 import { ApiError, truncateBody } from "./api-error";
 
 const API_BASE_URL =
@@ -88,6 +89,28 @@ export async function apiFetch<T>(
     Sentry.setMeasurement("api_response_time", unreachableDurationMs, "millisecond");
 
     throw error;
+  }
+
+  // 429 that clears within a few seconds (the backend's per-minute limit): wait for it and send the request once more
+  // instead of failing the page. Only once, and only for a short Retry-After (see retryAfter.ts); anything else, and a
+  // second 429, falls through to the normal error handling below unchanged.
+  const waitMs = retryAfterMs(res);
+  if (waitMs !== null) {
+    Sentry.addBreadcrumb({
+      category: "api",
+      type: "http",
+      level: "warning",
+      message: `${method} ${endpoint} → 429, retrying once in ${waitMs} ms`,
+      data: { url, waitMs },
+    });
+    try {
+      await waitUnlessAborted(waitMs, options.signal);
+      res = await fetchWithRetry(url, { ...options, headers }, retryOptions?.retries, retryOptions?.delayMs);
+    } catch (cause) {
+      // Cancelled while waiting (the caller's AbortController), or the second attempt could not reach the server.
+      if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+      throw new ApiError({ status: 0, method, endpoint, url, isNetworkError: true, cause });
+    }
   }
 
   const durationMs = Date.now() - startedAt;
