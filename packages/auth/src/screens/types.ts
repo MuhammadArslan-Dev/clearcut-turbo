@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { AuthApi } from "../api";
 import type { UseAuthStore } from "../store/auth-store";
 import type { UseAuthModalStore } from "../store/auth-modal-store";
@@ -31,6 +32,10 @@ export interface LoginCopy {
   featureChips?: { icon: "gift" | "lock"; label: string }[];
   /** Primary button of the OTP step. Defaults to "Verify OTP". */
   otpSubmitLabel?: string;
+  /** Extra content on the phone step, under the "Used only for login" note
+   * (tools: the CC-174 "save my photo & signature" consent checkbox). The app
+   * owns its state. Omitted = nothing rendered, exactly as before. */
+  extraContent?: ReactNode;
 }
 
 export interface AuthScreenDeps {

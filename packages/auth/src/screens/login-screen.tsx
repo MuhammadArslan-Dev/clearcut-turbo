@@ -457,6 +457,8 @@ export function createLoginScreen({
                         <p>OTP sent via SMS and WhatsApp.</p>
                       </div>
                     </div>
+
+                    {loginCopy?.extraContent}
                   </div>
 
                   {/* BUTTON */}

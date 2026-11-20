@@ -25,7 +25,7 @@ export const DEFAULT_EXPERIMENT_DEPLOYMENT_KEY = "client-pRpnI5vqt36xQQ76zn6lb0m
 /** How long a Download tap waits for an unfinished evaluation before going Legacy. */
 export const EXPERIMENT_TIMEOUT_MS = 1500;
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const FLAG_KEYS = ["hard_gate", "soft_gate"] as const;
+const FLAG_KEYS = ["hard_gate", "soft_gate", "second_download_gate"] as const;
 
 export interface FlagContext {
   /** Exam slug (e.g. "tnpsc"); undefined on pages that are not an exam page. */
@@ -83,7 +83,7 @@ const isOn = (entry: Entry) => entry?.key === "on" || entry?.value === "on";
 export function parseFlags(body: unknown): DownloadFlags | null {
   if (!body || typeof body !== "object") return null;
   const map = body as Record<string, Entry>;
-  return { hard_gate: isOn(map.hard_gate), soft_gate: isOn(map.soft_gate) };
+  return { hard_gate: isOn(map.hard_gate), soft_gate: isOn(map.soft_gate), second_download_gate: isOn(map.second_download_gate) };
 }
 
 const memory = new Map<string, { at: number; flags: DownloadFlags }>();

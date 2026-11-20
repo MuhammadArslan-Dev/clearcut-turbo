@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { trackEvent } from "@/lib/analytics/browser";
 import ProfileCard, { Profile } from "./ProfileCard";
+import SavedToolPhotos from "./SavedToolPhotos";
 import { getProfile, updateProfile } from "@/lib/api/profile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -109,6 +110,7 @@ const ProfileWrap = () => {
         clearErrors={clearErrors}
         serverError={serverError}
       />
+      <SavedToolPhotos />
 
       {isError && (
         <p className="text-red-500 text-sm mt-2">Failed to load profile</p>

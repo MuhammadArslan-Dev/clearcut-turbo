@@ -188,6 +188,18 @@
     "logout": "Logout"
   },
   "profile": {
+    "savedToolPhotos": {
+      "title": "Saved tool photos",
+      "subtitle": "Saved from the Clear Cutoff photo & signature resizer: {kinds}.",
+      "photo": "Photo",
+      "signature": "Signature",
+      "delete": "Delete my saved photos",
+      "confirm": "Delete your saved photo & signature? This cannot be undone.",
+      "yes": "Yes, delete",
+      "no": "Cancel",
+      "deleted": "Your saved photos were deleted.",
+      "deleteFailed": "Couldn't delete. Please try again."
+    },
     "title": "My Profile",
     "greeting": "Hi, {name}",
     "personalDetails": {

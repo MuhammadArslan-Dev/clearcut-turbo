@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Button from "@clearcut/ui/button";
@@ -11,6 +12,15 @@ import { logAmplitudeEvent } from "@/lib/toolsAnalytics";
 import { encodeJpegWithinBudget } from "@/lib/jpegBudget";
 import { useDownloadOptions, type DownloadMeta } from "@/lib/useDownloadOptions";
 import { toolIdFromPath } from "@/lib/toolId";
+import { getToken } from "@clearcut/auth/token";
+import { centerCrop, crossExamsFor, kindForPreset, type CrossExam } from "@/lib/savedImages/logic";
+import { useSavedImages } from "@/lib/savedImages/useSavedImages";
+import { recordToolLead } from "@/lib/savedImages/api";
+import type { ResizerExamSpec } from "@/lib/resizerExams";
+
+// CC-174: only signed-in visitors with a saved image ever load these.
+const SavedImagesPanel = dynamic(() => import("./SavedImagesPanel"), { ssr: false });
+const CrossExamDownloads = dynamic(() => import("./CrossExamDownloads"), { ssr: false });
 
 export type PresetKey = "photo" | "signature" | "custom" | "draw" | "thumb" | "right_thumb" | "declaration";
 
@@ -890,6 +900,9 @@ const ALL_PRESET_KEYS: PresetKey[] = ["photo", "signature", "draw", "thumb"];
 const isInAppBrowser = () =>
   typeof navigator !== "undefined" && /FBAN|FBAV|FB_IAB|FB4A|FBIOS|Instagram/i.test(navigator.userAgent);
 
+/** A built file that breaks the exam's format / KB rules: not downloaded, the message is shown. */
+class SizeRuleError extends Error {}
+
 interface ResizeImageToolProps {
   photoSpec?: ImageSpec;
   signatureSpec?: ImageSpec;
@@ -908,6 +921,8 @@ interface ResizeImageToolProps {
   /** Hides the "Document type" tile grid entirely — the Add Name & Date page is its own dedicated single-purpose form in the reference, not a mode picked from a tile grid. Defaults to shown. */
   showPresetPicker?: boolean;
   locale?: Locale;
+  /** CC-174: the exams of this exam's category, for "Also applying for …? Download in one click". */
+  crossExams?: ResizerExamSpec[];
 }
 
 export default function ResizeImageTool({
@@ -922,6 +937,7 @@ export default function ResizeImageTool({
   locale = "en",
   examName,
   examSlug,
+  crossExams,
 }: ResizeImageToolProps) {
   const t = getDict(locale).tool;
   const pathname = usePathname();
@@ -956,6 +972,16 @@ export default function ResizeImageTool({
     tool: toolIdFromPath(pathname ?? ""),
     exam: examSlug,
   });
+  // CC-174 (phase 121): the signed-in visitor's saved photo / signature.
+  const toolId = toolIdFromPath(pathname ?? "");
+  const savedContext = useMemo(() => ({ tool: toolId, exam: examSlug ?? null }), [toolId, examSlug]);
+  const saved = useSavedImages(savedContext);
+  const savedCopy = t.savedImages;
+  const [oneClickBusy, setOneClickBusy] = useState(false);
+  const [oneClickError, setOneClickError] = useState<string | null>(null);
+  const [showSaveStatus, setShowSaveStatus] = useState(false);
+  // The original last sent to the account: a second download of the same picture sends nothing.
+  const lastSavedFileRef = useRef<File | null>(null);
   const [stampName, setStampName] = useState("");
   const [stampDate, setStampDate] = useState("");
   const [includeDate, setIncludeDate] = useState(false);
@@ -1026,6 +1052,8 @@ export default function ResizeImageTool({
     setLastCrop(null);
     setError(null);
     setDownloaded(false);
+    setShowSaveStatus(false);
+    setOneClickError(null);
     setStep("configure");
   };
 
@@ -1231,16 +1259,147 @@ export default function ResizeImageTool({
       preset
     ] + ".jpg";
 
-  const saveFile = (meta: DownloadMeta) => {
-    if (!result) return;
+  const savedKind = kindForPreset(preset);
+  const savedImage = savedKind ? saved.find(savedKind) : null;
+  // An account that already saved something consented before: its newest upload replaces the old one.
+  const accountConsented = (saved.items?.length ?? 0) > 0;
+  const crossList = useMemo(
+    () => (savedKind && crossExams ? crossExamsFor(savedKind, examSlug, crossExams) : []),
+    [savedKind, crossExams, examSlug],
+  );
+
+  const triggerDownload = (url: string, name: string) => {
     const a = document.createElement("a");
-    a.href = result.url;
-    a.download = downloadFilename;
+    a.href = url;
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     a.remove();
+  };
+
+  const saveFile = (meta: DownloadMeta) => {
+    if (!result) return;
+    triggerDownload(result.url, downloadFilename);
     setDownloaded(true);
-    trackResizer("Resizer Image Downloaded", { in_app_browser: isInAppBrowser(), ...meta });
+    trackResizer("Resizer Image Downloaded", {
+      in_app_browser: isInAppBrowser(),
+      ...meta,
+      asset_type: savedKind,
+      used_saved_image: false,
+      is_cross_exam: false,
+      source_exam: examSlug ?? null,
+    });
+    if (!getToken()) return;
+    // CC-155: every verified user of a tool is a tool lead.
+    void recordToolLead({ tool: toolId, exam: examSlug, download: true });
+    // CC-174: store the ORIGINAL only after OTP + consent (or for an account that consented before).
+    if (savedKind && file && (meta.save_consent || accountConsented) && lastSavedFileRef.current !== file) {
+      if (meta.save_consent) trackResizer("Saved Images Consent Given", { asset_type: savedKind, tool_name: toolId });
+      setShowSaveStatus(true);
+      lastSavedFileRef.current = file;
+      void saved.save(savedKind, file).then((ok) => {
+        if (!ok) lastSavedFileRef.current = null; // a failed save is tried again on the next download
+      });
+    }
+  };
+
+  /**
+   * Builds a file for `spec` from an original (centred crop, no manual adjust) and downloads it,
+   * but only when it meets the same rules as the normal Download button (a JPG inside the exam's
+   * KB range, CC-91). Otherwise nothing downloads and the error says why.
+   */
+  const buildAndDownload = async (
+    original: File,
+    spec: { width: number; height: number; minKB: number; maxKB: number },
+    name: string,
+  ) => {
+    const url = URL.createObjectURL(original);
+    try {
+      const img = await loadImage(url, t.errorReadImage);
+      const crop = centerCrop(img.naturalWidth, img.naturalHeight, spec.width, spec.height);
+      const blob = await resizeAndCompress(
+        original,
+        spec.width,
+        spec.height,
+        spec.maxKB,
+        crop,
+        { brightness: 0, contrast: 0, cleanup: 0 },
+        { readError: t.errorReadImage, processError: t.errorProcessImage },
+      );
+      if (blob.type && blob.type !== "image/jpeg") throw new SizeRuleError(t.notJpegForExam);
+      const sizeLabel = `${Math.floor((blob.size / KB) * 10) / 10}KB`;
+      if (spec.minKB > 0 && blob.size < spec.minKB * KB) {
+        throw new SizeRuleError(fill(t.tooSmallForExam, { size: sizeLabel, min: String(spec.minKB) }));
+      }
+      if (blob.size > spec.maxKB * KB) throw new SizeRuleError(fill(t.tooLargeForExam, { max: String(spec.maxKB) }));
+      const out = URL.createObjectURL(blob);
+      triggerDownload(out, name);
+      setTimeout(() => URL.revokeObjectURL(out), 60_000);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  // CC-174: "Your saved photo / signature" -> one click builds this exam's file from the original.
+  const handleUseSaved = async () => {
+    if (!savedKind || oneClickBusy) return;
+    setOneClickBusy(true);
+    setOneClickError(null);
+    try {
+      const original = await saved.loadOriginal(savedKind);
+      await buildAndDownload(original, { width, height, minKB, maxKB }, downloadFilename);
+      trackResizer("Resizer Image Downloaded", {
+        in_app_browser: isInAppBrowser(),
+        tool_name: toolId,
+        authentication_required: false,
+        otp_verification_status: "already_verified",
+        pdf_requested: false,
+        asset_type: savedKind,
+        used_saved_image: true,
+        is_cross_exam: false,
+        source_exam: examSlug ?? null,
+      });
+      void recordToolLead({ tool: toolId, exam: examSlug, download: true });
+    } catch (err) {
+      setOneClickError(err instanceof SizeRuleError ? err.message : savedCopy.loadFailed);
+    } finally {
+      setOneClickBusy(false);
+    }
+  };
+
+  /** true = downloaded; a string = why not (shown under the buttons). */
+  const handleCrossExam = async (exam: CrossExam): Promise<true | string> => {
+    if (!savedKind) return savedCopy.loadFailed;
+    try {
+      const original = file ?? (await saved.loadOriginal(savedKind));
+      await buildAndDownload(
+        original,
+        { width: exam.spec.widthPx, height: exam.spec.heightPx, minKB: exam.spec.minKB, maxKB: exam.spec.maxKB },
+        `${exam.slug}-${downloadFilename}`,
+      );
+      trackResizer("Resizer Image Downloaded", {
+        in_app_browser: isInAppBrowser(),
+        tool_name: toolId,
+        authentication_required: false,
+        otp_verification_status: "already_verified",
+        pdf_requested: false,
+        exam_name: exam.shortName,
+        asset_type: savedKind,
+        used_saved_image: true,
+        is_cross_exam: true,
+        source_exam: examSlug ?? null,
+      });
+      void recordToolLead({ tool: toolId, exam: exam.slug, download: true });
+      return true;
+    } catch (err) {
+      return err instanceof SizeRuleError ? `${exam.shortName}: ${err.message}` : savedCopy.loadFailed;
+    }
+  };
+
+  const handleDeleteSaved = async () => {
+    const ok = await saved.removeAll();
+    if (ok) trackResizer("Saved Images Deleted", { tool_name: toolId, place: "tool_page" });
+    return ok;
   };
 
   // Download opens the two-option sheet: save at once, or verify a number (shared
@@ -1676,6 +1835,20 @@ export default function ResizeImageTool({
 
           {step === "configure" && (
             <>
+              {savedImage && (
+                <SavedImagesPanel
+                  copy={savedCopy}
+                  image={savedImage}
+                  busy={oneClickBusy}
+                  error={oneClickError}
+                  onUseSaved={handleUseSaved}
+                  onUploadNew={() => {
+                    setSignatureMode("upload");
+                    fileInputRef.current?.click();
+                  }}
+                  onDeleteAll={handleDeleteSaved}
+                />
+              )}
               {preset === "draw" && (
                 <div className="flex gap-2">
                   <button
@@ -1864,6 +2037,19 @@ export default function ResizeImageTool({
                     <span className="mt-1 block text-text-gray-muted">{t.inAppSaveHint}</span>
                   )}
                 </p>
+              )}
+              {showSaveStatus && (saved.saveStatus === "saved" || saved.saveStatus === "failed") && (
+                <p role="status" className={`body-small text-center ${saved.saveStatus === "saved" ? "text-[var(--color-success-strong)]" : "text-text-gray-muted"}`}>
+                  {saved.saveStatus === "saved" ? savedCopy.saved : savedCopy.saveFailed}
+                </p>
+              )}
+              {downloaded && saved.hasSession && savedImage && crossList.length > 0 && (
+                <CrossExamDownloads
+                  copy={savedCopy}
+                  exams={crossList}
+                  docLabel={savedKind === "photo" ? savedCopy.photo : savedCopy.signature}
+                  onDownload={handleCrossExam}
+                />
               )}
 
               <Text as="p" variant="body-small" color="gray-muted" className="text-center -mt-2">

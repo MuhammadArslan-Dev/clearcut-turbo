@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Locale } from "./dictionary";
 
 // One place that describes WHY a Tools page is asking a visitor to log in.
@@ -24,6 +25,8 @@ export interface LoginGateConfig {
    * Resent / Failed, Authentication Outcome) while this gate is open, next to
    * `context` — e.g. which tool / download option opened the login. */
   eventProps?: Record<string, string | boolean>;
+  /** Extra content on the phone step (CC-174: the "save my photo & signature" consent checkbox). */
+  extraContent?: ReactNode;
 }
 
 export type LoginGatePreset = "download" | "download-pdf";

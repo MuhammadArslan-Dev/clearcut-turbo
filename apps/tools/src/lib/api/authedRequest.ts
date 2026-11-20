@@ -29,7 +29,8 @@ export async function authedRequest<T>(path: string, init: RequestInit = {}): Pr
     ...init,
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
+      // A FormData body (file upload, CC-174) sets its own multipart boundary.
+      ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       Authorization: `Bearer ${token}`,
     },
   });

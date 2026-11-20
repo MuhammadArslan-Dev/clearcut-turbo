@@ -164,6 +164,7 @@ export default function ResizerSpokePage({
             locale={locale}
             examName={exam.shortName}
             examSlug={exam.slug}
+            crossExams={category?.exams}
           />
         </div>
 

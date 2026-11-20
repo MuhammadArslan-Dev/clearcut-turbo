@@ -30,11 +30,11 @@ afterEach(() => vi.useRealTimers());
 
 describe("parseFlags", () => {
   it("reads ON by variant key or value", () => {
-    expect(parseFlags({ hard_gate: { key: "on", value: "on" }, soft_gate: { value: "on" } })).toEqual({ hard_gate: true, soft_gate: true });
+    expect(parseFlags({ hard_gate: { key: "on", value: "on" }, soft_gate: { value: "on" } })).toEqual({ hard_gate: true, soft_gate: true, second_download_gate: false });
   });
   it("a flag that is missing (disabled / not targeted) is OFF", () => {
-    expect(parseFlags({})).toEqual({ hard_gate: false, soft_gate: false });
-    expect(parseFlags({ hard_gate: { key: "off" } })).toEqual({ hard_gate: false, soft_gate: false });
+    expect(parseFlags({})).toEqual({ hard_gate: false, soft_gate: false, second_download_gate: false });
+    expect(parseFlags({ hard_gate: { key: "off" } })).toEqual({ hard_gate: false, soft_gate: false, second_download_gate: false });
   });
   it("garbage is not an answer", () => {
     expect(parseFlags(null)).toBeNull();
@@ -47,9 +47,9 @@ describe("fetchDownloadFlags", () => {
     const fetchMock = vi.fn().mockResolvedValue(respond(answer({ soft_gate: "on" })));
     const flags = await fetchDownloadFlags(tnpsc, fetchMock as unknown as typeof fetch);
 
-    expect(flags).toEqual({ hard_gate: false, soft_gate: true });
+    expect(flags).toEqual({ hard_gate: false, soft_gate: true, second_download_gate: false });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe("https://api.lab.amplitude.com/sdk/v2/vardata?flag_keys=hard_gate,soft_gate");
+    expect(String(url)).toBe("https://api.lab.amplitude.com/sdk/v2/vardata?flag_keys=hard_gate,soft_gate,second_download_gate");
     expect((init as RequestInit).headers).toMatchObject({ Authorization: `Api-Key ${DEFAULT_EXPERIMENT_DEPLOYMENT_KEY}` });
     expect(decodeUser(fetchMock.mock.calls[0])).toMatchObject({ user_id: "tools:exam:tnpsc" });
   });
@@ -67,11 +67,11 @@ describe("fetchDownloadFlags", () => {
     });
     const f = fetchMock as unknown as typeof fetch;
 
-    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false });
-    expect(await fetchDownloadFlags(htet, f)).toEqual({ hard_gate: false, soft_gate: true });
-    expect(await fetchDownloadFlags(compressor, f)).toEqual({ hard_gate: false, soft_gate: false });
+    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false, second_download_gate: false });
+    expect(await fetchDownloadFlags(htet, f)).toEqual({ hard_gate: false, soft_gate: true, second_download_gate: false });
+    expect(await fetchDownloadFlags(compressor, f)).toEqual({ hard_gate: false, soft_gate: false, second_download_gate: false });
     // cached per exam|tool: no second request, and tnpsc never reads htet's answer
-    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false });
+    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false, second_download_gate: false });
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(new Set([flagCacheKey(tnpsc), flagCacheKey(htet), flagCacheKey(compressor)]).size).toBe(3);
     expect([flagScopeId(tnpsc), flagScopeId(htet), flagScopeId(compressor)]).toEqual(["tools:exam:tnpsc", "tools:exam:htet", "tools:tool:image-compressor"]);
@@ -93,7 +93,7 @@ describe("fetchDownloadFlags", () => {
     const f = fetchMock as unknown as typeof fetch;
     expect(await fetchDownloadFlags(tnpsc, f)).toBeNull();
     expect(await fetchDownloadFlags(tnpsc, f)).toBeNull();
-    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false });
+    expect(await fetchDownloadFlags(tnpsc, f)).toEqual({ hard_gate: true, soft_gate: false, second_download_gate: false });
   });
 
   it('the key "off" switches evaluation off without any request', async () => {

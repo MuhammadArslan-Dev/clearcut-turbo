@@ -12,11 +12,18 @@
 // a gate) and surface it (`download_mode_conflict` on the downloaded event, a
 // console warning). Missing flags / failed evaluation (`null`) are Legacy too.
 
-export type DownloadMode = "legacy" | "hard_gate" | "soft_gate";
+// A third flag, `second_download_gate` (CC-174, phase 121), turns on the mode of
+// the same name: the first download is free; from the 2nd one, a visitor without
+// a session verifies with OTP (and may consent to saving their photo & signature).
+// It must be the ONLY flag ON. Together with either of the others it is the same
+// invalid configuration as above (Legacy + conflict).
+export type DownloadMode = "legacy" | "hard_gate" | "soft_gate" | "second_download_gate";
 
 export interface DownloadFlags {
   hard_gate: boolean;
   soft_gate: boolean;
+  /** Optional so an answer cached before phase 121 still reads as OFF. */
+  second_download_gate?: boolean;
 }
 
 export interface ResolvedDownloadMode {
@@ -25,9 +32,28 @@ export interface ResolvedDownloadMode {
   conflict: boolean;
 }
 
+const MODES: readonly DownloadMode[] = ["legacy", "hard_gate", "soft_gate", "second_download_gate"];
+
+/**
+ * Local QA only: `localStorage["cc-tools-dev-download-mode"] = "second_download_gate"` forces a
+ * mode on localhost / 127.0.0.1, so a gate can be tested without switching a production
+ * Amplitude flag. Ignored on every other host.
+ */
+export function devForcedDownloadMode(hostname = typeof window === "undefined" ? "" : window.location.hostname): DownloadMode | null {
+  if (hostname !== "localhost" && hostname !== "127.0.0.1") return null;
+  try {
+    const value = window.localStorage.getItem("cc-tools-dev-download-mode");
+    return value && (MODES as readonly string[]).includes(value) ? (value as DownloadMode) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveDownloadMode(flags: DownloadFlags | null | undefined): ResolvedDownloadMode {
   if (!flags) return { mode: "legacy", conflict: false };
-  if (flags.hard_gate && flags.soft_gate) return { mode: "legacy", conflict: true };
+  const on = [flags.hard_gate, flags.soft_gate, Boolean(flags.second_download_gate)].filter(Boolean).length;
+  if (on > 1) return { mode: "legacy", conflict: true };
+  if (flags.second_download_gate) return { mode: "second_download_gate", conflict: false };
   if (flags.hard_gate) return { mode: "hard_gate", conflict: false };
   if (flags.soft_gate) return { mode: "soft_gate", conflict: false };
   return { mode: "legacy", conflict: false };

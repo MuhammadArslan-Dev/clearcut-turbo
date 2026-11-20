@@ -5,10 +5,12 @@ import dynamic from "next/dynamic";
 import { getToken } from "@clearcut/auth/token";
 import { normalizePage } from "@clearcut/auth/attribution";
 import { getDict, type Locale } from "./dictionary";
-import { resolveDownloadMode, type DownloadMode } from "./downloadMode";
+import { devForcedDownloadMode, resolveDownloadMode, type DownloadMode } from "./downloadMode";
 import { downloadFlagsWithin, fetchDownloadFlags, trackFlagExposures, type FlagContext } from "./experiment";
 import { getLoginGateConfig } from "./loginGate";
 import { useLoginGate } from "./useLoginGate";
+import { bumpDownloadCount, getSaveConsent, needsSecondDownloadGate, readDownloadCount, setSaveConsent } from "./savedImages/logic";
+import SaveConsentCheckbox from "@/components/SaveConsentCheckbox";
 
 const DownloadOptionsModal = dynamic(() => import("@/components/DownloadOptionsModal"), { ssr: false });
 
@@ -34,6 +36,8 @@ export interface DownloadMeta {
   authentication_required: boolean;
   otp_verification_status: "not_required" | "already_verified" | "verified";
   pdf_requested: boolean;
+  /** CC-174 second-download gate only: the visitor ticked "save my photo & signature" before verifying. */
+  save_consent?: boolean;
 }
 
 type Track = (event: string, props?: Record<string, unknown>) => void;
@@ -99,7 +103,12 @@ export function useDownloadOptions({
     return () => clearTimeout(t);
   }, [flagContext]);
 
-  const finish = useCallback((p: Pending, patch: Omit<DownloadMeta, keyof Base>) => p.save({ ...p.base, ...patch }), []);
+  const finish = useCallback((p: Pending, patch: Omit<DownloadMeta, keyof Base>) => {
+    // CC-174: the second-download gate counts downloads per browser (every mode counts, so
+    // switching the flag on later does not treat a returning visitor as new).
+    bumpDownloadCount();
+    p.save({ ...p.base, ...patch });
+  }, []);
 
   const dismiss = useCallback(() => {
     const p = pending.current;
@@ -143,7 +152,9 @@ export function useDownloadOptions({
       try {
         const ctx = flagContext();
         const flags = await downloadFlagsWithin(ctx);
-        const { mode, conflict } = resolveDownloadMode(flags);
+        const resolved = resolveDownloadMode(flags);
+        const forced = devForcedDownloadMode();
+        const { mode, conflict } = forced ? { mode: forced, conflict: false } : resolved;
         if (flags) trackFlagExposures(flags, ctx);
         if (conflict) {
           console.warn("[tools] hard_gate and soft_gate are both ON for this page: falling back to Legacy (download_mode_conflict). Switch one off in Amplitude.");
@@ -158,6 +169,38 @@ export function useDownloadOptions({
 
         if (mode === "legacy") {
           finish(download, { authentication_required: false, otp_verification_status: "not_required", pdf_requested: false });
+        } else if (mode === "second_download_gate") {
+          // CC-174: the first download is free; from the 2nd one a visitor without a session
+          // verifies with OTP on the page (no redirect) and may opt in to saving the image.
+          if (!needsSecondDownloadGate(readDownloadCount(), Boolean(getToken()))) {
+            const already = Boolean(getToken());
+            finish(download, {
+              authentication_required: false,
+              otp_verification_status: already ? "already_verified" : "not_required",
+              pdf_requested: false,
+            });
+          } else {
+            const copy = getDict(locale).tool.savedImages;
+            setSaveConsent(false);
+            requireLogin(
+              {
+                ...getLoginGateConfig("download", locale),
+                id: "save-images",
+                title: copy.gateTitle,
+                subtitle: copy.gateSubtitle,
+                otpSubmitLabel: copy.gateOtpSubmit,
+                extraContent: <SaveConsentCheckbox label={copy.consentLabel} />,
+                eventProps: base,
+              },
+              ({ verifiedNow }) =>
+                finish(download, {
+                  authentication_required: verifiedNow,
+                  otp_verification_status: verifiedNow ? "verified" : "already_verified",
+                  pdf_requested: false,
+                  save_consent: getSaveConsent(),
+                }),
+            );
+          }
         } else if (mode === "hard_gate") {
           requireLogin({ ...getLoginGateConfig("download", locale), eventProps: base }, ({ verifiedNow }) =>
             finish(download, {
