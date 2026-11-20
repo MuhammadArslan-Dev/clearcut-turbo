@@ -20,6 +20,15 @@ import { isApiError, isNetworkFailure } from "@/lib/api/api-error";
  * noisy issue. A genuine backend failure (4xx/5xx, or a malformed response
  * body — see client.ts's res.json() handling) still reports as a full error.
  */
+function isExpectedAnswer(error: unknown, isExpected?: (error: unknown) => boolean): boolean {
+  if (!isExpected) return false;
+  try {
+    return isExpected(error);
+  } catch {
+    return false; // reporting must never depend on a predicate that can throw
+  }
+}
+
 export async function sentryApiClient<T>(
   fn: () => Promise<T>,
   context?: {
@@ -31,6 +40,13 @@ export async function sentryApiClient<T>(
      * call; anything else (5xx, other 4xx) still reports as an error, and the error is always rethrown.
      */
     expectedStatuses?: number[];
+    /**
+     * For an answer that is only expected in one shape (a status alone is too wide): e.g. POST /v2/payment/create
+     * answers 409 `already_paid` / `autopay_active`, which the caller handles on purpose, while any other 409 would be a
+     * real problem. Return true to keep this error as a breadcrumb instead of an issue. Opt-in per call; the error is
+     * always rethrown, and a predicate that throws counts as "not expected" (it is reported).
+     */
+    isExpected?: (error: unknown) => boolean;
   },
 ): Promise<T> {
   try {
@@ -64,6 +80,8 @@ export async function sentryApiClient<T>(
     if (isNetworkFailure(error)) {
       logger.breadcrumb(`API call hit a network blip: ${tags.endpoint}`, { tags, extra });
     } else if (isApiError(error) && context?.expectedStatuses?.includes(error.status)) {
+      logger.breadcrumb(`API call answered ${error.status} (expected): ${tags.endpoint}`, { tags, extra });
+    } else if (isApiError(error) && isExpectedAnswer(error, context?.isExpected)) {
       logger.breadcrumb(`API call answered ${error.status} (expected): ${tags.endpoint}`, { tags, extra });
     } else {
       logger.error(error, { tags, extra });

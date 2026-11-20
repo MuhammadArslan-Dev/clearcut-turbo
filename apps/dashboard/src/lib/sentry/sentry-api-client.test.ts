@@ -40,6 +40,27 @@ describe("sentryApiClient expectedStatuses (CC-153)", () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it("isExpected: an answer the caller handles on purpose is a breadcrumb, anything else is still an error", async () => {
+    const handled = new ApiError({ status: 409, method: "POST", endpoint: "/v2/payment/create", url: "http://t/v2/payment/create", responseBody: '{"already_paid":true}' });
+    const other409 = new ApiError({ status: 409, method: "POST", endpoint: "/v2/payment/create", url: "http://t/v2/payment/create", responseBody: '{"message":"conflict"}' });
+    const isExpected = (e: unknown) => e instanceof ApiError && e.status === 409 && e.responseBody?.includes("already_paid") === true;
+
+    await expect(sentryApiClient(() => Promise.reject(handled), { isExpected })).rejects.toBe(handled);
+    expect(logger.breadcrumb).toHaveBeenCalledTimes(1);
+    expect(logger.error).not.toHaveBeenCalled();
+
+    vi.clearAllMocks();
+    await expect(sentryApiClient(() => Promise.reject(other409), { isExpected })).rejects.toBe(other409);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.breadcrumb).not.toHaveBeenCalled();
+  });
+
+  it("isExpected that throws is treated as not expected (reported) and the original error is still rethrown", async () => {
+    const err = apiError(409);
+    await expect(sentryApiClient(() => Promise.reject(err), { isExpected: () => { throw new Error("boom"); } })).rejects.toBe(err);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+  });
+
   it("a success passes the value through and logs nothing", async () => {
     await expect(sentryApiClient(() => Promise.resolve(42), { expectedStatuses: [404] })).resolves.toBe(42);
     expect(logger.error).not.toHaveBeenCalled();

@@ -18,6 +18,12 @@ export const IGNORE_ERRORS: (string | RegExp)[] = [
   /Java object is gone/,
   /^chrome-extension:\/\//,
   /^moz-extension:\/\//,
+  // Classic React/browser-extension DOM race (Google Translate and similar mutate nodes React still tracks) on
+  // unmount (CLEARCUTOFF-PUBLIC-A/-9/-B on the tools and /start pages). Already ignored in the dashboard's own list;
+  // same entry here so the public apps match it.
+  "Failed to execute 'removeChild' on 'Node'",
+  // Benign pointer-capture race on fast pointerup/pointercancel sequences; not actionable (dashboard ignores it too).
+  "Failed to execute 'releasePointerCapture' on 'Element'",
 ];
 
 /** Third-party scripts we cannot fix and do not want reports from. */
