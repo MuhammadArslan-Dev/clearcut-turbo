@@ -85,6 +85,39 @@ export const logAmplitudeEvent = (
   runOrQueue((amp) => amp.track(eventName, properties));
 };
 
+/**
+ * Sends everything Amplitude has queued right now, then resolves. It NEVER rejects and never waits longer than `maxMs`
+ * (a slow network must not trap the learner). Use it before a navigation that unloads the page: the browser SDK batches
+ * events and sends them about a second later, and it registers no pagehide/beforeunload hook (checked in
+ * @amplitude/analytics-browser 2.45.1), so an event tracked right before `window.location.replace(...)` was lost when the
+ * redirect came first. That made "Authentication Outcome: successful" read about half of the real verifications.
+ */
+export const flushAmplitude = (maxMs = 500): Promise<void> =>
+  new Promise((resolve) => {
+    // Analytics off here (localhost, previews, other hosts): nothing was queued for sending, so do not delay anyone.
+    if (!amplitudeInstance && !analyticsAllowedHere()) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(resolve, maxMs);
+    const done = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    try {
+      // Before the SDK has finished starting, runOrQueue holds this until init (the timer above still bounds the wait).
+      runOrQueue((amp) => {
+        try {
+          amp.flush().promise.then(done, done);
+        } catch {
+          done();
+        }
+      });
+    } catch {
+      done();
+    }
+  });
+
 /** Set User ID */
 export const setUserId = (userId: string | number) => {
   const id = String(userId).trim();
