@@ -187,6 +187,18 @@ export default function InitiatedPage() {
   const datacourse = allCourses?.find((c) => c?.group_code === courseId);
   const data = datacourse?.exam;
 
+  // No level/paper picked yet (enrollment stage_id null) and not already paid: nothing to unlock, so do not take a payment
+  // here. Every button on the dashboard (My Courses card, Resume, Today's Goals, Quick Revision...) sends such a learner to
+  // the "select your level" modal instead, and the card hides its Buy button for them; a paywall or a deep link must do the
+  // same. A learner who paid with no level ended up with a course that never activated (58 transactions on such
+  // enrollments in the local copy of the DB). They go back to the dashboard, whose course card shows "Add Subjects" (the
+  // dashboard closes any open course modal when it mounts, so the modal is not opened from here); the payment starts from
+  // there once a level is saved. Already-active enrolments (renewals of older accounts) are left alone.
+  useEffect(() => {
+    if (!datacourse || datacourse.stage_id || datacourse.status === "active") return;
+    router.replace("/dashboard");
+  }, [datacourse, router]);
+
   // Event-level Meta params for InitiateCheckout / AddPaymentInfo /
   // CustomizeProduct. Deliberately excludes ph/external_id — those are PII
   // and go through `fbq('set', 'userData', …)` once instead (see

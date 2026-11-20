@@ -10,6 +10,7 @@ import MainButton from "../../button/main-button";
 import { useRouter } from "@/i18n/navigation";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
+import { useCourseStore } from "@/store/course/useCourseStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
 import { trackEvent } from "@/lib/analytics/browser";
@@ -50,15 +51,24 @@ export default function DailyTestWidget({
   const questions = todays?.total_questions;
   const minutes = questions != null ? Math.round((questions * SECONDS_PER_QUESTION) / 60) : null;
 
+  const openCourseModal = useCourseStore((s) => s.open);
+
   const handleOpen = useCallback(async () => {
     if (!courseId) return;
+
+    // No level/paper picked yet: ask for it first, like every other button on this page (the daily test page itself
+    // only shows "Failed to load test history" for such an enrollment).
+    if (!course?.stage_id && course?.exam) {
+      openCourseModal("single", course.exam);
+      return;
+    }
 
     await trackEvent("Content Started", {
       source: "daily_test_widget",
       exam_name: course?.exam?.short_name!,
     });
     router.push(`/daily-tests/${courseId}`);
-  }, [courseId, course, router]);
+  }, [courseId, course, router, openCourseModal]);
 
   // While the course loads, keep the card (values show "-", the button waits
   // for the id): it used to appear only after load and push the page down
