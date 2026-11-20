@@ -250,9 +250,27 @@ describe("client with the real GrowthBook SDK", () => {
     const r = await client.ready;
     expect(Date.now() - t0).toBeLessThan(1400);
     expect(r.source).toBe("timeout");
+    expect(client.getStatus()).toBe("timeout");
     expect(client.getValue(FLAG, "Start for free")).toBe("Start for free");
     expect(track).not.toHaveBeenCalled();
-  }, 5000);
+    // ...and the late response is applied to THIS instance once it lands (it used to only reach the cache), with ONE request.
+    await new Promise((resolve) => setTimeout(resolve, 1400));
+    expect(client.getStatus()).toBe("timeout_late");
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    const late = client.getValue(FLAG, "Start for free");
+    expect(["Start for free", "Try it for free"]).toContain(late);
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track.mock.calls[0][0]).toBe("$exposure");
+    expect(track.mock.calls[0][1]).toEqual({ flag_key: FLAG, variant: expect.any(String) });
+  }, 6000);
+
+  it("status reports where the features came from", async () => {
+    stubFetch(okResponse);
+    const client = createExperimentsClient({ config: { clientKey: nextKey(), apiHost: "https://cdn.test", timeoutMs: 500 }, attributes: { id: "visitor-status-123456789" }, sink: { track: vi.fn(), setUserProperty: vi.fn() } });
+    expect(client.getStatus()).toBe("pending");
+    await client.ready;
+    expect(client.getStatus()).toBe("network");
+  });
 
   it("a flag that does not exist (or was switched off) -> control, no exposure", async () => {
     stubFetch(() => Promise.resolve(new Response(JSON.stringify({ status: 200, features: {}, experiments: [] }), { status: 200 })));

@@ -329,8 +329,18 @@ export default function StartAuthForm({
   const [airplaneOn, setAirplaneOn] = useState(false);
   // The existing funnel events (Verification Sent/Resent/Failed, Authentication Outcome) with the experiment properties on them,
   // so both variants can be compared in Amplitude without joins. Identical to logAmplitudeEvent for everybody not in the experiment.
-  const trackFunnel = (name: string, properties?: Record<string, unknown>) =>
-    logAmplitudeEvent(name, { ...properties, ...experimentRef.current });
+  // gb_source: where GrowthBook's features were at the moment of this event (cache / network / timeout / timeout_late /
+  // error / pending / off). Shows how many /start visitors could not be put in an experiment yet, e.g. on Verification
+  // Sent, which fires before the OTP step (and so before any exposure). Read-only: evaluates no flag, sends no exposure.
+  const trackFunnel = (name: string, properties?: Record<string, unknown>) => {
+    let gbSource = "off";
+    try {
+      gbSource = getExperiments()?.getStatus() ?? "off";
+    } catch {
+      gbSource = "off";
+    }
+    logAmplitudeEvent(name, { ...properties, ...experimentRef.current, gb_source: gbSource });
+  };
 
   // Phase 120: start loading the experiments client as soon as the page opens (it evaluates no flag, so it sends no exposure),
   // so the answer is ready by the time the OTP step opens.

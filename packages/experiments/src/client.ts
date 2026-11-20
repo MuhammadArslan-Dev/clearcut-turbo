@@ -28,6 +28,11 @@ export type ExperimentsClient = {
   readonly gb: GrowthBook;
   /** Resolves (never rejects) once features are loaded from cache/network, or after the timeout. */
   readonly ready: Promise<ReadyResult>;
+  /**
+   * Where the features came from, for analytics: "pending" (still loading), "cache", "network", "server-payload",
+   * "timeout" (not loaded within the timeout yet), "timeout_late" (arrived after the timeout and were applied), "error".
+   */
+  getStatus: () => string;
   setAttributes: (partial: Record<string, unknown>) => void;
   /** The assigned value, or `control` while features are not loaded, the flag is missing/off, or the type differs. */
   getValue: <T extends string | number | boolean>(flagKey: string, control: T) => T;
@@ -48,16 +53,43 @@ export function createExperimentsClient(args: {
     enableDevMode: false,
   });
 
+  let status = "pending";
+
+  // A first visit has no cached features, and the CDN often needs more than the timeout on a mobile network. GrowthBook
+  // 2.x then leaves THIS instance without features for the rest of the page view: the late response only reaches the
+  // cache, because the instance is subscribed to updates only with streaming/polling (docs: "If init times out and
+  // streaming or polling is enabled, the SDK applies the original request when it finishes. Otherwise, features stay at
+  // their fallback state"; SDK feature-repository startBackgroundSync). Every visitor on a slow first load was therefore
+  // never put in the experiment. refreshFeatures() reuses the request that is still in flight (no second request) and
+  // applies it when it lands. Values that already settled on screen are not re-read (no flicker, see react.tsx); a flag
+  // evaluated later (e.g. the /start OTP step, seconds after the page opened) gets the real assignment and its exposure.
+  const applyLateFeatures = () => {
+    gb.refreshFeatures().then(
+      () => {
+        if (Object.keys(gb.getFeatures() ?? {}).length > 0) status = "timeout_late";
+      },
+      () => undefined,
+    );
+  };
+
   const initFromNetwork = (): Promise<ReadyResult> =>
     gb.init({ timeout: args.config.timeoutMs }).then(
-      (r) => ({ success: r.success, source: r.source, error: r.error }),
-      (error: unknown) => ({ success: false, source: "error", error: error instanceof Error ? error : new Error(String(error)) }),
+      (r) => {
+        status = r.source || (r.success ? "network" : "error");
+        if (r.source === "timeout") applyLateFeatures();
+        return { success: r.success, source: r.source, error: r.error };
+      },
+      (error: unknown) => {
+        status = "error";
+        return { success: false, source: "error", error: error instanceof Error ? error : new Error(String(error)) };
+      },
     );
 
   let ready: Promise<ReadyResult>;
   if (args.payload) {
     try {
       void gb.initSync({ payload: args.payload });
+      status = "server-payload";
       ready = Promise.resolve({ success: true, source: "server-payload" });
     } catch {
       ready = initFromNetwork(); // a payload the SDK cannot use: behave as if there was none
@@ -69,6 +101,7 @@ export function createExperimentsClient(args: {
   return {
     gb,
     ready,
+    getStatus: () => status,
     setAttributes: (partial) => {
       void gb.setAttributes({ ...gb.getAttributes(), ...cleanAttributes(partial) } as Attributes).catch(() => undefined);
     },
