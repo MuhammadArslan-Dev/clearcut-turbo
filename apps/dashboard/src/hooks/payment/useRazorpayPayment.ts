@@ -327,6 +327,9 @@ export function useRazorpayPayment({
           {
             endpoint: "/create-order",
             module: "payment-initiation",
+            // Both 409 answers are handled just below on purpose (already paid / autopay already active): not issues.
+            // Any other 409 (or status) from this call still reports as an error.
+            isExpected: (e) => isAlreadyPaidError(e) || isAutopayActiveError(e),
           },
         );
       } catch (error) {
