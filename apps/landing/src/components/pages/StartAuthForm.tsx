@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { authApi } from "@/lib/auth";
 import {
+  flushAmplitude,
   logAmplitudeEvent,
   setUserId as setAmplitudeUserId,
 } from "@/services/analytics";
@@ -891,9 +892,14 @@ export default function StartAuthForm({
       gone = true;
       window.location.replace(url);
     };
-    window.requestAnimationFrame(() => window.setTimeout(go, 0));
+    // Let the analytics queue (Authentication Outcome, Verification...) reach Amplitude BEFORE the page unloads: the SDK only
+    // sends a second after tracking and has no page-hide hook, so a redirect within ~120 ms lost about half of the
+    // "successful" outcomes. Bounded (flushAmplitude never waits more than 500 ms and never rejects); usually ~100-300 ms,
+    // while the "verified" animation is already playing.
+    const sent = flushAmplitude(500);
+    window.requestAnimationFrame(() => window.setTimeout(() => void sent.then(go), 0));
     // A hidden tab (e.g. back from the Truecaller app) runs no animation frames.
-    window.setTimeout(go, 120);
+    window.setTimeout(() => void sent.then(go), 120);
   };
   const finishThenGoRef = useRef(finishThenGo);
   finishThenGoRef.current = finishThenGo;
