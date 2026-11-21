@@ -57,7 +57,7 @@ import {
   ORIGINAL_1YEAR_PRICE,
 } from "@/lib/payment/examPriceOverrides";
 import { getPlanAnalytics } from "@/lib/payment/planAnalytics";
-import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
+import { type CheckoutStage, checkoutNotOpenedReason, getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { parseTranslation } from "@/utils/text/translation";
 import { useAuth } from "@/providers/AuthProvider";
@@ -649,12 +649,27 @@ export default function InitiatedPage() {
     // Busy until the popup is closed or the payment ends, not just until
     // open() returns (same as the one-time hook, CC-60 follow-up).
     let checkoutOpened = false;
+    // Autopay checkout stopped before Razorpay opened: no Razorpay callback can report it, so send one Payment Outcome
+    // (same failure_reason values as the one-time hook). Handled duplicate-subscribe answers return before this.
+    const trackAutopayNotOpened = (at: CheckoutStage, err?: unknown) => {
+      trackPaymentEvent("Payment Outcome", {
+        outcome: "payment_failed",
+        billing_type: "auto_renew",
+        final_price: selectedPrice,
+        exam_name: data?.short_name ?? "",
+        failure_reason: checkoutNotOpenedReason(at),
+        payment_session_id: "",
+        ...(isApiError(err) ? { error_code: String(err.status) } : {}),
+        ...payFunnelProps(),
+      });
+    };
     try {
       const razorpayLoaded = await sentryApiClient(() => loadRazorpay(), {
         endpoint: "/load-razorpay",
         module: "subscription-payment",
       });
       if (!razorpayLoaded) {
+        trackAutopayNotOpened("sdk");
         setPayError(checkoutT("errorSdk"));
         return;
       }
@@ -731,6 +746,7 @@ export default function InitiatedPage() {
             course_id: courseId,
           },
         });
+        trackAutopayNotOpened("order", err);
         throw err;
       }
 
@@ -747,6 +763,7 @@ export default function InitiatedPage() {
           tags: { module: "subscription-payment" },
           extra: { course_id: courseId, message: res.message },
         });
+        trackAutopayNotOpened("order");
         setPayError(checkoutT("errorGeneric"));
         return;
       }
