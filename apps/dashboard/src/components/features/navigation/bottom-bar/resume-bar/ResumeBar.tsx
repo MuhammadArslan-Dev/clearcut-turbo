@@ -8,12 +8,12 @@ import { Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
-import { useCourseStore } from "@/store/course/useCourseStore";
 import { token } from "@/lib/auth-token-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CircleIcon, FireIcon } from "@/components/ui/icons";
 import { useRouter } from "@/i18n/navigation";
+import { openSetupSheet, useSetupFirst } from "@/components/features/setup-first/useSetupFirstStore";
 
 type ResumeBarProps = {
   courseLogo: string | undefined | null;
@@ -48,7 +48,8 @@ function ResumeBar({
   const t = useTranslations();
   const { activeCourse } = useMyActiveCourses();
   const isMobile = useIsMobile();
-  const open = useCourseStore((s) => s.open);
+  // Phase 122: "finish setup" variant changes the Resume label for a learner with no level yet.
+  const setupFirst = useSetupFirst();
   const router = useRouter();
   const courseHome = useCourseHome();
   const [isResuming, setIsResuming] = useState(false);
@@ -138,7 +139,7 @@ function ResumeBar({
                     });
                     router.push(courseHome(activeCourse?.group_code));
                   }
-                : () => open("single", activeCourse?.exam!)
+                : () => openSetupSheet(activeCourse?.exam!, "resume_bar")
             }
             endDecorator={
               !isResuming && (
@@ -151,7 +152,9 @@ function ResumeBar({
               )
             }
           >
-            <p className="truncate">{t("resumeBar.resume")}</p>
+            <p className={setupFirst.pending && !activeCourse?.stage_id ? "truncate invisible" : "truncate"}>
+              {setupFirst.treatment && !activeCourse?.stage_id ? t("resumeBar.finishSetup") : t("resumeBar.resume")}
+            </p>
           </Button>
         </div>
       </div>

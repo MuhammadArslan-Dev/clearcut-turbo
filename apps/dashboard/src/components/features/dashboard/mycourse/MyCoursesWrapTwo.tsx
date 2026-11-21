@@ -37,6 +37,9 @@ import { prefetchLevels } from "@/hooks/onboarding/useLevels";
 import { MY_COURSES_KEY } from "@/hooks/course/useMyActiveCourses";
 import { useSlowLoad } from "@/hooks/useSlowLoad";
 import SlowLoadNotice from "@/components/ui/SlowLoadNotice";
+import SetupChecklist, { SetupBadge } from "@/components/features/setup-first/SetupChecklist";
+import { openSetupSheet, useSetupFirst, useSetupFirstStore } from "@/components/features/setup-first/useSetupFirstStore";
+import type { MyCOurseCardProps } from "./MyCourseCard";
 
 // These modals are only ever visible after a user action (edit/buy/payment
 // result) — loading them as separate chunks instead of bundling them into
@@ -81,6 +84,7 @@ function CourseSlideCard({
   onStatusClick,
   hideBuyOnMobile,
   part,
+  setup,
 }: {
   exam: ExamEnrollmentWithExam;
   // Passed in from MyCoursesWrapTwo's single batched query — this card used
@@ -95,9 +99,12 @@ function CourseSlideCard({
   onStatusClick?: () => void;
   hideBuyOnMobile?: boolean;
   part?: "all" | "buy";
+  /** Phase 122: the "finish setup" variant props (checklist, badge, CTA text) or the pending flag. */
+  setup?: Pick<MyCOurseCardProps, "setupSlot" | "headerBadge" | "continueText" | "setupPending">;
 }) {
   return (
     <MyCourseCard
+      {...setup}
       cardClasses="!rounded-2xl !md:rounded-xl h-full flex flex-col"
       bgColor="bg-[#0053A2]"
       price={exam.exam.price}
@@ -155,6 +162,27 @@ export default function MyCoursesWrapTwo({
   useEffect(() => () => resetFocusedCourse(), []);
   const t = useTranslations();
   const { isOpen, mode, open: openPaywall } = usePaywallsStore();
+
+  // Phase 122: "finish setup" experiment. Only a learner with no level in any enrolment is eligible; for everyone else
+  // (and in control) this is undefined and the card renders exactly as before.
+  const setupFirst = useSetupFirst();
+  const drafts = useSetupFirstStore((s) => s.drafts);
+  const setupFor = (course?: ExamEnrollmentWithExam | null) => {
+    if (!course || course.stage_id || !setupFirst.eligible) return undefined;
+    if (setupFirst.pending) return { setupPending: true };
+    if (!setupFirst.treatment) return undefined;
+    const draft = course.exam?.id != null ? drafts[String(course.exam.id)] : undefined;
+    return {
+      setupSlot: <SetupChecklist examName={course.exam?.short_name ?? ""} draft={draft} />,
+      headerBadge: <SetupBadge />,
+      continueText: (
+        <>
+          {draft?.paperHasSubjects ? t("myCourses.setup.selectSubject") : t("myCourses.setup.selectPaper")}
+          <small className="ml-2 body-small !font-medium opacity-85">{t("myCourses.setup.aboutOneMin")}</small>
+        </>
+      ),
+    };
+  };
 
   // ✅ Stable exam object
   const exam = useMemo(() => activeCourse?.exam, [activeCourse?.exam]);
@@ -317,7 +345,8 @@ export default function MyCoursesWrapTwo({
           //   activeExam?.uuid
           // }?token=${token()}`;
         }
-      : () => open("single", exam!),
+      : () => openSetupSheet(exam!, "course_card"),
+    ...setupFor(activeExam),
 
     editClick: async () => {
       await trackEvent("Exam Edit Started", {
@@ -398,7 +427,7 @@ export default function MyCoursesWrapTwo({
                           route.push(courseHome(exam.group_code));
                         })();
                       } else {
-                        open("single", exam.exam!);
+                        openSetupSheet(exam.exam!, "course_card");
                       }
                     }}
                     onEdit={async () => {
@@ -410,6 +439,7 @@ export default function MyCoursesWrapTwo({
                     onUnlock={unlockFor(exam)}
                     hideBuyOnMobile
                     onStatusClick={trialEndedClick(exam)}
+                    setup={setupFor(exam)}
                   />
                 )}
               </SwiperSlide>

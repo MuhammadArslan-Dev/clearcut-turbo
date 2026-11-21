@@ -205,6 +205,16 @@ export interface MyCOurseCardProps {
   /** Course context for Cutoff Meter analytics (phase 108). */
   courseId?: string | null;
   paperName?: string | null;
+
+  // ── Phase 122 ("finish setup" experiment, variant only; all optional, omitted = card unchanged) ──
+  /** Replaces the meter / progress bars with this (the setup checklist). */
+  setupSlot?: React.ReactNode;
+  /** Replaces the Edit button in the header (the "Setup incomplete" badge). */
+  headerBadge?: React.ReactNode;
+  /** Replaces the continue button text; the button then opens a sheet, so no spinner is shown. */
+  continueText?: React.ReactNode;
+  /** Variant not known yet: keep the card's layout but hide the parts that differ (no control-then-variant flash). */
+  setupPending?: boolean;
 }
 
 export default function MyCourseCard({
@@ -234,6 +244,10 @@ export default function MyCourseCard({
   meterLoading = false,
   courseId,
   paperName,
+  setupSlot,
+  headerBadge,
+  continueText,
+  setupPending = false,
 }: MyCOurseCardProps) {
   const t = useTranslations();
   const [continueLoading, setContinueLoading] = React.useState(false);
@@ -405,8 +419,10 @@ export default function MyCourseCard({
                 </p>
               ))}
           </div>
-          {editClick && (
-            <div className="shrink-0">
+          {headerBadge ? (
+            headerBadge
+          ) : editClick && (
+            <div className={clsx("shrink-0", setupPending && "invisible")}>
               <Button
                 onClick={() => editClick?.()}
                 size="sm"
@@ -422,7 +438,9 @@ export default function MyCourseCard({
         </div>
 
         {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
-        {meterLoading ? (
+        {setupSlot ? (
+          setupSlot
+        ) : meterLoading || setupPending ? (
           <CutoffMeterPanelSkeleton />
         ) : meter ? (
           <CutoffMeterPanel
@@ -434,7 +452,7 @@ export default function MyCourseCard({
         <div
           className={clsx(
             "flex flex-col gap-2",
-            (meter || meterLoading) && "hidden",
+            (meter || meterLoading || setupSlot || setupPending) && "hidden",
           )}
         >
           {topics && (
@@ -495,17 +513,19 @@ export default function MyCourseCard({
         {/* mt-auto: in an equal-height carousel slide the buttons sit at the bottom. */}
         <div className="mt-auto flex flex-col gap-3 py-1">
           {continueClick && (
-            <div>
+            <div className={clsx(setupPending && "invisible")}>
               <MainButton
                 className="mx-auto max-w-[320px] md:mx-0 md:max-w-none"
                 loading={continueLoading}
                 fullWidth
                 onClick={() => {
-                  setContinueLoading(true);
+                  if (!continueText) setContinueLoading(true);
                   continueClick?.();
                 }}
                 text={
-                  needsSubjects
+                  continueText
+                    ? continueText
+                    : needsSubjects
                     ? t("myCourses.addSubjects")
                     : badge === "active"
                       ? t("myCourses.continueLearningActive")

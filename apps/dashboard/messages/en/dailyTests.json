@@ -63,6 +63,8 @@
     "startTodaysTest": "Start Today's Test"
   },
   "widget": {
+    "setupLocked": "Your Daily Test unlocks after you pick your paper",
+    "finishSetup": "Finish setup to start",
     "title": "Daily Test",
     "subtitle": "One short test a day, picked just for you",
     "open": "Open Daily Test",

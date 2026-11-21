@@ -260,6 +260,21 @@
     }
   },
   "myCourses": {
+    "setup": {
+      "badge": "सेटअप अपूर्ण आहे",
+      "exam": "परीक्षा: {exam}",
+      "paper": "पेपर",
+      "paperDone": "पेपर: {paper}",
+      "subject": "विषय",
+      "subjectNotNeeded": "विषय (या पेपरसाठी आवश्यक नाही)",
+      "selectPaper": "पेपर निवडा",
+      "selectSubject": "विषय निवडा",
+      "aboutOneMin": "सुमारे 1 मिनिट",
+      "bannerTitle": "अभ्यास सुरू करण्यासाठी सेटअप पूर्ण करा.",
+      "bannerBody": "याला सुमारे 1 मिनिट लागतो.",
+      "bannerBodyPaper": "तुमचा पेपर ({paper}) जतन आहे; आता तुमचा विषय निवडा.",
+      "bannerCta": "सेटअप पूर्ण करा"
+    },
     "title": "माझे कोर्स",
     "freeTrialBadge": "मोफत ट्रायल",
     "chaptersCompleted": "पूर्ण झालेली प्रकरणे",
@@ -343,7 +358,8 @@
     "lessonPath": "{subject} > प्रकरण {chapter} • विषय {topic}",
     "timeToComplete": "ध्येय पूर्ण करण्यासाठी {minutes, plural, one {# मिनिट} other {# मिनिटे}}",
     "minutes": "{minutes, plural, one {# मिनिट} other {# मिनिटे}}",
-    "resume": "पुन्हा सुरू करा"
+    "resume": "पुन्हा सुरू करा",
+    "finishSetup": "सेटअप पूर्ण करा"
   },
   "footer": {
     "terms": "नियम",

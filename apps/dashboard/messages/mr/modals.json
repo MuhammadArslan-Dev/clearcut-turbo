@@ -149,6 +149,18 @@
   },
 
   "buySingleCourseModal": {
+    "setup": {
+      "continue": "पुढे जा",
+      "doItLater": "नंतर करा",
+      "pickSubject": "तुमचा विषय निवडा",
+      "pickSubjectHint": "पुढे जाण्यासाठी तुमचा विषय निवडा",
+      "chosen": "{total} पैकी {done} निवडले",
+      "pickGroup": "पुढे जाण्यासाठी {group} निवडा",
+      "pickPaper": "पुढे जाण्यासाठी पेपर निवडा",
+      "groupHeading": "{total} पैकी {index} · {group}",
+      "secondSubject": "दुसरा विषय",
+      "keptOnError": "तुमच्या निवडी जतन आहेत. पुन्हा प्रयत्न करण्यासाठी बटण दाबा."
+    },
     "paperSelection": {
       "title": "पेपर निवडा",
       "highlight_text": "पेपर",

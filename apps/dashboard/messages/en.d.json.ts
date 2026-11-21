@@ -263,6 +263,21 @@ declare const messages: {
     }
   },
   "myCourses": {
+    "setup": {
+      "badge": "Setup incomplete",
+      "exam": "Exam: {exam}",
+      "paper": "Paper",
+      "paperDone": "Paper: {paper}",
+      "subject": "Subject",
+      "subjectNotNeeded": "Subject (not needed for this paper)",
+      "selectPaper": "Select Paper",
+      "selectSubject": "Select Subject",
+      "aboutOneMin": "about 1 min",
+      "bannerTitle": "Finish setup to start learning.",
+      "bannerBody": "It takes about 1 minute.",
+      "bannerBodyPaper": "Your paper ({paper}) is kept; pick your subject.",
+      "bannerCta": "Finish setup"
+    },
     "title": "My Courses",
     "freeTrialBadge": "FREE Trial",
     "chaptersCompleted": "Chapters Completed",
@@ -346,7 +361,8 @@ declare const messages: {
     "lessonPath": "{subject} > Chapter {chapter} • Topic {topic}",
     "timeToComplete": "{minutes, plural, one {# min} other {# mins}} to complete goal",
     "minutes": "{minutes, plural, one {# min} other {# mins}}",
-    "resume": "Resume"
+    "resume": "Resume",
+    "finishSetup": "Finish setup"
   },
   "footer": {
     "terms": "Terms",

@@ -37,6 +37,13 @@ import { getCourseState, offerPracticeTest, skipPracticeTest } from "@/lib/api/u
 import { isPracticeTestEnabled } from "@/lib/experiments/practiceTestFlag";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEnrollCelebrationStore } from "@/store/course/useEnrollCelebrationStore";
+import { setupExperimentProps, useSetupFirst, useSetupFirstStore } from "@/components/features/setup-first/useSetupFirstStore";
+
+/** Phase 122: how many subject groups sit under a paper (0 = the paper has no subject step). */
+function groupDepth(levels: Level[], id: number | string): number {
+  const kids = levels.filter((l) => l.parent_id === id);
+  return kids.length ? 1 + Math.max(...kids.map((k) => groupDepth(levels, k.id))) : 0;
+}
 
 // Enrollment animation after "Start Learning" (phase 84). NEXT_PUBLIC_LEGACY_ENROLL_ANIMATION=true (and rebuild) restores the
 // previous behaviour (button spinner, then straight to the next screen); nothing else needs to change.
@@ -57,6 +64,21 @@ export default function BuySigleCourseModal() {
   const router = useRouter();
   const courseHome = useCourseHome();
   const { user } = useAuth();
+  // Phase 122 ("finish setup" experiment): the variant UI only for an eligible learner in setup_first; the setup events
+  // below are sent for everybody (both variants), with experiment_* only for a learner who is in the experiment.
+  const setupFirst = useSetupFirst();
+  const treatment = setupFirst.treatment;
+  const setupT = useTranslations("modals.buySingleCourseModal.setup");
+  const setupCtx = useCallback(
+    () => ({
+      exam_name: data?.short_name ?? "",
+      setup_source: useSetupFirstStore.getState().source ?? "other",
+      first_setup: useSetupFirstStore.getState().eligible,
+      ...setupExperimentProps(),
+    }),
+    [data?.short_name],
+  );
+  const savedRef = useRef(false);
 
   /* ---------------------------------- state ---------------------------------- */
   const [step, setStep] = useState(0);
@@ -152,6 +174,78 @@ export default function BuySigleCourseModal() {
     setCurrentParent(only.id);
   }, [isOpen, paper, parent]);
 
+  // Phase 122: the sheet opened (both variants).
+  const openedRef = useRef(false);
+  useEffect(() => {
+    if (!(isOpen && mode === "single" && data?.id)) {
+      openedRef.current = false;
+      return;
+    }
+    if (openedRef.current) return;
+    openedRef.current = true;
+    savedRef.current = false;
+    // A kept paper with subjects reopens on the subject step (variant): label the step the learner actually sees.
+    const kept = treatment ? useSetupFirstStore.getState().drafts[String(data.id)] : undefined;
+    const onSubjects = !!kept?.paperHasSubjects;
+    trackEvent("Exam Details Selection Started", {
+      step_number: onSubjects ? 2 : 1,
+      step_name: onSubjects ? "subject_selection" : "paper_selection",
+      ...setupCtx(),
+    });
+  }, [isOpen, mode, data?.id, setupCtx, treatment]);
+
+  // Phase 122 (variant): reopening brings back the paper / subjects picked before the sheet was closed.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) {
+      restoredRef.current = false;
+      return;
+    }
+    if (!treatment || restoredRef.current || !data?.id || !levelsRaw.length) return;
+    restoredRef.current = true;
+    const draft = useSetupFirstStore.getState().drafts[String(data.id)];
+    if (!draft) return;
+    const path = draft.pathIds.map((id) => levelsRaw.find((l) => String(l.id) === String(id))).filter(Boolean) as Level[];
+    if (!path.length) return;
+    setPaper(path[0]);
+    setSelectedPath(path);
+    const last = path[path.length - 1];
+    setCurrentParent(last.id);
+    setFinalSelection(levelsRaw.some((l) => l.parent_id === last.id) ? null : last);
+    if (draft.paperHasSubjects) setStep(1);
+  }, [isOpen, treatment, data?.id, levelsRaw]);
+
+  /** Phase 122: the learner closed the sheet without saving (X / back / backdrop / Do it later). */
+  const dismiss = useCallback(
+    (method: "close" | "back" | "do_it_later") => {
+      if (!savedRef.current) {
+        trackEvent("Setup Sheet Closed", {
+          last_step: step === 0 ? "paper_selection" : "subject_selection",
+          had_paper: !!paper,
+          close_method: method,
+          ...setupCtx(),
+        });
+        const store = useSetupFirstStore.getState();
+        if (treatment && data?.id != null) {
+          store.setDraft(
+            data.id,
+            paper
+              ? {
+                  paperId: paper.id,
+                  paperName: transCache.get(paper.id)?.[locale]?.name ?? paper.name,
+                  pathIds: selectedPath.map((l) => l.id),
+                  paperHasSubjects: groupDepth(levelsRaw, paper.id) > 0,
+                }
+              : null,
+          );
+        }
+        if (store.eligible) store.setDismissed(true);
+      }
+      close();
+    },
+    [step, paper, setupCtx, treatment, data?.id, transCache, locale, selectedPath, levelsRaw, close],
+  );
+
   /* ---------------------------------- handlers ---------------------------------- */
   const handleEdit = useCallback(
     (replaceAtId: number | string, newItem: Level) => {
@@ -236,7 +330,17 @@ export default function BuySigleCourseModal() {
           selected_paper_names: [selectedPath[0].name],
           selected_navigation_ids: selections[Number(selectedPath[0].id)],
           selected_navigation_names: selectionNames,
+          setup_source: useSetupFirstStore.getState().source ?? "other",
+          first_setup: useSetupFirstStore.getState().eligible,
+          ...(() => {
+            const at = useSetupFirstStore.getState().enrolledAt;
+            const ms = at != null ? Date.parse(String(at)) : NaN;
+            return Number.isFinite(ms) ? { time_since_enrolment_s: Math.max(0, Math.round((Date.now() - ms) / 1000)) } : {};
+          })(),
+          ...setupExperimentProps(),
         });
+        savedRef.current = true;
+        if (data?.id != null) useSetupFirstStore.getState().setDraft(data.id, null);
         await invalidateMyCourses();
         // First time this course gets subjects (this modal only opens for a
         // course without them, or a newly added exam): ask whether to take the
@@ -313,6 +417,21 @@ export default function BuySigleCourseModal() {
     }
   }, [data?.id, data?.short_name, selectedPath, submitting, modalT, user?.uuid, transCache, locale, isMobile]);
 
+  /** Phase 122: one step of the sheet done (both variants). */
+  const trackStepDone = useCallback(
+    (which: "paper_selection" | "subject_selection") => {
+      const names = selectedPath.map((l) => transCache.get(l.id)?.["en"]?.name ?? l.name);
+      trackEvent("Exam Details Selection Completed", {
+        step_number: which === "paper_selection" ? 1 : 2,
+        step_name: which,
+        paper_choice: names[0] ?? "",
+        ...(which === "subject_selection" ? { subject_combination_choice: names.slice(1).join(" + ") } : {}),
+        ...setupCtx(),
+      });
+    },
+    [selectedPath, transCache, setupCtx],
+  );
+
   const continueFromPrompt = useCallback(
     (path: "practice-test" | "preparation") => {
       if (!practicePrompt) return;
@@ -334,18 +453,35 @@ export default function BuySigleCourseModal() {
     data: paper !== null,
   });
 
+  // Phase 122 (variant): honest step count (a paper without subjects = 1 step), "x of n chosen", the missing group's name.
+  const subjectGroups = paper ? groupDepth(levelsRaw, paper.id) : 0;
+  const stepsShown = treatment && paper && subjectGroups === 0 ? STEPS.slice(0, 1) : STEPS;
+  const chosenGroups = Math.max(0, selectedPath.length - 1);
+  const groupTitle = (group: string | undefined, index: number) => {
+    if (!treatment || !group) return group;
+    const name = index > 1 && /optional/i.test(group) ? setupT("secondSubject") : group;
+    // One subject group: the prototype says "Pick your subject" instead of the data's group name ("Optional subject").
+    return subjectGroups > 1 ? setupT("groupHeading", { index, total: subjectGroups, group: name }) : setupT("pickSubject");
+  };
+  const nextGroupRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!treatment || step !== 1 || selectedPath.length < 2) return;
+    const el = nextGroupRef.current;
+    if (el?.scrollIntoView) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+  }, [treatment, step, currentParent, selectedPath.length]);
+
   /* ---------------------------------- render ---------------------------------- */
   const mainContent = () => {
     return (
       <div ref={contentRef} className="flex flex-col gap-3 h-full bg-gray-100 ">
         <div className="sticky top-0 z-50 bg-white">
           <StepIndicatorCard
-            data={STEPS}
+            data={stepsShown}
             currentStep={step}
             title={STEPS[step].title}
             titleHeightLight={STEPS[step].highlightText}
             description={STEPS[step].description}
-            goBack={step === 0 ? close : () => { setShowPickHint(false); setStep(step - 1); }}
+            goBack={step === 0 ? () => dismiss("back") : () => { setShowPickHint(false); setStep(step - 1); }}
           />
         </div>
 
@@ -436,7 +572,7 @@ export default function BuySigleCourseModal() {
                 >
                   <div>
                     <p className="heading-medium !font-semibold">
-                      {data?.group}
+                      {groupTitle(data?.group, index + 1)}
                     </p>
                     <p className="body-medium !font-normal text-surface-gray-muted">
                       {modalT("paperSelection.selectAnyOneOption")}
@@ -462,10 +598,10 @@ export default function BuySigleCourseModal() {
               );
             })}
             {currentChildren.length > 0 && (
-              <div className="flex-1 p-4 bg-white space-y-4  md:rounded-md">
+              <div ref={nextGroupRef} className="flex-1 p-4 bg-white space-y-4  md:rounded-md">
                 <div>
                   <p className="heading-medium !font-semibold">
-                    {transCache.get(currentChildren[0]?.id)?.[locale]?.group}
+                    {groupTitle(transCache.get(currentChildren[0]?.id)?.[locale]?.group, selectedPath.length)}
                   </p>
                   <p className="body-medium !font-normal text-surface-gray-muted">
                     {modalT("paperSelection.selectAnyOneOption")}
@@ -495,26 +631,41 @@ export default function BuySigleCourseModal() {
           {purchaseError && (
             <p className="body-small text-center text-red-500 w-full max-w-[400px]">
               {purchaseError}
+              {treatment && <span className="block text-surface-gray-muted">{setupT("keptOnError")}</span>}
+            </p>
+          )}
+          {treatment && step === 1 && subjectGroups > 1 && (
+            <p className="body-small !font-semibold text-center text-surface-gray-subtle" data-testid="setup-chosen-count">
+              {setupT("chosen", { done: Math.min(chosenGroups, subjectGroups), total: subjectGroups })}
             </p>
           )}
           {showPickHint && !purchaseError && (
             <p role="status" className="body-small !font-semibold text-center text-brand w-full max-w-[400px]">
-              {modalT("paperSelection.selectAnyOneOption")}
+              {!treatment
+                ? modalT("paperSelection.selectAnyOneOption")
+                : step === 0
+                  ? setupT("pickPaper")
+                  : subjectGroups > 1
+                    ? setupT("pickGroup", { group: groupTitle(transCache.get(currentChildren[0]?.id)?.[locale]?.group, selectedPath.length) ?? "" })
+                    : setupT("pickSubjectHint")}
             </p>
           )}
           {step === 0 ? (
             <div className="relative w-full max-w-[400px]">
               <ShimmerButton
                 text={
-                  currentChildren.length > 0
-                    ? modalT("paperSelection.continue")
-                    : modalT("subjectSelection.startLearning")
+                  treatment && !paper
+                    ? setupT("continue")
+                    : currentChildren.length > 0
+                      ? modalT("paperSelection.continue")
+                      : modalT("subjectSelection.startLearning")
                 }
                 disabled={!paper}
                 loading={submitting}
                 shimmer={nextButtonPhase === "shimmer"}
                 onClick={() => {
                   setShowPickHint(false);
+                  if (!submitting) trackStepDone("paper_selection");
                   currentChildren.length > 0 ? setStep(1) : handlePurchase();
                 }}
                 icon={
@@ -548,7 +699,10 @@ export default function BuySigleCourseModal() {
                 disabled={currentChildren.length > 0}
                 shimmer={buttonPhase === "shimmer"}
                 loading={submitting}
-                onClick={handlePurchase}
+                onClick={() => {
+                  if (!submitting) trackStepDone("subject_selection");
+                  handlePurchase();
+                }}
                 icon={
                   <motion.span
                     animate={buttonPhase === "icon" ? { x: 6 } : { x: 0 }}
@@ -573,6 +727,16 @@ export default function BuySigleCourseModal() {
               )}
             </div>
           )}
+          {treatment && (
+            <button
+              type="button"
+              onClick={() => dismiss("do_it_later")}
+              className="body-small text-surface-gray-subtle underline"
+              data-testid="setup-do-it-later"
+            >
+              {setupT("doItLater")}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -586,7 +750,7 @@ export default function BuySigleCourseModal() {
             maxWidth="max-w-[720px] rounded-md"
             isHeader={false}
             isOpen={isOpen}
-            onClose={close}
+            onClose={() => dismiss("close")}
           >
             {mainContent()}
           </Container>

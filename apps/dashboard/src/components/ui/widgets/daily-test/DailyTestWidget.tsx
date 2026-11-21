@@ -5,15 +5,15 @@ import { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import { BarChart3, Brain, CalendarDays, Clock, FileText, Target } from "lucide-react";
+import { BarChart3, Brain, CalendarDays, Clock, FileText, Lock, Target } from "lucide-react";
 import MainButton from "../../button/main-button";
 import { useRouter } from "@/i18n/navigation";
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
-import { useCourseStore } from "@/store/course/useCourseStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
 import { trackEvent } from "@/lib/analytics/browser";
+import { openSetupSheet, useSetupFirst } from "@/components/features/setup-first/useSetupFirstStore";
 
 type DailyTestWidgetProps = {
   bgColor?: string;
@@ -51,7 +51,9 @@ export default function DailyTestWidget({
   const questions = todays?.total_questions;
   const minutes = questions != null ? Math.round((questions * SECONDS_PER_QUESTION) / 60) : null;
 
-  const openCourseModal = useCourseStore((s) => s.open);
+  // Phase 122: "finish setup" variant (only for a learner with no level in any enrolment).
+  const setupFirst = useSetupFirst();
+  const setupLocked = setupFirst.treatment && !course?.stage_id;
 
   const handleOpen = useCallback(async () => {
     if (!courseId) return;
@@ -59,7 +61,7 @@ export default function DailyTestWidget({
     // No level/paper picked yet: ask for it first, like every other button on this page (the daily test page itself
     // only shows "Failed to load test history" for such an enrollment).
     if (!course?.stage_id && course?.exam) {
-      openCourseModal("single", course.exam);
+      openSetupSheet(course.exam, "daily_test");
       return;
     }
 
@@ -68,7 +70,7 @@ export default function DailyTestWidget({
       exam_name: course?.exam?.short_name!,
     });
     router.push(`/daily-tests/${courseId}`);
-  }, [courseId, course, router, openCourseModal]);
+  }, [courseId, course, router]);
 
   // While the course loads, keep the card (values show "-", the button waits
   // for the id): it used to appear only after load and push the page down
@@ -92,7 +94,13 @@ export default function DailyTestWidget({
         </span>
       </div>
 
-      <div className="grid grid-cols-3 divide-x divide-gray-200 rounded-lg bg-white py-6">
+      {setupLocked ? (
+        <div className="flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-6 text-center" data-testid="daily-test-setup-locked">
+          <Lock size={18} className="shrink-0 text-surface-gray-muted" aria-hidden="true" />
+          <p className="body-medium text-surface-gray-muted">{t("widget.setupLocked")}</p>
+        </div>
+      ) : (
+      <div className={clsx("grid grid-cols-3 divide-x divide-gray-200 rounded-lg bg-white py-6", setupFirst.pending && "invisible")}>
         <StatCell icon={<FileText size={28} />} value={questions != null ? String(questions) : "-"} label={t("widget.questions")} />
         <StatCell
           icon={<Clock size={28} />}
@@ -101,6 +109,7 @@ export default function DailyTestWidget({
         />
         <StatCell icon={<BarChart3 size={28} />} value={t("widget.personalizedShort")} label={t("widget.toYourLevel")} />
       </div>
+      )}
 
       {/* Three quick reasons — reuses the icons already on this page. */}
       <div className="hidden md:grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -109,13 +118,13 @@ export default function DailyTestWidget({
         <FeatureChip icon={<Brain size={20} className="text-purple-500" />} text={t("widget.chipConsistency")} />
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className={clsx("flex flex-col gap-3", setupFirst.pending && "invisible")}>
         <MainButton
           fullWidth
           variant="solid"
           rightIcon={<ChevronRightIcon width={16} strokeWidth={3} />}
           size="md"
-          text={todays?.attempted ? t("widget.open") : t("widget.startToday")}
+          text={setupLocked ? t("widget.finishSetup") : todays?.attempted ? t("widget.open") : t("widget.startToday")}
           onClick={handleOpen}
         />
         <div className="flex items-center gap-2 rounded-lg bg-[var(--color-success-bg-soft)] px-3 py-2">
