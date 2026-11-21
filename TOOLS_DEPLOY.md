@@ -44,6 +44,8 @@ npx wrangler pages deploy out --project-name=clearcut-tools --branch=main --comm
 
 `pnpm build` first deletes `.next/cache/fetch-cache` (`scripts/clear-fetch-cache.mjs`). Without that, a build reuses old API responses: production ran on 2026-10-05 data until 2026-10-22 (no exam logos, 4 exams missing). Don't run `next build` directly for a deploy.
 
+**Sentry:** the local `.env` has no `NEXT_PUBLIC_SENTRY_DSN`, and it is baked in at build time — a build without it ships with Sentry switched off. Add `NEXT_PUBLIC_SENTRY_DSN=<the tools DSN> NEXT_PUBLIC_SENTRY_ENVIRONMENT=production` to the build command (the DSN is a public client key; the live one can be read from the current production JS chunk that contains `ingest.de.sentry.io`). Done this way on 2026-11-20.
+
 `TOOLS_API_URL` is set explicitly because the local `.env` points at the
 Laragon tools backend, whose database is remote: every API call there took
 ~7.6s (vs ~0.4s on the production tools API, measured 2026-10-19), and the

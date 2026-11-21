@@ -146,4 +146,4 @@ What the DB says:
   - the Amplitude flush before the redirect (48f1aa6) re-applied at the user's request.
 - **Login modal NOT reverted:** `packages/auth` changed after Nov 18 only for the tools consent checkbox (CC-174). It has no A/B code and is not used by /start. Reverting it would break tools.
 - Checks: landing tsc (no errors in these files), eslint 0 errors, 44 landing tests pass. No local browser run (landing dev server was not running).
-- Still open: switch GrowthBook `lp_all_otp_airplane_202611` OFF/stop (cleanup only, no code reads it any more).
+- 2026-11-21 ~13:07 IST: GrowthBook `lp_all_otp_airplane_202611` production OFF (revision 5 published); the public payload no longer contains it.
