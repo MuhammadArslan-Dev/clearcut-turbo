@@ -1,7 +1,8 @@
 "use client";
 
 import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
-import { getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
+import { type CheckoutStage, checkoutNotOpenedReason, getPaymentFailureReason } from "@/lib/payment/paymentAnalytics";
+import { ApiError } from "@/lib/api/api-error";
 import { useInvalidateQuery } from "@/hooks/useInvalidateQuery";
 import { MY_COURSES_KEY } from "../course/useMyActiveCourses";
 import { CURRENT_COURSE_QUERY_KEY } from "../course/useGetCurrentCourse";
@@ -283,6 +284,8 @@ export function useRazorpayPayment({
     setLoading(true);
     setPhase("opening");
     let checkoutOpened = false;
+    // Where we are until Razorpay opens: a failure before that has no Razorpay callback, so it is reported below.
+    let stage: CheckoutStage = "sdk";
 
     // CC-69 funnel properties, sent on the existing payment events.
     const funnelProps = {
@@ -292,6 +295,23 @@ export function useRazorpayPayment({
       source: returnParams?.source !== undefined ? String(returnParams.source) : undefined,
       language: locale,
       in_app_browser: inAppBrowserKind(),
+    };
+
+    // The checkout never opened (script, order or Razorpay failed): one Payment Outcome so the funnel shows the loss
+    // instead of the learner disappearing after Payment Initiated. 409s handled above (already paid / autopay active)
+    // return before reaching here, so they are never counted as failures.
+    const trackCheckoutNotOpened = (at: CheckoutStage, error?: unknown) => {
+      const status = error instanceof ApiError ? error.status : undefined;
+      trackPaymentEvent("Payment Outcome", {
+        outcome: "payment_failed",
+        billing_type: "one_time",
+        final_price: Number(price),
+        exam_name: examName,
+        failure_reason: checkoutNotOpenedReason(at),
+        payment_session_id: "",
+        ...(status !== undefined ? { error_code: String(status) } : {}),
+        ...funnelProps,
+      });
     };
 
     try {
@@ -308,9 +328,12 @@ export function useRazorpayPayment({
         module: "payment-initiation",
       });
       if (!razorpayLoaded) {
+        trackCheckoutNotOpened("sdk");
         reportError("sdk_failed");
         return;
       }
+
+      stage = "order";
 
       // 1️⃣ Create order
       let order;
@@ -350,6 +373,7 @@ export function useRazorpayPayment({
       }
       // CC-173: the order's public id, named on the one-time events below and kept with the saved attempt.
       const txProps = order.transaction_uuid ? { transaction_id: order.transaction_uuid } : {};
+      stage = "open";
       saveAttempt({
         transactionId: order.transaction_id,
         transactionUuid: order.transaction_uuid,
@@ -651,6 +675,7 @@ export function useRazorpayPayment({
       trackPaymentEvent("Checkout Opened", { billing_type: "one_time", ...txProps, ...funnelProps });
     } catch (error) {
       console.error(error);
+      if (!checkoutOpened) trackCheckoutNotOpened(stage, error);
       reportError("unknown");
     } finally {
       // Not opened (script, order or Razorpay itself failed): free the
