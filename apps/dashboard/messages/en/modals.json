@@ -148,6 +148,18 @@
   },
 
   "buySingleCourseModal": {
+    "setup": {
+      "continue": "Continue",
+      "doItLater": "Do it later",
+      "pickSubject": "Pick your subject",
+      "pickSubjectHint": "Pick your subject to continue",
+      "chosen": "{done} of {total} chosen",
+      "pickGroup": "Pick your {group} to continue",
+      "pickPaper": "Pick a paper to continue",
+      "groupHeading": "{index} of {total} · {group}",
+      "secondSubject": "Second subject",
+      "keptOnError": "Your choices are kept. Tap the button to try again."
+    },
     "paperSelection": {
       "title": "Select Paper",
       "highlight_text": "Paper",

@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 
 import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { ExamMetadata } from "@/types/Exam";
+import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { useCourseStore } from "@/store/course/useCourseStore";
 import { useRouter } from "@/i18n/navigation";
 import QuickRevision from "@/components/ui/widgets/quick-revision/quick-revision";
@@ -19,6 +20,11 @@ import AppDownloadWidget from "@/components/ui/widgets/app-download/app-download
 import DailyTestWidget from "@/components/ui/widgets/daily-test/DailyTestWidget";
 import HomeGreeting from "@/components/features/dashboard/HomeGreeting";
 import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
+import SetupFirstGate from "@/components/features/setup-first/SetupFirstGate";
+import SetupBanner from "@/components/features/setup-first/SetupBanner";
+import { useSetupFirst } from "@/components/features/setup-first/useSetupFirstStore";
+import { needsFirstSetup } from "@/components/features/setup-first/setupFirstValue";
+import { useAuth } from "@/providers/AuthProvider";
 
 // Both render nothing until their own store says they're open (see each
 // component's own `if (!isOpen) return null`), so splitting them into their
@@ -84,6 +90,17 @@ export default function LearnPage() {
   const hideWidgetsOnMobile = onAddExamSlide ? "hidden md:block" : "";
   const hideWidgetsRowOnMobile = onAddExamSlide ? "hidden md:flex" : "";
 
+  // Phase 122 ("finish setup" variant, user decision 2026-11-21): until the learner has picked a level, the Learn page
+  // shows only the banner, My Courses and Daily Test, like the prototype. Also hidden while the variant is not known yet
+  // (milliseconds, eligible learners only), so the widgets never flash; in control they then appear below, shifting nothing above.
+  const setupFirst = useSetupFirst();
+  const { user } = useAuth();
+  // The gate sets eligibility one render after the courses land: cover that render too, so a variant learner never sees the
+  // widgets flash. (Not hidden while the course list loads, so a configured learner sees exactly today's page.)
+  const eligibleNow = !!user?.uuid && needsFirstSetup(courses?.courses ?? []);
+  const hideForSetup =
+    setupFirst.treatment || setupFirst.pending || (eligibleNow && !setupFirst.eligible);
+
   const exam = useMemo(() => displayCourse?.exam, [displayCourse]);
 
   // ✅ Memoize metadata parsing
@@ -122,6 +139,10 @@ export default function LearnPage() {
           <MainContainer maxWidth="max-w-[900px]" padding="pb-[114px] md:pb-0">
             <div className="flex flex-col gap-2 md:gap-4">
               <HomeGreeting />
+              {/* Phase 122: "finish setup" experiment (no level in any enrolment yet). Gate renders nothing; the banner
+                  only shows in the variant after the Select Paper sheet was closed without saving. */}
+              <SetupFirstGate courses={allCourses as (ExamEnrollmentWithExam | null)[]} activeCourse={activeCourse} />
+              <SetupBanner exam={activeCourse?.exam} enrolmentUuid={activeCourse?.uuid} />
 
               {/* Row 1 — the course card (untouched) with Daily Test right beside
                   it on desktop; stacked course → Daily Test on mobile. Both rows
@@ -145,6 +166,8 @@ export default function LearnPage() {
                   reference layout: NextMilestone renders exactly once whatever
                   the exam-date state (it was left column when "upcoming", right
                   column otherwise). */}
+              {!hideForSetup && (
+              <>
               <div className={`grid grid-cols-1 gap-2 md:grid-cols-2 md:items-stretch md:gap-4 ${hideWidgetsOnMobile}`}>
                 <div className="min-w-0">
                   <TodayGoals rounded="md:rounded-md" exam={exam} />
@@ -183,6 +206,8 @@ export default function LearnPage() {
                   />
                 </div>
               </div>
+              </>
+              )}
             </div>
           </MainContainer>
 

@@ -260,6 +260,21 @@
     }
   },
   "myCourses": {
+    "setup": {
+      "badge": "सेटअप अधूरा है",
+      "exam": "परीक्षा: {exam}",
+      "paper": "पेपर",
+      "paperDone": "पेपर: {paper}",
+      "subject": "विषय",
+      "subjectNotNeeded": "विषय (इस पेपर के लिए ज़रूरी नहीं)",
+      "selectPaper": "पेपर चुनें",
+      "selectSubject": "विषय चुनें",
+      "aboutOneMin": "लगभग 1 मिनट",
+      "bannerTitle": "पढ़ाई शुरू करने के लिए सेटअप पूरा करें।",
+      "bannerBody": "इसमें लगभग 1 मिनट लगता है।",
+      "bannerBodyPaper": "आपका पेपर ({paper}) सेव है; अब अपना विषय चुनें।",
+      "bannerCta": "सेटअप पूरा करें"
+    },
     "title": "मेरे कोर्स",
     "freeTrialBadge": "फ्री ट्रायल",
     "chaptersCompleted": "कम्प्लीट किए गए चैप्टर्स",
@@ -343,7 +358,8 @@
     "lessonPath": "{subject} > चैप्टर {chapter} • टॉपिक {topic}",
     "timeToComplete": "गोल पूरा करने में {minutes, plural, one {# मिनट} other {# मिनट}}",
     "minutes": "{minutes, plural, one {# मिनट} other {# मिनट}}",
-    "resume": "फिर से शुरू करें"
+    "resume": "फिर से शुरू करें",
+    "finishSetup": "सेटअप पूरा करें"
   },
   "footer": {
     "terms": "नियम",

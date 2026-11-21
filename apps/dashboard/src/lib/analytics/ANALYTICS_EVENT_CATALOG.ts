@@ -75,15 +75,34 @@ trackEvent("Onboarding Completed", {
   up_preferred_app_language: "string",
 });
 
+// Phase 122: the Select Paper / Subjects sheet (both variants of dash_all_setup_first_202611).
 trackEvent("Exam Details Selection Started", {
   step_number: 1,
   step_name: "paper_selection",
-  content_language_choice: "en",
-  paper_choice: "Paper 1",
-  subject_combination_choice: "English & Hindi",
+  exam_name: "HTET",
+  setup_source: "auto_open", // auto_open | course_card | daily_test | banner | resume_bar | other
+  first_setup: true,
+  experiment_flag: "dash_all_setup_first_202611", // only for a learner in the experiment
+  experiment_variant: "setup_first", // control | setup_first
 });
 
-trackEvent("Exam Details Selection Completed", {});
+trackEvent("Exam Details Selection Completed", {
+  step_number: 1,
+  step_name: "paper_selection", // paper_selection | subject_selection
+  paper_choice: "Level 2 (TGT)",
+  exam_name: "HTET",
+  setup_source: "course_card",
+  first_setup: true,
+});
+
+trackEvent("Setup Sheet Closed", {
+  last_step: "paper_selection",
+  had_paper: false,
+  close_method: "do_it_later", // do_it_later | close | back
+  exam_name: "HTET",
+  setup_source: "auto_open",
+  first_setup: true,
+});
 
 /* =========================
    NAVIGATION
