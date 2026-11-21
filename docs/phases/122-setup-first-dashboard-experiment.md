@@ -4,7 +4,7 @@
 **Repos:** CM (apps/dashboard) · GrowthBook (flag + draft rule) · no backend change
 **Branch:** `feature/122-setup-first-dashboard-experiment` — merged to main 2026-11-21 (user go-ahead)
 **Created / start date:** 2026-11-21
-**Status:** In Review — built + verified locally, merged/pushed to main 2026-11-21; next: GrowthBook flag (50/50, user_id), then 1-week results report from Amplitude
+**Status:** In Review — LIVE: GrowthBook experiment exp_19g6dmwq4pl9y running since 2026-11-21 ~13:15 IST (50/50 control/setup_first, hash user_id, production ON); results review ~2026-11-28
 
 ---
 
