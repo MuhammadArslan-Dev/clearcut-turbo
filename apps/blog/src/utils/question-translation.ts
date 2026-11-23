@@ -9,13 +9,7 @@ import type { LocalizedNameBlob, Translation } from "@/components/blog/assessmen
 // `translations[0]` instead — so a Hindi-preferring visitor still saw the
 // English question/options/explanation for the one question the page is
 // actually about. Centralizing fixes that drift in one place.
-//
-// This is deliberately separate from `getQuestionUrlParam` (utils/slugify.ts),
-// which must keep always using `translations[0]` for URL/slug/canonical
-// purposes regardless of viewer language — that's a documented, load-bearing
-// contract for the question sitemap and the canonical-redirect logic. Content
-// selection and URL selection are different concerns that happen to have
-// shared the same (wrong, for content) shortcut.
+
 export function selectTranslation(
   translations: Translation[] | undefined | null,
   courseLang: "en" | "hi",

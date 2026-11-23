@@ -59,20 +59,28 @@ function localise(item: NavItem, locale: string): LocalisedNavItem {
   };
 }
 
-/** One selectable level: icon tile, name, optional detail line, chevron. */
+/** One selectable level: icon tile, name, optional detail line, chevron.
+ * A real link to the level page (crawlable, works without JS); the click
+ * keeps the in-page step flow (a level with sub-choices shows them first). */
 function LevelCard({
   title,
   detail,
+  href,
   onClick,
 }: {
   title: string;
   detail?: string;
+  href: string;
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <a
+      href={href}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+        event.preventDefault();
+        onClick();
+      }}
       className="group flex w-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/40"
     >
       <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -94,7 +102,7 @@ function LevelCard({
         className="h-5 w-5 shrink-0 text-gray-400 transition-colors group-hover:text-blue-600"
         aria-hidden="true"
       />
-    </button>
+    </a>
   );
 }
 
@@ -107,7 +115,9 @@ export default function ExamLevelsSection({
 }) {
   const [trail, setTrail] = React.useState<NavItem[]>([]);
   const router = useRouter();
-  const pathname = usePathname();
+  // usePathname() can return next-intl's internal "/en/..." path for English
+  // pages; links and pushes use the public, unprefixed one (no 301 hop).
+  const pathname = usePathname().replace(/^\/en(?=\/|$)/, "") || "/";
   const locale = useLocale();
   const t = useTranslations("examPage");
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -195,11 +205,14 @@ export default function ExamLevelsSection({
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           {visible.map((item) => {
             const display = localise(item, locale);
+            // Every step lands on the first choice's level page.
+            const root = trail[0] ?? item;
             return (
               <LevelCard
                 key={item.id}
                 title={display.name}
                 detail={display.detail}
+                href={`${pathname}/${formatToSlug(root.name ?? "")}`}
                 onClick={() => handleSelect(item)}
               />
             );

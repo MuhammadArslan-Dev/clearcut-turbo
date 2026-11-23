@@ -45,14 +45,19 @@ export async function chapterPageMetadata(params: ChapterParams) {
   const seo = pageSeo(page);
   const path = `${examName}/${canonical.level}/subject/${canonical.subject}/${chapter_name}${seo.pathSuffix}`;
 
+  // Title and description describe the canonical copy: a chapter listed
+  // under several levels/subjects renders the same questions everywhere and
+  // canonicalizes to the first path, so every copy states the same level
+  // (it used to say "HTET Level 2 TGT" while pointing at Level 1 PRT —
+  // conflicting signals behind "Google chose a different canonical").
   const { title, description } = questionBankSeo(
     t,
     "chapter",
     {
       exam: (examName ?? "").toUpperCase(),
-      levelSlug: level_id ?? "",
-      subjectSlug: subject_id ?? "",
-      subject: unFormatSlug(subject_id ?? ""),
+      levelSlug: canonical.level,
+      subjectSlug: canonical.subject,
+      subject: unFormatSlug(canonical.subject),
       chapter: chapterName(loaded.raw, locale, unFormatSlug(chapter_name ?? "")),
     },
     page,

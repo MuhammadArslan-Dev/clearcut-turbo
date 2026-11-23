@@ -7,15 +7,15 @@ import { notFound } from "next/navigation";
 import { findLevel } from "@/lib/seo/exam-index";
 import { tryLoadExamIndex } from "@/lib/seo/load-exam-index";
 import { unFormatSlug } from "@/utils/slugify";
-import { levelShort, seoDescription, seoTitle } from "@/lib/seo/seo-text";
-import { levelLabel as levelName } from "@/lib/seo/year-title";
+import { getTranslations } from "next-intl/server";
+import { hubMetadata } from "@/lib/seo/hub-metadata";
+import { localeOrigin, pageCopy } from "@/components/question-bank/pages/page-copy";
 import MainContainer from "@/components/main-container";
 import CustomizableHeader from "@/components/customizable-header";
 import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
 import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
-import { localeAlternates } from "@/lib/seo/locale-alternates";
 
 /* =========================================================
    TYPES (Next.js 15/16)
@@ -33,39 +33,18 @@ type Props = {
    METADATA
 ========================================================= */
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { locale: string; examName: string; level_id: string };
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, examName, level_id } = await params;
+  // /hi shows Hindi headings and copy: its own page (lib/seo/hub-metadata).
+  return hubMetadata({ locale, kind: "level", exam: examName ?? "", level: level_id ?? "" });
+}
 
-  // /hi shows the same English content — canonical English, no hreflang.
-  const { canonical: canonicalUrl } = localeAlternates({
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
-    path: `/${examName}/${level_id}`,
-    locale,
-    hiTranslated: false,
-  });
-
-  // Root layout applies the "%s | Clear Cutoff" title template, so use a
-  // bare title here to avoid a doubled site name.
-  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const level = levelName(level_id ?? "");
-
-  return {
-    title: seoTitle([
-      `${examLabel} ${level} Question Papers, PYQ & MCQ`,
-      `${examLabel} ${levelShort(level_id ?? "")} Question Papers, PYQ & MCQ`,
-    ]),
-    description: seoDescription(
-      `${examLabel} ${level} previous year question papers (PYQ) and subject-wise MCQ practice with answers and explanations, free on Clear Cutoff.`,
-    ),
-
-    alternates: {
-      canonical: canonicalUrl,
-    },
-  };
+// Cached and regenerated in the background like the question-bank pages
+// (lib/question-bank/route-cache.ts): no per-request render for crawlers,
+// and a failed regeneration keeps the last good page.
+export const revalidate = 3600;
+export async function generateStaticParams() {
+  return [];
 }
 
 /* =========================================================
@@ -86,15 +65,13 @@ export async function generateMetadata({
  * go stale indefinitely. A time window is both fresher than `force-cache` and
  * far cheaper than `no-store`.
  */
-async function safeFetch(url: string, revalidate = 3600) {
-  try {
-    const data = await apiFetch(url, { revalidate });
-
-    return data;
-  } catch (err) {
-    console.error("Fetch failed:", err);
-    return null;
-  }
+// Throws on failure (phase 125): with ISR a page rendered from a failed read
+// would be cached without its subject and year links for an hour; a thrown
+// render keeps the last good page instead.
+async function cachedFetch(url: string, revalidate = 3600) {
+  const data = await apiFetch(url, { revalidate });
+  if (!data) throw new Error(`level page data unavailable: ${url}`);
+  return data;
 }
 
 /* =========================================================
@@ -102,7 +79,7 @@ async function safeFetch(url: string, revalidate = 3600) {
 ========================================================= */
 
 export default async function Page({ params }: Props) {
-  const { examName: examSlug, level_id } = await params;
+  const { locale, examName: examSlug, level_id } = await params;
 
   /* ---------- Validate Exam ---------- */
 
@@ -123,9 +100,11 @@ export default async function Page({ params }: Props) {
 
   /* ---------- Fetch Data ---------- */
 
-  // Started together with the exam index check (they don't depend on it);
-  // safeFetch never rejects, so an early notFound() leaves nothing dangling.
-  const dataPromise = Promise.all([safeFetch(yearsUrl), safeFetch(subjectsUrl)]);
+  // Started together with the exam index check (they don't depend on it).
+  // The no-op catch only keeps an early notFound() from leaving an unhandled
+  // rejection; awaiting it below still throws.
+  const dataPromise = Promise.all([cachedFetch(yearsUrl), cachedFetch(subjectsUrl), pageCopy(locale), getTranslations({ locale, namespace: "HubPage" })]);
+  dataPromise.catch(() => {});
 
   const index = await tryLoadExamIndex(String(examSlug));
   if (index && !findLevel(index, String(level_id))) notFound();
@@ -133,11 +112,12 @@ export default async function Page({ params }: Props) {
   const examName = unFormatSlug(examSlug).toUpperCase();
   const levelName = unFormatSlug(level_id ?? "");
 
-  const [dataYears, dataSubjects] = await dataPromise;
+  const [dataYears, dataSubjects, t, tHub] = await dataPromise;
   // get-subject can list one slug twice (HTET "mathematics"); one link each.
   const seenSubjects = new Set<string>();
   const subjects = (Array.isArray(dataSubjects?.data) ? dataSubjects.data : [])
-    .filter((s: { slug?: string }) => s?.slug && !seenSubjects.has(s.slug) && seenSubjects.add(s.slug))
+    // No slug = no page (a link would be /subject/null).
+    .filter((s: { slug?: string | null }) => s?.slug && s.slug !== "null" && !seenSubjects.has(s.slug) && seenSubjects.add(s.slug))
     .map((s: { slug: string; name?: string }) => ({ sections: { name: s.name ?? unFormatSlug(s.slug), slug: s.slug } }));
 
   // if (
@@ -149,10 +129,11 @@ export default async function Page({ params }: Props) {
 
   /* ---------- Breadcrumbs ---------- */
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  // On the visitor's language site (/hi links to /hi).
+  const siteUrl = localeOrigin(locale);
 
   const breadcrumbItems = [
-    { name: "Home", url: siteUrl || "/" },
+    { name: t("home"), url: siteUrl || "/" },
     { name: examName, url: `${siteUrl}/${examSlug}` },
     {
       name: levelName,
@@ -185,9 +166,9 @@ export default async function Page({ params }: Props) {
           <div className="px-3">
             <CustomizableHeader
               showEyebrow={false}
-              heading={`${examName} Exam ${levelName}`}
+              heading={tHub("levelHeading", { exam: examName, level: levelName })}
               highlightText={examName}
-              subheading={`${examName} exam ${levelName} preparation with Clear Cutoff`}
+              subheading={tHub("levelSubheading", { exam: examName, level: levelName })}
               headingColor="text-gray-900"
               highlightColor="text-blue-500"
               subheadingColor="text-gray-600"
@@ -197,10 +178,20 @@ export default async function Page({ params }: Props) {
             />
           </div>
 
-          {subjects.length > 0 && <TestBySubjects data={subjects} examName={examName} />}
+          {subjects.length > 0 && (
+            <TestBySubjects
+              data={subjects}
+              examName={examName}
+              labels={{ title: tHub("bySubjects"), subtitle: t("subjectWise"), by: t("byClearCutoff"), row: tHub("rowSubtitle") }}
+            />
+          )}
 
           {dataYears?.data?.length > 0 && (
-            <TestByYears data={dataYears.data} examName={examName} />
+            <TestByYears
+              data={dataYears.data}
+              examName={examName}
+              labels={{ title: tHub("byYears"), subtitle: t("yearWise"), by: t("byClearCutoff"), row: tHub("rowSubtitle") }}
+            />
           )}
         </div>
       </MainContainer>

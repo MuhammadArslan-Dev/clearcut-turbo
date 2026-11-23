@@ -19,4 +19,8 @@ describe("robots.txt", () => {
     expect(blocked?.disallow).toBe("/");
     expect(AI_TRAINING_BOTS).toEqual(expect.arrayContaining(["ClaudeBot", "GPTBot", "meta-externalagent", "Amazonbot"]));
   });
+
+  it("lists only the sitemap index (it already lists sitemap.xml and every exam sitemap)", () => {
+    expect(robots().sitemap).toMatch(/\/sitemaps\/index\.xml$/);
+  });
 });

@@ -44,6 +44,25 @@ export function xmlResponse(xml: string): Response {
   return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8" } });
 }
 
+// Last sitemap that built, per URL and server instance (phase 125).
+const lastGoodXml = new Map<string, string>();
+
+/** Builds a sitemap; when the build fails, serves the last one that built on
+ * this instance (the data underneath also falls back to its last good copy,
+ * see load-exam-index / question-index). Only a sitemap that never built
+ * here answers 503 — never a shorter or empty 200. */
+export async function sitemapResponse(key: string, build: () => Promise<string>): Promise<Response> {
+  try {
+    const xml = await build();
+    lastGoodXml.set(key, xml);
+    return xmlResponse(xml);
+  } catch (error) {
+    const previous = lastGoodXml.get(key);
+    console.error(`sitemap ${key} generation failed${previous ? ", serving the last good copy" : ""}:`, error);
+    return previous ? xmlResponse(previous) : sitemapUnavailable();
+  }
+}
+
 /** A failed or partial build must never be served as a valid (shorter)
  * sitemap — a 503 tells crawlers to come back later instead. */
 export function sitemapUnavailable(): Response {

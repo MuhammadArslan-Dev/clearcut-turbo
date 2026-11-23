@@ -34,9 +34,9 @@ export default function robots(): MetadataRoute.Robots {
       },
       { userAgent: AI_TRAINING_BOTS, disallow: "/" },
     ],
-    // sitemaps/index.xml lists every per-exam sitemap (built from
-    // ALLOWED_EXAMS) — a new exam needs no change here, it just needs to be
-    // added to ALLOWED_EXAMS. See sitemaps/index.xml/route.ts.
-    sitemap: [`${BASE_URL}/sitemap.xml`, `${BASE_URL}/sitemaps/index.xml`],
+    // Only the index: it lists sitemap.xml and every per-exam sitemap (built
+    // from ALLOWED_EXAMS), so a new exam needs no change here. Listing a child
+    // here as well made Search Console track it twice (phase 125).
+    sitemap: `${BASE_URL}/sitemaps/index.xml`,
   };
 }

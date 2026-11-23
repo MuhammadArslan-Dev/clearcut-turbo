@@ -2,8 +2,8 @@
 // year), built from the backend's /blog/question-index: every question each
 // page renders, in page order, with its newest translation `updated_at`.
 // Each page's <lastmod> is the newest content timestamp of the questions on
-// that page — a real content change, never the build time; omitted when no
-// question on the page has a timestamp.
+// that page, or the date the page layout last changed if that is newer — a
+// real change either way, never the build time.
 
 import { QUESTIONS_PER_PAGE, pagePath } from "@/lib/question-bank/pagination";
 import { isHindiPageByFlags } from "@/lib/question-bank/hindi-page";
@@ -41,14 +41,22 @@ export function stageIdFor(examYear: string, levelSlug: string): string | null {
   return `${exam}_${level[1] === "paper" ? "P" : "L"}${level[2]}`;
 }
 
+/** When every paginated question-bank page last changed composition: on
+ * 2026-10-21 (commit 2725014) pages went from 50 to 20 questions, so every
+ * /page/N shows different questions since then. A page's <lastmod> is never
+ * older than this — a real change, not a build time (DEVELOPMENT_RULES §10).
+ * Move it forward only when the page layout really changes again. */
+export const PAGE_LAYOUT_CHANGED_AT = Date.parse("2026-10-21T17:07:55+05:00") / 1000;
+
 /** One entry per page of `entries` under `basePath`, followed by its /hi
  * twin when that page is a genuinely Hindi page (same rule the page's own
- * canonical/hreflang use — lib/question-bank/hindi-page.ts). */
+ * canonical/hreflang use — lib/question-bank/hindi-page.ts). <lastmod> is the
+ * newest of the page's question timestamps and PAGE_LAYOUT_CHANGED_AT. */
 export function pagedEntries(origin: string, basePath: string, entries: IndexEntry[]): SitemapEntry[] {
   const out: SitemapEntry[] = [];
   for (let start = 0; start < entries.length; start += QUESTIONS_PER_PAGE) {
     const slice = entries.slice(start, start + QUESTIONS_PER_PAGE);
-    let newest: number | null = null;
+    let newest: number | null = PAGE_LAYOUT_CHANGED_AT;
     for (const [, ts] of slice) {
       if (ts !== null && (newest === null || ts > newest)) newest = ts;
     }

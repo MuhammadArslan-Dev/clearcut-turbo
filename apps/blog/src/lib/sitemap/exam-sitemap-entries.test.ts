@@ -31,10 +31,10 @@ describe("examStructureEntries", () => {
     expect(new Set(urls).size).toBe(urls.length);
   });
 
-  it("lists the listing pages in English only (their /hi copy is the same English content)", () => {
+  it("lists the hubs in English and Hindi (their /hi copy is translated and self-canonical)", () => {
     for (const path of ["/ctet", "/ctet/paper-1", "/ctet/paper-1/year", "/ctet/paper-1/subject"]) {
       expect(urls).toContain(`${ORIGIN}${path}`);
-      expect(urls).not.toContain(`${ORIGIN}/hi${path}`);
+      expect(urls).toContain(`${ORIGIN}/hi${path}`);
     }
   });
 
@@ -59,7 +59,7 @@ describe("examStructureEntries", () => {
     expect(withHindi).toContain(`${ORIGIN}/hi/ctet/blog/translated`);
     expect(withHindi).toContain(`${ORIGIN}/ctet/blog/english-only`);
     expect(withHindi).not.toContain(`${ORIGIN}/hi/ctet/blog/english-only`);
-    expect(urls.some((u) => u.startsWith(`${ORIGIN}/hi/`))).toBe(false);
+    expect(urls.some((u) => u.startsWith(`${ORIGIN}/hi/ctet/blog`))).toBe(false);
   });
 
   it("skips the subject listing of a level with no chapters or no questions", () => {

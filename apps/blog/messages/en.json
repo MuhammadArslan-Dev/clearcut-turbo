@@ -264,5 +264,24 @@
     "paperHint": "{exam} has {count, plural, one {# paper} other {# papers}}. Each paper has different subjects and syllabus.",
     "switchPapersInfo": "You can switch between papers anytime from the top menu.",
     "loadingLevels": "Loading levels…"
+  },
+  "HubPage": {
+    "examTitle": "{exam} Question Papers, PYQ & MCQ with Answers",
+    "examTitleShort": "{exam} Previous Year Question Papers & MCQ",
+    "examDescription": "{exam} previous year question papers (PYQ) and chapter-wise MCQ practice for every paper, with answers and explanations, free on Clear Cutoff.",
+    "levelTitle": "{exam} {level} Question Papers, PYQ & MCQ",
+    "levelTitleShort": "{exam} {levelShort} Question Papers, PYQ & MCQ",
+    "levelDescription": "{exam} {level} previous year question papers (PYQ) and subject-wise MCQ practice with answers and explanations, free on Clear Cutoff.",
+    "subjectsTitle": "{exam} {level} Subject-wise Questions with Answers",
+    "subjectsTitleShort": "{exam} {levelShort} Subject-wise MCQ with Answers",
+    "subjectsDescription": "{exam} {level} questions subject-wise and chapter-wise, with answers and explanations – free practice on Clear Cutoff.",
+    "yearsTitle": "{exam} {level} Previous Year Question Papers (PYQ)",
+    "yearsTitleShort": "{exam} {levelShort} Previous Year Question Papers (PYQ)",
+    "yearsDescription": "Year-wise {exam} {level} previous year question papers (PYQ) – solve each paper online with answers and explanations, free on Clear Cutoff.",
+    "levelHeading": "{exam} Exam {level}",
+    "levelSubheading": "{exam} exam {level} preparation with Clear Cutoff",
+    "bySubjects": "By Subjects",
+    "byYears": "By Years",
+    "rowSubtitle": "150 questions & detailed answers"
   }
 }

@@ -4,6 +4,7 @@ import { QUESTIONS_PER_PAGE as P } from "@/lib/question-bank/pagination";
 import { urlsetXml } from "./xml";
 import { isWellFormed } from "./xml-well-formed";
 import {
+  PAGE_LAYOUT_CHANGED_AT,
   YEAR_PAGE_LIMIT,
   chapterPageEntries,
   pagedEntries,
@@ -16,7 +17,7 @@ import {
 } from "./question-pages";
 
 const ORIGIN = "https://academy.clearcutoff.in";
-const T0 = Date.UTC(2026, 0, 1) / 1000; // 2026-01-01T00:00:00Z
+const T0 = Date.UTC(2027, 0, 1) / 1000; // 2027-01-01T00:00:00Z, after PAGE_LAYOUT_CHANGED_AT
 const iso = (ts: number) => new Date(ts * 1000).toISOString();
 /** n questions with ids from `firstId`, timestamps T0 + offset (null for listed indexes). */
 function list(n: number, firstId = 1, nullAt: number[] = []): IndexEntry[] {
@@ -50,9 +51,14 @@ describe("pagedEntries", () => {
     expect(entries[1].lastmod).toBe(iso(T0 + P + 9));
   });
 
-  it("never invents a date for a page without timestamps", () => {
+  it("dates a page without question timestamps by its last layout change, never by the build", () => {
     const [entry] = pagedEntries(ORIGIN, "/x", list(3, 1, [0, 1, 2]));
-    expect(entry).toEqual({ loc: `${ORIGIN}/x` });
+    expect(entry).toEqual({ loc: `${ORIGIN}/x`, lastmod: "2026-10-21T12:07:55.000Z" });
+  });
+
+  it("never dates a page before the 2026-10-21 recomposition (50 -> 20 per page)", () => {
+    const old: IndexEntry[] = [[1, Date.UTC(2026, 1, 27) / 1000]];
+    expect(pagedEntries(ORIGIN, "/x", old)[0].lastmod).toBe(new Date(PAGE_LAYOUT_CHANGED_AT * 1000).toISOString());
   });
 
   it("adds the /hi twin right after each page whose questions are mostly bilingual", () => {

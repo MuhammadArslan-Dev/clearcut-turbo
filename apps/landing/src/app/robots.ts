@@ -10,7 +10,8 @@ export default function robots(): MetadataRoute.Robots {
           "/teaching/*/questions",  // onboarding flow — not indexable content
           "/account-delete",        // utility page
           "/api/",                  // API routes
-          "/_next/",                // Next.js internals
+          // No "/_next/" (phase 125): it blocked /_next/static CSS/JS, so
+          // Google rendered every landing page without its styles/scripts.
         ],
       },
       {
@@ -44,7 +45,9 @@ export default function robots(): MetadataRoute.Robots {
     ],
     sitemap: [
       "https://clearcutoff.in/sitemap.xml",
-      "https://clearcutoff.in/go/sitemap.xml", // Astro marketing pages, served via the Cloudflare Worker at /go/*
+      // No /go/sitemap.xml (phase 125): the Astro /go app has no sitemap (that
+      // URL is an HTML redirect page), and its /go/exam/* ad landing pages are
+      // noindex duplicates of /exam/* — nothing there to submit.
       // apps/tools: ONE index (served by the Cloudflare Worker at the origin root) that lists the
       // per-language, per-section sitemaps under /tools, /hi/tools and /mr/tools — see apps/tools/SEO.md.
       "https://clearcutoff.in/sitemap-tools.xml",

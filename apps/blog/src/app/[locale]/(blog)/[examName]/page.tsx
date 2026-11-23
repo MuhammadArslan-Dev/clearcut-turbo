@@ -7,13 +7,12 @@ import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
 import { Metadata } from "next";
 import React, { Suspense } from "react";
 import { unFormatSlug } from "@/utils/slugify";
-import { seoDescription, seoTitle, titleText } from "@/lib/seo/seo-text";
-import { siteConfig } from "@/lib/metadata";
 import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api/api2";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import Link from "next/link";
-import { localeAlternates } from "@/lib/seo/locale-alternates";
+import { hubMetadata } from "@/lib/seo/hub-metadata";
+import { localeOrigin, pageCopy } from "@/components/question-bank/pages/page-copy";
 
 /* =========================================================
    TYPES
@@ -64,57 +63,10 @@ export async function generateStaticParams() {
    METADATA
 ========================================================= */
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { locale: string; examName: string };
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale, examName } = await params;
-
-  // /hi renders the same English level list, so it isn't a separate
-  // language version: canonical English, no hreflang (see localeAlternates).
-  const { canonical: canonicalUrl } = localeAlternates({
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
-    path: `/${examName}`,
-    locale,
-    hiTranslated: false,
-  });
-
-  // Root layout applies the "%s | Clear Cutoff" title template, so use a
-  // bare title here to avoid a doubled site name.
-  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-
-  const seo = seoTitle([
-    `${examLabel} Question Papers, PYQ & MCQ with Answers`,
-    `${examLabel} Previous Year Question Papers & MCQ`,
-  ]);
-  const title = titleText(seo);
-  const description = `${examLabel} previous year question papers (PYQ) and chapter-wise MCQ practice for every paper, with answers and explanations, free on Clear Cutoff.`;
-
-  return {
-    title: seo,
-    description: seoDescription(description),
-
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      siteName: siteConfig.name,
-      images: [
-        {
-          url: "https://cc-teaching-content-ind.s3.dualstack.ap-south-1.amazonaws.com/images/favicon.png",
-          width: 1200,
-          height: 630,
-          alt: "ClearCutoff Exam Prep",
-        },
-      ],
-      type: "website",
-    },
-
-    alternates: {
-      canonical: canonicalUrl,
-    },
-  };
+  // /hi renders the level list in Hindi: its own page (lib/seo/hub-metadata).
+  return hubMetadata({ locale, kind: "exam", exam: examName ?? "" });
 }
 /* =========================================================
    PAGE
@@ -148,11 +100,13 @@ export default async function Page({ params }: Params) {
 
   /* ---------- Breadcrumbs ---------- */
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  // On the visitor's language site (/hi links to /hi).
+  const t = await pageCopy(locale);
+  const siteUrl = localeOrigin(locale);
   const examUrl = `${siteUrl}/${examSlug}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: siteUrl || "/" },
+    { name: t("home"), url: siteUrl || "/" },
     { name: examName, url: examUrl },
   ];
 

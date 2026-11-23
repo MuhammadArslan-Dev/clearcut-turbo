@@ -12,8 +12,8 @@ export type SitemapPost = { slug: string; lastmod?: string; hindi?: boolean };
  * paths, with <lastmod> from real question content timestamps. Blog posts
  * carry their CMS date. Listing pages (exam, level, /year, /subject) have no
  * content timestamp, so no <lastmod>. Question pages list their /hi URL only
- * where /hi shows real Hindi questions (pagedEntries); listing pages stay
- * English-only (their /hi copy canonicalizes to English); the blog listing
+ * where /hi shows real Hindi questions (pagedEntries); listing pages list
+ * both (their /hi copy is translated and self-canonical); the blog listing
  * and posts get their /hi URL only when there is Hindi CMS copy.
  */
 export function examStructureEntries(
@@ -32,7 +32,9 @@ export function examStructureEntries(
   }
 
   return [
-    ...englishOnly(origin, paths),
+    // Hubs render Hindi copy on /hi and are self-canonical there (phase 125,
+    // lib/seo/hub-metadata): both URLs.
+    ...withLocales(origin, paths),
     ...questionPages.years,
     ...questionPages.subjects,
     ...(posts.some((p) => p.hindi) ? withLocales(origin, blogListing) : englishOnly(origin, blogListing)),
