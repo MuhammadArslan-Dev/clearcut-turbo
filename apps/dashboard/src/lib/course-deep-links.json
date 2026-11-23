@@ -1,0 +1,21 @@
+{
+  "_comment": "Phase 124 deep-link contract. The SAME file lives in clearcut-master apps/dashboard/src/lib/course-deep-links.json; backend CourseDeepLinks and dashboard courseLinks.ts must both produce `expected`. Change both copies together.",
+  "preparation": [
+    { "name": "course only", "course_id": "6afd3af227c7b", "section": null, "chapter": null, "topic": null, "expected": "/preparation/6afd3af227c7b" },
+    { "name": "saved section", "course_id": "6afd3af227c7b", "section": "41", "chapter": null, "topic": null, "expected": "/preparation/6afd3af227c7b?section=41" },
+    { "name": "saved section + chapter", "course_id": "6afd3af227c7b", "section": "41", "chapter": "10", "topic": null, "expected": "/preparation/6afd3af227c7b?section=41&chapter=10" },
+    { "name": "saved session/chapter/topic", "course_id": "6afd3af227c7b", "section": "41", "chapter": "10", "topic": 44, "expected": "/preparation/6afd3af227c7b?section=41&chapter=10&topic=44" },
+    { "name": "topic without chapter", "course_id": "6afd3aba4204b", "section": "29", "chapter": null, "topic": 116, "expected": "/preparation/6afd3aba4204b?section=29&topic=116" },
+    { "name": "uuid course id", "course_id": "0ceb4c09-7eae-4bbe-ae71-24542c27d033", "section": 3, "chapter": 7, "topic": 9, "expected": "/preparation/0ceb4c09-7eae-4bbe-ae71-24542c27d033?section=3&chapter=7&topic=9" }
+  ],
+  "test_list": [
+    { "name": "full-length paper", "course_id": "6af7386ee92a0", "test_type": "full-length-papers", "paper": "53", "section": null, "expected": "/test-series/6af7386ee92a0?testType=full-length-papers&paper=53" },
+    { "name": "sectional", "course_id": "6af7386ee92a0", "test_type": "sectional-tests", "paper": "53", "section": "41", "expected": "/test-series/6af7386ee92a0?testType=sectional-tests&paper=53&section=41" },
+    { "name": "no params", "course_id": "6af7386ee92a0", "test_type": null, "paper": null, "section": null, "expected": "/test-series/6af7386ee92a0" }
+  ],
+  "locale_prefix": [
+    { "locale": "en", "path": "/preparation/6afd3af227c7b?section=41", "expected": "/preparation/6afd3af227c7b?section=41" },
+    { "locale": "hi", "path": "/preparation/6afd3af227c7b?section=41", "expected": "/hi/preparation/6afd3af227c7b?section=41" },
+    { "locale": "mr", "path": "/daily-tests/0ceb4c09-7eae-4bbe-ae71-24542c27d033", "expected": "/mr/daily-tests/0ceb4c09-7eae-4bbe-ae71-24542c27d033" }
+  ]
+}
