@@ -6,6 +6,11 @@ import { canonicalPathRedirect } from './lib/seo/url-normalize';
 const intlMiddleware = createMiddleware(routing);
 
 export default function middleware(request: NextRequest) {
+  // /en/question/<slug>-<id>: the question route itself 301s to the chapter
+  // page, so serve it as-is instead of first 301ing to /question/… (two hops).
+  if (request.nextUrl.pathname.startsWith('/en/question/')) {
+    return NextResponse.rewrite(request.nextUrl);
+  }
   const target = canonicalPathRedirect(request.nextUrl.pathname);
   if (target) {
     const url = request.nextUrl.clone();

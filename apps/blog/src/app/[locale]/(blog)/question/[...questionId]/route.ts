@@ -1,58 +1,87 @@
 import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { ALLOWED_EXAMS } from "@/lib/exams";
-import { canonicalChapterPath } from "@/lib/seo/exam-index";
+import type { ExamIndex } from "@/lib/seo/exam-index";
 import { loadExamIndex } from "@/lib/seo/load-exam-index";
 import { chapterPageUrl, examSlugFromQuestion, parseQuestionId } from "@/lib/seo/question-redirect";
-import { loadScope } from "@/lib/question-bank/scope";
-import { QUESTIONS_PER_PAGE, pageOfIndex } from "@/lib/question-bank/pagination";
-import { isHindiPage, isHindiPageByFlags } from "@/lib/question-bank/hindi-page";
+import { chapterFallback, locateQuestion, parentPathFor, type ChapterTarget } from "@/lib/seo/question-target";
 import { fetchQuestionIndex } from "@/lib/sitemap/question-index";
 
-/** The question's page in its chapter and whether that page is a genuinely
- * Hindi page — from the cached question index (the chapter page's own ids,
- * order and bilingual flags; scope-page.ts), so a redirect never downloads the
- * whole chapter (2-10 MB, too big for the data cache). Falls back to the
- * full chapter if the index is unavailable; null when that fails too. */
-async function chapterPageOf(exam: string, chapter: string, id: number): Promise<{ page: number; hindi: boolean } | null> {
-  try {
-    const entries = (await fetchQuestionIndex(exam)).chapters[chapter] ?? [];
-    const at = entries.findIndex(([qid]) => qid === id);
-    const page = at >= 0 ? pageOfIndex(at) : 1;
-    const start = (page - 1) * QUESTIONS_PER_PAGE;
-    const flags = entries.slice(start, start + QUESTIONS_PER_PAGE).map((e) => e[2] === 1);
-    return { page, hindi: isHindiPageByFlags(flags) };
-  } catch {
-    const loaded = await loadScope({ kind: "chapter", exam, chapter });
-    if (!loaded.ok) return null;
-    const at = loaded.cards.findIndex((c) => c.id === id);
-    const page = at >= 0 ? pageOfIndex(at) : 1;
-    return { page, hindi: isHindiPage(loaded.cards, page) };
-  }
-}
+// Old /question/<slug>-<id> URLs (en and /hi). Questions live on the chapter
+// pages (approved structure, 2026-10-19), so every old URL answers ONE 301 to
+// the canonical chapter page — incl. /page/N and `#q-<id>` — that renders it.
+// Catch-all because old slugs could contain "/" (fractions like "3/7"); the
+// id is always at the very end.
+//
+// Status rules (phase 125):
+// - 301 to the chapter page, found in the cached question + exam indexes: no
+//   backend call per redirect (Google crawls these old URLs heavily).
+// - Not in the index -> one cached backend lookup of the id. A question no
+//   chapter page renders (chapter without a slug, chapter not in navigation,
+//   no translation) 301s to the nearest existing page: subject, level, exam.
+// - 404 only when the backend answers that the id does not exist.
+// - Never 503: indexes fall back to their last good copy, and if nothing at
+//   all can be looked up, a temporary 302 (no-store) to the nearest hub keeps
+//   the visitor moving and tells Google to come back to this URL.
 
-// Individual question pages were replaced by the shared chapter pages, which
-// render every question with an `id="q-<id>"` anchor. Each old
-// /question/<slug>-<id> URL (en and /hi) now 301s straight to the canonical
-// chapter page (incl. /page/N) that shows it — one hop, no chain through the
-// old slug redirect.
-// Catch-all because old slugs could contain "/" (fractions like "3/7"),
-// which split them across path segments; the id is always at the very end.
-
-const RETRY_AFTER_SECONDS = "300";
+const PERMANENT = { status: 301, cacheControl: "public, max-age=3600" };
 
 function notFoundResponse(locale: string) {
   const home = locale === "hi" ? "/hi" : "/";
   return new Response(
     `<!doctype html><html lang="${locale === "hi" ? "hi" : "en"}"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Question not found | Clear Cutoff</title></head><body><h1>Question not found</h1><p><a href="${home}">Go to Clear Cutoff</a></p></body></html>`,
-    { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } },
+    { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } },
   );
 }
 
-function unavailableResponse() {
-  return new Response("Temporarily unavailable, please retry.", {
-    status: 503,
-    headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": RETRY_AFTER_SECONDS, "Cache-Control": "no-store" },
-  });
+function redirect(location: string, status: number, cacheControl: string) {
+  return new Response(null, { status, headers: { Location: location, "Cache-Control": cacheControl } });
+}
+
+type BackendQuestion = {
+  id?: number;
+  stage_id_b?: string;
+  exam_instance_id_b?: string;
+  section_id_b?: string;
+  chapter?: { slug?: string | null } | null;
+  translations?: unknown[];
+};
+
+type Lookup = { kind: "found"; question: BackendQuestion } | { kind: "missing" } | { kind: "error" };
+
+/** The backend's own row for one id (cached an hour). */
+async function lookupQuestion(id: number): Promise<Lookup> {
+  const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}/blog/get-questions?id=${id}&limit_q=1`, {
+      headers: backendServerHeaders(),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return { kind: "error" };
+    const json = await res.json();
+    if (!Array.isArray(json?.data)) return { kind: "error" };
+    const question = (json.data as BackendQuestion[]).find((q) => q.id === id);
+    return question ? { kind: "found", question } : { kind: "missing" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
+/** Every allowed exam's exam index (null where it can't be loaded at all). */
+async function examIndexes(): Promise<Map<string, ExamIndex | null>> {
+  const loaded = await Promise.all(ALLOWED_EXAMS.map((exam) => loadExamIndex(exam).catch(() => null)));
+  return new Map(ALLOWED_EXAMS.map((exam, i) => [exam, loaded[i]]));
+}
+
+/** The chapter page for `id` from the cached indexes alone. */
+async function fromIndexes(id: number, indexes: Map<string, ExamIndex | null>): Promise<ChapterTarget | null> {
+  for (const exam of ALLOWED_EXAMS) {
+    const examIndex = indexes.get(exam);
+    if (!examIndex) continue;
+    const questionIndex = await fetchQuestionIndex(exam).catch(() => null);
+    const hit = questionIndex && locateQuestion(id, examIndex, questionIndex);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 export async function GET(
@@ -60,66 +89,63 @@ export async function GET(
   { params }: { params: Promise<{ locale: string; questionId: string[] }> },
 ) {
   const { locale, questionId: segments } = await params;
-  const id = parseQuestionId(segments[segments.length - 1] ?? "");
-  if (!id) return notFoundResponse(locale);
+  const idParam = parseQuestionId(segments[segments.length - 1] ?? "");
+  if (!idParam) return notFoundResponse(locale);
+  const id = Number(idParam);
 
-  const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
-  let questions: Array<{ id?: number; stage_id_b?: string; exam_instance_id_b?: string; chapter?: { slug?: string } | null }>;
-  try {
-    const res = await fetch(`${base}/blog/get-questions?id=${id}&limit_q=2`, {
-      headers: backendServerHeaders(),
-      next: { revalidate: 3600 },
+  const url = new URL(request.url);
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || url.origin).replace(/\/+$/, "");
+  const search = url.search && url.search !== "?" ? url.search : "";
+  const hub = (path: string) =>
+    `${siteUrl}${locale === "hi" ? "/hi" : ""}${path || (locale === "hi" ? "" : "/")}${search}`;
+
+  const indexes = await examIndexes();
+  const hit = await fromIndexes(id, indexes);
+  if (hit) {
+    // The /hi chapter page only when that page is a genuinely Hindi page (its
+    // own canonical — lib/question-bank/hindi-page); otherwise /hi shows the
+    // English page's content and canonicalizes to it, so /hi links land there.
+    const location = chapterPageUrl({
+      siteUrl,
+      locale: locale === "hi" && hit.hindi ? "hi" : "en",
+      exam: hit.exam,
+      path: hit.path,
+      chapter: hit.chapter,
+      search,
+      questionId: idParam,
+      page: hit.page,
     });
-    if (!res.ok) return unavailableResponse();
-    const json = await res.json();
-    if (!Array.isArray(json?.data)) return unavailableResponse();
-    questions = json.data;
-  } catch {
-    return unavailableResponse();
+    return redirect(location, PERMANENT.status, PERMANENT.cacheControl);
   }
 
-  const question = questions.find((q) => q.id === Number(id));
-  const exam = question ? examSlugFromQuestion(question) : null;
-  const chapter = question?.chapter?.slug;
-  if (!question || !exam || !ALLOWED_EXAMS.includes(exam) || !chapter) return notFoundResponse(locale);
-
-  let path;
-  try {
-    path = canonicalChapterPath(await loadExamIndex(exam), chapter);
-  } catch {
-    return unavailableResponse();
+  const lookup = await lookupQuestion(id);
+  if (lookup.kind === "missing") return notFoundResponse(locale);
+  if (lookup.kind === "error") {
+    // Nothing to go on right now: send the visitor somewhere real, temporarily.
+    return redirect(hub(""), 302, "no-store");
   }
-  if (!path) return notFoundResponse(locale);
 
-  // Chapter pages show QUESTIONS_PER_PAGE (20) questions per page: send the visitor to the page
-  // that holds this question, using the same data and order the chapter page
-  // renders. A question that doesn't render there (no translation) falls back
-  // to page 1. If the chapter can't be loaded, don't guess: a wrong 301 would
-  // be cached.
-  const found = await chapterPageOf(exam, chapter, Number(id));
-  if (!found) return unavailableResponse();
-  const { page } = found;
+  const { question } = lookup;
+  const exam = examSlugFromQuestion(question);
+  if (!exam || !ALLOWED_EXAMS.includes(exam)) return notFoundResponse(locale);
+  if (Array.isArray(question.translations) && question.translations.length === 0) return notFoundResponse(locale);
 
-  // The canonical URL of that page, in one 301: English, or the /hi chapter
-  // page for an old /hi link when that page is a genuinely Hindi page (its
-  // own canonical — lib/question-bank/hindi-page). Otherwise /hi shows the
-  // English page's content and canonicalizes to it, so /hi links land there.
-  const toHindi = locale === "hi" && found.hindi;
-  const location = chapterPageUrl({
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin,
-    locale: toHindi ? "hi" : "en",
-    exam,
-    path,
-    chapter,
-    search: new URL(request.url).search,
-    questionId: id,
-    page,
-  });
+  const examIndex = indexes.get(exam);
+  if (!examIndex) return redirect(hub(`/${exam}`), 302, "no-store");
 
-  // An hour, not a day: the page number can change if questions are added
-  // or removed earlier in the chapter.
-  return new Response(null, {
-    status: 301,
-    headers: { Location: location, "Cache-Control": "public, max-age=3600" },
-  });
+  // Known chapter the index doesn't list the question in (e.g. added since the
+  // index was cached): the chapter's first page; its toolbar moves `#q-<id>`.
+  const chapter = question.chapter?.slug ?? null;
+  const path = chapterFallback(examIndex, chapter);
+  if (path && chapter) {
+    const location = chapterPageUrl({ siteUrl, locale: "en", exam, path, chapter, search, questionId: idParam });
+    return redirect(location, PERMANENT.status, PERMANENT.cacheControl);
+  }
+
+  // No chapter page shows it: the nearest listing that exists. Exam and level
+  // hubs have their own Hindi version; subject pages decide per page, so
+  // English (its /hi copy canonicalizes there when it isn't Hindi).
+  const parent = parentPathFor(examIndex, question);
+  const location = parent.hub ? hub(parent.path) : `${siteUrl}${parent.path}${search}`;
+  return redirect(location, PERMANENT.status, PERMANENT.cacheControl);
 }

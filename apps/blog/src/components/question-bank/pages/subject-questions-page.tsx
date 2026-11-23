@@ -63,7 +63,8 @@ export async function subjectPageMetadata(params: SubjectParams) {
     "subject",
     {
       exam: (examName ?? "").toUpperCase(),
-      levelSlug: level_id ?? "",
+      // The canonical copy's level (see chapter-questions-page metadata).
+      levelSlug: canonical.level,
       subjectSlug: subject_id ?? "",
       subject: subjectName(section?.names, locale, unFormatSlug(subject_id ?? "")),
     },

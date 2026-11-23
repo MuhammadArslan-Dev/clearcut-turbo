@@ -261,5 +261,24 @@
     "paperHint": "{exam} में {count, plural, one {# पेपर} other {# पेपर}} हैं। हर पेपर के विषय और पाठ्यक्रम अलग हैं।",
     "switchPapersInfo": "आप ऊपर दिए गए मेन्यू से कभी भी पेपर बदल सकते हैं।",
     "loadingLevels": "लोड हो रहा है…"
+  },
+  "HubPage": {
+    "examTitle": "{exam} प्रश्न पत्र, PYQ और MCQ उत्तर सहित",
+    "examTitleShort": "{exam} पिछले वर्ष के प्रश्न पत्र और MCQ",
+    "examDescription": "{exam} के हर पेपर के पिछले वर्ष के प्रश्न पत्र (PYQ) और अध्याय-वार MCQ अभ्यास, उत्तर और व्याख्या सहित, Clear Cutoff पर मुफ़्त।",
+    "levelTitle": "{exam} {level} प्रश्न पत्र, PYQ और MCQ",
+    "levelTitleShort": "{exam} {levelShort} प्रश्न पत्र, PYQ और MCQ",
+    "levelDescription": "{exam} {level} के पिछले वर्ष के प्रश्न पत्र (PYQ) और विषय-वार MCQ अभ्यास, उत्तर और व्याख्या सहित, Clear Cutoff पर मुफ़्त।",
+    "subjectsTitle": "{exam} {level} विषय-वार प्रश्न उत्तर सहित",
+    "subjectsTitleShort": "{exam} {levelShort} विषय-वार MCQ उत्तर सहित",
+    "subjectsDescription": "{exam} {level} के विषय-वार और अध्याय-वार प्रश्न, उत्तर और व्याख्या सहित – Clear Cutoff पर मुफ़्त अभ्यास।",
+    "yearsTitle": "{exam} {level} पिछले वर्ष के प्रश्न पत्र (PYQ)",
+    "yearsTitleShort": "{exam} {levelShort} पिछले वर्ष के प्रश्न पत्र (PYQ)",
+    "yearsDescription": "वर्ष-वार {exam} {level} पिछले वर्ष के प्रश्न पत्र (PYQ) – हर पेपर ऑनलाइन हल करें, उत्तर और व्याख्या सहित, Clear Cutoff पर मुफ़्त।",
+    "levelHeading": "{exam} परीक्षा {level}",
+    "levelSubheading": "Clear Cutoff के साथ {exam} परीक्षा {level} की तैयारी",
+    "bySubjects": "विषय के अनुसार",
+    "byYears": "वर्ष के अनुसार",
+    "rowSubtitle": "150 प्रश्न और विस्तृत उत्तर"
   }
 }

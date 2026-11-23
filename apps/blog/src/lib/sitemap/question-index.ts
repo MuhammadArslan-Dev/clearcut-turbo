@@ -19,8 +19,35 @@ function isEntryList(value: unknown): value is IndexEntry[] {
   );
 }
 
-/** /blog/question-index for one exam (see the backend's getQuestionIndex). */
+// Last index that loaded, per exam and server instance. Only used when a
+// fetch fails (backend down, 429, malformed reply): a page, sitemap or
+// /question/* redirect then works from the previous copy instead of failing
+// (phase 125: no 5xx for a lookup that worked before). The success path is
+// unchanged — freshness still comes from the data cache and its tags.
+const lastGood = new Map<string, QuestionIndex>();
+
+/** /blog/question-index for one exam (see the backend's getQuestionIndex).
+ * Throws only when it fails and no earlier copy exists on this instance. */
 export async function fetchQuestionIndex(exam: string): Promise<QuestionIndex> {
+  const key = exam.toLowerCase();
+  try {
+    const index = await fetchQuestionIndexFresh(exam);
+    lastGood.set(key, index);
+    return index;
+  } catch (err) {
+    const previous = lastGood.get(key);
+    if (!previous) throw err;
+    console.error(`question index for "${exam}" failed, serving the last good copy:`, err);
+    return previous;
+  }
+}
+
+/** Test hook: forget the last-good copies. */
+export function forgetQuestionIndexFallback(): void {
+  lastGood.clear();
+}
+
+async function fetchQuestionIndexFresh(exam: string): Promise<QuestionIndex> {
   const base = (process.env.BACKEND_URL || "").replace(/\/$/, "");
   if (!base) throw new Error("BACKEND_URL is not set");
   const path = `/blog/question-index?exam_name=${encodeURIComponent(exam)}`;

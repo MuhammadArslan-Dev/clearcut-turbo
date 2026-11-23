@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assembleExamIndex, forgetExamIndex, loadExamIndex } from "./load-exam-index";
+import { forgetQuestionIndexFallback } from "@/lib/sitemap/question-index";
+import { assembleExamIndex, forgetExamIndex, forgetExamIndexFallback, loadExamIndex } from "./load-exam-index";
 
 // One backend, two shapes of the same data: the single /blog/exam-index call
 // and the old per-level/per-section endpoints.
@@ -57,10 +58,16 @@ const legacy: Record<string, unknown> = {
 };
 
 let calls: string[] = [];
+// /blog/question-index's chapter lists (null: the endpoint fails).
+let questionIndex: Record<string, unknown[]> | null = null;
+let examIndexDown = false;
 beforeEach(() => {
   process.env.BACKEND_URL = "https://be.test/api";
   calls = [];
-  forgetExamIndex();
+  questionIndex = null;
+  examIndexDown = false;
+  forgetExamIndexFallback();
+  forgetQuestionIndexFallback();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -69,8 +76,14 @@ afterEach(() => {
 function stubBackend(hasExamIndex: boolean) {
   vi.stubGlobal("fetch", async (url: string) => {
     const path = url.replace("https://be.test/api", "");
+    if (path.startsWith("/blog/question-index")) {
+      return questionIndex ? respond({ data: { chapters: questionIndex, years: {} } }) : respond({}, 500);
+    }
     calls.push(path);
-    if (path.startsWith("/blog/exam-index")) return hasExamIndex ? respond({ data: RAW }) : respond({}, 404);
+    if (path.startsWith("/blog/exam-index")) {
+      if (examIndexDown) return respond({}, 503);
+      return hasExamIndex ? respond({ data: RAW }) : respond({}, 404);
+    }
     return path in legacy ? respond({ data: legacy[path] }) : respond({}, 500);
   });
 }
@@ -100,4 +113,26 @@ describe("loadExamIndex", () => {
     expect(calls.length).toBe(1 + 1 + 2 + 2);
     expect(index).toEqual(assembleExamIndex("x", RAW));
   });
+
+  it("decides empty chapters from the question index when it loads (phase 125)", async () => {
+    // has_questions says geometry has questions in one section and algebra
+    // none; the pages render what the question index lists.
+    questionIndex = { numbers: [[1, null, 0]], algebra: [[2, null, 0]], geometry: [] };
+    stubBackend(true);
+    const index = await loadExamIndex("x");
+    expect(index.emptyChapters).toEqual(["geometry"]);
+    expect(index).toEqual(assembleExamIndex("x", RAW, questionIndex));
+  });
+
+  it("serves the last good index when the backend fails later, and only then", async () => {
+    stubBackend(true);
+    examIndexDown = true;
+    await expect(loadExamIndex("x")).rejects.toThrow();
+    examIndexDown = false;
+    const good = await loadExamIndex("x");
+    forgetExamIndex(["x"]); // memo expired; the last-good copy stays
+    examIndexDown = true;
+    await expect(loadExamIndex("x")).resolves.toEqual(good);
+  });
 });
+

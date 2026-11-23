@@ -1,6 +1,7 @@
 import { backendServerHeaders } from "@/lib/api/backend-headers";
 import { mapLimit } from "@/lib/async/map-limit";
 import { questionTags } from "@/lib/question-bank/cache-tags";
+import { fetchQuestionIndex } from "@/lib/sitemap/question-index";
 import type { ExamIndex, IndexSubject } from "./exam-index";
 
 // The tree (levels -> subjects -> section chapters) comes from one backend
@@ -96,8 +97,20 @@ async function fetchRawIndexLegacy(exam: string): Promise<RawExamIndex> {
   };
 }
 
-/** Builds the index from the raw tree (shared by both fetch paths). */
-export function assembleExamIndex(exam: string, raw: RawExamIndex): ExamIndex {
+/** Builds the index from the raw tree (shared by both fetch paths).
+ *
+ * `questionChapters` (chapter slug -> the questions its page renders, from
+ * /blog/question-index) decides which chapters are empty: a chapter page
+ * renders exactly that list, so it is empty only when the list is. Without
+ * it the backend's `has_questions` flag is used — that flag comes from a
+ * 3-question preview with an exact section match, and was false for 36
+ * chapters that do render questions (CTET `light`, 2026-11-23, phase 125),
+ * which made them noindex and kept them out of the sitemap. */
+export function assembleExamIndex(
+  exam: string,
+  raw: RawExamIndex,
+  questionChapters?: Record<string, readonly unknown[]>,
+): ExamIndex {
   const chapterEntries = Object.entries(raw.sections).map(([sectionId, entries]) => {
     const slugs = entries.map((e) => e.slug);
     const withQuestions = entries.filter((e) => e.has_questions).map((e) => e.slug);
@@ -106,7 +119,9 @@ export function assembleExamIndex(exam: string, raw: RawExamIndex): ExamIndex {
   const chaptersBySection = new Map<string, string[]>(chapterEntries.map(([id, slugs]) => [id, slugs]));
   // A chapter can sit in several sections; it is empty only if none of them
   // shows a question for it.
-  const nonEmpty = new Set(chapterEntries.flatMap(([, , withQuestions]) => withQuestions));
+  const nonEmpty = questionChapters
+    ? new Set(Object.keys(questionChapters).filter((slug) => (questionChapters[slug]?.length ?? 0) > 0))
+    : new Set(chapterEntries.flatMap(([, , withQuestions]) => withQuestions));
   const emptyChapters = [...new Set(chapterEntries.flatMap(([, slugs]) => slugs))].filter((s) => !nonEmpty.has(s));
 
   return {
@@ -138,6 +153,12 @@ export function assembleExamIndex(exam: string, raw: RawExamIndex): ExamIndex {
 }
 
 async function buildExamIndex(exam: string): Promise<ExamIndex> {
+  // The question index is the same cached read the chapter pages and
+  // sitemaps use; if it is unavailable the has_questions flags still work.
+  const questionIndex = fetchQuestionIndex(exam).catch((err) => {
+    console.error(`question index unavailable for "${exam}", emptiness from has_questions:`, err);
+    return null;
+  });
   let raw: RawExamIndex;
   try {
     raw = await fetchRawIndex(exam);
@@ -145,10 +166,16 @@ async function buildExamIndex(exam: string): Promise<ExamIndex> {
     if (!(err instanceof HttpError && err.status === 404)) throw err;
     raw = await fetchRawIndexLegacy(exam);
   }
-  return assembleExamIndex(exam, raw);
+  return assembleExamIndex(exam, raw, (await questionIndex)?.chapters);
 }
 
 const memo = new Map<string, { at: number; promise: Promise<ExamIndex> }>();
+// The last index that built, per exam, for when the backend fails (phase 125:
+// a page, sitemap or /question/* redirect keeps working from it instead of
+// answering 5xx). While serving it, the next backend retry waits
+// STALE_RETRY_MS so a dead backend isn't hit on every request.
+const lastGood = new Map<string, ExamIndex>();
+const STALE_RETRY_MS = 60 * 1000;
 
 /** Drops this instance's in-memory copy (all exams when none given) — the
  * revalidate route calls it next to revalidateTag, which only clears Next's
@@ -158,17 +185,37 @@ export function forgetExamIndex(exams?: string[]): void {
   for (const exam of exams) memo.delete(exam.toLowerCase());
 }
 
-/** Rejects if any backend call fails — never returns a partial tree. */
+/** Test hook: also forget the last-good copies. */
+export function forgetExamIndexFallback(): void {
+  memo.clear();
+  lastGood.clear();
+}
+
+/** Rejects if any backend call fails and no earlier index exists on this
+ * instance — never returns a partial tree. */
 export function loadExamIndex(exam: string): Promise<ExamIndex> {
   const key = exam.toLowerCase();
   const hit = memo.get(key);
   if (hit && Date.now() - hit.at < MEMO_TTL_MS) return hit.promise;
 
-  const promise = buildExamIndex(key);
+  const built = buildExamIndex(key);
+  const promise = built.then(
+    (index) => {
+      lastGood.set(key, index);
+      return index;
+    },
+    (err) => {
+      const previous = lastGood.get(key);
+      if (memo.get(key)?.promise === promise) {
+        if (previous) memo.set(key, { at: Date.now() - MEMO_TTL_MS + STALE_RETRY_MS, promise });
+        else memo.delete(key);
+      }
+      if (!previous) throw err;
+      console.error(`exam index for "${exam}" failed, serving the last good copy:`, err);
+      return previous;
+    },
+  );
   memo.set(key, { at: Date.now(), promise });
-  promise.catch(() => {
-    if (memo.get(key)?.promise === promise) memo.delete(key);
-  });
   return promise;
 }
 

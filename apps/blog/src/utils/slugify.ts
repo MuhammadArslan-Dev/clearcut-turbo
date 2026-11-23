@@ -1,43 +1,9 @@
-import { limitWords } from "@clearcut/utils/text-limit";
-
 export function formatToSlug(str: string): string {
   return str
     .trim()                          // remove spaces from both ends
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, "")      // remove special chars except numbers
     .replace(/\s+/g, "-");           // replace spaces with underscore
-}
-
-// `ai_slug` comes back from the backend as AI-generated, already-hyphenated
-// text (e.g. "lambe-samay-tak-pad-vyakaran-ki-drishti-se-hai") — unlike
-// formatToSlug's input, it must keep existing hyphens, so it can't reuse
-// formatToSlug's regex (which strips them). Some rows have a stray HTML
-// fragment leaked into this field (e.g. a trailing "</blockquote>"), which
-// breaks both the question URL and the XML sitemap <loc> entry it feeds —
-// strip tags and any other non slug-safe character defensively.
-export function sanitizeAiSlug(aiSlug: string): string {
-  return aiSlug
-    .replace(/<[^>]*>/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-// The "<slug>-<id>" param of a legacy /question/ URL (translations[0], never
-// locale-matched). Those URLs now 301 to their chapter page (see
-// app/[locale]/(blog)/question/[...questionId]/route.ts), which only reads the
-// trailing id — new links should point at the chapter page directly.
-export function getQuestionUrlParam(
-  id: number | string,
-  translations?: { ai_slug?: string | null; question?: string | null }[] | null,
-): string {
-  const translation = translations?.[0];
-  const plain = (translation?.question || "").replace(/<[^>]*>/g, "");
-  const slug =
-    (translation?.ai_slug && sanitizeAiSlug(translation.ai_slug)) ||
-    formatToSlug(limitWords(plain, 4));
-  return `${slug}-${id}`;
 }
 
 export function unFormatSlug(slug: string): string {

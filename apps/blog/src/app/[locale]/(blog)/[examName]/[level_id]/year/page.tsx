@@ -1,6 +1,4 @@
 import MainBreadcrumbs from "@/components/breadcrumbs/main-breadcrumbs";
-import { levelShort, seoTitle } from "@/lib/seo/seo-text";
-import { levelLabel as levelName } from "@/lib/seo/year-title";
 import React from "react";
 import { Metadata } from "next";
 import { getBreadcrumbSchema } from "@/utils/google/get-breadcrumb-schema";
@@ -19,7 +17,9 @@ import CustomBreadcrumbs from "@/components/breadcrumbs/custom-breadcrumbs";
 import JsonLd from "@clearcut/ui/json-ld";
 import CourseCheckBadge from "@/components/ui/badge/course-check-badge";
 import SubjectsList from "@/components/blog/ui/subjects-list";
-import { generateLocaleMetadata } from "@/lib/seo/generateLocaleMetadata";
+import { hubMetadata } from "@/lib/seo/hub-metadata";
+import { getTranslations } from "next-intl/server";
+import { localeOrigin, pageCopy } from "@/components/question-bank/pages/page-copy";
 import { ALLOWED_EXAMS } from "@/lib/exams";
 import { backendServerHeaders } from "@/lib/api/backend-headers";
 type Props = {
@@ -34,28 +34,19 @@ type Props = {
 export async function generateMetadata({
   params,
 }: {
-  params: { locale: string; examName: string; level_id: string };
+  params: Promise<{ locale: string; examName: string; level_id: string }>;
 }) {
-  const {locale,examName,level_id} = await params ?? {};
-
-  const path = `${examName}/${level_id}/year`;
-
-  // Root layout applies the "%s | Clear Cutoff" title template, so use a
-  // bare title here to avoid a doubled site name.
-  const examLabel = unFormatSlug(examName ?? "").toUpperCase();
-  const level = levelName(level_id ?? "");
-
-  return generateLocaleMetadata({
-    locale,
-    path,
-    title: seoTitle([
-      `${examLabel} ${level} Previous Year Question Papers (PYQ)`,
-      `${examLabel} ${levelShort(level_id ?? "")} Previous Year Question Papers (PYQ)`,
-    ]),
-    description: `Year-wise ${examLabel} ${level} previous year question papers (PYQ) – solve each paper online with answers and explanations, free on Clear Cutoff.`,
-  });
+  const { locale, examName, level_id } = await params;
+  // /hi shows Hindi headings and copy: its own page (lib/seo/hub-metadata).
+  return hubMetadata({ locale, kind: "years", exam: examName ?? "", level: level_id ?? "" });
 }
 
+// Cached and regenerated in the background (lib/question-bank/route-cache.ts):
+// no per-request render, and a failed regeneration keeps the last good page.
+export const revalidate = 3600;
+export async function generateStaticParams() {
+  return [];
+}
 
 export default async function page({ params }: Props) {
   const { locale, examName: examNameParam, level_id, year } = await params;
@@ -77,7 +68,7 @@ export default async function page({ params }: Props) {
   // unhandled. The awaited result and any error are exactly what they were.
   const yearsRequest = fetch(
     `${process.env.BACKEND_URL}/blog/get-years?${queryYears}`,
-    { cache: "force-cache", headers: backendServerHeaders() },
+    { headers: backendServerHeaders(), next: { revalidate: 3600 } },
   );
   yearsRequest.catch(() => {});
 
@@ -87,23 +78,27 @@ export default async function page({ params }: Props) {
   // ✅ Correct API fetch Years
   const resYears = await yearsRequest;
 
+  // A failed read must not be cached as a page without years (ISR).
+  if (!resYears.ok) throw new Error(`get-years -> HTTP ${resYears.status}`);
   const dataYears = await resYears.json();
+  if (!Array.isArray(dataYears?.data)) throw new Error("get-years -> unexpected response shape");
+  const [t, tHub] = await Promise.all([pageCopy(locale), getTranslations({ locale, namespace: "HubPage" })]);
   if (dataYears?.data?.length === 0) {
     return notFound();
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const homeUrl = siteUrl;
+  // On the visitor's language site (/hi links to /hi).
+  const homeUrl = localeOrigin(locale);
   const examsUrl = `${homeUrl}/${examNameParam}`;
 
   const breadcrumbItems = [
-    { name: "Home", url: homeUrl || "/" },
+    { name: t("home"), url: homeUrl || "/" },
     { name: examName, url: examsUrl },
     {
       name: unFormatSlug(level_id ?? ""),
       url: `${homeUrl}/${examNameParam}/${level_id}`,
     },
-    { name: "Years", url: `${homeUrl}/${examNameParam}/${level_id}/year` },
+    { name: t("years"), url: `${homeUrl}/${examNameParam}/${level_id}/year` },
   ];
   const breadcrumbLd = getBreadcrumbSchema(breadcrumbItems);
 
@@ -120,11 +115,9 @@ export default async function page({ params }: Props) {
         <div className="space-y-12">
           <CustomizableHeader
             showEyebrow={false}
-            heading={`${examName} Exam ${unFormatSlug(level_id ?? "")}`}
+            heading={tHub("levelHeading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
             highlightText={examName}
-            subheading={`${examName} exam ${unFormatSlug(
-              level_id ?? "",
-            )} preparation with Clear Cutoff`}
+            subheading={tHub("levelSubheading", { exam: examName, level: unFormatSlug(level_id ?? "") })}
             headingColor="text-gray-900"
             highlightColor="text-blue-500"
             subheadingColor="text-gray-600"
@@ -135,14 +128,14 @@ export default async function page({ params }: Props) {
 
           <div className="space-y-4">
             <div className="w-full px-3 space-y-1">
-              <div className="heading-large !font-semibold">By Years</div>
+              <div className="heading-large !font-semibold">{tHub("byYears")}</div>
               <div className="grid grid-cols-5 justify-between items-center gap-1">
                 <div className="heading-small !font-semibold col-span-3">
-                  Year-wise questions
+                  {t("yearWise")}
                 </div>
                 <div className="flex items-center gap-2 text-[#00753a] col-span-2 justify-self-end">
                   <CourseCheckBadge size={16} fill="#00753a" />
-                  <p className="body-medium !font-normal">by Clear Cutoff</p>
+                  <p className="body-medium !font-normal">{t("byClearCutoff")}</p>
                 </div>
               </div>
             </div>
@@ -155,6 +148,7 @@ export default async function page({ params }: Props) {
                       key={index}
                       index={index + 1}
                       title={item?.instance_id.replace("_", " ")}
+                      subtitle={tHub("rowSubtitle")}
                       pathname={url}
                     />
                   );
