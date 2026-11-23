@@ -4,6 +4,7 @@
 import * as Sentry from "@sentry/nextjs";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -23,6 +24,7 @@ import {
 import type { UserPreview } from "@/types/User";
 import { setSentryUser } from "@/lib/sentry/sentry-logger";
 import { identifyClarityUser } from "@/lib/analytics/clarity";
+import { isSessionRejected } from "@/lib/auth-failure";
 
 type AuthContextType = {
   user: UserPreview | null;
@@ -36,6 +38,14 @@ type AuthContextType = {
    * the token is actually in storage, rather than waiting out that request.
    */
   tokenReady: boolean;
+  /**
+   * The session check failed for a reason that is NOT a rejected token (offline,
+   * timeout, 5xx, 403). The token is kept; ProtectedPage shows Try again instead
+   * of sending the user to login (phase 124).
+   */
+  authError: boolean;
+  /** Re-runs the session check: one request per tap (an in-flight one is reused). */
+  retryAuth: () => void;
   logout: () => Promise<void>;
 };
 
@@ -53,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserPreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenReady, setTokenReady] = useState(false);
+  const [authError, setAuthError] = useState(false);
+  // Bumped by retryAuth() to run the session check again.
+  const [attempt, setAttempt] = useState(0);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,20 +148,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     inFlightAuthUser.promise
       .then((res) => {
         if (isMounted) {
+          setAuthError(false);
           setUser(res.data);
           setCachedUser(res.data);
           setSentryUser(res.data);
           identifyClarityUser({ userId: res.data.uuid, phone: res.data.phone });
         }
       })
-      .catch(() => {
+      .catch((error) => {
         // Drop the shared entry so a transient network failure can be retried
         // rather than being permanently suppressed by the dedupe above.
         inFlightAuthUser = null;
-        clearAuthToken();
-        clearCachedUser();
-        setSentryUser(null);
-        if (isMounted) setUser(null);
+        if (isSessionRejected(error)) {
+          // Explicit 401: the backend rejected the token — the only logout path.
+          clearAuthToken();
+          clearCachedUser();
+          setSentryUser(null);
+          if (isMounted) {
+            setAuthError(false);
+            setUser(null);
+          }
+          return;
+        }
+        // Offline / timeout / 5xx / 403: keep the token AND the cached user (if
+        // any) — the user stays signed in and can try again (phase 124).
+        if (isMounted) setAuthError(true);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -157,7 +181,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [searchParams, router]);
+  }, [searchParams, router, attempt]);
+
+  const retryAuth = useCallback(() => {
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  }, []);
 
   /**
    * --------------------------------------
@@ -186,8 +215,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * --------------------------------------
    */
   const value = useMemo(
-    () => ({ user, loading, tokenReady, logout }),
-    [user, loading, tokenReady],
+    () => ({ user, loading, tokenReady, authError, retryAuth, logout }),
+    [user, loading, tokenReady, authError, retryAuth],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -13,6 +13,21 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_LARAVEL_MAIN_BACKEND ??
   "http://clearcutoff-main-backend.test/api";
 
+/**
+ * The backend answered 401: the token is rejected, apiFetch has already cleared it
+ * and is sending the user to login. The ONLY failure that may log a user out
+ * (phase 124) — a network error, timeout, 5xx or 403 never does. Same message as
+ * before, so Sentry's IGNORE_ERRORS entry still filters it.
+ */
+export class SessionExpiredError extends Error {
+  readonly name = "SessionExpiredError";
+
+  constructor() {
+    super("Redirecting due to expired session");
+    Object.setPrototypeOf(this, SessionExpiredError.prototype);
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
@@ -127,7 +142,7 @@ export async function apiFetch<T>(
   if (res.status === 401) {
     redirectToLogin();
     // Control flow, not a fault — `IGNORE_ERRORS` filters this out of Sentry.
-    throw new Error("Redirecting due to expired session");
+    throw new SessionExpiredError();
   }
 
   if (!res.ok) {

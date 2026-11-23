@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { trackMeterActionClicked, type MeterCtx } from "@/lib/analytics/cutoffMeter";
+import { preparationHref, testListHref } from "@/lib/courseLinks";
 import type {
   CutoffMeterActionType,
   CutoffMeterDetail,
@@ -39,20 +40,16 @@ export function goalHref(g: Goal, courseId: string, examName?: string | null): s
     if (examName) q.set("course_name", examName);
     return `/payment/initiated?${q.toString()}`;
   }
+  // Same builders as the backend's push deep links (lib/courseLinks.ts).
   if (g.key === "next_topic") {
-    const q = new URLSearchParams();
-    if (g.section_id) q.set("section", String(g.section_id));
-    if (g.chapter_id) q.set("chapter", String(g.chapter_id));
-    if (g.topic_id) q.set("topic", String(g.topic_id));
-    return `/preparation/${courseId}?${q.toString()}`;
+    return preparationHref(courseId, { section: g.section_id || null, chapter: g.chapter_id || null, topic: g.topic_id || null });
   }
-  const q = new URLSearchParams({
+  return testListHref(courseId, {
     testType: g.key === "sectional_test" ? "sectional-tests" : "full-length-papers",
+    paper: g.paper_id || null,
+    section: g.key === "sectional_test" ? g.section_id || null : null,
+    startTest: g.test_id || null,
   });
-  if (g.paper_id) q.set("paper", String(g.paper_id));
-  if (g.key === "sectional_test" && g.section_id) q.set("section", String(g.section_id));
-  if (g.test_id) q.set("startTest", String(g.test_id));
-  return `/test-series/${courseId}?${q.toString()}`;
 }
 
 /**
