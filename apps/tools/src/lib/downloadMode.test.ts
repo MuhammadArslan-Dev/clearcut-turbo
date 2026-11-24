@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { devForcedDownloadMode, resolveDownloadMode } from "./downloadMode";
+import { devForcedDownloadMode, resolveDownloadMode, resolveDownloadModeFor } from "./downloadMode";
+import { isOtpRequiredBeforeDownload, OTP_REQUIRED_BEFORE_DOWNLOAD } from "@/config/downloadVerification";
 
 describe("devForcedDownloadMode (local QA only)", () => {
   it("is ignored on any real host, before reading storage", () => {
@@ -41,5 +42,45 @@ describe("resolveDownloadMode (phase 71 §12)", () => {
   it("unknown flags (fetch failed / disabled / timed out) → legacy, no conflict", () => {
     expect(resolveDownloadMode(null)).toEqual({ mode: "legacy", conflict: false });
     expect(resolveDownloadMode(undefined)).toEqual({ mode: "legacy", conflict: false });
+  });
+});
+
+describe("resolveDownloadModeFor (phase 127: config/downloadVerification.ts)", () => {
+  const off = { hard_gate: false, soft_gate: false, second_download_gate: false };
+
+  it("HTET is always hard_gate, whatever the flags say", () => {
+    const expected = { mode: "hard_gate", conflict: false, source: "config" };
+    expect(resolveDownloadModeFor("htet", null)).toEqual(expected);
+    expect(resolveDownloadModeFor("htet", undefined)).toEqual(expected);
+    expect(resolveDownloadModeFor("htet", off)).toEqual(expected);
+    expect(resolveDownloadModeFor("htet", { ...off, soft_gate: true })).toEqual(expected);
+    expect(resolveDownloadModeFor("htet", { ...off, second_download_gate: true })).toEqual(expected);
+    expect(resolveDownloadModeFor("htet", { hard_gate: true, soft_gate: true })).toEqual(expected);
+  });
+
+  it("HTET ignores the localhost dev override, and matches any case / spaces", () => {
+    expect(resolveDownloadModeFor("htet", off, "legacy")).toEqual({ mode: "hard_gate", conflict: false, source: "config" });
+    expect(resolveDownloadModeFor(" HTET ", off)).toEqual({ mode: "hard_gate", conflict: false, source: "config" });
+  });
+
+  it("every other exam resolves exactly as resolveDownloadMode did", () => {
+    const cases = [null, undefined, off, { ...off, hard_gate: true }, { ...off, soft_gate: true }, { ...off, second_download_gate: true }, { hard_gate: true, soft_gate: true }];
+    for (const exam of ["tnpsc", "dsssb", "ctet", "haryana-police", null, undefined]) {
+      for (const flags of cases) {
+        expect(resolveDownloadModeFor(exam, flags)).toEqual({ ...resolveDownloadMode(flags), source: "amplitude" });
+      }
+    }
+  });
+
+  it("the dev override still works for an exam that is not in the config", () => {
+    expect(resolveDownloadModeFor("tnpsc", off, "soft_gate")).toEqual({ mode: "soft_gate", conflict: false, source: "dev_override" });
+  });
+
+  it("the config list is the switch: htet on, nothing else", () => {
+    expect(OTP_REQUIRED_BEFORE_DOWNLOAD).toEqual(["htet"]);
+    expect(isOtpRequiredBeforeDownload("htet")).toBe(true);
+    expect(isOtpRequiredBeforeDownload("tnpsc")).toBe(false);
+    expect(isOtpRequiredBeforeDownload("")).toBe(false);
+    expect(isOtpRequiredBeforeDownload(null)).toBe(false);
   });
 });

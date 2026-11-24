@@ -17,6 +17,8 @@
 // a session verifies with OTP (and may consent to saving their photo & signature).
 // It must be the ONLY flag ON. Together with either of the others it is the same
 // invalid configuration as above (Legacy + conflict).
+import { isOtpRequiredBeforeDownload } from "@/config/downloadVerification";
+
 export type DownloadMode = "legacy" | "hard_gate" | "soft_gate" | "second_download_gate";
 
 export interface DownloadFlags {
@@ -57,4 +59,28 @@ export function resolveDownloadMode(flags: DownloadFlags | null | undefined): Re
   if (flags.hard_gate) return { mode: "hard_gate", conflict: false };
   if (flags.soft_gate) return { mode: "soft_gate", conflict: false };
   return { mode: "legacy", conflict: false };
+}
+
+/** Where the mode of one download came from (sent as `download_mode_source` on the existing events). */
+export type DownloadModeSource = "config" | "amplitude" | "dev_override";
+
+export interface ResolvedDownloadModeFor extends ResolvedDownloadMode {
+  source: DownloadModeSource;
+}
+
+/**
+ * THE one place a Download tap's mode is decided (phase 127):
+ *  1. an exam in config/downloadVerification.ts → always `hard_gate` (source `config`),
+ *     whatever the flags or the dev override say;
+ *  2. otherwise the localhost-only dev override, if set (source `dev_override`);
+ *  3. otherwise the Amplitude flags, exactly as before (source `amplitude`).
+ */
+export function resolveDownloadModeFor(
+  exam: string | null | undefined,
+  flags: DownloadFlags | null | undefined,
+  devForced: DownloadMode | null = null,
+): ResolvedDownloadModeFor {
+  if (isOtpRequiredBeforeDownload(exam)) return { mode: "hard_gate", conflict: false, source: "config" };
+  if (devForced) return { mode: devForced, conflict: false, source: "dev_override" };
+  return { ...resolveDownloadMode(flags), source: "amplitude" };
 }

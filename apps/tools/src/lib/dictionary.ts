@@ -88,6 +88,9 @@ const DICTIONARY = {
         free: "100% Free",
         secure: "Secure & Private",
         close: "Close",
+        // Phase 127: the login check before an OTP-required download (config/downloadVerification.ts).
+        verifying: "Checking…",
+        verifyFailed: "Couldn't confirm your login. Check your internet connection and try again.",
       },
       // CC-174 (phase 121): saved photo & signature + one-click for other exams.
       savedImages: {
@@ -413,6 +416,8 @@ const DICTIONARY = {
         free: "100% मुफ़्त",
         secure: "सुरक्षित और निजी",
         close: "बंद करें",
+        verifying: "जांच हो रही है…",
+        verifyFailed: "आपका लॉगिन कन्फ़र्म नहीं हो सका। अपना इंटरनेट कनेक्शन देखें और फिर से कोशिश करें।",
       },
       // CC-174 (phase 121)
       savedImages: {
@@ -735,6 +740,8 @@ const DICTIONARY = {
         free: "100% मोफत",
         secure: "सुरक्षित आणि खाजगी",
         close: "बंद करा",
+        verifying: "तपासत आहे…",
+        verifyFailed: "तुमचे लॉगिन कन्फर्म होऊ शकले नाही. तुमचे इंटरनेट कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
       },
       // CC-174 (phase 121)
       savedImages: {

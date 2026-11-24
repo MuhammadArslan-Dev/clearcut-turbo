@@ -966,7 +966,7 @@ export default function ResizeImageTool({
     logAmplitudeEvent(event, { exam_name: examName ?? null, document_type: preset, locale, ...props });
   // What a Download tap does (legacy / hard gate / soft gate sheet) is decided per
   // exam and page by two Amplitude flags — phase 71 §12.
-  const { requestDownload, modals: downloadModals } = useDownloadOptions({
+  const { requestDownload, modals: downloadModals, verifying, verifyFailed, retryDownload } = useDownloadOptions({
     locale,
     track: (event, props) => trackResizer(`Resizer ${event}`, props),
     tool: toolIdFromPath(pathname ?? ""),
@@ -2027,9 +2027,17 @@ export default function ResizeImageTool({
                       : fill(t.tooLargeForExam, { max: String(maxKB) })}
               </div>
 
-              <Button fullWidth sx={{ borderRadius: "50px" }} disabled={!withinTarget} onClick={handleDownload}>
-                {t.downloadImage}
+              <Button fullWidth sx={{ borderRadius: "50px" }} disabled={!withinTarget || verifying} onClick={handleDownload}>
+                {verifying ? t.downloadOptions.verifying : t.downloadImage}
               </Button>
+              {verifyFailed && (
+                <div role="alert" className="flex flex-col items-center gap-2">
+                  <p className="text-sm text-red-600 text-center">{t.downloadOptions.verifyFailed}</p>
+                  <Button variant="outlined" color="gray" sx={{ borderRadius: "50px" }} onClick={retryDownload}>
+                    {t.savedImages.retry}
+                  </Button>
+                </div>
+              )}
               {downloaded && (
                 <p role="status" className="body-small text-center">
                   <span className="font-semibold text-[var(--color-success-strong)]">{t.downloaded}</span>
