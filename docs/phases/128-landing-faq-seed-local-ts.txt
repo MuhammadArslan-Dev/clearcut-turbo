@@ -1,0 +1,12 @@
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import fs from 'node:fs'
+const seed = JSON.parse(fs.readFileSync(process.env.SEED_PATH as string, 'utf8'))
+const payload = await getPayload({ config })
+await payload.updateGlobal({ slug: 'faq', locale: 'en', overrideAccess: true, data: { categories: seed.en.map((c: any) => ({ key: c.key, label: c.label, questions: c.questions.map((q: any) => ({ questionRich: q.questionRich, answerRich: q.answerRich, question: null, answer: null })) })) } as any })
+const en: any = await payload.findGlobal({ slug: 'faq', locale: 'en', depth: 0, overrideAccess: true })
+for (const loc of ['hi', 'mr'] as const) {
+  const rows = seed[loc]
+  await payload.updateGlobal({ slug: 'faq', locale: loc, overrideAccess: true, data: { categories: en.categories.map((c: any, ci: number) => { if (rows[ci].key !== c.key) throw new Error('order'); return { id: c.id, key: c.key, label: rows[ci].label, questions: c.questions.map((q: any, qi: number) => ({ id: q.id, questionRich: rows[ci].questions[qi].questionRich, answerRich: rows[ci].questions[qi].answerRich })) } }) } as any })
+}
+console.log('seeded', en.categories.length); process.exit(0)
