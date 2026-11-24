@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { getToken } from "@clearcut/auth/token";
 import { normalizePage } from "@clearcut/auth/attribution";
 import { getDict, type Locale } from "./dictionary";
-import { devForcedDownloadMode, resolveDownloadMode, type DownloadMode } from "./downloadMode";
+import { devForcedDownloadMode, resolveDownloadModeFor, type DownloadMode, type DownloadModeSource } from "./downloadMode";
+import { isOtpRequiredBeforeDownload } from "@/config/downloadVerification";
+import { verifySession } from "./api/verifySession";
 import { downloadFlagsWithin, fetchDownloadFlags, trackFlagExposures, type FlagContext } from "./experiment";
 import { getLoginGateConfig } from "./loginGate";
 import { useLoginGate } from "./useLoginGate";
@@ -31,6 +33,8 @@ export interface DownloadMeta {
   tool_name: string;
   tool_page: string;
   download_mode: DownloadMode;
+  /** Phase 127: `config` (config/downloadVerification.ts), `amplitude` (the flags) or `dev_override` (localhost QA). */
+  download_mode_source: DownloadModeSource;
   download_mode_conflict?: true;
   download_option?: DownloadOption;
   authentication_required: boolean;
@@ -41,7 +45,7 @@ export interface DownloadMeta {
 }
 
 type Track = (event: string, props?: Record<string, unknown>) => void;
-type Base = Pick<DownloadMeta, "tool_name" | "tool_page" | "download_mode" | "download_mode_conflict">;
+type Base = Pick<DownloadMeta, "tool_name" | "tool_page" | "download_mode" | "download_mode_source" | "download_mode_conflict">;
 type Pending = { save: (meta: DownloadMeta) => void; base: Base };
 
 /**
@@ -88,12 +92,19 @@ export function useDownloadOptions({
   const [mounted, setMounted] = useState(false);
   const pending = useRef<Pending | null>(null);
   const resolving = useRef(false);
+  // Phase 127: the backend login check before an OTP-required download (config/downloadVerification.ts).
+  const [verifying, setVerifying] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState(false);
+  const lastSave = useRef<((meta: DownloadMeta) => void) | null>(null);
+  const otpRequired = isOtpRequiredBeforeDownload(exam);
 
   const flagContext = useCallback((): FlagContext => ({ exam, tool, page: normalizePage(window.location.pathname).page }), [exam, tool]);
 
   // Start the evaluation as soon as the tool is on screen, so the Download tap
   // finds the answer already cached (cache is per exam|tool — never shared).
   useEffect(() => {
+    // An exam that always needs OTP (config/downloadVerification.ts) never reads the flags.
+    if (otpRequired) return;
     const start = () => void fetchDownloadFlags(flagContext());
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(start, { timeout: 2000 });
@@ -101,7 +112,7 @@ export function useDownloadOptions({
     }
     const t = setTimeout(start, 300);
     return () => clearTimeout(t);
-  }, [flagContext]);
+  }, [flagContext, otpRequired]);
 
   const finish = useCallback((p: Pending, patch: Omit<DownloadMeta, keyof Base>) => {
     // CC-174: the second-download gate counts downloads per browser (every mode counts, so
@@ -149,12 +160,12 @@ export function useDownloadOptions({
     async (save: (meta: DownloadMeta) => void) => {
       if (resolving.current) return; // a second tap while the answer is still loading
       resolving.current = true;
+      setVerifyFailed(false);
       try {
         const ctx = flagContext();
-        const flags = await downloadFlagsWithin(ctx);
-        const resolved = resolveDownloadMode(flags);
-        const forced = devForcedDownloadMode();
-        const { mode, conflict } = forced ? { mode: forced, conflict: false } : resolved;
+        // A config-required exam is hard_gate whatever the flags say, so it does not wait for them.
+        const flags = isOtpRequiredBeforeDownload(exam) ? null : await downloadFlagsWithin(ctx);
+        const { mode, conflict, source } = resolveDownloadModeFor(exam, flags, devForcedDownloadMode());
         if (flags) trackFlagExposures(flags, ctx);
         if (conflict) {
           console.warn("[tools] hard_gate and soft_gate are both ON for this page: falling back to Legacy (download_mode_conflict). Switch one off in Amplitude.");
@@ -163,6 +174,7 @@ export function useDownloadOptions({
           tool_name: tool,
           tool_page: ctx.page,
           download_mode: mode,
+          download_mode_source: source,
           ...(conflict ? { download_mode_conflict: true as const } : {}),
         };
         const download: Pending = { save, base };
@@ -202,6 +214,27 @@ export function useDownloadOptions({
             );
           }
         } else if (mode === "hard_gate") {
+          if (source === "config" && getToken()) {
+            // Phase 127: a local token is not enough — the backend must still accept it.
+            setVerifying(true);
+            let check: Awaited<ReturnType<typeof verifySession>>;
+            try {
+              check = await verifySession();
+            } finally {
+              setVerifying(false);
+            }
+            if (check === "valid") {
+              finish(download, { authentication_required: false, otp_verification_status: "already_verified", pdf_requested: false });
+              return;
+            }
+            if (check === "error") {
+              // Offline / 5xx / 403: no file, token kept, "Try again" (never a bypass, never a lock-out).
+              lastSave.current = save;
+              setVerifyFailed(true);
+              return;
+            }
+            // "expired": authedRequest already cleared the token, so the OTP login opens below.
+          }
           requireLogin({ ...getLoginGateConfig("download", locale), eventProps: base }, ({ verifiedNow }) =>
             finish(download, {
               authentication_required: verifiedNow,
@@ -219,8 +252,14 @@ export function useDownloadOptions({
         resolving.current = false;
       }
     },
-    [flagContext, tool, locale, requireLogin, track, finish],
+    [flagContext, exam, tool, locale, requireLogin, track, finish],
   );
+
+  /** Phase 127: the "Try again" after a failed login check repeats the same download request. */
+  const retryDownload = useCallback(() => {
+    const save = lastSave.current;
+    if (save) void requestDownload(save);
+  }, [requestDownload]);
 
   const modals: ReactNode = (
     <>
@@ -231,5 +270,5 @@ export function useDownloadOptions({
     </>
   );
 
-  return { requestDownload, modals };
+  return { requestDownload, modals, verifying, verifyFailed, retryDownload };
 }
