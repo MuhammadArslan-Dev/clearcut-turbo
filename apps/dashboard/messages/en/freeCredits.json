@@ -1,0 +1,14 @@
+{
+  "chip": "{remaining} of {limit} free tests left",
+  "chipNone": "All {limit} free tests used",
+  "banner": "{remaining, plural, one {# free test left} other {# free tests left}}. Unlock unlimited tests: ₹{price}",
+  "lock": {
+    "title": "You've used your {limit} free tests",
+    "subtitleGap": "You're {gap} marks from the {exam} cutoff. Unlock all tests and mocks: ₹{price}, one-time.",
+    "subtitleAbove": "You're above the {exam} cutoff. Keep that lead: unlock all tests and mocks for ₹{price}, one-time.",
+    "subtitleNone": "Unlock all tests and mocks: ₹{price}, one-time.",
+    "cta": "Unlock all tests: ₹{price}",
+    "autopay": "Or autopay ₹{price}/month",
+    "dailyTest": "Take today's daily test (free)"
+  }
+}

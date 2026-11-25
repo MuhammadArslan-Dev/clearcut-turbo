@@ -33,6 +33,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     DailyTests: await load(locale, "dailyTests"),
     PracticeTest: await load(locale, "practiceTest"),
     DashboardHome: await load(locale, "dashboardHome"),
+    freeCredits: await load(locale, "freeCredits"),
   };
 
   return {

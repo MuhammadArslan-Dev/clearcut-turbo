@@ -18,13 +18,19 @@ import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
 import { SectionalTestItem, SectionalSection } from "@/lib/tests/getExam";
-import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { usePaywallsStore, type PaywallMeta } from "@/components/features/PayWalls/usePaywallsStore";
+import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
+import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
+
 import { getLocalizedName } from "@/components/features/preparation/util/getLocalizedName";
 import { courseLanguageToLocale } from "@/utils/text/contentLocale";
 
 interface SectionalTestProps {
   courseId?: string | number;
 }
+
+// CC-196: what the free-credits lock screen needs to know about a locked card tap.
+const LOCK_META: PaywallMeta = { testType: "sectional", surface: "test_card" };
 
 export default React.memo(function SectionalTest({ courseId }: SectionalTestProps) {
   const t = useTranslations();
@@ -37,6 +43,9 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
   const contentLocale = courseLanguageToLocale(courseData?.language);
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
+  // CC-196: free-credits status (also keeps the cache warm for the lock screen). Inactive = no chip.
+  const { credits: freeCredits } = useFreeCredits(courseData?.exam?.short_name, { skip: courseData?.status === "active" });
+  const showCreditChip = freeCredits.active && freeCredits.limit > 0;
   const {
     paper,
     setData,
@@ -192,7 +201,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
     set({ startTest: null, section: null, paper: null });
     if (!section || !test) return;
     if (test.locked) {
-      openPaywall("test-locked-modal", courseData?.exam!, "sectional_test_card_clicked", courseData);
+      openPaywall("test-locked-modal", courseData?.exam!, "sectional_test_card_clicked", courseData, LOCK_META);
     } else {
       handleStartTest(test, section);
     }
@@ -295,7 +304,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                 "test-locked-modal",
                 courseData?.exam!,
                 "sectional_test_card_clicked",
-                courseData,
+                courseData, LOCK_META,
               ),
           }}
           startTest={{
@@ -308,7 +317,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                     "test-locked-modal",
                     courseData?.exam!,
                     "sectional_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : handleStartTest(test, section),
           }}
@@ -321,7 +330,7 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
                     "test-locked-modal",
                     courseData?.exam!,
                     "sectional_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : handleViewHistory(test, section),
           }}
@@ -333,12 +342,14 @@ export default React.memo(function SectionalTest({ courseId }: SectionalTestProp
               ? cardT("testCard.includedInPlan", {
                   price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
                 })
-              : undefined
+              : showCreditChip && !isCompleted
+                ? <FreeCreditChip exam={courseData?.exam?.short_name} paid={!isFreeUser} />
+                : undefined
           }
         />
       );
     },
-    [cardT, courseData, handleStartTest, handleViewHistory, recommendedTest, openPaywall],
+    [cardT, courseData, handleStartTest, handleViewHistory, recommendedTest, openPaywall, showCreditChip, isFreeUser],
   );
 
   /* ================= STATES ================= */

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Exam } from "@/types/Exam";
 import { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
+import type { FreeCreditsLock } from "@/lib/api/freeCredits";
 
 /** Allowed modes */
 export type PaywallTypes =
@@ -11,7 +12,9 @@ export type PaywallTypes =
   | "topic-locked-modal"
   | "test-locked-modal"
   | "daily-test-locked-modal"
-  | "daily-tests-locked-modal";
+  | "daily-tests-locked-modal"
+  // CC-196: free test credits used up (also the upgraded view of "test-locked-modal").
+  | "credits-locked-modal";
 
 export type PaywallSource =
   | "my_courses_card_clicked"
@@ -28,7 +31,20 @@ export type PaywallSource =
   | "daily_tests_page_clicked"
   // CC-129: server refused a paid test (plan ended) / grace-period widget.
   | "renewal_required"
-  | "plan_grace_widget";
+  | "plan_grace_widget"
+  // CC-196: checkout opened from the free-credits lock screen (or the Cutoff Meter).
+  | "cutoff_meter";
+
+/** CC-196: what the free-credits lock screen needs to know about the tap that opened it. */
+export type PaywallMeta = {
+  /** sectional | chapter | full-length | daily_test */
+  testType?: string;
+  /** Where it was hit - Test Locked's `source`. */
+  surface?: "test_card" | "daily_card" | "test_start";
+  /** The server's 403 body, when the lock came from a refused start. */
+  lock?: FreeCreditsLock | null;
+};
+
 interface EditCourseState {
   isOpen: boolean;
   data: Exam | undefined | null;
@@ -40,12 +56,14 @@ interface EditCourseState {
   course?: ExamEnrollmentWithExam | null;
   mode: PaywallTypes | null;
   source?: PaywallSource | null;
+  meta?: PaywallMeta | null;
 
   open: (
     mode: PaywallTypes,
     data: Exam,
     source?: PaywallSource,
     course?: ExamEnrollmentWithExam | null,
+    meta?: PaywallMeta | null,
   ) => void;
   close: () => void;
 }
@@ -60,8 +78,9 @@ export const usePaywallsStore = create<EditCourseState>((set) => ({
   course: null,
   mode: null,
   source: null,
+  meta: null,
 
-  open: (mode, data, source, course) => {
+  open: (mode, data, source, course, meta) => {
     if (isMobile()) {
       window.history.pushState({ drawer: true }, "");
     }
@@ -72,6 +91,7 @@ export const usePaywallsStore = create<EditCourseState>((set) => ({
       data,
       source,
       course: course ?? null,
+      meta: meta ?? null,
     });
   },
 
@@ -82,5 +102,6 @@ export const usePaywallsStore = create<EditCourseState>((set) => ({
       source: null,
       data: null,
       course: null,
+      meta: null,
     }),
 }));

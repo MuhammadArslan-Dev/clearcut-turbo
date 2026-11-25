@@ -23,7 +23,10 @@ import CounterCard from "@/components/ui/cards/CounterCard";
 import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
-import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { usePaywallsStore, type PaywallMeta } from "@/components/features/PayWalls/usePaywallsStore";
+import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
+import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
+
 import SectionSwitchUI from "@/components/ui/tabs/SectionSwitchUI";
 import { TabItem } from "@/components/ui/tabs/TabSwitch";
 import { ArrowRightIcon } from "lucide-react";
@@ -37,6 +40,9 @@ interface ChapterTestProps {
   courseId?: string | number;
 }
 
+// CC-196: what the free-credits lock screen needs to know about a locked card tap.
+const LOCK_META: PaywallMeta = { testType: "chapter", surface: "test_card" };
+
 export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   const t = useTranslations();
   const cardT = useTranslations("testListContent");
@@ -48,6 +54,9 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   const contentLocale = courseLanguageToLocale(courseData?.language);
   const { open } = useTestSeriesModalStore();
   const { open: openPaywall } = usePaywallsStore();
+  // CC-196: free-credits status (also keeps the cache warm for the lock screen). Inactive = no chip.
+  const { credits: freeCredits } = useFreeCredits(courseData?.exam?.short_name, { skip: courseData?.status === "active" });
+  const showCreditChip = freeCredits.active && freeCredits.limit > 0;
   const {
     paper,
     setData,
@@ -356,7 +365,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                 "test-locked-modal",
                 courseData?.exam!,
                 "full_test_card_clicked",
-                courseData,
+                courseData, LOCK_META,
               ),
           }}
           startTest={{
@@ -369,7 +378,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                     "test-locked-modal",
                     courseData?.exam!,
                     "full_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : handleStartTest(test, chapter),
           }}
@@ -382,7 +391,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
                     "test-locked-modal",
                     courseData?.exam!,
                     "full_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : handleViewHistory(test, chapter),
           }}
@@ -399,7 +408,7 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
         />
       );
     },
-    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall],
+    [cardT, courseData, handleStartTest, handleViewHistory, sectionRecommendedTest, openPaywall, showCreditChip, isFreeUser],
   );
 
   // Still loading after 10 s: "Taking longer than usual" + Try again (CC-152).

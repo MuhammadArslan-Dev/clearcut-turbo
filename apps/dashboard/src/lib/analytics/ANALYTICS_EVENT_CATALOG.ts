@@ -284,6 +284,20 @@ trackEvent("Test Started", {
   test_session_id: "ts_xyz_12345",
 });
 
+// CC-196 (phase 132): free test credits used up -> the lock screen opened. ONCE per open of the
+// lock screen (never per tap). test_type: sectional | chapter | full-length | daily_test | unknown.
+// source: test_card (locked card tapped) | daily_card | test_start (server refused the start with
+// 403 free_credits_exhausted) | cutoff_meter. gap = marks short of the cutoff (null = no meter,
+// <= 0 = already above it). free_credits_variant is "treatment" (control users never see the lock).
+trackEvent("Test Locked", {
+  exam: "HTET",
+  test_type: "chapter",
+  credits_used: 5,
+  source: "test_card",
+  gap: 12,
+  free_credits_variant: "treatment",
+});
+
 trackEvent("Question Viewed", {
   test_id: "ST_1",
   test_type: "sectional",
@@ -368,6 +382,10 @@ trackEvent("Test Retake Initiated", {
    MONETIZATION
 ========================= */
 
+// Sent (since CC-196) by every paywall surface once per open: MainPaywall, PreparationPaywall and
+// LockedContentModal (usePaywallRenderedTracking). Before that the event was typed here but no
+// trackEvent call existed anywhere in src, so it never fired. property_source = the paywall's
+// `source` (or its mode); "credits_locked" for the free-credits lock screen.
 trackEvent("Payment Paywall Rendered", {
   property_source: "onboarding_completed",
   is_user_premium: false,
@@ -389,10 +407,21 @@ trackEvent("Plan Switched", {
   currency: "INR",
 });
 
+// PayContext (also on Plan Switched / Payment Initiated / Payment Outcome / Checkout Opened /
+// Continue Free Clicked) gained, for checkouts opened from the free-credits lock screen only:
+// test_type, credits_used, free_credits_variant (read from the checkout URL). source = "cutoff_meter".
+// Server-side "Payment Completed" (backend) must add credits_used + test_type itself.
 trackEvent("Purchase Intent Initiated", {
-  entry_point: "learn_dashboard",
-  product_id: "CTET_2024",
+  entry_point: "cutoff_meter",
+  product_id: "HTET",
+  source: "cutoff_meter",
+  test_type: "chapter",
+  credits_used: 5,
+  free_credits_variant: "treatment",
 });
+
+// User property (not an event): free_credits_remaining = N, set from the dashboard whenever
+// GET /v2/free-credits is fetched for a treatment user (setAnalyticsUserProperty).
 
 trackEvent("Payment Initiated", {
   exam_name: "CTET",

@@ -33,6 +33,7 @@ import ContactUsModal from "@/components/modals/contact-us/ContactUsModal";
 import QuestionsDock, { type QuestionDockItem } from "@/components/features/attempt-ui/QuestionsDock";
 import type { AttemptQuestion } from "../types/exam";
 import { trackTestAbandoned, trackTestSubmitted } from "@/lib/analytics/testFunnel";
+import { useFreeCreditsAbandonBeacon } from "@/components/features/free-credits/useFreeCreditsAbandonBeacon";
 import { useTranslations } from "next-intl";
 import { NibNote } from "@clearcut/motion/test/mini-test";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
@@ -129,6 +130,17 @@ export default function MainContent({ examId }: { examId: string }) {
       window.removeEventListener("pagehide", onPageHide);
     };
   }, [examUuid, examStatus]);
+  // CC-196: a credited test left within ~2 minutes tells the server so it can refund the credit.
+  useFreeCreditsAbandonBeacon({
+    active: !!examUuid && examStatus === "in_progress",
+    attemptType: "exam",
+    attemptId: examUuid,
+    testType: exam?.type,
+    examShort: exam?.course?.exam?.short_name ?? exam?.course?.short_name,
+    paid: exam?.course?.status === "active",
+    startedAtMs: exam?.started_at ? Date.parse(exam.started_at) : null,
+    submitting: submitPhase === "running",
+  });
   const openGlobalModal = useModalStore((s) => s.open);
 
   // ===============================

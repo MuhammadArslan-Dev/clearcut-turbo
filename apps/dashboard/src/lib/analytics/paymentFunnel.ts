@@ -22,6 +22,11 @@ export type PayContext = {
   source?: string;
   language?: string;
   in_app_browser?: "fb" | "ig" | "none";
+  /** CC-196: set when the checkout was opened from the free-credits lock screen. */
+  test_type?: string;
+  credits_used?: number;
+  /** CC-196: "treatment" (credit mode) - the A/B cohort, analysed in Amplitude. */
+  free_credits_variant?: string;
 };
 
 export function trackPaymentEvent<TName extends AnalyticsEventName>(

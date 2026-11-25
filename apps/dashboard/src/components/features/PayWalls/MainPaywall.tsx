@@ -24,6 +24,7 @@ import StatusChip from "@/components/ui/cards/preparation/chapter-list/StatusChi
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
 import { usePaywallsStore } from "./usePaywallsStore";
+import { usePaywallRenderedTracking } from "./usePaywallRenderedTracking";
 import { BottomSheet } from "../Sheets/BottomSheet";
 import WarningCirleIcon from "@/components/ui/icons/warning-circle-icon";
 import StarIcon from "@/components/ui/icons/star-icon";
@@ -43,11 +44,18 @@ const FEATURES = [
 
 export default function MainPaywall() {
   const modalT = useTranslations("modals.unlockFullAccessModal");
-  const { isOpen, data, close, mode, open } = usePaywallsStore();
+  const { isOpen, data, close, mode, open, source, course } = usePaywallsStore();
   const isMobile = useIsMobile();
   const locale = useLocale(); // "en", "hi", etc.
   const router = useRouter();
   useDrawerBackHandler();
+  // CC-196: the event was typed but never sent.
+  usePaywallRenderedTracking(
+    isOpen && mode === "main-paywall",
+    source ?? mode,
+    course?.status === "active",
+    data?.short_name,
+  );
   const [selectVariant, setSelectVariant] =
     React.useState<PaymentType>("1year");
 

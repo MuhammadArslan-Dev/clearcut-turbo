@@ -105,7 +105,7 @@ export function trackReservedEvent(name: string, payload: Record<string, unknown
 }
 
 /** One user property on the current Amplitude user (CC-192: `exp_<flag>` = variant). No-op when analytics are off. */
-export function setAnalyticsUserProperty(key: string, value: string) {
+export function setAnalyticsUserProperty(key: string, value: string | number) {
     if (!AMPLITUDE_ENABLED) return;
     internalInit();
     if (!isInitialized) return;

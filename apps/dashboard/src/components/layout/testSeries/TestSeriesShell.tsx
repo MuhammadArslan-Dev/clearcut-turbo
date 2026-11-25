@@ -18,6 +18,8 @@ import { ListIcon } from "@/components/ui/icons";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
+import FreeCreditsBanner from "@/components/features/free-credits/FreeCreditsBanner";
+import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 
 // Every one of these is gated behind a store flag at its render site below
 // (`{isOpen && activeModal === "…" && <X />}`) or checks the flag itself
@@ -85,6 +87,7 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
     [stack],
   );
   const { isOpen: isOpenPaywall, mode } = usePaywallsStore();
+  const currentCourse = useGetCurrentCourseStore((s) => s.course);
 
   const { isOpen: isOpenExam, stack: stackExam } = useExamModalStore();
   const activeModalExam = useMemo(
@@ -102,6 +105,11 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
 
         {/* Only this part scrolls */}
         <main ref={mainRef} className="flex-1 overflow-y-auto pb-24 md:pb-0">
+          {/* CC-196: soft banner once 3 free credits are used; renders nothing for everyone else. */}
+          <FreeCreditsBanner
+            exam={currentCourse?.exam?.short_name}
+            paid={currentCourse?.status === "active"}
+          />
           {children}
         </main>
         {/* <Footer /> */}

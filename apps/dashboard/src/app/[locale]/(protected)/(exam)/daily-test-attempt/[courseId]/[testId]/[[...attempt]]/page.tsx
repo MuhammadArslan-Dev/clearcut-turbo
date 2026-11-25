@@ -22,6 +22,8 @@ import {
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { parseFreeCreditsLock, type FreeCreditsLock } from "@/lib/api/freeCredits";
+import { useFreeCreditsAbandonBeacon } from "@/components/features/free-credits/useFreeCreditsAbandonBeacon";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import DailyTestReviewRow, { type ReviewStatus } from "@/components/features/daily-tests/DailyTestReviewRow";
 import { TestResult, getOutcome } from "@clearcut/motion/test/flow";
@@ -107,7 +109,7 @@ type QuestionStatus = "notVisited" | "answered" | "notAnswered" | "review";
 
 type ViewState =
   | { phase: "loading" }
-  | { phase: "locked" }
+  | { phase: "locked"; creditsLock?: FreeCreditsLock }
   | { phase: "attempting"; attemptId: string; testDate: string; sectionName: string | null; questions: DailyTestQuestion[] }
   | { phase: "result"; result: DailyTestResult }
   | { phase: "error"; message: "loadFailed" | "submitFailed" };
@@ -260,7 +262,8 @@ export default function DailyTestAttemptPage() {
       .catch((err) => {
         if (cancelled) return;
         if (isApiError(err) && err.status === 403) {
-          setState({ phase: "locked" });
+          // CC-196: 403 free_credits_exhausted (a retake with no credits left) opens the credits lock screen.
+          setState({ phase: "locked", creditsLock: parseFreeCreditsLock(err) ?? undefined });
         } else {
           // Report every load failure (CC-177) with the test, so "Failed to load test" can be counted in Sentry.
           // A dropped connection is expected on mobile networks: breadcrumb only, like the rest of the app.
@@ -346,6 +349,28 @@ export default function DailyTestAttemptPage() {
     }),
     [testId, enrollment?.group_code, examShortName],
   );
+  // CC-196: the credits lock screen for a refused start (the modal itself is mounted in the locked view below).
+  const lockedCreditsLock = state.phase === "locked" ? state.creditsLock : undefined;
+  useEffect(() => {
+    if (!lockedCreditsLock || !enrollment?.exam) return;
+    usePaywallsStore.getState().open("credits-locked-modal", enrollment.exam, undefined, enrollment, {
+      testType: "daily_test",
+      surface: "test_start",
+      lock: lockedCreditsLock,
+    });
+    // Once per refused start.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedCreditsLock, enrollment?.uuid]);
+  // CC-196: a daily retake that took a credit and was left within ~2 minutes tells the server (it decides the refund).
+  useFreeCreditsAbandonBeacon({
+    active: state.phase === "attempting",
+    attemptType: "daily",
+    attemptId: state.phase === "attempting" ? String(state.attemptId) : null,
+    testType: "daily_test",
+    examShort: examShortName,
+    paid: enrollment?.status === "active",
+    submitting: submitPhase === "running",
+  });
   // Wall-clock start of this page visit (a resumed attempt counts from the resume).
   const attemptStartedAtRef = React.useRef<number | null>(null);
   const answersRef = React.useRef(answers);
@@ -560,6 +585,7 @@ export default function DailyTestAttemptPage() {
           {t("attempt.lockedDesc")}
         </p>
         <Button onClick={() => flow.goUp(`/daily-tests/${courseId}`)}>{t("attempt.backToHistory")}</Button>
+        <LockedContentModal />
       </div>
     );
   }

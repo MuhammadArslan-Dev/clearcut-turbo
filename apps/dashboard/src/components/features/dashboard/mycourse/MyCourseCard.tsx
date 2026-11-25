@@ -21,6 +21,7 @@ import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCut
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
+import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
 
 /**
  * Meter panel (phase 98/99) = Cutoff Meter Studio's bar meter itself
@@ -436,6 +437,9 @@ export default function MyCourseCard({
             </div>
           )}
         </div>
+
+        {/* CC-196: "3 of 5 free tests left" - renders nothing unless this user is in the free-credits treatment. */}
+        <FreeCreditChip exam={examShortName} paid={badge === "active"} className="self-start" />
 
         {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
         {setupSlot ? (
