@@ -47,7 +47,10 @@ export default function LockedContentModal() {
   // credit treatment whose credits are used up it becomes the credits lock screen (no
   // "Continue Free"). A refused start (403 free_credits_exhausted) opens it directly.
   const examShort = course?.exam?.short_name;
-  const { credits } = useFreeCredits(examShort, { skip: !isOpen || course?.status === "active" });
+  const { credits } = useFreeCredits(examShort, {
+    // Only the test lock modes need the status: topic / daily modals make no extra request.
+    skip: !isOpen || course?.status === "active" || (mode !== "test-locked-modal" && mode !== "credits-locked-modal"),
+  });
   const isCredits =
     isOpen &&
     (mode === "credits-locked-modal" ||
