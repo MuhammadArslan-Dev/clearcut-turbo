@@ -26,7 +26,8 @@ export type FreeCreditsRaw = {
   first_test_free_available?: boolean;
   daily_free_available_today?: boolean;
   locked?: boolean;
-  price_hint?: number | string | null;
+  /** Backend sends { plan, amount: null }; the price shown always comes from getPriceForVariant. */
+  price_hint?: unknown;
 };
 
 export type FreeCredits = {
@@ -78,7 +79,7 @@ export function normalizeFreeCredits(raw: FreeCreditsRaw | null | undefined): Fr
     firstTestFreeAvailable: raw.first_test_free_available === true,
     dailyFreeAvailableToday: raw.daily_free_available_today === true,
     locked: raw.locked === true,
-    priceHint: raw.price_hint == null ? null : num(raw.price_hint, 0) || null,
+    priceHint: typeof raw.price_hint === "number" ? raw.price_hint : null,
   };
 }
 
@@ -122,13 +123,13 @@ export function parseFreeCreditsLock(err: unknown): FreeCreditsLock | null {
   }
 }
 
-export type AbandonAttemptType = "exam" | "daily";
+/** Backend values (FreeTestCreditService::abandon). */
+export type AbandonAttemptType = "exam_attempt" | "daily_test_attempt";
 
 /**
  * Tell the server a just-started credited test was left, so it can refund the credit (it
  * decides: within the window, nothing answered, once per test). `keepalive` lets the request
- * finish after the page is gone; apiFetch starts the fetch synchronously, so this is safe to
- * call from `pagehide`. Never throws.
+ * finish after the page is gone (sendBeacon cannot carry the bearer header). Never throws.
  */
 export function sendFreeCreditsAbandon(payload: {
   attempt_type: AbandonAttemptType;

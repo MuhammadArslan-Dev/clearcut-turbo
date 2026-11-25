@@ -133,7 +133,7 @@ export default function MainContent({ examId }: { examId: string }) {
   // CC-196: a credited test left within ~2 minutes tells the server so it can refund the credit.
   useFreeCreditsAbandonBeacon({
     active: !!examUuid && examStatus === "in_progress",
-    attemptType: "exam",
+    attemptType: "exam_attempt",
     attemptId: examUuid,
     testType: exam?.type,
     examShort: exam?.course?.exam?.short_name ?? exam?.course?.short_name,

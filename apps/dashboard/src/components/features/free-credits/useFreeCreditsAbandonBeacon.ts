@@ -14,9 +14,11 @@ const sentKeys = new Set<string>();
 const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
- * Credit refund for an abandoned counted test (CC-196). A started credited test left within
- * ~120 s (the page closed, or the student navigated away) tells the server once, with a
- * keepalive request that survives `pagehide`. The server decides whether it refunds (window,
+ * Credit refund for an abandoned counted test (CC-196). A started credited test that the
+ * student LEAVES within ~120 s (in-app route-away / unmount) tells the server once, with a
+ * keepalive request. `pagehide` is deliberately NOT used: it also fires on a reload, and a
+ * reload resumes the same attempt, so refunding then would give a free test. A closed tab or
+ * killed app is refunded by the backend's own lazy sweep instead. The server decides whether it refunds (window,
  * nothing answered, once per test); this only reports and never gates the test.
  *
  * No-op when the feature is off / control / paid, for the Topic Test (never mounted there),
@@ -80,9 +82,7 @@ export function useFreeCreditsAbandonBeacon(args: {
       });
     };
 
-    window.addEventListener("pagehide", report);
     return () => {
-      window.removeEventListener("pagehide", report);
       // Route-away / unmount. Wait one tick: React StrictMode (dev) unmounts and remounts at once.
       pendingTimers.set(
         key,

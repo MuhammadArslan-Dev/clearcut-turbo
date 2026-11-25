@@ -364,7 +364,7 @@ export default function DailyTestAttemptPage() {
   // CC-196: a daily retake that took a credit and was left within ~2 minutes tells the server (it decides the refund).
   useFreeCreditsAbandonBeacon({
     active: state.phase === "attempting",
-    attemptType: "daily",
+    attemptType: "daily_test_attempt",
     attemptId: state.phase === "attempting" ? String(state.attemptId) : null,
     testType: "daily_test",
     examShort: examShortName,
