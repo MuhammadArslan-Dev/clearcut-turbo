@@ -34,6 +34,7 @@ import QuestionsDock, { type QuestionDockItem } from "@/components/features/atte
 import type { AttemptQuestion } from "../types/exam";
 import { trackTestAbandoned, trackTestSubmitted } from "@/lib/analytics/testFunnel";
 import { useFreeCreditsAbandonBeacon } from "@/components/features/free-credits/useFreeCreditsAbandonBeacon";
+import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { useTranslations } from "next-intl";
 import { NibNote } from "@clearcut/motion/test/mini-test";
 import { SubmitOverlay } from "@/components/features/test-motion/SubmitOverlay";
@@ -130,13 +131,21 @@ export default function MainContent({ examId }: { examId: string }) {
       window.removeEventListener("pagehide", onPageHide);
     };
   }, [examUuid, examStatus]);
+  // CC-196: get-exam's `course` carries no exam name (only id/group_code/status...), so the exam short name
+  // comes from the course the student opened the test from. Same course only; after a reload the store is
+  // empty, no refund call is made and the backend's own sweep settles an unanswered attempt instead.
+  const currentCourse = useGetCurrentCourseStore((s) => s.course);
+  const creditExamShort =
+    exam?.course?.exam?.short_name ??
+    exam?.course?.short_name ??
+    (currentCourse && currentCourse.group_code === exam?.course?.group_code ? currentCourse.exam?.short_name : null);
   // CC-196: a credited test left within ~2 minutes tells the server so it can refund the credit.
   useFreeCreditsAbandonBeacon({
     active: !!examUuid && examStatus === "in_progress",
     attemptType: "exam_attempt",
     attemptId: examUuid,
     testType: exam?.type,
-    examShort: exam?.course?.exam?.short_name ?? exam?.course?.short_name,
+    examShort: creditExamShort,
     paid: exam?.course?.status === "active",
     startedAtMs: exam?.started_at ? Date.parse(exam.started_at) : null,
     submitting: submitPhase === "running",
