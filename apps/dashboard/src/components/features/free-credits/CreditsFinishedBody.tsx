@@ -42,7 +42,7 @@ export default function CreditsFinishedBody({
 
       <h2 className="heading-large !font-bold text-center text-surface-gray-normal">{view.kind === "used" ? t("title", { limit: shownLimit }) : view.kind === "last" ? t("titleLast") : t("titleLeft", { remaining: view.remaining })}</h2>
 
-      <div className="flex items-center justify-center gap-3 rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-3">
+      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2">
         <FreeCreditDots limit={shownLimit} remaining={view.filled} />
         <span className="body-medium text-surface-gray-normal">
           {view.kind === "used"
@@ -51,7 +51,7 @@ export default function CreditsFinishedBody({
         </span>
       </div>
 
-      <p className="heading-small rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-3 text-center !font-bold text-brand">
+      <p className="heading-small mx-auto w-fit max-w-full rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2 text-center !font-bold text-brand">
         {t("priceLine", { price: FREE_CREDITS_PLAN_PRICE })}
       </p>
 
