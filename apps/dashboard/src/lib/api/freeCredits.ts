@@ -26,6 +26,8 @@ export type FreeCreditsRaw = {
   first_test_free_available?: boolean;
   daily_free_available_today?: boolean;
   locked?: boolean;
+  /** Tests already started (re-opening one is free). */
+  held_tests?: { test_type?: string; test_ref?: string | number }[] | null;
   /** Backend sends { plan, amount: null }; the price shown always comes from getPriceForVariant. */
   price_hint?: unknown;
 };
@@ -41,6 +43,8 @@ export type FreeCredits = {
   firstTestFreeAvailable: boolean;
   dailyFreeAvailableToday: boolean;
   locked: boolean;
+  /** Tests already started: re-opening one costs no credit. */
+  heldTests: { testType: string; testRef: string }[];
   priceHint: number | null;
 };
 
@@ -53,6 +57,7 @@ export const FREE_CREDITS_INACTIVE: FreeCredits = {
   firstTestFreeAvailable: false,
   dailyFreeAvailableToday: false,
   locked: false,
+  heldTests: [],
   priceHint: null,
 };
 
@@ -79,6 +84,11 @@ export function normalizeFreeCredits(raw: FreeCreditsRaw | null | undefined): Fr
     firstTestFreeAvailable: raw.first_test_free_available === true,
     dailyFreeAvailableToday: raw.daily_free_available_today === true,
     locked: raw.locked === true,
+    heldTests: Array.isArray(raw.held_tests)
+      ? raw.held_tests
+          .filter((h) => h && h.test_type != null && h.test_ref != null)
+          .map((h) => ({ testType: String(h.test_type), testRef: String(h.test_ref) }))
+      : [],
     priceHint: typeof raw.price_hint === "number" ? raw.price_hint : null,
   };
 }
@@ -99,6 +109,8 @@ export type FreeCreditsLock = {
   creditsLimit: number | null;
   /** Marks short of the cutoff; null = no Cutoff Meter; <= 0 = already above it. */
   meterGap: number | null;
+  /** The exam's pass mark (cutoff) in marks, when the server sent it. */
+  passMark: number | null;
   exam: string | null;
   testType: string | null;
 };
@@ -115,6 +127,7 @@ export function parseFreeCreditsLock(err: unknown): FreeCreditsLock | null {
       creditsUsed: d?.credits_used == null ? null : num(d.credits_used),
       creditsLimit: d?.credits_limit == null ? null : num(d.credits_limit),
       meterGap: gap == null || !Number.isFinite(Number(gap)) ? null : Number(gap),
+      passMark: d?.pass_mark == null || !Number.isFinite(Number(d.pass_mark)) ? null : Number(d.pass_mark),
       exam: typeof d?.exam === "string" ? d.exam : null,
       testType: typeof d?.test_type === "string" ? d.test_type : null,
     };

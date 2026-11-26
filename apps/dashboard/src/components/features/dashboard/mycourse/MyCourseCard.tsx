@@ -21,7 +21,7 @@ import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCut
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
-import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
+import FreeCreditLearnRow from "@/components/features/free-credits/FreeCreditLearnRow";
 
 /**
  * Meter panel (phase 98/99) = Cutoff Meter Studio's bar meter itself
@@ -438,8 +438,8 @@ export default function MyCourseCard({
           )}
         </div>
 
-        {/* CC-196: "3 of 5 free tests left" - renders nothing unless this user is in the free-credits treatment. */}
-        <FreeCreditChip exam={examShortName} paid={badge === "active"} className="self-start" />
+        {/* CC-196: dots + "3 of 5 free tests left" - renders nothing unless this user is in the free-credits treatment. */}
+        <FreeCreditLearnRow exam={examShortName} groupCode={courseId} paid={badge === "active"} />
 
         {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
         {setupSlot ? (
@@ -516,6 +516,7 @@ export default function MyCourseCard({
 
         {/* mt-auto: in an equal-height carousel slide the buttons sit at the bottom. */}
         <div className="mt-auto flex flex-col gap-3 py-1">
+          <FreeCreditLearnRow part="note" exam={examShortName} groupCode={courseId} paid={badge === "active"} />
           {continueClick && (
             <div className={clsx(setupPending && "invisible")}>
               <MainButton

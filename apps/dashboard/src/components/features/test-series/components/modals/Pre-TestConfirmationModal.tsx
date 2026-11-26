@@ -25,6 +25,8 @@ import CalculatorIcon from "@/components/ui/icons/calculator-icon";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { trackEvent } from "@/lib/analytics/browser";
+import FreeCreditStartNote from "@/components/features/free-credits/FreeCreditStartNote";
+import { testTypeOfTab } from "@/lib/freeCredits/ui";
 
 export default function PreTestConfirmationModal() {
   const { isOpen, test, sectionId, closeModal, stack, open } =
@@ -244,6 +246,7 @@ const Footer = ({}: any) => {
   const t = useTranslations("testListContent");
   const { get } = useQueryParams();
   const { exam } = useGetCurrentCourseStore();
+  const currentCourse = useGetCurrentCourseStore((s) => s.course);
 
   const testType = get("testType");
   const buttonText =
@@ -255,6 +258,15 @@ const Footer = ({}: any) => {
 
   return (
     <div className="sticky bottom-0 px-3 py-3 bg-white">
+      {/* CC-196: "Uses 1 of your N free tests" - only for a credited, not yet started test of a user in the treatment. */}
+      <div className="mb-3 empty:hidden">
+        <FreeCreditStartNote
+          exam={exam?.short_name}
+          paid={currentCourse?.status === "active"}
+          testType={testTypeOfTab(testType)}
+          testRef={test?.id}
+        />
+      </div>
       <div className="flex flex-col gap-2 max-w-[336px] mx-auto">
         <div className="flex flex-col gap-1 items-center">
           <div className="max-w-[336px] w-full">

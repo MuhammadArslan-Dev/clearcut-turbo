@@ -403,7 +403,9 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
               ? cardT("testCard.includedInPlan", {
                   price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
                 })
-              : undefined
+              : showCreditChip && !isCompleted
+                ? <FreeCreditChip exam={courseData?.exam?.short_name} paid={!isFreeUser} />
+                : undefined
           }
         />
       );

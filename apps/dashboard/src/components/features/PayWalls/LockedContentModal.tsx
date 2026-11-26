@@ -22,10 +22,10 @@ import { handleOpenPaywall } from "./PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { trackEvent } from "@/lib/analytics/browser";
-import { getPriceForVariant } from "@/lib/payment/examPriceOverrides";
 import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
-import { gapMarks, lockCopyVariant } from "@/lib/freeCredits/lockCopy";
-import { meterGapFromCache } from "@/lib/freeCredits/meterGap";
+import { meterFromCache } from "@/lib/freeCredits/meterGap";
+import CreditsFinishedBody from "@/components/features/free-credits/CreditsFinishedBody";
+import { openCreditsCheckout } from "@/components/features/free-credits/openCreditsCheckout";
 import { usePaywallRenderedTracking } from "./usePaywallRenderedTracking";
 
 /**
@@ -57,17 +57,14 @@ export default function LockedContentModal() {
       (mode === "test-locked-modal" &&
         credits.active &&
         (credits.locked || (credits.limit > 0 && credits.remaining === 0))));
-  const fcT = useTranslations("freeCredits");
-  const navigatingRef = useRef(false);
 
-  const lockGap = isCredits
-    ? meta?.lock
-      ? meta.lock.meterGap
-      : meterGapFromCache(queryClient, course?.group_code)
-    : null;
+  // Gap to the cutoff: the 403 body when the lock came from a refused start, else the Cutoff
+  // Meter already in the query cache (no new request). Unknown = the cutoff box is left out.
+  const cachedMeter = isCredits && !meta?.lock ? meterFromCache(queryClient, course?.group_code) : null;
+  const lockGap = isCredits ? (meta?.lock ? meta.lock.meterGap : (cachedMeter?.gap ?? null)) : null;
+  const lockPass = isCredits ? (meta?.lock?.passMark ?? cachedMeter?.pass ?? null) : null;
   const creditsUsed = meta?.lock?.creditsUsed ?? (credits.active ? credits.used : null);
   const creditsLimit = meta?.lock?.creditsLimit ?? (credits.active ? credits.limit : null);
-  const lockVariant = lockCopyVariant(lockGap);
   const testType = meta?.testType ?? meta?.lock?.testType ?? "unknown";
 
   // The existing "Payment Paywall Rendered", once per open (it was never sent before CC-196).
@@ -88,7 +85,6 @@ export default function LockedContentModal() {
   useEffect(() => {
     if (!isCredits) {
       lockedFiredRef.current = false;
-      navigatingRef.current = false;
       return;
     }
     if (lockedFiredRef.current) return;
@@ -105,16 +101,15 @@ export default function LockedContentModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCredits]);
 
-  const openCheckout = (plan: "1month-onetime" | "1month") => {
-    if (navigatingRef.current) return;
-    navigatingRef.current = true;
-    handleOpenPaywall(router, "cutoff_meter", course, {
-      plan,
-      test_type: testType,
-      credits_used: creditsUsed,
-      free_credits_variant: credits.variant,
+  const openCheckout = () =>
+    openCreditsCheckout({
+      router,
+      groupCode: course?.group_code,
+      examShort,
+      testType,
+      creditsUsed,
+      variant: credits.variant,
     });
-  };
 
   // "daily-test-locked-modal" = result page (no illustration);
   // "daily-tests-locked-modal" = Daily Tests list page (with illustration).
@@ -175,12 +170,27 @@ export default function LockedContentModal() {
           mode === "daily-tests-locked-modal" ||
           mode === "credits-locked-modal") && (
           <Container
-            maxWidth="max-w-[420px] !rounded-t-lg"
+            maxWidth={isCredits ? "md:max-w-[520px] !rounded-t-lg" : "max-w-[420px] !rounded-t-lg"}
             isHeader={false}
             maxHeight="max-h-[95dvh]"
             isOpen
             onClose={close}
           >
+            {isCredits ? (
+              <CreditsFinishedBody
+                limit={creditsLimit ?? 0}
+                used={creditsUsed ?? 0}
+                exam={examTitle}
+                gap={lockGap}
+                pass={lockPass}
+                onGetUnlimited={openCheckout}
+                onContinueFree={() => {
+                  close();
+                  meta?.onContinueFree?.();
+                }}
+                onClose={close}
+              />
+            ) : (
             <div className="bg-white flex flex-col gap-3 p-5">
               {/* Close */}
               <div className="relative z-10 flex justify-end">
@@ -205,26 +215,10 @@ export default function LockedContentModal() {
                   />
                 </div>
                 <div className="heading-large !font-semibold text-surface-gray-normal text-center">
-                  {isCredits ? fcT("lock.title", { limit: creditsLimit ?? 0 }) : modalT("title")}
+                  {modalT("title")}
                 </div>
-                <div
-                  className="body-medium text-surface-gray-muted text-center"
-                  data-testid={isCredits ? "free-credits-lock-subtitle" : undefined}
-                >
-                  {isCredits
-                    ? fcT(
-                        lockVariant === "gap"
-                          ? "lock.subtitleGap"
-                          : lockVariant === "above"
-                            ? "lock.subtitleAbove"
-                            : "lock.subtitleNone",
-                        {
-                          gap: lockGap != null && lockGap > 0 ? gapMarks(lockGap) : 0,
-                          exam: examTitle,
-                          price: getPriceForVariant("1month-onetime", null, examShort),
-                        },
-                      )
-                    : modalT("subtitle")}
+                <div className="body-medium text-surface-gray-muted text-center">
+                  {modalT("subtitle")}
                 </div>
               </div>
 
@@ -266,44 +260,6 @@ export default function LockedContentModal() {
               </div>
 
               {/* CTA */}
-              {isCredits ? (
-              <div className="flex flex-col gap-2">
-                <ShimmerButton
-                  onClick={() => openCheckout("1month-onetime")}
-                  size="lg"
-                  iconPosition="right"
-                  icon={<LockIcon variant="without-key" size={16} color="white" />}
-                  text={fcT("lock.cta", { price: getPriceForVariant("1month-onetime", null, examShort) })}
-                />
-                {/* Autopay is the secondary option; the checkout page lists both plans. */}
-                <Button
-                  onClick={() => openCheckout("1month")}
-                  fullWidth
-                  size="sm"
-                  sx={{ borderRadius: "50px" }}
-                  color="gray"
-                  variant="soft"
-                >
-                  {fcT("lock.autopay", { price: getPriceForVariant("1month", null, examShort) })}
-                </Button>
-                {/* Locked users still have today's daily test. No "Continue Free" here. */}
-                {credits.dailyFreeAvailableToday && course?.uuid && (
-                  <Button
-                    onClick={() => {
-                      close();
-                      router.push(`/daily-tests/${course.uuid}`);
-                    }}
-                    fullWidth
-                    size="sm"
-                    sx={{ borderRadius: "50px" }}
-                    color="gray"
-                    variant="plain"
-                  >
-                    {fcT("lock.dailyTest")}
-                  </Button>
-                )}
-              </div>
-              ) : (
               <div className="flex flex-col gap-2">
                 <ShimmerButton
                   onClick={() =>
@@ -339,8 +295,8 @@ export default function LockedContentModal() {
                   </div>
                 </Button>
               </div>
-              )}
             </div>
+            )}
           </Container>
         )}
     </AnimatePresence>

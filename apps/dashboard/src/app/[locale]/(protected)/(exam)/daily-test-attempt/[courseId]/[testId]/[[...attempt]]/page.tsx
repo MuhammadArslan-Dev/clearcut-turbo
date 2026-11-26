@@ -357,6 +357,8 @@ export default function DailyTestAttemptPage() {
       testType: "daily_test",
       surface: "test_start",
       lock: lockedCreditsLock,
+      // "Continue Free" must not leave the student on this dead "locked" page.
+      onContinueFree: () => flow.goUp(`/daily-tests/${courseId}`),
     });
     // Once per refused start.
     // eslint-disable-next-line react-hooks/exhaustive-deps

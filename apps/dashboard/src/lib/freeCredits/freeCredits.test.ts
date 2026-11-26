@@ -75,3 +75,79 @@ describe("parseCreditsCheckoutContext", () => {
     expect(parseCreditsCheckoutContext(from({ credits_used: "abc" }))).toEqual({});
   });
 });
+
+import { FREE_CREDITS_INACTIVE, type FreeCredits } from "@/lib/api/freeCredits";
+import { creditDots, cutoffBox, infoBarKind, isTestHeld, learnRowKind, startNoteKind, testTypeOfTab } from "./ui";
+
+const active = (remaining: number, extra: Partial<FreeCredits> = {}): FreeCredits => ({
+  ...FREE_CREDITS_INACTIVE,
+  active: true,
+  variant: "treatment",
+  limit: 5,
+  used: 5 - remaining,
+  remaining,
+  ...extra,
+});
+
+describe("info bar thresholds", () => {
+  it("shows only from 3 left down to 1, bolder on the last", () => {
+    expect([5, 4].map((r) => infoBarKind(active(r)))).toEqual(["none", "none"]);
+    expect([3, 2].map((r) => infoBarKind(active(r)))).toEqual(["left", "left"]);
+    expect(infoBarKind(active(1))).toBe("last");
+    expect(infoBarKind(active(0))).toBe("none");
+  });
+  it("never shows for inactive / paid / control users", () => {
+    expect(infoBarKind(FREE_CREDITS_INACTIVE)).toBe("none");
+  });
+});
+
+describe("dots", () => {
+  it("one dot per credit, filled = left", () => {
+    expect(creditDots(5, 3)).toEqual([true, true, true, false, false]);
+    expect(creditDots(5, 0)).toEqual([false, false, false, false, false]);
+    expect(creditDots(5, 9)).toEqual([true, true, true, true, true]);
+  });
+  it("is bounded for bad input", () => {
+    expect(creditDots(500, 1)).toHaveLength(10);
+    expect(creditDots(-1, 1)).toEqual([]);
+    expect(creditDots(Number.NaN, 1)).toEqual([]);
+  });
+});
+
+describe("start note", () => {
+  it("uses / last / none (held test, nothing left, inactive)", () => {
+    expect(startNoteKind(active(3), false)).toBe("uses");
+    expect(startNoteKind(active(1), false)).toBe("last");
+    expect(startNoteKind(active(3), true)).toBe("none");
+    expect(startNoteKind(active(0), false)).toBe("none");
+    expect(startNoteKind(FREE_CREDITS_INACTIVE, false)).toBe("none");
+  });
+  it("matches held tests by type and ref (string compare)", () => {
+    const c = active(3, { heldTests: [{ testType: "sectional", testRef: "12" }] });
+    expect(isTestHeld(c, "sectional", 12)).toBe(true);
+    expect(isTestHeld(c, "chapter", 12)).toBe(false);
+    expect(isTestHeld(c, "sectional", undefined)).toBe(false);
+  });
+});
+
+describe("learn row + cutoff box + tab", () => {
+  it("row kind", () => {
+    expect(learnRowKind(active(5))).toBe("left");
+    expect(learnRowKind(active(1))).toBe("last");
+    expect(learnRowKind(active(0))).toBe("used");
+    expect(learnRowKind(FREE_CREDITS_INACTIVE)).toBe("none");
+  });
+  it("cutoff box only for a known positive gap", () => {
+    expect(cutoffBox(null, 90)).toBeNull();
+    expect(cutoffBox(0, 90)).toBeNull();
+    expect(cutoffBox(-4, 90)).toBeNull();
+    expect(cutoffBox(36.2, 90)).toEqual({ gap: 37, pass: 90 });
+    expect(cutoffBox(5, null)).toEqual({ gap: 5, pass: null });
+  });
+  it("test type of the list tab", () => {
+    expect(testTypeOfTab("chapter-tests")).toBe("chapter");
+    expect(testTypeOfTab("sectional-tests")).toBe("sectional");
+    expect(testTypeOfTab("full-length-papers")).toBe("full-length");
+    expect(testTypeOfTab(null)).toBe("unknown");
+  });
+});

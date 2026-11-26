@@ -18,7 +18,7 @@ import { ListIcon } from "@/components/ui/icons";
 import { useTopbarVisibilityStore } from "@/store/dashboard/useTopbarVisibilityStore";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
-import FreeCreditsBanner from "@/components/features/free-credits/FreeCreditsBanner";
+import FreeCreditsInfoBar from "@/components/features/free-credits/FreeCreditsInfoBar";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 
 // Every one of these is gated behind a store flag at its render site below
@@ -105,9 +105,10 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
 
         {/* Only this part scrolls */}
         <main ref={mainRef} className="flex-1 overflow-y-auto pb-24 md:pb-0">
-          {/* CC-196: soft banner once 3 free credits are used; renders nothing for everyone else. */}
-          <FreeCreditsBanner
+          {/* CC-196: info bar when 3 or fewer free tests are left; renders nothing for everyone else. */}
+          <FreeCreditsInfoBar
             exam={currentCourse?.exam?.short_name}
+            groupCode={currentCourse?.group_code}
             paid={currentCourse?.status === "active"}
           />
           {children}

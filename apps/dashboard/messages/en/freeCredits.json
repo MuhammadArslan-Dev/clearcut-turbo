@@ -1,14 +1,38 @@
 {
   "chip": "{remaining} of {limit} free tests left",
   "chipNone": "All {limit} free tests used",
-  "banner": "{remaining, plural, one {# free test left} other {# free tests left}}. Unlock unlimited tests: ₹{price}",
-  "lock": {
-    "title": "You've used your {limit} free tests",
-    "subtitleGap": "You're {gap} marks from the {exam} cutoff. Unlock all tests and mocks: ₹{price}, one-time.",
-    "subtitleAbove": "You're above the {exam} cutoff. Keep that lead: unlock all tests and mocks for ₹{price}, one-time.",
-    "subtitleNone": "Unlock all tests and mocks: ₹{price}, one-time.",
-    "cta": "Unlock all tests: ₹{price}",
-    "autopay": "Or autopay ₹{price}/month",
-    "dailyTest": "Take today's daily test (free)"
+  "dailyFreeBadge": "Free",
+  "bar": {
+    "left": "{remaining, plural, one {# free test left} other {# free tests left}}. Get unlimited tests for ₹{price}/month.",
+    "last": "Last free test. Get unlimited tests for ₹{price}/month."
+  },
+  "sidebar": {
+    "title": "Free tests",
+    "link": "Get unlimited tests"
+  },
+  "start": {
+    "uses": "Uses 1 of your {remaining} free tests.",
+    "left": "{left} will be left.",
+    "last": "This uses your last free test."
+  },
+  "learn": {
+    "left": "{remaining} of {limit} free tests left",
+    "used": "Free tests used",
+    "getUnlimited": "Get unlimited",
+    "note": "Get unlimited tests for ₹{price}/month. Daily Test stays free."
+  },
+  "finished": {
+    "title": "Your {limit} free tests are used",
+    "subtitle": "Get unlimited tests, detailed solutions and rank comparison for ₹{price}/month.",
+    "progress": "{used} of {limit} free tests used",
+    "benefitUnlimited": "Unlimited sectional, chapter and full-length tests",
+    "benefitSolutions": "Detailed solutions and analysis",
+    "benefitRank": "Compare your rank",
+    "cutoff": "You are {gap} marks away from the {exam} cutoff. Keep practising with unlimited tests.",
+    "cutoffWithPass": "You are {gap} marks away from the {exam} cutoff ({pass}). Keep practising with unlimited tests.",
+    "cta": "Get Unlimited Tests",
+    "continueFree": "Continue Free",
+    "footnote": "Cancel anytime. Daily Test and Topic tests stay free.",
+    "close": "Close"
   }
 }

@@ -43,6 +43,8 @@ export type PaywallMeta = {
   surface?: "test_card" | "daily_card" | "test_start";
   /** The server's 403 body, when the lock came from a refused start. */
   lock?: FreeCreditsLock | null;
+  /** Extra step for "Continue Free" on the credits lock screen (e.g. leave a dead "locked" page). */
+  onContinueFree?: () => void;
 };
 
 interface EditCourseState {
