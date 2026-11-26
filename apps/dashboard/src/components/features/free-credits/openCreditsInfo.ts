@@ -13,7 +13,12 @@ export function openCreditsInfo(
   testType = "unknown",
 ): boolean {
   const store = usePaywallsStore.getState();
-  if (store.isOpen || !course?.exam) return false;
+  if (store.isOpen) return false;
+  if (!course?.exam) {
+    // Never fail silently: a dead tap is a bug in the caller (it must pass its own enrolment with its exam).
+    if (process.env.NODE_ENV !== "production") console.warn("[free-credits] openCreditsInfo: no course/exam for", surface);
+    return false;
+  }
   store.open("credits-info-modal", course.exam, undefined, course, { surface, testType });
   return true;
 }

@@ -21,6 +21,7 @@ import { useCutoffMeterInfoStore } from "@/components/modals/cutoff-meter/useCut
 import { useModalStore } from "@/store/modal/useModalStore";
 import { Meter, type MeterHandle } from "@clearcut/motion/meters/meter";
 import Skeleton from "@clearcut/ui/skeleton";
+import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import FreeCreditLearnRow from "@/components/features/free-credits/FreeCreditLearnRow";
 
 /**
@@ -205,6 +206,8 @@ export interface MyCOurseCardProps {
   meterLoading?: boolean;
   /** Course context for Cutoff Meter analytics (phase 108). */
   courseId?: string | null;
+  /** This card's enrolment (with its exam): the credits info modal opens for it (CC-196). */
+  enrollment?: ExamEnrollmentWithExam | null;
   paperName?: string | null;
 
   // ── Phase 122 ("finish setup" experiment, variant only; all optional, omitted = card unchanged) ──
@@ -244,6 +247,7 @@ export default function MyCourseCard({
   meter,
   meterLoading = false,
   courseId,
+  enrollment,
   paperName,
   setupSlot,
   headerBadge,
@@ -439,7 +443,7 @@ export default function MyCourseCard({
         </div>
 
         {/* CC-196: dots + "3 of 5 free tests left" - renders nothing unless this user is in the free-credits treatment. */}
-        <FreeCreditLearnRow exam={examShortName} groupCode={courseId} paid={badge === "active"} />
+        <FreeCreditLearnRow exam={examShortName} course={enrollment} paid={badge === "active"} />
 
         {/* ── Cutoff Meter panel; legacy bars only while the meter is unavailable (D1/D2) ── */}
         {setupSlot ? (
@@ -516,7 +520,7 @@ export default function MyCourseCard({
 
         {/* mt-auto: in an equal-height carousel slide the buttons sit at the bottom. */}
         <div className="mt-auto flex flex-col gap-3 py-1">
-          <FreeCreditLearnRow part="note" exam={examShortName} groupCode={courseId} paid={badge === "active"} />
+          <FreeCreditLearnRow part="note" exam={examShortName} course={enrollment} paid={badge === "active"} />
           {continueClick && (
             <div className={clsx(setupPending && "invisible")}>
               <MainButton

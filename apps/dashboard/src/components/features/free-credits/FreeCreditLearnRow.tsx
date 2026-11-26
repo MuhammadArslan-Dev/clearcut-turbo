@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
+import type { ExamEnrollmentWithExam } from "@/lib/dashboard/learning";
 import { FREE_CREDITS_PLAN_PRICE, learnRowKind } from "@/lib/freeCredits/ui";
 import FreeCreditDots from "./FreeCreditDots";
 import { useFreeCredits } from "./useFreeCredits";
@@ -14,18 +14,18 @@ import { openCreditsInfo } from "./openCreditsInfo";
  */
 export default function FreeCreditLearnRow({
   exam,
-  groupCode,
+  course,
   paid,
   part = "row",
 }: {
   exam: string | null | undefined;
-  groupCode: string | number | null | undefined;
+  /** The card's own enrolment (with its exam), straight from the caller: no lookup. */
+  course: ExamEnrollmentWithExam | null | undefined;
   paid?: boolean;
   /** "row" = dots + counter (under the header); "note" = the 0-left note (above the card's buttons). */
   part?: "row" | "note";
 }) {
   const t = useTranslations("freeCredits");
-  const { courses } = useMyActiveCourses();
   const { credits } = useFreeCredits(exam, { skip: paid });
   const kind = learnRowKind(credits);
   if (kind === "none") return null;
@@ -42,24 +42,17 @@ export default function FreeCreditLearnRow({
   }
   return (
     <div className="flex flex-col gap-2" data-testid="free-credits-learn-row">
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <FreeCreditDots limit={credits.limit} remaining={credits.remaining} size="sm" className="shrink-0" />
         <span className="h-5 w-px shrink-0 bg-gray-200" aria-hidden="true" />
-        <span className={used ? "body-medium text-surface-gray-muted" : "body-medium text-surface-gray-normal"}>
+        <span className={used ? "body-medium whitespace-nowrap text-surface-gray-muted" : "body-medium whitespace-nowrap text-surface-gray-normal"}>
           {used ? t("learn.used") : t("learn.left", { remaining: credits.remaining, limit: credits.limit })}
         </span>
         {kind === "last" && (
           <button
             type="button"
             className="body-medium ml-auto shrink-0 cursor-pointer !font-semibold text-brand underline"
-            onClick={() =>
-              openCreditsInfo(
-                [courses?.active_course, ...(courses?.courses ?? [])].find(
-                  (c) => c && String(c.group_code) === String(groupCode),
-                ),
-                "learn_row",
-              )
-            }
+            onClick={() => openCreditsInfo(course, "learn_row")}
           >
             {t("learn.getUnlimited")}
           </button>

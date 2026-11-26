@@ -115,6 +115,7 @@ function CourseSlideCard({
       logo={exam.exam?.logo_url}
       levelName={levelName(exam.metadata)}
       courseId={exam.group_code}
+      enrollment={exam}
       paperName={paperName(exam.metadata)}
       daysToExam={daysToExam(exam.exam?.metadata)}
       meter={meter}
@@ -317,6 +318,7 @@ export default function MyCoursesWrapTwo({
     logo: exam?.logo_url,
     levelName: levelName(activeExam?.metadata),
     courseId: activeExam?.group_code,
+    enrollment: activeExam,
     paperName: paperName(activeExam?.metadata),
     daysToExam: daysToExam(exam?.metadata),
     meter: meterFor(activeExam?.group_code),
