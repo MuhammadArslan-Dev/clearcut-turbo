@@ -420,6 +420,19 @@ trackEvent("Purchase Intent Initiated", {
   free_credits_variant: "treatment",
 });
 
+// CC-196: "Continue Free Clicked" is ALSO sent when the student taps "Continue Free" in the credits
+// modal (lock screen or info modal): once per open (X / backdrop / Esc do not send it).
+// reason "skipped", trigger "link"; source = credits_locked | info_bar | sidebar | learn_row.
+trackEvent("Continue Free Clicked", {
+  reason: "skipped",
+  trigger: "link",
+  exam: "HTET",
+  source: "info_bar",
+  test_type: "unknown",
+  credits_used: 4,
+  free_credits_variant: "treatment",
+});
+
 // User property (not an event): free_credits_remaining = N, set from the dashboard whenever
 // GET /v2/free-credits is fetched for a treatment user (setAnalyticsUserProperty).
 

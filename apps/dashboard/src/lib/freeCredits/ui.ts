@@ -54,9 +54,9 @@ export function testTypeOfTab(tab: string | null | undefined): string {
 }
 
 /**
- * What the Variant B modal says. "used" = the lock screen (all credits spent, dots all filled);
+ * What the Variant B modal says. "used" = the lock screen (all credits spent, every dot gray);
  * "left" / "last" = the info modal opened from the info bar, sidebar card or Learn row (dots: as
- * many filled as credits left).
+ * many blue dots as credits left).
  */
 export type FinishedView = { kind: "used" | "last" | "left"; limit: number; remaining: number; filled: number };
 
@@ -64,8 +64,32 @@ export function finishedView(limit: number, remaining: number): FinishedView {
   const lim = Math.max(0, Math.floor(limit));
   const rem = Math.max(0, Math.min(lim, Math.floor(remaining)));
   const kind = rem <= 0 ? "used" : rem === 1 ? "last" : "left";
-  return { kind, limit: lim, remaining: rem, filled: kind === "used" ? lim : rem };
+  return { kind, limit: lim, remaining: rem, filled: rem };
 }
 
 /** Where the info modal was opened from (sent as the existing `property_source` of Payment Paywall Rendered). */
 export type InfoSurface = "info_bar" | "sidebar" | "learn_row";
+
+/**
+ * Payload of the EXISTING "Continue Free Clicked" event when the student taps "Continue Free" in the
+ * credits modal (lock screen or info modal). Same PayContext properties as the other credits events;
+ * `source` = where the modal came from (credits_locked | info_bar | sidebar | learn_row).
+ */
+export function continueFreePayload(args: {
+  exam: string | null | undefined;
+  surface: string | null | undefined;
+  info: boolean;
+  testType: string;
+  creditsUsed: number | null | undefined;
+  variant: string | null | undefined;
+}) {
+  return {
+    reason: "skipped" as const,
+    trigger: "link" as const,
+    exam: args.exam ?? undefined,
+    source: args.info ? (args.surface ?? "credits_info") : "credits_locked",
+    test_type: args.testType,
+    ...(args.creditsUsed != null ? { credits_used: args.creditsUsed } : {}),
+    ...(args.variant ? { free_credits_variant: args.variant } : {}),
+  };
+}

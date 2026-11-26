@@ -24,6 +24,7 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
 import { meterGapFromCache } from "@/lib/freeCredits/meterGap";
+import { continueFreePayload } from "@/lib/freeCredits/ui";
 import CreditsFinishedBody from "@/components/features/free-credits/CreditsFinishedBody";
 import { openCreditsCheckout } from "@/components/features/free-credits/openCreditsCheckout";
 import { usePaywallRenderedTracking } from "./usePaywallRenderedTracking";
@@ -89,9 +90,11 @@ export default function LockedContentModal() {
 
   // New event "Test Locked", once per open of the credits lock screen.
   const lockedFiredRef = useRef(false);
+  const continueFiredRef = useRef(false);
   useEffect(() => {
     if (!isCredits) {
       lockedFiredRef.current = false;
+      continueFiredRef.current = false;
       return;
     }
     if (lockedFiredRef.current) return;
@@ -194,7 +197,24 @@ export default function LockedContentModal() {
                 used={creditsUsed ?? 0}
                 remaining={isInfo ? credits.remaining : 0}
                 onGetUnlimited={openCheckout}
-                onContinueFree={close}
+                onContinueFree={() => {
+                  // The existing "Continue Free Clicked" event, once per open (a double tap sends one).
+                  if (!continueFiredRef.current) {
+                    continueFiredRef.current = true;
+                    trackEvent(
+                      "Continue Free Clicked",
+                      continueFreePayload({
+                        exam: examShort,
+                        surface: meta?.surface,
+                        info: isInfo,
+                        testType,
+                        creditsUsed,
+                        variant: credits.variant,
+                      }),
+                    );
+                  }
+                  close();
+                }}
                 onClose={close}
               />
             ) : (

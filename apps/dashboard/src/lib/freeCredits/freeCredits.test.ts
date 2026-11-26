@@ -132,8 +132,8 @@ describe("learn row + tab", () => {
 import { finishedView } from "./ui";
 
 describe("finished modal view", () => {
-  it("used: all dots filled; last / left: as many filled as credits left", () => {
-    expect(finishedView(5, 0)).toEqual({ kind: "used", limit: 5, remaining: 0, filled: 5 });
+  it("used: no blue dot (all gray); last / left: as many blue as credits left", () => {
+    expect(finishedView(5, 0)).toEqual({ kind: "used", limit: 5, remaining: 0, filled: 0 });
     expect(finishedView(5, 1)).toEqual({ kind: "last", limit: 5, remaining: 1, filled: 1 });
     expect(finishedView(5, 3)).toEqual({ kind: "left", limit: 5, remaining: 3, filled: 3 });
   });
@@ -141,5 +141,20 @@ describe("finished modal view", () => {
     expect(finishedView(5, 9).remaining).toBe(5);
     expect(finishedView(5, -2).kind).toBe("used");
     expect(finishedView(0, 0).filled).toBe(0);
+  });
+});
+
+import { continueFreePayload } from "./ui";
+
+describe("Continue Free Clicked payload (credits modal)", () => {
+  it("lock screen: source credits_locked with the credits properties", () => {
+    expect(
+      continueFreePayload({ exam: "HTET", surface: "test_card", info: false, testType: "sectional", creditsUsed: 5, variant: "treatment" }),
+    ).toEqual({ reason: "skipped", trigger: "link", exam: "HTET", source: "credits_locked", test_type: "sectional", credits_used: 5, free_credits_variant: "treatment" });
+  });
+  it("info modal: source is the entry point; missing values are left out", () => {
+    const p = continueFreePayload({ exam: "REET", surface: "learn_row", info: true, testType: "unknown", creditsUsed: null, variant: null });
+    expect(p).toEqual({ reason: "skipped", trigger: "link", exam: "REET", source: "learn_row", test_type: "unknown" });
+    expect(continueFreePayload({ exam: "REET", surface: undefined, info: true, testType: "unknown", creditsUsed: 0, variant: "treatment" }).source).toBe("credits_info");
   });
 });
