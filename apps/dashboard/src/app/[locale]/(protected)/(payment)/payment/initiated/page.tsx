@@ -75,6 +75,7 @@ import PlanCard from "@/components/features/payment/PlanCard";
 import { supportWhatsAppUrl } from "@/lib/support";
 import { useLocale, useTranslations } from "next-intl";
 import { paymentHeadlineKey } from "@/lib/payment/paymentHeadline";
+import { parseCreditsCheckoutContext } from "@/lib/freeCredits/checkoutContext";
 import { invalidateAfterPayment } from "@/lib/payment/invalidateAfterPayment";
 import { waitForMandate } from "@/lib/payment/waitForMandate";
 import { useQueryClient } from "@tanstack/react-query";
@@ -151,6 +152,8 @@ export default function InitiatedPage() {
   const courseId = get("exam_id") as string;
   const courseName = get("course_name") as string;
   const source = get("source") as string;
+  // CC-196: set when the checkout was opened from the free-credits lock screen; empty otherwise.
+  const creditsCtx = parseCreditsCheckoutContext(get);
 
   useEffect(() => {
     if (!courseId) {
@@ -270,6 +273,7 @@ export default function InitiatedPage() {
             source,
             language: locale,
             in_app_browser: inAppBrowserKind(),
+            ...creditsCtx,
           });
         }
       }
@@ -330,6 +334,7 @@ export default function InitiatedPage() {
       source,
       language: locale,
       in_app_browser: inAppBrowserKind(),
+      ...creditsCtx,
     });
 
     // Awaited before InitiateCheckout fires below — setMetaUserData's geo
@@ -453,6 +458,8 @@ export default function InitiatedPage() {
       price: selectedPrice,
       source,
       plan: selectVariant,
+      // CC-196: only present when opened from the free-credits lock screen.
+      ...creditsCtx,
     },
   });
 
@@ -568,6 +575,7 @@ export default function InitiatedPage() {
     source,
     language: locale,
     in_app_browser: inAppBrowserKind(),
+    ...creditsCtx,
   });
 
   // CC-70: poll the subscription behind the waiting sheet. Mandate approved ->

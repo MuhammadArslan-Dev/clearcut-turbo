@@ -160,10 +160,18 @@ export const handleOpenPaywall = (
   router: any,
   source: PaywallSource,
   course: ExamEnrollmentWithExam | null | undefined,
+  // CC-196: extra checkout params (`plan`, `test_type`, `credits_used`, ...). Omitted = the URL is unchanged.
+  extra?: Record<string, string | number | null | undefined>,
 ) => {
+  const more = extra
+    ? Object.entries(extra)
+        .filter(([, v]) => v !== undefined && v !== null && v !== "")
+        .map(([k, v]) => `&${k}=${encodeURIComponent(String(v))}`)
+        .join("")
+    : "";
   router.push(
     `/payment/initiated?exam_id=${course?.group_code}&course_name=${encodeURIComponent(
       course?.exam?.short_name || "",
-    )}&source=${source}`,
+    )}&source=${source}${more}`,
   );
 };

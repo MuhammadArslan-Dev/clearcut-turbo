@@ -16,9 +16,24 @@ export type TestSeriesEventName =
   | 'Report Question Expanded'
   | 'Test Retake Initiated'
   // CC-103: left an in-progress test (no existing event covered it).
-  | 'Test Abandoned';
+  | 'Test Abandoned'
+  // CC-196: a credited test was refused because the free credits are used up.
+  | 'Test Locked';
 
 export interface TestSeriesEventPayloads {
+  // CC-196: the free-credits lock screen opened (once per open, never per tap).
+  'Test Locked': {
+    exam?: string;
+    /** sectional | chapter | full-length | daily_test | unknown */
+    test_type: string;
+    credits_used: number | null;
+    /** Where the lock was hit: a card tap, the daily card, or the server refusing the start. */
+    source: 'test_card' | 'daily_card' | 'test_start' | 'cutoff_meter';
+    /** Marks short of the cutoff; null = no Cutoff Meter; <= 0 = already above it. */
+    gap: number | null;
+    free_credits_variant?: string;
+  };
+
   'Test Abandoned': {
     test_id: string;
     test_type: string;

@@ -27,13 +27,19 @@ import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStor
 import {
   PaywallSource,
   usePaywallsStore,
+  type PaywallMeta,
 } from "@/components/features/PayWalls/usePaywallsStore";
+import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
+import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
 import { trackEvent } from "@/lib/analytics/browser";
 import { toContentLocale } from "@/utils/text/contentLocale";
 
 interface FullTestProps {
   courseId?: string | number;
 }
+
+// CC-196: what the free-credits lock screen needs to know about a locked card tap.
+const LOCK_META: PaywallMeta = { testType: "full-length", surface: "test_card" };
 
 export default function FullTest({ courseId }: FullTestProps) {
   const t = useTranslations();
@@ -53,6 +59,9 @@ export default function FullTest({ courseId }: FullTestProps) {
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
   const { open: openPaywall } = usePaywallsStore();
+  // CC-196: free-credits status (also keeps the cache warm for the lock screen). Inactive = no chip.
+  const { credits: freeCredits } = useFreeCredits(courseData?.exam?.short_name, { skip: courseData?.status === "active" });
+  const showCreditChip = freeCredits.active && freeCredits.limit > 0;
 
   /* ======================= QUERY ======================= */
 
@@ -155,7 +164,7 @@ export default function FullTest({ courseId }: FullTestProps) {
     set({ startTest: null, paper: null });
     if (!test) return;
     if ((test as any).locked) {
-      openPaywall("test-locked-modal", courseData?.exam!, "full_test_card_clicked", courseData);
+      openPaywall("test-locked-modal", courseData?.exam!, "full_test_card_clicked", courseData, LOCK_META);
     } else {
       open("pre-test-confirmation", { test });
     }
@@ -290,7 +299,7 @@ export default function FullTest({ courseId }: FullTestProps) {
                 "test-locked-modal",
                 courseData?.exam!,
                 "full_test_card_clicked",
-                courseData,
+                courseData, LOCK_META,
               ),
           }}
           startTest={{
@@ -303,7 +312,7 @@ export default function FullTest({ courseId }: FullTestProps) {
                     "test-locked-modal",
                     courseData?.exam!,
                     "full_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : open("pre-test-confirmation", { test }),
           }}
@@ -316,7 +325,7 @@ export default function FullTest({ courseId }: FullTestProps) {
                     "test-locked-modal",
                     courseData?.exam!,
                     "full_test_card_clicked",
-                    courseData,
+                    courseData, LOCK_META,
                   )
                 : open("attempt-history", { test }),
           }}
@@ -327,7 +336,9 @@ export default function FullTest({ courseId }: FullTestProps) {
               ? cardT("testCard.includedInPlan", {
                   price: getPriceForVariant("1month", null, courseData?.exam?.short_name),
                 })
-              : undefined
+              : showCreditChip && !isCompleted
+                ? <FreeCreditChip exam={courseData?.exam?.short_name} paid={!isFreeUser} />
+                : undefined
           }
         />
       );
@@ -339,6 +350,8 @@ export default function FullTest({ courseId }: FullTestProps) {
       isTestAttempted,
       open,
       openPaywall,
+      showCreditChip,
+      isFreeUser,
       paper?.id,
       recommendedTest,
     ],

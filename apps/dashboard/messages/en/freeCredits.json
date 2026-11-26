@@ -1,0 +1,40 @@
+{
+  "chip": "{remaining} of {limit} free tests left",
+  "chipNone": "All {limit} free tests used",
+  "dailyFreeBadge": "Free",
+  "bar": {
+    "left": "{remaining, plural, one {# free test left} other {# free tests left}}. Get unlimited tests for ₹{price}/month.",
+    "last": "Last free test. Get unlimited tests for ₹{price}/month."
+  },
+  "sidebar": {
+    "title": "Free tests",
+    "link": "Get unlimited tests"
+  },
+  "start": {
+    "uses": "Uses 1 of your {remaining} free tests.",
+    "left": "{left} will be left.",
+    "last": "This uses your last free test."
+  },
+  "learn": {
+    "left": "{remaining} of {limit} free tests left",
+    "used": "Free tests used",
+    "getUnlimited": "Get unlimited",
+    "note": "Get unlimited tests for ₹{price}/month. Daily Test stays free.",
+    "leftShort": "{remaining} of {limit} left"
+  },
+  "finished": {
+    "title": "Your {limit} free tests are used",
+    "progress": "{used} of {limit} free tests used",
+    "priceLine": "₹{price}/month - unlimited",
+    "benefitUnlimited": "Unlimited tests",
+    "benefitSolutions": "Detailed solutions",
+    "benefitRank": "Compare your rank",
+    "cta": "Get Unlimited Tests",
+    "continueFree": "Continue Free",
+    "footnote": "Cancel anytime. Daily Test and Topic tests stay free.",
+    "close": "Close",
+    "titleLeft": "{remaining} free tests left",
+    "titleLast": "Last free test",
+    "progressLeft": "{remaining} of {limit} free tests left"
+  }
+}

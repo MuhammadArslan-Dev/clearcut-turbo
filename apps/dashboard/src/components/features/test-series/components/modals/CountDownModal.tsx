@@ -22,6 +22,9 @@ import { apiErrorCode } from "@/lib/api/api-error";
 import { useRouter } from "@/i18n/navigation";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { handleOpenPaywall } from "@/components/features/PayWalls/PaywallFloatingWidget";
+import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import { parseFreeCreditsLock } from "@/lib/api/freeCredits";
+import { useRefreshFreeCredits } from "@/components/features/free-credits/useFreeCredits";
 
 /* -------------------------------------------------------------------------- */
 /*                                  CONFIG                                    */
@@ -55,6 +58,7 @@ export default function CountDownModal() {
   const [introDone, setIntroDone] = useState(false);
 
   const hasCreatedRef = useRef(false);
+  const refreshFreeCredits = useRefreshFreeCredits();
 
   /* -------------------------------------------------------------------------- */
   /*                         CREATE TEST (BACKGROUND)                           */
@@ -102,6 +106,8 @@ export default function CountDownModal() {
 
         if (res?.data) {
           setAttempt(res.data);
+          // CC-196: a counted test just started - the credit counter changed.
+          refreshFreeCredits(course?.exam?.short_name);
         }
       } catch (error) {
         // The server now refuses a paid test when the plan has ended
@@ -110,6 +116,20 @@ export default function CountDownModal() {
           closeModal("pre-test-confirmation");
           closeModal("test-start-countdown");
           handleOpenPaywall(router, "renewal_required", course);
+          return;
+        }
+        // CC-196: free credits used up (same 403 envelope as renewal_required).
+        const creditsLock = parseFreeCreditsLock(error);
+        if (creditsLock && course?.exam) {
+          closeModal("pre-test-confirmation");
+          closeModal("test-start-countdown");
+          usePaywallsStore.getState().open("credits-locked-modal", course.exam, undefined, course, {
+            testType:
+              testType === "chapter-tests" ? "chapter" : testType === "sectional-tests" ? "sectional" : "full-length",
+            surface: "test_start",
+            lock: creditsLock,
+          });
+          refreshFreeCredits(course.exam.short_name);
           return;
         }
         console.error("Failed to create test:", error);

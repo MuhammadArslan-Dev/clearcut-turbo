@@ -40,6 +40,11 @@ const ChangeExamModal = dynamic(() => import("@/components/modals/changeExam/cha
 const ContactUsModal = dynamic(() => import("@/components/modals/contact-us/ContactUsModal"), {
   ssr: false,
 });
+// CC-196: the Learn card's "Get unlimited" link opens the credits modal through usePaywallsStore; without a
+// mounted LockedContentModal on this page the store opened and nothing rendered (a silent dead tap).
+const LockedContentModal = dynamic(() => import("@/components/features/PayWalls/LockedContentModal"), {
+  ssr: false,
+});
 const CutoffMeterInfoModal = dynamic(() => import("@/components/modals/cutoff-meter/CutoffMeterInfoModal"), {
   ssr: false,
 });
@@ -224,6 +229,7 @@ export default function LearnPage() {
         {/* <Footer /> */}
       </div>
       <ChangeExamModal />
+      <LockedContentModal />
     </>
   );
 }

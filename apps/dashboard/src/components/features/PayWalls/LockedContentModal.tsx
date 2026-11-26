@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -16,10 +17,17 @@ import {
   LockIcon,
 } from "@/components/ui/icons";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
-import { usePaywallsStore } from "./usePaywallsStore";
+import { isCreditsMode, usePaywallsStore } from "./usePaywallsStore";
 import { handleOpenPaywall } from "./PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { trackEvent } from "@/lib/analytics/browser";
+import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
+import { meterGapFromCache } from "@/lib/freeCredits/meterGap";
+import { continueFreePayload } from "@/lib/freeCredits/ui";
+import CreditsFinishedBody from "@/components/features/free-credits/CreditsFinishedBody";
+import { openCreditsCheckout } from "@/components/features/free-credits/openCreditsCheckout";
+import { usePaywallRenderedTracking } from "./usePaywallRenderedTracking";
 
 /**
  * Interstitial shown before a locked chapter/topic/test card sends the user
@@ -30,19 +38,101 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
  * the file per variant.
  */
 export default function LockedContentModal() {
-  const { isOpen, mode, close, source, course } = usePaywallsStore();
+  const { isOpen, mode, close, source, course, meta } = usePaywallsStore();
   const isMobile = useIsMobile();
   const router = useRouter();
+  const queryClient = useQueryClient();
   useDrawerBackHandler();
+
+  // CC-196 free test credits. A locked test card opens "test-locked-modal"; for a user in the
+  // credit treatment whose credits are used up it becomes the credits lock screen (no
+  // "Continue Free"). A refused start (403 free_credits_exhausted) opens it directly.
+  const examShort = course?.exam?.short_name;
+  const { credits } = useFreeCredits(examShort, {
+    // Only the test lock modes need the status: topic / daily modals make no extra request.
+    skip:
+      !isOpen ||
+      course?.status === "active" ||
+      (mode !== "test-locked-modal" && !isCreditsMode(mode)),
+  });
+  // Info mode (info bar / sidebar card / Learn row): credits still left, nothing was refused.
+  const isInfo = isOpen && mode === "credits-info-modal" && credits.active;
+  const isCredits =
+    isOpen &&
+    ((isCreditsMode(mode) && (mode !== "credits-info-modal" || credits.active)) ||
+      (mode === "test-locked-modal" &&
+        credits.active &&
+        (credits.locked || (credits.limit > 0 && credits.remaining === 0))));
+
+  // Gap to the cutoff, for the Test Locked event only: the 403 body when the lock came from a
+  // refused start, else the Cutoff Meter already in the query cache (no new request).
+  const lockGap = isCredits
+    ? meta?.lock
+      ? meta.lock.meterGap
+      : meterGapFromCache(queryClient, course?.group_code)
+    : null;
+  const creditsUsed = meta?.lock?.creditsUsed ?? (credits.active ? credits.used : null);
+  const creditsLimit = meta?.lock?.creditsLimit ?? (credits.active ? credits.limit : null);
+  const testType = meta?.testType ?? meta?.lock?.testType ?? "unknown";
+
+  // The existing "Payment Paywall Rendered", once per open (it was never sent before CC-196).
+  usePaywallRenderedTracking(
+    isOpen &&
+      (mode === "topic-locked-modal" ||
+        mode === "test-locked-modal" ||
+        mode === "daily-test-locked-modal" ||
+        mode === "daily-tests-locked-modal" ||
+        isCredits),
+    isInfo ? (meta?.surface ?? "credits_info") : isCredits ? "credits_locked" : (source ?? mode),
+    course?.status === "active",
+    examShort,
+  );
+
+  // New event "Test Locked", once per open of the credits lock screen.
+  const lockedFiredRef = useRef(false);
+  const continueFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isCredits) {
+      lockedFiredRef.current = false;
+      continueFiredRef.current = false;
+      return;
+    }
+    if (lockedFiredRef.current) return;
+    lockedFiredRef.current = true;
+    // The info modal is not a lock (no test was refused): no Test Locked, only Payment Paywall Rendered above.
+    if (isInfo) return;
+    trackEvent("Test Locked", {
+      exam: examShort,
+      test_type: testType,
+      credits_used: creditsUsed,
+      source: meta?.surface === "daily_card" || meta?.surface === "test_start" ? meta.surface : "test_card",
+      gap: lockGap,
+      ...(credits.variant ? { free_credits_variant: credits.variant } : {}),
+    });
+    // Read once, at the moment the lock screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCredits]);
+
+  const openCheckout = () =>
+    openCreditsCheckout({
+      router,
+      groupCode: course?.group_code,
+      examShort,
+      testType,
+      creditsUsed,
+      variant: credits.variant,
+    });
 
   // "daily-test-locked-modal" = result page (no illustration);
   // "daily-tests-locked-modal" = Daily Tests list page (with illustration).
   const isDailyResult = mode === "daily-test-locked-modal";
   const isDailyList = mode === "daily-tests-locked-modal";
   const isDaily = isDailyResult || isDailyList;
-  const isTest = mode === "test-locked-modal" || isDaily;
+  const isTest = mode === "test-locked-modal" || isCreditsMode(mode) || isDaily;
   const modalT = useTranslations(
-    isDailyResult
+    isCredits
+      ? "modals.testLockedModal"
+      : isDailyResult
       ? "modals.dailyTestLockedModal"
       : isDailyList
         ? "modals.dailyTestsLockedModal"
@@ -55,7 +145,10 @@ export default function LockedContentModal() {
 
   const examTitle = course?.exam?.short_name ?? "";
 
-  const features = isDailyList
+  // The credits modal has its own body: it never reads the legacy feature list.
+  const features = isCredits
+    ? []
+    : isDailyList
     ? [
         modalT("features.allTests"),
         modalT("features.solutions"),
@@ -89,14 +182,42 @@ export default function LockedContentModal() {
         (mode === "topic-locked-modal" ||
           mode === "test-locked-modal" ||
           mode === "daily-test-locked-modal" ||
-          mode === "daily-tests-locked-modal") && (
+          mode === "daily-tests-locked-modal" ||
+          isCredits) && (
           <Container
-            maxWidth="max-w-[420px] !rounded-t-lg"
+            maxWidth={isCredits ? "md:max-w-[520px] !rounded-t-lg" : "max-w-[420px] !rounded-t-lg"}
             isHeader={false}
             maxHeight="max-h-[95dvh]"
             isOpen
             onClose={close}
           >
+            {isCredits ? (
+              <CreditsFinishedBody
+                limit={creditsLimit ?? 0}
+                used={creditsUsed ?? 0}
+                remaining={isInfo ? credits.remaining : 0}
+                onGetUnlimited={openCheckout}
+                onContinueFree={() => {
+                  // The existing "Continue Free Clicked" event, once per open (a double tap sends one).
+                  if (!continueFiredRef.current) {
+                    continueFiredRef.current = true;
+                    trackEvent(
+                      "Continue Free Clicked",
+                      continueFreePayload({
+                        exam: examShort,
+                        surface: meta?.surface,
+                        info: isInfo,
+                        testType,
+                        creditsUsed,
+                        variant: credits.variant,
+                      }),
+                    );
+                  }
+                  close();
+                }}
+                onClose={close}
+              />
+            ) : (
             <div className="bg-white flex flex-col gap-3 p-5">
               {/* Close */}
               <div className="relative z-10 flex justify-end">
@@ -202,6 +323,7 @@ export default function LockedContentModal() {
                 </Button>
               </div>
             </div>
+            )}
           </Container>
         )}
     </AnimatePresence>

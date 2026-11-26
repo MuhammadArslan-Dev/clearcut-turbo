@@ -8,7 +8,8 @@ export type PaymentHeadlineKey =
   | "headline_full_test"
   | "headline_chapter"
   | "headline_trial_ended"
-  | "headline_plan_ended";
+  | "headline_plan_ended"
+  | "headline_credits_locked";
 
 const BY_SOURCE: Record<string, PaymentHeadlineKey> = {
   full_test_card_clicked: "headline_full_test",
@@ -19,6 +20,8 @@ const BY_SOURCE: Record<string, PaymentHeadlineKey> = {
   next_button_clicked: "headline_chapter",
   trial_ended: "headline_trial_ended",
   plan_ended: "headline_plan_ended",
+  // CC-196: opened from the free-credits lock screen.
+  cutoff_meter: "headline_credits_locked",
 };
 
 export function paymentHeadlineKey(source: string | null | undefined): PaymentHeadlineKey {

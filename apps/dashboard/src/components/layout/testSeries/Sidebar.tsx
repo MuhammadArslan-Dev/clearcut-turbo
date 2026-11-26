@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useCallback } from "react";
+import FreeCreditsSidebarCard from "@/components/features/free-credits/FreeCreditsSidebarCard";
 import ProgressCard from "@/components/features/test-series/components/cards/ProgressCard";
 import Text from "@clearcut/ui/text";
 import TopicListCard from "@/components/ui/cards/preparation/topic-card/topic-list-card";
@@ -41,6 +42,8 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex max-h-[calc(100%-5px)] w-[380px] flex-col p-2 pl-8">
       <div className="max-h-full overflow-y-auto rounded-md bg-white px-3 py-4 shadow-sm">
+        {/* CC-196: "Free tests" card; renders nothing outside the free-credits treatment. */}
+        <FreeCreditsSidebarCard />
         {progressData && (
           <>
             <ProgressSection progressData={progressData} />

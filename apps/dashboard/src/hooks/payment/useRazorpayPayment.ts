@@ -43,6 +43,7 @@ import { inAppBrowserKind, payPlanLabel, trackPaymentEvent } from "@/lib/analyti
 import { useAuth } from "@/providers/AuthProvider";
 import { sentryApiClient } from "@/lib/sentry/sentry-api-client";
 import { logger } from "@sentry/nextjs";
+import { parseCreditsCheckoutContext } from "@/lib/freeCredits/checkoutContext";
 
 type UseRazorpayPaymentProps = {
   examId: number;
@@ -295,6 +296,8 @@ export function useRazorpayPayment({
       source: returnParams?.source !== undefined ? String(returnParams.source) : undefined,
       language: locale,
       in_app_browser: inAppBrowserKind(),
+      // CC-196: from the free-credits lock screen only (empty otherwise).
+      ...parseCreditsCheckoutContext((k) => returnParams?.[k]),
     };
 
     // The checkout never opened (script, order or Razorpay failed): one Payment Outcome so the funnel shows the loss

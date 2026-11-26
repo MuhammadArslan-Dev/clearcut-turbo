@@ -16,6 +16,7 @@ import Pagination from "@/components/ui/widgets/pagination/Pagination";
 import { useDailyTestFlowNavigation } from "@/components/features/daily-tests/hooks/useDailyTestFlowNavigation";
 import { useEnrollmentForCourse } from "@/components/features/daily-tests/hooks/useEnrollmentForCourse";
 import { usePaywallsStore } from "@/components/features/PayWalls/usePaywallsStore";
+import FreeCreditChip from "@/components/features/free-credits/FreeCreditChip";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { DailyTestHistoryItem } from "@/lib/api/dailyTests";
 import { isUsableDailyTestId } from "@/components/features/daily-tests/testId";
@@ -120,6 +121,9 @@ export default function DailyTestHistoryPage() {
         </div>
 
         <p className="body-medium mt-3 text-surface-gray-muted">{t("list.headerDesc")}</p>
+
+        {/* CC-196: free-credits counter (a retake costs a credit); nothing for users outside the treatment. */}
+        <FreeCreditChip exam={history?.exam.short_name} paid={history?.is_paid} className="mt-3" />
 
         <div className="mt-4">
           <InfoStrip>{t("list.infoStrip")}</InfoStrip>
