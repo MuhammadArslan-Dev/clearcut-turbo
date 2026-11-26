@@ -52,3 +52,20 @@ export function learnRowKind(c: FreeCredits): LearnRowKind {
 export function testTypeOfTab(tab: string | null | undefined): string {
   return tab === "chapter-tests" ? "chapter" : tab === "sectional-tests" ? "sectional" : tab === "full-length-papers" ? "full-length" : "unknown";
 }
+
+/**
+ * What the Variant B modal says. "used" = the lock screen (all credits spent, dots all filled);
+ * "left" / "last" = the info modal opened from the info bar, sidebar card or Learn row (dots: as
+ * many filled as credits left).
+ */
+export type FinishedView = { kind: "used" | "last" | "left"; limit: number; remaining: number; filled: number };
+
+export function finishedView(limit: number, remaining: number): FinishedView {
+  const lim = Math.max(0, Math.floor(limit));
+  const rem = Math.max(0, Math.min(lim, Math.floor(remaining)));
+  const kind = rem <= 0 ? "used" : rem === 1 ? "last" : "left";
+  return { kind, limit: lim, remaining: rem, filled: kind === "used" ? lim : rem };
+}
+
+/** Where the info modal was opened from (sent as the existing `property_source` of Payment Paywall Rendered). */
+export type InfoSurface = "info_bar" | "sidebar" | "learn_row";

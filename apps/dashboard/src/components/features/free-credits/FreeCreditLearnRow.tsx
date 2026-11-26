@@ -1,11 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useMyActiveCourses } from "@/hooks/course/useMyActiveCourses";
 import { FREE_CREDITS_PLAN_PRICE, learnRowKind } from "@/lib/freeCredits/ui";
 import FreeCreditDots from "./FreeCreditDots";
 import { useFreeCredits } from "./useFreeCredits";
-import { openCreditsCheckout } from "./openCreditsCheckout";
+import { openCreditsInfo } from "./openCreditsInfo";
 
 /**
  * Credit row of the My Courses card (approved design 05/06): dots + "N of 5 free tests left",
@@ -25,7 +25,7 @@ export default function FreeCreditLearnRow({
   part?: "row" | "note";
 }) {
   const t = useTranslations("freeCredits");
-  const router = useRouter();
+  const { courses } = useMyActiveCourses();
   const { credits } = useFreeCredits(exam, { skip: paid });
   const kind = learnRowKind(credits);
   if (kind === "none") return null;
@@ -53,14 +53,12 @@ export default function FreeCreditLearnRow({
             type="button"
             className="body-medium ml-auto shrink-0 cursor-pointer !font-semibold text-brand underline"
             onClick={() =>
-              openCreditsCheckout({
-                router,
-                groupCode,
-                examShort: exam,
-                testType: "unknown",
-                creditsUsed: credits.used,
-                variant: credits.variant,
-              })
+              openCreditsInfo(
+                [courses?.active_course, ...(courses?.courses ?? [])].find(
+                  (c) => c && String(c.group_code) === String(groupCode),
+                ),
+                "learn_row",
+              )
             }
           >
             {t("learn.getUnlimited")}

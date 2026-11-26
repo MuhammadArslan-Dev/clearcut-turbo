@@ -49,11 +49,17 @@ export default function LockedContentModal() {
   const examShort = course?.exam?.short_name;
   const { credits } = useFreeCredits(examShort, {
     // Only the test lock modes need the status: topic / daily modals make no extra request.
-    skip: !isOpen || course?.status === "active" || (mode !== "test-locked-modal" && mode !== "credits-locked-modal"),
+    skip:
+      !isOpen ||
+      course?.status === "active" ||
+      (mode !== "test-locked-modal" && mode !== "credits-locked-modal" && mode !== "credits-info-modal"),
   });
+  // Info mode (info bar / sidebar card / Learn row): credits still left, nothing was refused.
+  const isInfo = isOpen && mode === "credits-info-modal" && credits.active;
   const isCredits =
     isOpen &&
     (mode === "credits-locked-modal" ||
+      isInfo ||
       (mode === "test-locked-modal" &&
         credits.active &&
         (credits.locked || (credits.limit > 0 && credits.remaining === 0))));
@@ -76,8 +82,9 @@ export default function LockedContentModal() {
         mode === "test-locked-modal" ||
         mode === "daily-test-locked-modal" ||
         mode === "daily-tests-locked-modal" ||
-        mode === "credits-locked-modal"),
-    isCredits ? "credits_locked" : (source ?? mode),
+        mode === "credits-locked-modal" ||
+        isInfo),
+    isInfo ? (meta?.surface ?? "credits_info") : isCredits ? "credits_locked" : (source ?? mode),
     course?.status === "active",
     examShort,
   );
@@ -91,11 +98,13 @@ export default function LockedContentModal() {
     }
     if (lockedFiredRef.current) return;
     lockedFiredRef.current = true;
+    // The info modal is not a lock (no test was refused): no Test Locked, only Payment Paywall Rendered above.
+    if (isInfo) return;
     trackEvent("Test Locked", {
       exam: examShort,
       test_type: testType,
       credits_used: creditsUsed,
-      source: meta?.surface ?? "test_card",
+      source: meta?.surface === "daily_card" || meta?.surface === "test_start" ? meta.surface : "test_card",
       gap: lockGap,
       ...(credits.variant ? { free_credits_variant: credits.variant } : {}),
     });
@@ -170,7 +179,8 @@ export default function LockedContentModal() {
           mode === "test-locked-modal" ||
           mode === "daily-test-locked-modal" ||
           mode === "daily-tests-locked-modal" ||
-          mode === "credits-locked-modal") && (
+          mode === "credits-locked-modal" ||
+          isInfo) && (
           <Container
             maxWidth={isCredits ? "md:max-w-[520px] !rounded-t-lg" : "max-w-[420px] !rounded-t-lg"}
             isHeader={false}
@@ -182,6 +192,7 @@ export default function LockedContentModal() {
               <CreditsFinishedBody
                 limit={creditsLimit ?? 0}
                 used={creditsUsed ?? 0}
+                remaining={isInfo ? credits.remaining : 0}
                 onGetUnlimited={openCheckout}
                 onContinueFree={close}
                 onClose={close}

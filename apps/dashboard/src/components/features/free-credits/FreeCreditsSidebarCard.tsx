@@ -1,13 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useQueryParams } from "@/hooks/useQueryParams/useQueryParam";
 import { useGetCurrentCourseStore } from "@/store/course/useGetCurrentCourseStore";
 import { testTypeOfTab } from "@/lib/freeCredits/ui";
 import FreeCreditDots from "./FreeCreditDots";
 import { useFreeCredits } from "./useFreeCredits";
-import { openCreditsCheckout } from "./openCreditsCheckout";
+import { openCreditsInfo } from "./openCreditsInfo";
 
 /**
  * Desktop test-series sidebar (approved design 03): "Free tests" card above Progress with the
@@ -16,7 +15,6 @@ import { openCreditsCheckout } from "./openCreditsCheckout";
  */
 export default function FreeCreditsSidebarCard() {
   const t = useTranslations("freeCredits");
-  const router = useRouter();
   const { get } = useQueryParams();
   const course = useGetCurrentCourseStore((s) => s.course);
   const examShort = course?.exam?.short_name;
@@ -34,16 +32,7 @@ export default function FreeCreditsSidebarCard() {
       <button
         type="button"
         className="body-medium w-fit cursor-pointer text-left !font-semibold text-brand underline"
-        onClick={() =>
-          openCreditsCheckout({
-            router,
-            groupCode: course?.group_code,
-            examShort,
-            testType: testTypeOfTab(get("testType")),
-            creditsUsed: credits.used,
-            variant: credits.variant,
-          })
-        }
+        onClick={() => openCreditsInfo(course, "sidebar", testTypeOfTab(get("testType")))}
       >
         {t("sidebar.link")}
       </button>

@@ -108,7 +108,6 @@ export default function TestSeriesShell({ children }: { children: ReactNode }) {
           {/* CC-196: info bar when 3 or fewer free tests are left; renders nothing for everyone else. */}
           <FreeCreditsInfoBar
             exam={currentCourse?.exam?.short_name}
-            groupCode={currentCourse?.group_code}
             paid={currentCourse?.status === "active"}
           />
           {children}

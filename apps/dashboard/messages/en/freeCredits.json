@@ -31,6 +31,9 @@
     "cta": "Get Unlimited Tests",
     "continueFree": "Continue Free",
     "footnote": "Cancel anytime. Daily Test and Topic tests stay free.",
-    "close": "Close"
+    "close": "Close",
+    "titleLeft": "{remaining} free tests left",
+    "titleLast": "Last free test",
+    "progressLeft": "{remaining} of {limit} free tests left"
   }
 }

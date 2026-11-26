@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Check, X, ArrowRight } from "lucide-react";
 import { Button } from "@clearcut/ui/button";
 import FreeCreditDots from "./FreeCreditDots";
-import { FREE_CREDITS_PLAN_PRICE } from "@/lib/freeCredits/ui";
+import { FREE_CREDITS_PLAN_PRICE, finishedView } from "@/lib/freeCredits/ui";
 
 /**
  * Body of the "free tests are used" lock screen - approved Variant B ("Progress first"):
@@ -15,18 +15,22 @@ import { FREE_CREDITS_PLAN_PRICE } from "@/lib/freeCredits/ui";
 export default function CreditsFinishedBody({
   limit,
   used,
+  remaining = 0,
   onGetUnlimited,
   onContinueFree,
   onClose,
 }: {
   limit: number;
   used: number;
+  /** Credits still left: > 0 = the info modal ("N free tests left" / "Last free test"); 0 = the lock screen. */
+  remaining?: number;
   onGetUnlimited: () => void;
   onContinueFree: () => void;
   onClose: () => void;
 }) {
   const t = useTranslations("freeCredits.finished");
   const shownLimit = limit > 0 ? limit : used;
+  const view = finishedView(shownLimit, remaining);
   const benefits = [t("benefitUnlimited"), t("benefitSolutions"), t("benefitRank")];
   return (
     <div className="flex flex-col gap-4 bg-white p-5" data-testid="free-credits-finished">
@@ -36,11 +40,15 @@ export default function CreditsFinishedBody({
         </button>
       </div>
 
-      <h2 className="heading-large !font-bold text-center text-surface-gray-normal">{t("title", { limit: shownLimit })}</h2>
+      <h2 className="heading-large !font-bold text-center text-surface-gray-normal">{view.kind === "used" ? t("title", { limit: shownLimit }) : view.kind === "last" ? t("titleLast") : t("titleLeft", { remaining: view.remaining })}</h2>
 
       <div className="flex items-center justify-center gap-3 rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-3">
-        <FreeCreditDots limit={shownLimit} remaining={shownLimit} />
-        <span className="body-medium text-surface-gray-normal">{t("progress", { used: shownLimit, limit: shownLimit })}</span>
+        <FreeCreditDots limit={shownLimit} remaining={view.filled} />
+        <span className="body-medium text-surface-gray-normal">
+          {view.kind === "used"
+            ? t("progress", { used: shownLimit, limit: shownLimit })
+            : t("progressLeft", { remaining: view.remaining, limit: shownLimit })}
+        </span>
       </div>
 
       <p className="heading-small rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-3 text-center !font-bold text-brand">

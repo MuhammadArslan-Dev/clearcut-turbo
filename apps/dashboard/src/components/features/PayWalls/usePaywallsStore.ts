@@ -14,7 +14,9 @@ export type PaywallTypes =
   | "daily-test-locked-modal"
   | "daily-tests-locked-modal"
   // CC-196: free test credits used up (also the upgraded view of "test-locked-modal").
-  | "credits-locked-modal";
+  | "credits-locked-modal"
+  // CC-196: the same Variant B modal opened from the info bar / sidebar card / Learn row while credits are left.
+  | "credits-info-modal";
 
 export type PaywallSource =
   | "my_courses_card_clicked"
@@ -40,7 +42,7 @@ export type PaywallMeta = {
   /** sectional | chapter | full-length | daily_test */
   testType?: string;
   /** Where it was hit - Test Locked's `source`. */
-  surface?: "test_card" | "daily_card" | "test_start";
+  surface?: "test_card" | "daily_card" | "test_start" | "info_bar" | "sidebar" | "learn_row";
   /** The server's 403 body, when the lock came from a refused start. */
   lock?: FreeCreditsLock | null;
 };

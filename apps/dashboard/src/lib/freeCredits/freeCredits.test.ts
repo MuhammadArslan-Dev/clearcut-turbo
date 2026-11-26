@@ -128,3 +128,18 @@ describe("learn row + tab", () => {
     expect(testTypeOfTab(null)).toBe("unknown");
   });
 });
+
+import { finishedView } from "./ui";
+
+describe("finished modal view", () => {
+  it("used: all dots filled; last / left: as many filled as credits left", () => {
+    expect(finishedView(5, 0)).toEqual({ kind: "used", limit: 5, remaining: 0, filled: 5 });
+    expect(finishedView(5, 1)).toEqual({ kind: "last", limit: 5, remaining: 1, filled: 1 });
+    expect(finishedView(5, 3)).toEqual({ kind: "left", limit: 5, remaining: 3, filled: 3 });
+  });
+  it("clamps bad input", () => {
+    expect(finishedView(5, 9).remaining).toBe(5);
+    expect(finishedView(5, -2).kind).toBe("used");
+    expect(finishedView(0, 0).filled).toBe(0);
+  });
+});
