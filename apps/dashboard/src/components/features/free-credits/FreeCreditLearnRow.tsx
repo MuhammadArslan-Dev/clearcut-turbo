@@ -46,12 +46,16 @@ export default function FreeCreditLearnRow({
         <FreeCreditDots limit={credits.limit} remaining={credits.remaining} size="sm" className="shrink-0" />
         <span className="h-5 w-px shrink-0 bg-gray-200" aria-hidden="true" />
         <span className={used ? "body-medium whitespace-nowrap text-surface-gray-muted" : "body-medium whitespace-nowrap text-surface-gray-normal"}>
-          {used ? t("learn.used") : t("learn.left", { remaining: credits.remaining, limit: credits.limit })}
+          {used
+            ? t("learn.used")
+            : kind === "last"
+              ? t("learn.leftShort", { remaining: credits.remaining, limit: credits.limit })
+              : t("learn.left", { remaining: credits.remaining, limit: credits.limit })}
         </span>
         {kind === "last" && (
           <button
             type="button"
-            className="body-medium ml-auto shrink-0 cursor-pointer !font-semibold text-brand underline"
+            className="body-medium ml-auto shrink-0 cursor-pointer whitespace-nowrap !font-semibold text-brand underline"
             onClick={() => openCreditsInfo(course, "learn_row")}
           >
             {t("learn.getUnlimited")}

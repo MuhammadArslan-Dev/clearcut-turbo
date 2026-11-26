@@ -19,7 +19,8 @@
     "left": "{remaining} of {limit} free tests left",
     "used": "Free tests used",
     "getUnlimited": "Get unlimited",
-    "note": "Get unlimited tests for ₹{price}/month. Daily Test stays free."
+    "note": "Get unlimited tests for ₹{price}/month. Daily Test stays free.",
+    "leftShort": "{remaining} of {limit} left"
   },
   "finished": {
     "title": "Your {limit} free tests are used",
