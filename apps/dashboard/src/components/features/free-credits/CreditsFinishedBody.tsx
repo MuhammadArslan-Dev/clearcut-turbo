@@ -42,7 +42,10 @@ export default function CreditsFinishedBody({
 
       <h2 className="heading-large !font-bold text-center text-surface-gray-normal">{view.kind === "used" ? t("title", { limit: shownLimit }) : view.kind === "last" ? t("titleLast") : t("titleLeft", { remaining: view.remaining })}</h2>
 
-      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2">
+      {/* Phone: the progress row and the price pill are two separate cards (wrapper is `contents`).
+          md+ (desktop dialog): one centered soft-blue card holds both. Same DOM, responsive classes only. */}
+      <div className="contents md:mx-auto md:flex md:w-fit md:max-w-full md:flex-col md:items-center md:gap-2 md:rounded-xl md:bg-[var(--color-primary-bg-soft)] md:px-5 md:py-3">
+      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2 md:rounded-none md:bg-transparent md:p-0">
         <FreeCreditDots limit={shownLimit} remaining={view.filled} />
         <span className="body-medium text-surface-gray-normal">
           {view.kind === "used"
@@ -51,9 +54,10 @@ export default function CreditsFinishedBody({
         </span>
       </div>
 
-      <p className="heading-small mx-auto w-fit max-w-full rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2 text-center !font-bold text-brand">
+      <p className="heading-small mx-auto w-fit max-w-full rounded-xl bg-[var(--color-primary-bg-soft)] px-4 py-2 text-center !font-bold text-brand md:rounded-none md:bg-transparent md:p-0">
         {t("priceLine", { price: FREE_CREDITS_PLAN_PRICE })}
       </p>
+      </div>
 
       <ul className="grid grid-cols-3 gap-2">
         {benefits.map((b) => (
