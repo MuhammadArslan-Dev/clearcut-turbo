@@ -17,7 +17,7 @@ import {
   LockIcon,
 } from "@/components/ui/icons";
 import { useDrawerBackHandler } from "@/hooks/Global/useDrawerBackHandler";
-import { usePaywallsStore } from "./usePaywallsStore";
+import { isCreditsMode, usePaywallsStore } from "./usePaywallsStore";
 import { handleOpenPaywall } from "./PaywallFloatingWidget";
 import { useRouter } from "@/i18n/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
@@ -52,14 +52,13 @@ export default function LockedContentModal() {
     skip:
       !isOpen ||
       course?.status === "active" ||
-      (mode !== "test-locked-modal" && mode !== "credits-locked-modal" && mode !== "credits-info-modal"),
+      (mode !== "test-locked-modal" && !isCreditsMode(mode)),
   });
   // Info mode (info bar / sidebar card / Learn row): credits still left, nothing was refused.
   const isInfo = isOpen && mode === "credits-info-modal" && credits.active;
   const isCredits =
     isOpen &&
-    (mode === "credits-locked-modal" ||
-      isInfo ||
+    ((isCreditsMode(mode) && (mode !== "credits-info-modal" || credits.active)) ||
       (mode === "test-locked-modal" &&
         credits.active &&
         (credits.locked || (credits.limit > 0 && credits.remaining === 0))));
@@ -82,8 +81,7 @@ export default function LockedContentModal() {
         mode === "test-locked-modal" ||
         mode === "daily-test-locked-modal" ||
         mode === "daily-tests-locked-modal" ||
-        mode === "credits-locked-modal" ||
-        isInfo),
+        isCredits),
     isInfo ? (meta?.surface ?? "credits_info") : isCredits ? "credits_locked" : (source ?? mode),
     course?.status === "active",
     examShort,
@@ -127,7 +125,7 @@ export default function LockedContentModal() {
   const isDailyResult = mode === "daily-test-locked-modal";
   const isDailyList = mode === "daily-tests-locked-modal";
   const isDaily = isDailyResult || isDailyList;
-  const isTest = mode === "test-locked-modal" || mode === "credits-locked-modal" || isDaily;
+  const isTest = mode === "test-locked-modal" || isCreditsMode(mode) || isDaily;
   const modalT = useTranslations(
     isCredits
       ? "modals.testLockedModal"
@@ -144,7 +142,10 @@ export default function LockedContentModal() {
 
   const examTitle = course?.exam?.short_name ?? "";
 
-  const features = isDailyList
+  // The credits modal has its own body: it never reads the legacy feature list.
+  const features = isCredits
+    ? []
+    : isDailyList
     ? [
         modalT("features.allTests"),
         modalT("features.solutions"),
@@ -179,8 +180,7 @@ export default function LockedContentModal() {
           mode === "test-locked-modal" ||
           mode === "daily-test-locked-modal" ||
           mode === "daily-tests-locked-modal" ||
-          mode === "credits-locked-modal" ||
-          isInfo) && (
+          isCredits) && (
           <Container
             maxWidth={isCredits ? "md:max-w-[520px] !rounded-t-lg" : "max-w-[420px] !rounded-t-lg"}
             isHeader={false}

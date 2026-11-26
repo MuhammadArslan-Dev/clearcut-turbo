@@ -37,6 +37,10 @@ export type PaywallSource =
   // CC-196: checkout opened from the free-credits lock screen (or the Cutoff Meter).
   | "cutoff_meter";
 
+/** CC-196: the two modes of the free-credits (Variant B) modal: the lock screen and the "credits left" info modal. */
+export const isCreditsMode = (mode: PaywallTypes | null | undefined): boolean =>
+  mode === "credits-locked-modal" || mode === "credits-info-modal";
+
 /** CC-196: what the free-credits lock screen needs to know about the tap that opened it. */
 export type PaywallMeta = {
   /** sectional | chapter | full-length | daily_test */
