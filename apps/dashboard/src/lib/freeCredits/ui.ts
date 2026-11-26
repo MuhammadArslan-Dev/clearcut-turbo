@@ -48,12 +48,6 @@ export function learnRowKind(c: FreeCredits): LearnRowKind {
   return c.remaining === 1 ? "last" : "left";
 }
 
-/** Cutoff box on the finished modal: only for a known positive gap (never "0 marks away"). */
-export function cutoffBox(gap: number | null | undefined, pass: number | null | undefined): { gap: number; pass: number | null } | null {
-  if (gap == null || !Number.isFinite(gap) || gap <= 0) return null;
-  return { gap: Math.max(1, Math.ceil(gap)), pass: pass != null && Number.isFinite(pass) && pass > 0 ? Math.round(pass) : null };
-}
-
 /** Checkout test_type of the list tab the info bar sits on. */
 export function testTypeOfTab(tab: string | null | undefined): string {
   return tab === "chapter-tests" ? "chapter" : tab === "sectional-tests" ? "sectional" : tab === "full-length-papers" ? "full-length" : "unknown";

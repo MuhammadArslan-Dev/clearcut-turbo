@@ -109,8 +109,6 @@ export type FreeCreditsLock = {
   creditsLimit: number | null;
   /** Marks short of the cutoff; null = no Cutoff Meter; <= 0 = already above it. */
   meterGap: number | null;
-  /** The exam's pass mark (cutoff) in marks, when the server sent it. */
-  passMark: number | null;
   exam: string | null;
   testType: string | null;
 };
@@ -127,7 +125,6 @@ export function parseFreeCreditsLock(err: unknown): FreeCreditsLock | null {
       creditsUsed: d?.credits_used == null ? null : num(d.credits_used),
       creditsLimit: d?.credits_limit == null ? null : num(d.credits_limit),
       meterGap: gap == null || !Number.isFinite(Number(gap)) ? null : Number(gap),
-      passMark: d?.pass_mark == null || !Number.isFinite(Number(d.pass_mark)) ? null : Number(d.pass_mark),
       exam: typeof d?.exam === "string" ? d.exam : null,
       testType: typeof d?.test_type === "string" ? d.test_type : null,
     };

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/api-error";
 import { normalizeFreeCredits, parseFreeCreditsLock } from "@/lib/api/freeCredits";
-import { gapMarks, lockCopyVariant } from "./lockCopy";
 import { parseCreditsCheckoutContext } from "./checkoutContext";
 
 const apiErr = (status: number, body?: unknown) =>
@@ -45,21 +44,6 @@ describe("parseFreeCreditsLock", () => {
   });
 });
 
-describe("lock copy variant", () => {
-  it("gap > 0 / <= 0 / null", () => {
-    expect(lockCopyVariant(12)).toBe("gap");
-    expect(lockCopyVariant(0)).toBe("above");
-    expect(lockCopyVariant(-3)).toBe("above");
-    expect(lockCopyVariant(null)).toBe("none");
-    expect(lockCopyVariant(undefined)).toBe("none");
-    expect(lockCopyVariant(Number.NaN)).toBe("none");
-  });
-  it("never shows 0 marks under a gap message", () => {
-    expect(gapMarks(0.2)).toBe(1);
-    expect(gapMarks(12.1)).toBe(13);
-  });
-});
-
 describe("parseCreditsCheckoutContext", () => {
   const from = (o: Record<string, string>) => (k: string) => o[k] ?? null;
   it("is empty for a normal checkout", () => {
@@ -77,7 +61,7 @@ describe("parseCreditsCheckoutContext", () => {
 });
 
 import { FREE_CREDITS_INACTIVE, type FreeCredits } from "@/lib/api/freeCredits";
-import { creditDots, cutoffBox, infoBarKind, isTestHeld, learnRowKind, startNoteKind, testTypeOfTab } from "./ui";
+import { creditDots, infoBarKind, isTestHeld, learnRowKind, startNoteKind, testTypeOfTab } from "./ui";
 
 const active = (remaining: number, extra: Partial<FreeCredits> = {}): FreeCredits => ({
   ...FREE_CREDITS_INACTIVE,
@@ -130,19 +114,12 @@ describe("start note", () => {
   });
 });
 
-describe("learn row + cutoff box + tab", () => {
+describe("learn row + tab", () => {
   it("row kind", () => {
     expect(learnRowKind(active(5))).toBe("left");
     expect(learnRowKind(active(1))).toBe("last");
     expect(learnRowKind(active(0))).toBe("used");
     expect(learnRowKind(FREE_CREDITS_INACTIVE)).toBe("none");
-  });
-  it("cutoff box only for a known positive gap", () => {
-    expect(cutoffBox(null, 90)).toBeNull();
-    expect(cutoffBox(0, 90)).toBeNull();
-    expect(cutoffBox(-4, 90)).toBeNull();
-    expect(cutoffBox(36.2, 90)).toEqual({ gap: 37, pass: 90 });
-    expect(cutoffBox(5, null)).toEqual({ gap: 5, pass: null });
   });
   it("test type of the list tab", () => {
     expect(testTypeOfTab("chapter-tests")).toBe("chapter");

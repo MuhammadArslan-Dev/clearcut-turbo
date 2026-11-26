@@ -357,12 +357,41 @@ export default function DailyTestAttemptPage() {
       testType: "daily_test",
       surface: "test_start",
       lock: lockedCreditsLock,
-      // "Continue Free" must not leave the student on this dead "locked" page.
-      onContinueFree: () => flow.goUp(`/daily-tests/${courseId}`),
     });
     // Once per refused start.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lockedCreditsLock, enrollment?.uuid]);
+  // However the credits lock screen is dismissed (Continue Free, X, backdrop, back gesture) the student
+  // must not be left on this dead "locked" page: go back to the daily tests list. On a phone opening the
+  // sheet pushed an extra history entry (usePaywallsStore.open); a dismiss that did not come from the back
+  // gesture pops it first, so goUp() lands on the list and Back never returns to this page.
+  const creditsModalOpen = usePaywallsStore((s) => s.isOpen && s.mode === "credits-locked-modal");
+  const creditsWasOpenRef = React.useRef(false);
+  const creditsMobileRef = React.useRef(false);
+  const creditsPoppedRef = React.useRef(false);
+  useEffect(() => {
+    if (!lockedCreditsLock) return;
+    if (creditsModalOpen) {
+      creditsWasOpenRef.current = true;
+      creditsMobileRef.current = window.matchMedia("(max-width: 768px)").matches;
+      creditsPoppedRef.current = false;
+      const onPop = () => {
+        creditsPoppedRef.current = true;
+      };
+      window.addEventListener("popstate", onPop);
+      return () => window.removeEventListener("popstate", onPop);
+    }
+    if (!creditsWasOpenRef.current) return;
+    creditsWasOpenRef.current = false;
+    const list = `/daily-tests/${courseId}`;
+    if (creditsMobileRef.current && !creditsPoppedRef.current) {
+      window.addEventListener("popstate", () => flow.goUp(list), { once: true });
+      window.history.back();
+    } else {
+      flow.goUp(list);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creditsModalOpen, lockedCreditsLock]);
   // CC-196: a daily retake that took a credit and was left within ~2 minutes tells the server (it decides the refund).
   useFreeCreditsAbandonBeacon({
     active: state.phase === "attempting",

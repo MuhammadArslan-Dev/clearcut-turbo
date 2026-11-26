@@ -23,7 +23,7 @@ import { useRouter } from "@/i18n/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { trackEvent } from "@/lib/analytics/browser";
 import { useFreeCredits } from "@/components/features/free-credits/useFreeCredits";
-import { meterFromCache } from "@/lib/freeCredits/meterGap";
+import { meterGapFromCache } from "@/lib/freeCredits/meterGap";
 import CreditsFinishedBody from "@/components/features/free-credits/CreditsFinishedBody";
 import { openCreditsCheckout } from "@/components/features/free-credits/openCreditsCheckout";
 import { usePaywallRenderedTracking } from "./usePaywallRenderedTracking";
@@ -58,11 +58,13 @@ export default function LockedContentModal() {
         credits.active &&
         (credits.locked || (credits.limit > 0 && credits.remaining === 0))));
 
-  // Gap to the cutoff: the 403 body when the lock came from a refused start, else the Cutoff
-  // Meter already in the query cache (no new request). Unknown = the cutoff box is left out.
-  const cachedMeter = isCredits && !meta?.lock ? meterFromCache(queryClient, course?.group_code) : null;
-  const lockGap = isCredits ? (meta?.lock ? meta.lock.meterGap : (cachedMeter?.gap ?? null)) : null;
-  const lockPass = isCredits ? (meta?.lock?.passMark ?? cachedMeter?.pass ?? null) : null;
+  // Gap to the cutoff, for the Test Locked event only: the 403 body when the lock came from a
+  // refused start, else the Cutoff Meter already in the query cache (no new request).
+  const lockGap = isCredits
+    ? meta?.lock
+      ? meta.lock.meterGap
+      : meterGapFromCache(queryClient, course?.group_code)
+    : null;
   const creditsUsed = meta?.lock?.creditsUsed ?? (credits.active ? credits.used : null);
   const creditsLimit = meta?.lock?.creditsLimit ?? (credits.active ? credits.limit : null);
   const testType = meta?.testType ?? meta?.lock?.testType ?? "unknown";
@@ -180,14 +182,8 @@ export default function LockedContentModal() {
               <CreditsFinishedBody
                 limit={creditsLimit ?? 0}
                 used={creditsUsed ?? 0}
-                exam={examTitle}
-                gap={lockGap}
-                pass={lockPass}
                 onGetUnlimited={openCheckout}
-                onContinueFree={() => {
-                  close();
-                  meta?.onContinueFree?.();
-                }}
+                onContinueFree={close}
                 onClose={close}
               />
             ) : (
