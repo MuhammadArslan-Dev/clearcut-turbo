@@ -51,14 +51,14 @@ export default function FullTest({ courseId }: FullTestProps) {
   const urlPaper = Number(get("paper")) || undefined;
   const startTestParam = get("startTest");
 
-  const { open } = useTestSeriesModalStore();
+  const open = useTestSeriesModalStore((s) => s.open);
   const { paper, setData, setPaper, setPapers } = useTestListDataStore();
 
   const { course: courseData } = useGetCurrentCourseStore();
   // Reward animation nudges free/trial users on tests they can already
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
-  const { open: openPaywall } = usePaywallsStore();
+  const openPaywall = usePaywallsStore((s) => s.open);
   // CC-196: free-credits status (also keeps the cache warm for the lock screen). Inactive = no chip.
   const { credits: freeCredits } = useFreeCredits(courseData?.exam?.short_name, { skip: courseData?.status === "active" });
   const showCreditChip = freeCredits.active && freeCredits.limit > 0;
@@ -392,7 +392,7 @@ export const ChangePaperButton = () => {
   const { paper } = useTestListDataStore();
   const { locale } = useLanguageSwitch();
   const changeP = useTranslations("modals.changePaper");
-  const { open } = useTestSeriesModalStore();
+  const open = useTestSeriesModalStore((s) => s.open);
 
   const parsedName = useMemo<ParsedPaperName>(() => {
     if (!paper?.name) return {};

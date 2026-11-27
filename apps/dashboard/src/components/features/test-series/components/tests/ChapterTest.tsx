@@ -52,8 +52,8 @@ export default React.memo(function ChapterTest({ courseId }: ChapterTestProps) {
   // attempt — once the course is purchased ("active"), it stays hidden.
   const isFreeUser = courseData?.status !== "active";
   const contentLocale = courseLanguageToLocale(courseData?.language);
-  const { open } = useTestSeriesModalStore();
-  const { open: openPaywall } = usePaywallsStore();
+  const open = useTestSeriesModalStore((s) => s.open);
+  const openPaywall = usePaywallsStore((s) => s.open);
   // CC-196: free-credits status (also keeps the cache warm for the lock screen). Inactive = no chip.
   const { credits: freeCredits } = useFreeCredits(courseData?.exam?.short_name, { skip: courseData?.status === "active" });
   const showCreditChip = freeCredits.active && freeCredits.limit > 0;
