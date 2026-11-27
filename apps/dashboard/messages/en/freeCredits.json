@@ -19,7 +19,7 @@
     "left": "{remaining} of {limit} free tests left",
     "used": "Free tests used",
     "getUnlimited": "Get unlimited",
-    "note": "Get unlimited tests for ₹{price}/month. Daily Test stays free.",
+    "note": "Get unlimited tests for ₹{price}/month.",
     "leftShort": "{remaining} of {limit} left"
   },
   "finished": {
@@ -31,7 +31,7 @@
     "benefitRank": "Compare your rank",
     "cta": "Get Unlimited Tests",
     "continueFree": "Continue Free",
-    "footnote": "Cancel anytime. Daily Test and Topic tests stay free.",
+    "footnote": "Cancel anytime. Topic tests stay free.",
     "close": "Close",
     "titleLeft": "{remaining} free tests left",
     "titleLast": "Last free test",
