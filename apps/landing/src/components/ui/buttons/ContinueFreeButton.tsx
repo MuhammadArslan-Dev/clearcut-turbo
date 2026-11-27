@@ -1,12 +1,11 @@
 "use client";
-import React, { useCallback } from "react";
+import React from "react";
 import Button from "@clearcut/ui/button";
 import { hoverScale } from "@/lib/animations";
 import { motion } from "framer-motion";
-import { useAuthStore } from "@/lib/auth";
+import useGoToStart from "@/hooks/useGoToStart";
 import ButtonShimmerOverlay from "./button-shimmer-overlay";
 import useButtonArrowAnimation from "./useButtonArrowAnimation";
-import { logAmplitudeEvent } from "@/services/analytics";
 import { useTranslations } from "next-intl";
 
 const MotionButton = motion(Button);
@@ -53,7 +52,7 @@ export default function ContinueFreeButton({
   /** Extra classes merged onto the underlying Button — e.g. a gradient background for a premium CTA. */
   className?: string;
 }) {
-  const { goToLogin, setMarketing, setCourse } = useAuthStore();
+  const goToStart = useGoToStart();
   const t = useTranslations("common");
   const label = text ?? t("continueFree");
 
@@ -61,15 +60,12 @@ export default function ContinueFreeButton({
 
   const buttonClickHandler =
     onClick ||
-    useCallback(async () => {
-      logAmplitudeEvent("Authentication Initiated", {
+    (() =>
+      goToStart({
+        course,
         element_location: event.element_location,
         element_type: event.element_type,
-      });
-      goToLogin();
-      setMarketing(marketing || "");
-      setCourse(course || "");
-    }, []);
+      }));
 
   const arrowIcon = (
     <svg width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
