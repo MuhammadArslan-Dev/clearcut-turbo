@@ -49,6 +49,9 @@ Production is half-migrated: 282 legacy-active enrollments were not active in th
 - `ENROLLMENT_SOURCE` cut-over changes which table every read uses (≈70 files read `UExamEnrollment`); do `dual` first, soak, then `new`.
 - Local dev `.env` is currently `ENROLLMENT_SOURCE=new` (for browser testing). Set `legacy` + `config:clear` to go back.
 - Payment history still points at legacy ids (`transactionable_id`); the view keeps legacy ids so nothing orphans. Re-pointing is a separate, later step.
+- **Accepted difference (new tables):** `enrolled_at` lives on the master, so a paper added later to a course shows the course's first enrolment time (legacy kept one per paper). The read-parity test ignores this one field on purpose.
+- **Free credits vs Edit Course:** in legacy mode, changing a subject deletes the row that carried `free_test_credits_used`, so the counter resets (old phase-132 loophole; harmless while `FREE_CREDITS_ENABLED=false`). With `ENROLLMENT_WRITE_SOURCE=new` the master counter never goes down and is re-homed on the oldest shadow row (test `EnrollmentCreditsSurviveEditTest`).
+- Hotfix 2026-11-27: `UExamEnrollment::updateAndMirror` had a broken type hint (TypeError on every call, live from `cb43544`); fixed in `d97c67a`.
 - Flaky-by-design fixtures fixed: halt test (main now keeps paid rows active until `valid_till + grace`) and payment-flow `valid_till` (rows of one group differ by a second; master keeps the widest).
 
 ## 7. Dependencies / packages added
@@ -77,7 +80,7 @@ Local DB only, transaction-wrapped (`DB_CONNECTION=mysql DB_DATABASE=clearcut ph
 
 ---
 
-## 10. Part 2 — new tables PRIMARY, `u_exam_enrollments` = shadow copy (built 2026-11-27, local only, backend branch `phase-64-write-source`, not merged, not deployed)
+## 10. Part 2 — new tables PRIMARY, `u_exam_enrollments` = shadow copy (built 2026-11-27; merged to backend `main` as `88a1d81` and deployed 2026-11-27, inert until `ENROLLMENT_WRITE_SOURCE=new`)
 
 **Flag:** `ENROLLMENT_WRITE_SOURCE=legacy` (default, today's behaviour, byte-identical) | `new`. It is independent of `ENROLLMENT_SOURCE` (reads). `new` implies: reads from the new tables (view), the strict in-transaction mirror, the free-credit counter on the master, and the scheduler heals the SHADOW (`enrollment:reconcile --apply --direction=new --since=30`, every 5 min) instead of the new tables. Going back = set `legacy` + `php artisan config:clear` + restart the queue worker; nothing is lost because the shadow is written in the same DB transaction as every change.
 
