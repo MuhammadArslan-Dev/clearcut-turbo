@@ -1,8 +1,7 @@
 "use client";
 import GuaranteeBadgeIcon from "../icons/guarantee-badge-icon";
 import Text from "@clearcut/ui/text";
-import { useAuthStore } from "@/lib/auth";
-import { logAmplitudeEvent } from "@/services/analytics";
+import useGoToStart from "@/hooks/useGoToStart";
 import Image from "next/image";
 import { IMAGES } from "@/constants/images";
 import clsx from "clsx";
@@ -25,18 +24,12 @@ const BADGE_COPY: Record<Locale, { title: React.ReactNode; subtitle: string }> =
 };
 
 export default function GuaranteeBadge({ pY = "py-6" }: { pY?: string }) {
-  const { goToLogin } = useAuthStore();
+  const goToStart = useGoToStart();
   const copy = BADGE_COPY[useLocale()];
 
   return (
     <div
-      onClick={() => {
-        logAmplitudeEvent("Authentication Initiated", {
-          element_location: "100 percent guarantee",
-          element_type: "banner",
-        });
-        goToLogin();
-      }}
+      onClick={() => goToStart({ element_location: "100 percent guarantee", element_type: "banner" })}
       className={clsx("flex flex-col md:flex-row items-center justify-center gap-5 px-1 md:p-4 cursor-pointer", pY)}
     >
       {/* guarantee-badge-img.webp is actually 499x499 (square) — the declared
@@ -58,18 +51,12 @@ export default function GuaranteeBadge({ pY = "py-6" }: { pY?: string }) {
 }
 
 export const GuaranteeBadgePrice = () => {
-  const { goToLogin } = useAuthStore();
+  const goToStart = useGoToStart();
   const copy = BADGE_COPY[useLocale()];
 
   return (
     <div
-      onClick={() => {
-        logAmplitudeEvent("Authentication Initiated", {
-          element_location: "100 percent guarantee",
-          element_type: "banner",
-        });
-        goToLogin();
-      }}
+      onClick={() => goToStart({ element_location: "100 percent guarantee", element_type: "banner" })}
       className="flex items-center justify-left gap-2 px-1 cursor-pointer"
     >
       <GuaranteeBadgeIcon variant="green-badge" />
