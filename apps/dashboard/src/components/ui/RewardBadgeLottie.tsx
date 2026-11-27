@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { loadLottieAsset } from "@/lib/lottie/loadLottieAsset";
 import { whenIdleAfterLoad } from "@/lib/sentry/when-idle";
@@ -20,9 +20,28 @@ const REWARD_LOTTIE_SRC = "/lotifiles/current-chapter.lottie";
  * once through `loadLottieAsset` and handing every instance the decoded
  * bytes via `data` (instead of `src`) collapses that back to one request no
  * matter how many rows render.
+ *
+ * Only rows near the screen run a player. Free credits unlock every test, so a
+ * chapter list has hundreds of unlocked cards at once; hundreds of live
+ * canvases and animation loops froze the page (cards would not open for
+ * seconds). A row outside the viewport (+ a margin) keeps the empty box of the
+ * same size and mounts its player when scrolled close.
  */
 export default function RewardBadgeLottie({ size }: { size: number }) {
   const [data, setData] = useState<ArrayBuffer | null>(null);
+  const [near, setNear] = useState(false);
+  const boxRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const io = new IntersectionObserver(([entry]) => setNear(entry.isIntersecting), { rootMargin: "300px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,9 +60,9 @@ export default function RewardBadgeLottie({ size }: { size: number }) {
   }, []);
 
   // Same box while the animation loads, so the row doesn't shift when it appears.
-  if (!data) return <span aria-hidden="true" className="inline-block shrink-0" style={{ width: size, height: size }} />;
-
   return (
+    <span ref={boxRef} aria-hidden="true" className="inline-block shrink-0" style={{ width: size, height: size }}>
+      {data && near && (
     <DotLottieReact
       style={{ width: size, height: size }}
       // Slice so each player gets its own ArrayBuffer, not the same shared
@@ -53,5 +72,7 @@ export default function RewardBadgeLottie({ size }: { size: number }) {
       loop
       autoplay
     />
+      )}
+    </span>
   );
 }
