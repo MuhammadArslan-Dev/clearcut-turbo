@@ -13,7 +13,6 @@ import { useSwiperCourseStore } from "@/store/dashboard/useSwiperCourseStore";
 import { useDailyTestHistory } from "@/components/features/daily-tests/hooks/useDailyTestHistory";
 import { SECONDS_PER_QUESTION } from "@/components/features/daily-tests/constants";
 import { trackEvent } from "@/lib/analytics/browser";
-import FreeCreditDailyBadge from "@/components/features/free-credits/FreeCreditDailyBadge";
 import { openSetupSheet, useSetupFirst } from "@/components/features/setup-first/useSetupFirstStore";
 
 type DailyTestWidgetProps = {
@@ -94,8 +93,6 @@ export default function DailyTestWidget({
           <span className="body-xsmall shrink-0 rounded-full bg-[var(--color-success-bg-soft)] px-2.5 py-0.5 !font-semibold text-[var(--color-success-strong)]">
             {t("widget.new")}
           </span>
-          {/* CC-196: the daily test stays free; only shown to users in the free-credits treatment. */}
-          <FreeCreditDailyBadge exam={course?.exam?.short_name} paid={course?.status === "active"} />
         </span>
       </div>
 
