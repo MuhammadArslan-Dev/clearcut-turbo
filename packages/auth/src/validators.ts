@@ -86,3 +86,29 @@ export function normalizeIndianMobileInput(value: string): string {
   if (digits.length > 10 && digits.startsWith("91")) digits = digits.slice(2);
   return digits.slice(0, 10);
 }
+
+/**
+ * Why a phone number cannot be submitted, as a fixed analytics vocabulary (`validation_error` on
+ * `Authentication Form Interacted`), or null when it is a valid, real-looking 10-digit Indian mobile number.
+ * Same rules and order as the login screens' validatePhone / handleLogin. Expects the normalized digits
+ * (normalizeIndianMobileInput), so "too long" cannot happen.
+ */
+export type PhoneValidationError =
+  | "empty"
+  | "invalid_prefix"
+  | "country_code"
+  | "too_short"
+  | "fake_number"
+  | "invalid";
+
+export function getPhoneValidationError(digits: string): PhoneValidationError | null {
+  if (!digits.length) return "empty";
+  if (!INDIAN_MOBILE_FIRST_DIGIT_REGEX.test(digits[0])) return "invalid_prefix";
+  if (digits.length < 10 && digits.startsWith("91") && (digits.length === 2 || /^[6-9]$/.test(digits[2]))) {
+    return "country_code";
+  }
+  if (digits.length < 10) return "too_short";
+  if (!INDIAN_MOBILE_REGEX.test(digits)) return "invalid";
+  if (isFakeMobileNumber(digits)) return "fake_number";
+  return null;
+}

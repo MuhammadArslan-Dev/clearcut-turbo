@@ -14,6 +14,8 @@
     "./meta-geo": "./src/meta-geo.ts",
     "./meta-fbc": "./src/meta-fbc.ts",
     "./meta-pixel-env": "./src/meta-pixel-env.ts",
+    "./safe-storage": "./src/safe-storage.ts",
+    "./settle-within": "./src/settle-within.ts",
     "./text-format": "./src/text-format.ts",
     "./text-limit": "./src/text-limit.ts",
     "./usable-email": "./src/usable-email.ts"

@@ -40,6 +40,9 @@ export interface CreateAuthFeatureConfig {
    * unused but still required by the type.
    */
   onAuthenticated?: AuthScreenDeps["onAuthenticated"];
+  /** See AuthScreenDeps.beforeRedirect: awaited (max BEFORE_REDIRECT_MAX_MS) before the modal's OTP/Truecaller and
+   * InlineAuthFlow redirects. Omitted = redirect immediately (blog). */
+  beforeRedirect?: AuthScreenDeps["beforeRedirect"];
   /** Which app reports this login (phase 70). The backend classifies it:
    * landing → paid, tools → organic, anything else → other. */
   attributionApp?: AttributionApp;
@@ -91,6 +94,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     onIdentify: config.onIdentify,
     redirectBaseUrl: config.redirectBaseUrl,
     onAuthenticated: config.onAuthenticated,
+    beforeRedirect: config.beforeRedirect,
     assetBase: config.assetBase,
   };
 
@@ -100,6 +104,7 @@ export function createAuthFeature(config: CreateAuthFeatureConfig) {
     redirectBaseUrl: config.redirectBaseUrl,
     onEvent: config.onEvent,
     onIdentify: config.onIdentify,
+    beforeRedirect: config.beforeRedirect,
   });
 
   return {

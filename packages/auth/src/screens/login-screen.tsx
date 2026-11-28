@@ -8,6 +8,7 @@ import { AnimatePresence } from "framer-motion";
 
 import { DrawerSheet } from "../ui/drawer-sheet";
 import {
+  createFormInteractionTracker,
   getAuthFailureReason,
   trackVerificationFailed,
   trackVerificationSent,
@@ -34,7 +35,8 @@ import {
   normalizeIndianMobileInput,
 } from "../validators";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl, getCurrentLocale } from "../redirect";
+import { buildPostVerifyRedirectUrl, getCurrentLocale, runBeforeRedirect } from "../redirect";
+import { rememberIsNewUser } from "./new-user-flag";
 import { useTruecallerLogin, useTruecallerAvailability } from "../truecaller";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import type { CreateOtpScreenOptions } from "./otp-screen";
@@ -60,8 +62,15 @@ export function createLoginScreen({
   onIdentify,
   redirectBaseUrl,
   onAuthenticated,
+  beforeRedirect,
   assetBase,
 }: CreateOtpScreenOptions) {
+  // `Authentication Form Interacted` (phone_started / phone_completed /
+  // submit_invalid), each at most once per page load — the tracker lives in
+  // the factory, not the component, because the modal remounts LoginScreen
+  // every time it opens. Sends nothing when the app passes no onEvent.
+  const formInteractions = createFormInteractionTracker(onEvent);
+
   function LoginScreen({ loginCopy }: { loginCopy?: LoginCopy }) {
     const title = loginCopy?.title ?? "Start your exam preparation";
     const subtitle =
@@ -138,7 +147,13 @@ export function createLoginScreen({
         course,
       });
 
-      window.location.replace(redirectUrl);
+      // Optional app hook (landing: send the queued Authentication Outcome
+      // first), bounded and never rejecting. No hook (blog) = immediate, as before.
+      if (beforeRedirect) {
+        void runBeforeRedirect(beforeRedirect).then(() => window.location.replace(redirectUrl));
+      } else {
+        window.location.replace(redirectUrl);
+      }
     }, onEvent);
 
     const handleWhatsAppLogin = () => {
@@ -182,6 +197,7 @@ export function createLoginScreen({
 
       setPhone(cleaned);
       setAutoSubmitted(false);
+      formInteractions.onPhoneInput(cleaned);
 
       // Empty
       if (!cleaned.length) {
@@ -272,6 +288,7 @@ export function createLoginScreen({
       // The button stays tappable (CC-84): a tap with a missing or wrong
       // number shows why under the field instead of silently doing nothing.
       if (!PHONE_REGEX.test(number)) {
+        formInteractions.onSubmitInvalid(number);
         setError(number ? error || "Enter valid phone number" : "Enter your 10-digit mobile number");
         setSuccess("");
         inputRef.current?.focus();
@@ -280,6 +297,7 @@ export function createLoginScreen({
 
       // Never send an OTP request for a fake number
       if (isFakeNumber(number)) {
+        formInteractions.onSubmitInvalid(number);
         setError(FAKE_NUMBER_ERROR);
         setIsValidPhone(false);
         return;
@@ -308,7 +326,9 @@ export function createLoginScreen({
         // after a successful verify (see otp-screen).
         if (data?.is_new_user && data?.user_id) onIdentify?.(data.user_id);
 
-        localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
+        // Never throws where storage is blocked (a throw here showed "Login
+        // failed" although the OTP had been sent) — see new-user-flag.ts.
+        rememberIsNewUser(Boolean(data?.is_new_user));
 
         setSuccess(message);
         // The backend only echoes `user_id` back for a genuinely new signup

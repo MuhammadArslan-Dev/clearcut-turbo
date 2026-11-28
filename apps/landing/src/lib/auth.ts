@@ -19,7 +19,11 @@ import { createAuthFeature } from "@clearcut/auth/create-auth-feature";
 import { isFacebookOrInstagramInAppBrowser } from "@clearcut/auth/truecaller";
 
 import api from "@/api/axios";
-import { logAmplitudeEvent, setUserId } from "@/services/analytics";
+import {
+  flushAmplitudeBeforeUnload,
+  logAmplitudeEvent,
+  setUserId,
+} from "@/services/analytics";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 const REDIRECT_BASE_URL =
@@ -46,4 +50,9 @@ export const {
   // since the silent window.location.replace + sandboxed-webview
   // combination is exactly where this is most likely to misbehave.
   shouldSkipRedirect: isFacebookOrInstagramInAppBrowser,
+  // Send the queued "Authentication Outcome: successful" (and the rest of the
+  // queue) before the modal / InlineAuthFlow redirect to the dashboard unloads
+  // the page — same helper /start uses. Bounded (max 600 ms here, the package
+  // caps any hook at 1.5 s) and a no-op where analytics is off.
+  beforeRedirect: () => flushAmplitudeBeforeUnload(),
 });

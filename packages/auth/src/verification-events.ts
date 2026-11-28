@@ -25,6 +25,7 @@
  */
 
 import { attributionEventProps } from "./attribution";
+import { getPhoneValidationError, type PhoneValidationError } from "./validators";
 
 export type VerificationTracker = (
   name: string,
@@ -146,6 +147,9 @@ export function trackAuthSuccess(
   track?.("Authentication Outcome", {
     outcome: "successful",
     auth_method: authMethod,
+    // The backend sends this same successful outcome with tracked_by: "server" (phase 134: the browser's copy can be
+    // lost to the post-login redirect). Count unique users, or filter on tracked_by, so a login is not counted twice.
+    tracked_by: "client",
     ...attributionEventProps(),
   });
 }
@@ -158,6 +162,7 @@ export function trackAuthFailure(
   track?.("Authentication Outcome", {
     outcome: "failed",
     auth_method: authMethod,
+    tracked_by: "client",
     failure_reason: failureReason,
     ...attributionEventProps(),
   });
@@ -184,4 +189,51 @@ export function trackVerificationFailed(
     is_resend: isResend,
     ...attributionEventProps(),
   });
+}
+
+/**
+ * `Authentication Form Interacted` (existing event name, dashboard events/auth.ts: `form_field`) for the phone step,
+ * so the gap between "Authentication Initiated" (page load) and "Verification Sent" is measurable. Fixed vocabulary,
+ * each value at most once per tracker (one tracker per page view / per login screen instance):
+ *   - `phone_started`   first digit typed in the phone field
+ *   - `phone_completed` a valid 10-digit number reached for the first time
+ *   - `submit_invalid`  a submit blocked by validation, with `validation_error` (validators.ts PhoneValidationError)
+ * Never carries the number itself. No per-keystroke events.
+ */
+export type FormInteraction = "phone_started" | "phone_completed" | "submit_invalid";
+
+export interface FormInteractionTracker {
+  /** Call with the normalized digits on every change of the phone field. */
+  onPhoneInput(digits: string): void;
+  /** Call when a submit was blocked because the number is not valid. */
+  onSubmitInvalid(digits: string): void;
+}
+
+export function createFormInteractionTracker(
+  track: VerificationTracker | undefined,
+  extra?: Record<string, unknown>,
+): FormInteractionTracker {
+  const sent = new Set<FormInteraction>();
+  const send = (interaction: FormInteraction, props?: { validation_error: PhoneValidationError }) => {
+    if (!track || sent.has(interaction)) return;
+    sent.add(interaction);
+    track("Authentication Form Interacted", {
+      form_field: "input_phone_number",
+      interaction,
+      auth_method: "phone_otp",
+      ...props,
+      ...attributionEventProps(),
+      ...extra,
+    });
+  };
+  return {
+    onPhoneInput(digits) {
+      if (!digits.length) return;
+      send("phone_started");
+      if (getPhoneValidationError(digits) === null) send("phone_completed");
+    },
+    onSubmitInvalid(digits) {
+      send("submit_invalid", { validation_error: getPhoneValidationError(digits) ?? "invalid" });
+    },
+  };
 }

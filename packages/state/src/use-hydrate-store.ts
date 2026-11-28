@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
 interface PersistedStoreApi {
-  persist: { rehydrate: () => void | Promise<void> };
+  // Optional on purpose: when localStorage is blocked (SecurityError in Facebook/Instagram in-app browsers, some private
+  // modes), zustand's createJSONStorage returns no storage and `persist` builds the store WITHOUT its `persist` API.
+  persist?: { rehydrate: () => void | Promise<void> };
 }
 
 /**
@@ -18,7 +20,9 @@ interface PersistedStoreApi {
  */
 export function useHydrateStore(store: PersistedStoreApi): void {
   useEffect(() => {
-    store.persist.rehydrate();
+    // No `persist` API (storage blocked) => nothing to rehydrate: the store keeps its defaults instead of throwing a
+    // TypeError that took down every page mounting the auth modal (Sentry CLEARCUTOFF-PUBLIC-4/5/8).
+    store.persist?.rehydrate();
     // Only ever needs to run once per mount — store identity is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

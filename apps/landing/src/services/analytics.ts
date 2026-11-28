@@ -25,6 +25,21 @@ function runOrQueue(op: (amp: typeof amplitude) => void): void {
   }
 }
 
+// Events handed to the SDK that it has not finished sending yet: `track()` / `identify()` return a promise that settles
+// once the event's upload is done (sent, or given up). flushAmplitudeBeforeUnload waits for exactly these.
+const unsentEvents = new Set<Promise<unknown>>();
+
+function rememberUntilSent(result: unknown): void {
+  const promise = (result as { promise?: unknown } | null | undefined)?.promise;
+  if (!promise || typeof (promise as Promise<unknown>).then !== "function") return;
+  const p = promise as Promise<unknown>;
+  unsentEvents.add(p);
+  const forget = () => {
+    unsentEvents.delete(p);
+  };
+  p.then(forget, forget);
+}
+
 /** Detect platform */
 const getCustomPlatform = () => {
   if (typeof window === "undefined") return "Unknown";
@@ -87,7 +102,7 @@ export const logAmplitudeEvent = (
   eventName: string,
   properties: Record<string, any> = {},
 ) => {
-  runOrQueue((amp) => amp.track(eventName, properties));
+  runOrQueue((amp) => rememberUntilSent(amp.track(eventName, properties)));
 };
 
 /**
@@ -123,6 +138,80 @@ export const flushAmplitude = (maxMs = 500): Promise<void> =>
     }
   });
 
+/** Hard cap for flushAmplitudeBeforeUnload: the post-login redirect never waits longer than this for analytics. */
+export const UNLOAD_FLUSH_MAX_MS = 600;
+// While waiting, flush is asked again this often: the SDK skips a flush while an earlier upload is still in flight
+// (Destination.flush, "previous flush has not resolved"), and an event can reach its queue just after a flush started.
+const UNLOAD_FLUSH_RETRY_MS = 50;
+
+/**
+ * Makes the queued Amplitude events as unload-safe as the SDK allows, then resolves: call it right before a navigation
+ * that leaves the page (the post-login `window.location.replace` to app.clearcutoff.in). Never rejects, never throws,
+ * never waits longer than `maxMs`, and resolves at once where analytics is off (localhost, previews, other hosts).
+ *
+ * What the SDK does (read in @amplitude/analytics-browser 2.45.1 + @amplitude/analytics-core):
+ *   - `track()` only queues: the event goes through the plugin timeline (setTimeout 0) and the destination uploads its
+ *     queue `flushIntervalMillis` (1000 ms) later. There is no pagehide/beforeunload hook, so a redirect inside that
+ *     second lost the event (half of "Authentication Outcome: successful" until 11-20).
+ *   - `flush()` uploads at once, BUT is skipped while a previous upload is still in flight; flushAmplitude(500) used to
+ *     resolve right there with nothing sent, which is how events were still lost on slow networks.
+ *   - `setTransport("beacon")` (SendBeaconTransport) hands the batch to `navigator.sendBeacon`, which the browser
+ *     delivers even after the page is gone, and the send resolves as soon as the browser accepted it, so the wait is a
+ *     few ms instead of a round trip. (The default fetch transport also sets `keepalive`, but its send only resolves on
+ *     the response.) Amplitude documents this exact pattern for page exit.
+ * So: switch to beacon (when the browser has sendBeacon), flush, keep re-asking every 50 ms, and resolve when every
+ * event tracked so far has been handed over, or at the cap. The transport stays on beacon: the page is leaving.
+ */
+export const flushAmplitudeBeforeUnload = (maxMs = UNLOAD_FLUSH_MAX_MS): Promise<void> =>
+  new Promise((resolve) => {
+    if (!amplitudeInstance && !analyticsAllowedHere()) {
+      resolve();
+      return;
+    }
+    let finished = false;
+    let retry: ReturnType<typeof setInterval> | undefined;
+    const cap = setTimeout(() => finish(), maxMs);
+    function finish() {
+      if (finished) return;
+      finished = true;
+      clearTimeout(cap);
+      if (retry) clearInterval(retry);
+      resolve();
+    }
+    try {
+      // Before the SDK has started, runOrQueue holds this until init (the cap above still bounds the wait).
+      runOrQueue((amp) => {
+        if (finished) return;
+        try {
+          if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+            amp.setTransport("beacon");
+          }
+        } catch {
+          // keep the default transport (fetch with keepalive)
+        }
+        const flushNow = (): Promise<unknown> => {
+          try {
+            const p = amp.flush()?.promise;
+            return p ? p.then(undefined, () => undefined) : Promise.resolve();
+          } catch {
+            return Promise.resolve();
+          }
+        };
+        const waitingFor = Array.from(unsentEvents);
+        const firstFlush = flushNow();
+        if (waitingFor.length === 0) {
+          // Nothing of ours pending: one flush for anything the SDK tracked on its own, then go.
+          void firstFlush.then(finish);
+          return;
+        }
+        void Promise.all(waitingFor.map((p) => p.then(undefined, () => undefined))).then(finish);
+        retry = setInterval(() => void flushNow(), UNLOAD_FLUSH_RETRY_MS);
+      });
+    } catch {
+      finish();
+    }
+  });
+
 /** Set User ID */
 export const setUserId = (userId: string | number) => {
   const id = String(userId).trim();
@@ -146,7 +235,7 @@ export const setUserProperties = (properties: Record<string, any>) => {
       }
     });
 
-    amp.identify(identify);
+    rememberUntilSent(amp.identify(identify));
   });
 };
 
