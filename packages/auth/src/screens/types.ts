@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AuthApi } from "../api";
+import type { BeforeRedirectHook } from "../redirect";
 import type { UseAuthStore } from "../store/auth-store";
 import type { UseAuthModalStore } from "../store/auth-modal-store";
 
@@ -58,6 +59,10 @@ export interface AuthScreenDeps {
    * handoff) to keep the original `window.location.replace(...)` redirect.
    */
   onAuthenticated?: (result: AuthSuccessResult) => void;
+  /** Awaited (bounded, never rejects — see redirect.ts runBeforeRedirect) right before the post-login redirect to the
+   * dashboard/onboarding app, e.g. to send queued analytics. Not called in `onAuthenticated` mode (no redirect). Omit
+   * it to redirect immediately, as before. */
+  beforeRedirect?: BeforeRedirectHook;
   /** Prefix for the modal's illustration files (`<base>/images/auth/*.webp`).
    * Empty for apps served from the site root; tools passes its basePath. */
   assetBase?: string;

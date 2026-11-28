@@ -10,7 +10,8 @@ import { Modal } from "../ui/modal";
 import { useBackHandler } from "@clearcut/hooks/use-back-handler";
 import { useIsMobile } from "@clearcut/hooks/use-is-mobile";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
+import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale, runBeforeRedirect } from "../redirect";
+import { readIsNewUser } from "./new-user-flag";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   AuthCloseButton,
@@ -51,6 +52,7 @@ export function createOtpScreen({
   onIdentify,
   redirectBaseUrl,
   onAuthenticated,
+  beforeRedirect,
   assetBase,
 }: CreateOtpScreenOptions) {
   function OTPScreen({ loginCopy }: { loginCopy?: LoginCopy } = {}) {
@@ -173,7 +175,8 @@ export function createOtpScreen({
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update (also clears the persisted localStorage copy).
         setUserId("");
-        const isNewUser = localStorage.getItem("is_new_user") === "true";
+        // Never throws, also where storage is blocked (see new-user-flag.ts).
+        const isNewUser = readIsNewUser();
         identifyClarityUser({ userId, phone });
 
         // Stay-on-page mode (apps/tools): token is already stored above; just
@@ -220,6 +223,11 @@ export function createOtpScreen({
         // which reads as the "Verify OTP" button flickering right before
         // the redirect. Leaving `loading` true keeps the spinner up
         // continuously until the browser actually navigates away.
+        // Optional app hook (landing: send the queued Authentication Outcome
+        // first). Bounded and never rejects; awaited inside this try so
+        // isVerifyingRef stays set and a second tap/auto-fill can't verify
+        // again meanwhile. No hook (blog) = no await, same as before.
+        if (beforeRedirect) await runBeforeRedirect(beforeRedirect);
         window.location.replace(redirectUrl);
       } catch (err: unknown) {
         // One classifier for the event and the message (CC-87) — it reads

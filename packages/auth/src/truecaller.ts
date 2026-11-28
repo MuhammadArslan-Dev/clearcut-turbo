@@ -8,6 +8,7 @@ import {
   trackAuthSuccess,
   type VerificationTracker,
 } from "./verification-events";
+import { safeGetItem, safeRemoveItem, safeSetItem } from "@clearcut/utils/safe-storage";
 
 export type TruecallerLoginState =
   | "idle"
@@ -46,7 +47,7 @@ interface PendingNonce {
 function readPendingNonce(): PendingNonce | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(PENDING_NONCE_KEY);
+    const raw = safeGetItem(PENDING_NONCE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PendingNonce>;
     if (typeof parsed.nonce !== "string" || typeof parsed.startedAt !== "number") return null;
@@ -62,12 +63,13 @@ function readPendingNonce(): PendingNonce | null {
 
 function writePendingNonce(nonce: string): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PENDING_NONCE_KEY, JSON.stringify({ nonce, startedAt: Date.now() }));
+  // Storage blocked (in-app browser): the poll still runs, it just cannot resume after a reload.
+  safeSetItem(PENDING_NONCE_KEY, JSON.stringify({ nonce, startedAt: Date.now() }));
 }
 
 function clearPendingNonce(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(PENDING_NONCE_KEY);
+  safeRemoveItem(PENDING_NONCE_KEY);
 }
 
 export interface TruecallerLoginResult {
@@ -321,8 +323,13 @@ const TRUECALLER_FLAG_COOKIE_DOMAIN = ".clearcutoff.in";
 const TRUECALLER_FLAG_MAX_AGE_DAYS = 180;
 
 function readCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  // document.cookie can throw (SecurityError) where cookies are blocked, like localStorage.
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
 }
 
 function writeCookie(name: string, value: string, maxAgeDays: number): void {
@@ -334,18 +341,23 @@ function writeCookie(name: string, value: string, maxAgeDays: number): void {
   // to verify the caching behavior itself.
   const isProd = window.location.hostname.endsWith("clearcutoff.in");
   const domainPart = isProd ? `; domain=${TRUECALLER_FLAG_COOKIE_DOMAIN}` : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}${domainPart}; SameSite=Lax`;
+  try {
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}${domainPart}; SameSite=Lax`;
+  } catch {
+    // cookies blocked: nothing is cached, detection simply runs again next time
+  }
 }
 
 export function getCachedTruecallerAvailability(): "available" | "unavailable" | null {
   if (typeof window === "undefined") return null;
 
-  const fromLocal = localStorage.getItem(TRUECALLER_FLAG_KEY);
+  // Storage can be blocked (SecurityError, in-app browsers): then the cookie alone answers.
+  const fromLocal = safeGetItem(TRUECALLER_FLAG_KEY);
   if (fromLocal === "available" || fromLocal === "unavailable") return fromLocal;
 
   const fromCookie = readCookie(TRUECALLER_FLAG_KEY);
   if (fromCookie === "available" || fromCookie === "unavailable") {
-    localStorage.setItem(TRUECALLER_FLAG_KEY, fromCookie);
+    safeSetItem(TRUECALLER_FLAG_KEY, fromCookie);
     return fromCookie;
   }
 
@@ -354,7 +366,7 @@ export function getCachedTruecallerAvailability(): "available" | "unavailable" |
 
 export function setCachedTruecallerAvailability(value: "available" | "unavailable"): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TRUECALLER_FLAG_KEY, value);
+  safeSetItem(TRUECALLER_FLAG_KEY, value);
   writeCookie(TRUECALLER_FLAG_KEY, value, TRUECALLER_FLAG_MAX_AGE_DAYS);
 }
 

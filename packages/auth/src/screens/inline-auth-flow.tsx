@@ -10,7 +10,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import WhatsappIcon from "../icons/whatsapp-icon";
 import FireIcon from "../icons/fire-icon";
 import { setToken } from "../token";
-import { buildPostVerifyRedirectUrl, createLeadId, getCurrentLocale } from "../redirect";
+import {
+  buildPostVerifyRedirectUrl,
+  createLeadId,
+  getCurrentLocale,
+  runBeforeRedirect,
+  type BeforeRedirectHook,
+} from "../redirect";
+import { safeGetItem, safeRemoveItem, safeSetItem } from "@clearcut/utils/safe-storage";
 import { identifyClarityUser } from "@clearcut/analytics/clarity";
 import {
   INDIAN_MOBILE_REGEX as PHONE_REGEX,
@@ -70,6 +77,8 @@ export interface CreateInlineAuthFlowOptions {
   redirectBaseUrl: string;
   onEvent?: (name: string, properties?: Record<string, unknown>) => void;
   onIdentify?: (userId: string) => void;
+  /** See AuthScreenDeps.beforeRedirect. Omitted = redirect immediately, as before. */
+  beforeRedirect?: BeforeRedirectHook;
 }
 
 /**
@@ -85,7 +94,13 @@ export interface CreateInlineAuthFlowOptions {
  * self-contained and doesn't participate in the modal login flow's state
  * at all, matching original behavior.
  */
-export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIdentify }: CreateInlineAuthFlowOptions) {
+export function createInlineAuthFlow({
+  authApi,
+  redirectBaseUrl,
+  onEvent,
+  onIdentify,
+  beforeRedirect,
+}: CreateInlineAuthFlowOptions) {
   function InlineAuthFlow({
     courseName,
     SubmitButton = DefaultSubmitButton,
@@ -94,11 +109,9 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
     SubmitButton?: InlineAuthFlowSubmitButton;
   }) {
     const [phone, setPhone] = useState("");
-    const [userId, setUserId] = useState(() =>
-      typeof window !== "undefined"
-        ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
-        : "",
-    );
+    // safe-storage: blocked storage (in-app browsers) reads as "" instead of
+    // throwing during render; the id then lives in this state only.
+    const [userId, setUserId] = useState(() => safeGetItem(PENDING_USER_ID_KEY) ?? "");
     const [isNewUser, setIsNewUser] = useState(false);
     const [otp, setOtp] = useState("");
     const [error, setError] = useState("");
@@ -177,7 +190,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         const nextUserId = res?.data?.data?.user_id || userId;
         setUserId(nextUserId);
         if (nextUserId) {
-          localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
+          safeSetItem(PENDING_USER_ID_KEY, nextUserId);
         }
         if (status !== "success") {
           setLoading(false); setDisabled(true);
@@ -252,7 +265,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         // writes: always "" → `?lang=` empty → English onboarding even for a
         // Hindi or Marathi signup.
         const lang = getCurrentLocale();
-        const course = localStorage.getItem("course");
+        const course = safeGetItem("course");
         const res = await authApi.verifyOtp({ phone, otp: finalOtp });
         const { data, status } = res.data;
         if (status !== "success") throw new Error("Verification failed");
@@ -262,7 +275,7 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
         outcomeTracked = true;
         // Verified now — no longer a "pending" row a future refresh should
         // try to reuse/update.
-        localStorage.removeItem(PENDING_USER_ID_KEY);
+        safeRemoveItem(PENDING_USER_ID_KEY);
         identifyClarityUser({ userId, phone });
         // See otp-screen.tsx's comment above the same pattern: Lead can only
         // pick up phone/external_id on the app side's first Pixel init(), so
@@ -279,6 +292,10 @@ export function createInlineAuthFlow({ authApi, redirectBaseUrl, onEvent, onIden
           leadId,
         });
         setLoading(true); setDisabled(false);
+        // Optional app hook (landing: send the queued Authentication Outcome
+        // first), bounded and never rejecting; awaited inside the try so
+        // isVerifyingRef blocks a second verify meanwhile. No hook = as before.
+        if (beforeRedirect) await runBeforeRedirect(beforeRedirect);
         window.location.replace(redirectUrl);
       } catch (err) {
         const reason = getAuthFailureReason(err);

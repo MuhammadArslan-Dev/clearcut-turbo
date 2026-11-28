@@ -15,7 +15,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { authApi } from "@/lib/auth";
 import {
-  flushAmplitude,
+  flushAmplitudeBeforeUnload,
   logAmplitudeEvent,
   setUserId as setAmplitudeUserId,
 } from "@/services/analytics";
@@ -28,8 +28,11 @@ import {
   normalizeIndianMobileInput,
 } from "@clearcut/auth/validators";
 import { setToken } from "@clearcut/auth/token";
+import { safeGetItem, safeRemoveItem, safeSetItem } from "@clearcut/utils/safe-storage";
 import {
   type AuthFailureReason,
+  type FormInteractionTracker,
+  createFormInteractionTracker,
   getAuthFailureReason,
   trackAuthFailure,
   trackAuthSuccess,
@@ -66,6 +69,10 @@ const RESEND_INTERVAL = 30;
 // useAuthStore's persisted pattern) because this value is never rendered —
 // it only feeds API payloads/analytics, so there's no hydration-mismatch
 // risk to guard against here.
+// Every storage access on this page goes through @clearcut/utils/safe-storage:
+// localStorage throws (SecurityError) in Facebook/Instagram in-app browsers,
+// which crashed /start (Sentry CLEARCUTOFF-PUBLIC-4/5/8). Blocked storage =
+// reads give null, writes are skipped, the value lives in React state.
 const PENDING_USER_ID_KEY = "pending_user_id";
 const REDIRECT_BASE_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in";
@@ -301,11 +308,7 @@ export default function StartAuthForm({
   const [otp, setOtp] = useState("");
   // Bumped after a wrong/expired OTP so OtpBoxInput refocuses (fresh keyboard chip).
   const [otpRefocusKey, setOtpRefocusKey] = useState(0);
-  const [userId, setUserId] = useState(() =>
-    typeof window !== "undefined"
-      ? (localStorage.getItem(PENDING_USER_ID_KEY) ?? "")
-      : "",
-  );
+  const [userId, setUserId] = useState(() => safeGetItem(PENDING_USER_ID_KEY) ?? "");
   const [isNewUser, setIsNewUser] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -320,7 +323,15 @@ export default function StartAuthForm({
   // sent as `resend_count` on Verification Resent.
   const resendCountRef = useRef(0);
   const isVerifyingRef = useRef(false);
+  // Set once the post-login redirect has been scheduled (OTP or Truecaller):
+  // no second verify and no second redirect while the analytics flush runs.
+  const redirectStartedRef = useRef(false);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  // `Authentication Form Interacted`: phone_started / phone_completed /
+  // submit_invalid, each at most once per page view (verification-events.ts).
+  const formInteractionsRef = useRef<FormInteractionTracker | null>(null);
+  const formInteractions = () =>
+    (formInteractionsRef.current ??= createFormInteractionTracker(logAmplitudeEvent));
 
   /* ---------------- ANALYTICS (same event names as login-screen.tsx) ---------------- */
 
@@ -367,6 +378,7 @@ export default function StartAuthForm({
 
     setPhone(cleaned);
     setAutoSubmitted(false);
+    formInteractions().onPhoneInput(cleaned);
 
     if (!cleaned.length) {
       setError("");
@@ -443,6 +455,7 @@ export default function StartAuthForm({
     // The button stays tappable (CC-84): a tap with a missing or wrong
     // number shows why under the field instead of silently doing nothing.
     if (!PHONE_REGEX.test(number)) {
+      formInteractions().onSubmitInvalid(number);
       setError(number ? error || t.errEnterValidPhone : t.errEnter10);
       setSuccess("");
       phoneInputRef.current?.focus();
@@ -450,6 +463,7 @@ export default function StartAuthForm({
     }
 
     if (isFakeNumber(number)) {
+      formInteractions().onSubmitInvalid(number);
       setError(t.errFakeNumber);
       setIsValidPhone(false);
       return;
@@ -474,7 +488,10 @@ export default function StartAuthForm({
       // Brand-new signup only — see packages/auth login-screen.tsx.
       if (data?.is_new_user && data?.user_id) setAmplitudeUserId(data.user_id);
 
-      localStorage.setItem("is_new_user", data?.is_new_user ? "true" : "false");
+      // Skipped silently where storage is blocked: a throw here used to show
+      // "Login failed" although the OTP had been sent. This page reads
+      // `isNewUser` from state below, not from storage.
+      safeSetItem("is_new_user", data?.is_new_user ? "true" : "false");
       setIsNewUser(Boolean(data?.is_new_user));
 
       // The backend only echoes `user_id` back for a genuinely new signup
@@ -485,7 +502,7 @@ export default function StartAuthForm({
       const nextUserId = data?.user_id ?? userId;
       setUserId(nextUserId);
       if (nextUserId) {
-        localStorage.setItem(PENDING_USER_ID_KEY, nextUserId);
+        safeSetItem(PENDING_USER_ID_KEY, nextUserId);
       }
 
       setSuccess(message);
@@ -564,7 +581,7 @@ export default function StartAuthForm({
   /* ---------------- VERIFY ---------------- */
 
   const handleVerify = async (autoOtp?: string) => {
-    if (isVerifyingRef.current) return;
+    if (isVerifyingRef.current || redirectStartedRef.current) return;
 
     const finalOtp = autoOtp || otp;
     if (!finalOtp || finalOtp.length !== OTP_LENGTH) {
@@ -600,7 +617,7 @@ export default function StartAuthForm({
       outcomeTracked = true;
       // Verified now — no longer a "pending" row a future refresh should
       // try to reuse/update.
-      localStorage.removeItem(PENDING_USER_ID_KEY);
+      safeRemoveItem(PENDING_USER_ID_KEY);
       identifyClarityUser({ userId, phone });
 
       // See packages/auth/src/screens/otp-screen.tsx's comment above the
@@ -885,6 +902,10 @@ export default function StartAuthForm({
    * URL and every step before it are exactly as before; only ~1 frame added.
    */
   const finishThenGo = (url: string) => {
+    // One redirect per page: a late Truecaller result or a second verify
+    // cannot schedule another one while the first is waiting on analytics.
+    if (redirectStartedRef.current) return;
+    redirectStartedRef.current = true;
     showDone();
     let gone = false;
     const go = () => {
@@ -894,9 +915,10 @@ export default function StartAuthForm({
     };
     // Let the analytics queue (Authentication Outcome, Verification...) reach Amplitude BEFORE the page unloads: the SDK only
     // sends a second after tracking and has no page-hide hook, so a redirect within ~120 ms lost about half of the
-    // "successful" outcomes. Bounded (flushAmplitude never waits more than 500 ms and never rejects); usually ~100-300 ms,
-    // while the "verified" animation is already playing.
-    const sent = flushAmplitude(500);
+    // "successful" outcomes. flushAmplitudeBeforeUnload hands the queue to navigator.sendBeacon (survives the unload) and
+    // retries past an upload already in flight; bounded (max 600 ms, never rejects), usually a few ms, while the
+    // "verified" animation is already playing. The same helper runs before the modal's redirects (lib/auth.ts).
+    const sent = flushAmplitudeBeforeUnload();
     window.requestAnimationFrame(() => window.setTimeout(() => void sent.then(go), 0));
     // A hidden tab (e.g. back from the Truecaller app) runs no animation frames.
     window.setTimeout(() => void sent.then(go), 120);

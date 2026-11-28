@@ -1,3 +1,21 @@
+import { settleWithin } from "@clearcut/utils/settle-within";
+
+/**
+ * Optional app hook awaited right before every post-login `window.location.replace(...)` in this package (OTP screen,
+ * Truecaller in the modal, InlineAuthFlow). Landing passes its "send the Amplitude queue now" helper so
+ * `Authentication Outcome: successful` is not lost to the cross-origin redirect. Omitted (blog) = redirect immediately,
+ * exactly as before.
+ */
+export type BeforeRedirectHook = () => Promise<void> | void;
+
+/** Hard upper bound the package gives any beforeRedirect hook: a broken or hanging hook can never trap the learner. */
+export const BEFORE_REDIRECT_MAX_MS = 1500;
+
+/** Awaits the hook, bounded by BEFORE_REDIRECT_MAX_MS. Never rejects, never throws. */
+export function runBeforeRedirect(hook: BeforeRedirectHook): Promise<void> {
+  return settleWithin(hook, BEFORE_REDIRECT_MAX_MS);
+}
+
 export interface BuildPostVerifyRedirectUrlParams {
   /** e.g. process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.clearcutoff.in" */
   baseUrl: string;

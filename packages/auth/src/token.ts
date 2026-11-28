@@ -1,3 +1,5 @@
+import { safeGetItem, safeRemoveItem, safeSetItem } from "@clearcut/utils/safe-storage";
+
 /**
  * Shared session-token storage key. Deliberately a fixed constant, not a
  * per-app configurable value — landing/blog/dashboard are expected to
@@ -5,17 +7,19 @@
  */
 export const TOKEN_KEY = "CSRF_TOKEN";
 
+// Storage can be blocked (SecurityError in Facebook/Instagram in-app browsers, some private modes; Sentry
+// CLEARCUTOFF-PUBLIC-4/5/8). That must never crash a page or fail a login: reads give null, writes are skipped. The
+// post-login hand-off does not depend on the stored copy: the token travels in the dashboard redirect's `?token=`.
+// When storage works these behave exactly as before.
+
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return safeGetItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
+  safeSetItem(TOKEN_KEY, token);
 }
 
 export function clearToken(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
+  safeRemoveItem(TOKEN_KEY);
 }
