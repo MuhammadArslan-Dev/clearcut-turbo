@@ -2,9 +2,9 @@
 
 **Tickets:** CC-197 (replaces CC-123; builds on CC-122 / phase 40)
 **Repos:** ASTRO (`apps/go-marketing`) · CM (`apps/landing` `/start`, `packages/experiments`, `packages/utils`) · dashboard (tag only)
-**Branch:** `cc-197-chrome-offer-experiment` in each repo (to create once the plan is approved) — not committed, not pushed
+**Branch:** `cc-197-chrome-offer-experiment` in each repo — merged into `main` and pushed on 2026-11-28 (CM `eac8dce`, ASTRO `fec4bef`), local branches deleted
 **Created / start date:** 2026-11-28
-**Status:** In Progress — plan approved 2026-11-28 (D1–D3 answered), building
+**Status:** LIVE (running) since 2026-11-28 — experiment started in GrowthBook, production ON; real Android FB/IG phone test and first real-traffic read still to do
 
 ---
 
@@ -45,6 +45,11 @@ Steps:
 
 - **Cloudflare (done 2026-11-28, via the browser):** Pages project `astro-marketing-clearcut` (root `apps/go-marketing`, production branch `main`, auto deploy on) → Settings → Variables and secrets → **Production** `PUBLIC_GROWTHBOOK_CLIENT_KEY` = the public client key (Text). `PUBLIC_GROWTHBOOK_API_HOST` NOT set (the code defaults to `https://cdn.growthbook.io`). Preview environment untouched (experiments are off outside production hosts anyway). Build-time variable: it only takes effect on the next deployment, i.e. after this branch is merged to `main`.
 
+- **Merged, deployed, started (2026-11-28):**
+  - Merge + push: CM `eac8dce`, ASTRO `fec4bef` (the user approved). Live check: `clearcutoff.in/go/htet` has the `chrome-offer-template`; the client key is baked into the `StartLinkEnhancer` chunk.
+  - GrowthBook (via the browser, at the user's request): Revision 2 published (rule added, "start running experiments upon publishing" left unchecked); then the experiment "Go page: Continue in Chrome offer (Android FB/IG)" was **started** (status "Running: No data"; the two recommended to-dos, Data Source and assignment table, were bypassed because analysis is in Amplitude); then Revision 3 published = production environment **ON**. The public CDN payload `cdn.growthbook.io/api/features/<client key>` now returns the flag: variations `control` / `chrome_offer`, weights 0.5/0.5, hash `id`, `meta` keys `"0"` / `"1"`.
+  - Effect: Android + FB/IG in-app visitors of the go pages are split 50/50; everyone else is unchanged. The silent CC-122 auto-Chrome is gone for everybody (control = plain link).
+
 ## 5. Decision log
 | Date | Question | Answer (who) |
 |---|---|---|
@@ -68,4 +73,9 @@ Steps:
 - [ ] **Not verified:** real Android phone (FB + IG), Meta Events Manager dedup/EMQ, Meta policy review, Amplitude funnel with real traffic
 
 ## 9. Next steps
-Get answers to D1–D3, then create the branches and start with steps A–C.
+1. **Real Android phone**, from the Facebook app and from an Instagram DM: open a `/go` link, tap the CTA, check both buttons of the sheet, that Chrome opens `/start` with the params and `_fbc`, login works, and `Chrome Escape landed` shows with the same Amplitude user. Also with Chrome disabled (fallback). Nobody has done this yet.
+2. **Daily 5 minutes** (ticket): Meta Account Quality / ad status (no "Circumventing systems" or destination warning), Meta A vs B, Amplitude funnels split by `exp_go_all_chrome_offer_202611` (0 = control, 1 = chrome_offer), Sentry tag `lp_variant=chrome_offer`.
+3. **Kill criteria:** any Meta policy warning on B, jump failure above 30%, B signups per lander more than 15% below A after 200 landers each → flag production OFF in GrowthBook (no deploy; the go pages read the CDN, allow 2–5 minutes).
+4. **Read-out:** minimum 2 full weeks; a clean payment read likely 4–5 weeks. Winner = lower cost per paid user, not just more signups. Build the Amplitude funnel chart (landing → signup → checkout → paid) split by the exposure property.
+5. Meta Events Manager: Lead/Purchase dedup and Event Match Quality baseline (ticket pre-launch check, not done).
+6. **Not verified:** everything real-world (Android WebView `intent://`, the `opened` result, real Amplitude ingestion, Hindi/Marathi wording by a native reader).
