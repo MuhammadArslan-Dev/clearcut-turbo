@@ -67,13 +67,18 @@ export const initAmplitude = async () => {
   });
 
   // Arrived in Chrome from a /go page opened in the Facebook/Instagram app
-  // (CC-122). The SDK has already taken the IAB's device id from
-  // `ampDeviceId`, so this lands on the same Amplitude user.
+  // (CC-122, CC-197). The SDK has already taken the IAB's device id from
+  // `ampDeviceId`, so this lands on the same Amplitude user (and carries the
+  // `exp_go_all_chrome_offer_202611` user property set there). `landed` is
+  // what Chrome saw; `opened` is the in-app side's own "the page went to the
+  // background" guess and is sent by the /go page, not from here.
   const params = new URLSearchParams(window.location.search);
   if (params.get("src") === "iab_escape") {
+    const variant = params.get("ccv") ?? "";
     logAmplitudeEvent("Chrome Escape", {
-      result: "opened",
+      result: "landed",
       browser_context: params.get("iab") ?? "unknown",
+      ...(/^[a-z0-9_]{1,40}$/i.test(variant) ? { variant } : {}),
     });
   }
 };

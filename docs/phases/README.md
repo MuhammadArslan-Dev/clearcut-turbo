@@ -146,6 +146,7 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 | 124 | [Notification system driven by n8n (daily task reminders, continue learning, custom pushes, token expiry)](124-notification-system-n8n.md) | (new, from user) | BE, RN, CM-dashboard, n8n | Not Started — audit + plan only (branch `phase-124-notification-system`, doc only) | User: review plan, answer D1–D15 |
 | 127 | [HTET: phone + OTP before every image download (config-driven hard_gate + backend token check)](127-htet-download-otp.md) | (new, from user) | CM-tools | In Review — branch `phase-127-htet-download-otp`, committed locally, not pushed/deployed | User: review, merge, manual tools deploy |
 | 128 | [Landing FAQ section fully CMS-managed (en/hi/mr)](128-landing-faq-cms.md) | (new, from user) | CM-landing, CMS | In Review - verified locally (seeded local CMS, Playwright 0 differences); CM `phase-128-landing-faq-cms` + CMS `phase-128-cms-mr-locale` committed, not pushed; prod CMS never ran Payload migrations | User: §6 SQL on prod, push CMS, enter content (§9), then landing push |
+| 132 | [CC-197: "Continue in Chrome" offer for Android FB/IG users, A/B by GrowthBook](132-cc197-chrome-offer-experiment.md) | CC-197 | ASTRO go-marketing, CM-landing, CM-error-reporting | In Progress - built, verifying | Real Android FB/IG phone test; GrowthBook flag + client key in Coolify/Pages env; user starts the experiment |
 | 100 | [Correct + Incorrect Explanation (BigQuery → question_trans)](100-incorrect-explanation.md) | — | BE (frontend planned) | In Review (backend done + verified on local DB, uncommitted) | Client: fix sheets (Paper 1 incorrect column, Paper 2 ids/sections) before live; user approval before frontend |
 - 2026-11-06: added phase 80 (Daily + Practice Test motion: intro, Nibbu, submit overlay, animated result).
 - 2026-11-06: added phase 81 (Chapter / Sectional / Full exam tests motion: start intro, Nibbu note, submit animation, animated result).
@@ -160,3 +161,5 @@ Within each phase, steps use `[ ]` todo · `[~]` in progress · `[x]` done · `[
 - 2026-11-12: added phase 106 (My Course card + Cutoff Meter follow the paper the user was last active in; backend LastActivePaper). Branch fix/last-active-paper, not merged.
 
 - 2026-11-13: added phase 107 (resume position + paper/card sync: stale cached position, courseSync helper). Branch fix/course-position-sync, not merged.
+
+- 2026-11-28: added phase 132 (CC-197 Chrome offer experiment on /go, GrowthBook-controlled). Branches cc-197-chrome-offer-experiment in ASTRO and CM, not merged.
