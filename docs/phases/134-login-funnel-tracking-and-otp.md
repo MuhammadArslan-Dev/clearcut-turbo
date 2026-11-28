@@ -2,9 +2,9 @@
 
 **Tickets:** (new, from user, 2026-11-28) — follows the login drop investigation of the same day; related docs/phases/123
 **Repos:** CM (apps/landing, packages/auth) · BE (clearcutoff-main-backend)
-**Branch:** `fix-login-tracking-otp` in CM and in BE — not committed, not pushed
+**Branch:** `fix-login-tracking-otp` in CM and in BE — merged into `main`, pushed, local branches deleted (never pushed as branches)
 **Created / start date:** 2026-11-28
-**Status:** In Review — all four fixes built; fix 1 completed with a server-side event (option a); verified locally with stubs; nothing committed
+**Status:** In Review — LIVE since 2026-11-28 (merged + pushed, user approved): BE `2b8e7b3`, CM `cbe2f99`; real login and Amplitude numbers still to be checked
 
 ---
 
@@ -32,6 +32,8 @@ The login funnel in Amplitude showed a 46% drop after "OTP sent". Investigation 
 - 2026-11-28 Playwright (Sonnet agent, Chromium 390px, backend + Amplitude STUBBED so no SMS and no real events): happy path /start, /hi/start and the modal send the success event 20–56 ms before the navigation; wrong OTP / send 500 / hung send, double actions, form events, blocked storage (incl. Instagram UA) and layout pass.
 
 - 2026-11-28 fix 1, option (a), server-side: BE `AmplitudeEvent::AuthenticationOutcome`, `UserService::trackAuthSuccess()` + pure `authSuccessProperties()` (`outcome: successful`, `auth_method` phone_otp / truecaller, `platform`, `tracked_by: server`, attribution_*), called from `verifyUser()` (first verification and every Truecaller login) and from `varifyOtp`'s returning-user branch; `tests/Unit/AuthSuccessPropertiesTest.php`. Queued through the existing `AmplitudeService::track` (insert_id fixed at dispatch). FE `verification-events.ts`: client success and failed outcomes carry `tracked_by: "client"`. Reading it: unique users of `Authentication Outcome` (outcome = successful) is now complete; for event totals filter `tracked_by = server`. Failed outcomes stay client-only.
+
+- 2026-11-28 deployed: Coolify finished `clearcut-main-backend` + `clearcut-backend-queue-worker` at commit 2b8e7b3 (09:47 UTC) and landing at cbe2f99 (09:50 UTC). Live check: the /start chunk on clearcutoff.in contains `Authentication Form Interacted`, `phone_started`, `submit_invalid`, `tracked_by`; `/start`, `/hi/start`, `/` answer 200; backend `/up` 200 and `POST /api/v1/auth/login` with an invalid number still answers 400 with the same message. No real OTP was sent in these checks.
 
 ## 5. Decision log
 | Date | Question | Answer (who) |
