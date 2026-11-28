@@ -31,6 +31,12 @@ describe("trafficTags (CC-144)", () => {
     expect(JSON.stringify(tags)).not.toContain("SECRETCLICK");
   });
 
+  it("tags the Chrome-offer variant only when the jump param is present (CC-197)", () => {
+    expect(trafficTags("https://x.in/start?ccv=chrome_offer&src=iab_escape", CHROME).lp_variant).toBe("chrome_offer");
+    expect(trafficTags("https://x.in/start?ccv=a%20b%3Cscript", CHROME)).not.toHaveProperty("lp_variant");
+    expect(trafficTags("https://x.in/start", CHROME)).not.toHaveProperty("lp_variant");
+  });
+
   it("detects the in-app browsers", () => {
     expect(trafficTags("https://x.in/", IG).in_app_browser).toBe("instagram");
     expect(trafficTags("https://x.in/", CHROME)).toMatchObject({ in_app_browser: "none", has_fbclid: "no", utm_campaign: "none" });

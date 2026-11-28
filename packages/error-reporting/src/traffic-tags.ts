@@ -20,6 +20,8 @@ export type TrafficTags = {
   utm_campaign: string;
   has_fbclid: "yes" | "no";
   in_app_browser: "facebook" | "instagram" | "none";
+  /** CC-197: only when the visit came through the "Continue in Chrome" jump (`ccv` param), e.g. `chrome_offer`. */
+  lp_variant?: string;
 };
 
 /** Pure: tags for a landing URL + user agent. */
@@ -36,11 +38,16 @@ export function trafficTags(url: string, userAgent: string): TrafficTags {
   const examParam = (params.get("exam") ?? "").toLowerCase();
   const exam = EXAMS.find(([pattern]) => pattern.test(path) || pattern.test(`/${examParam}/`))?.[1] ?? "none";
 
+  // Letters, digits and underscores only: it comes from the URL.
+  const variant = (params.get("ccv") ?? "").trim();
+  const lp_variant = /^[a-z0-9_]{1,40}$/i.test(variant) ? variant : undefined;
+
   return {
     exam,
     utm_campaign: (params.get("utm_campaign") ?? "").slice(0, 200) || "none",
     has_fbclid: params.has("fbclid") ? "yes" : "no",
     in_app_browser: /Instagram/i.test(userAgent) ? "instagram" : /FBAN|FBAV|FB_IAB|FBIOS/i.test(userAgent) ? "facebook" : "none",
+    ...(lp_variant ? { lp_variant } : {}),
   };
 }
 
